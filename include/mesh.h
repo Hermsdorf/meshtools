@@ -19,7 +19,7 @@ typedef struct {
     vector<int>    conn;                    // conectividade dos elementos
     vector<int>    offset;                  // mapeia a localização de cada elemento no vetor conn
     vector<int>    physical_tag;
-    map<int, physical_data_t>  physical_list; // 
+    map<int, physical_data_t>  physical_map; // 
     int n_face_elements;
     int n_elements;
 
@@ -29,6 +29,8 @@ typedef struct {
 // Leitura do arquivo no formato GMSH. Retorna um ponteiro 
 // para a estrutura mesh.
 mesh_t* MeshReadGMSH(const char* filename);
+
+void    MeshVTKWriter(mesh_t* mesh, const char* filename);
 
 mesh_t* MeshGMSHReader(const char* filename);
 

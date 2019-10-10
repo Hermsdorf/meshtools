@@ -3,7 +3,7 @@ CXX_COMPILER = g++
 
 INCLUDE_DIRS = -I./include 
 
-CXX_FLAGS    = -O2 $(INCLUDE_DIRS)
+CXX_FLAGS    = -g $(INCLUDE_DIRS)
 LDFLAGS      =
 
 # source files

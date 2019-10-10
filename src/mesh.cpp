@@ -7,6 +7,38 @@ using namespace std;
 #include "mesh.h"
 
 static int element_type[6] = {-1, 2, 3, 4, 4, 8};
+static int element_dim[6]  = { 0, 1, 2, 2, 3, 3};
+
+int getGmshElemNNodes(int type)
+{
+    switch (type)
+    {
+        case 1: return 2;
+        case 2: return 3;
+        case 3: return 4;
+        case 4: return 4;
+        case 5: return 8;
+        case 15: return 1;
+    default: return -1;
+        break;
+    }
+}
+
+int getGmshElemTypeDim(int type)
+{
+    switch (type)
+    {
+        case 1: return 1;
+        case 2: return 2;
+        case 3: return 2;
+        case 4: return 3;
+        case 5: return 3;
+        case 15: return 0;
+    default: return -1;
+        break;
+    }
+}
+
 
 mesh_t* MeshGMSHReader(const char* filename)
 {
@@ -15,11 +47,21 @@ mesh_t* MeshGMSHReader(const char* filename)
     double version = 1.0;
     string s;
 
-    mesh_t *mesh = new mesh_t();
+    int dim_count[4] = {0};
+
+  
 
     std::ifstream in(filename);
 
-    while(true)
+    if(!in.is_open())
+    {
+        cout << "ERRO: Nao foi possivel abrir o arquivo: " << filename << endl;
+        exit(1);
+    }
+
+    mesh_t *mesh = new mesh_t();
+
+    while(!in.eof())
     {
         // Try to read something.  This may set EOF!
         std::getline(in, s);
@@ -56,21 +98,20 @@ mesh_t* MeshGMSHReader(const char* filename)
                 in >> num_physical_groups;
 
                 // Read rest of line including newline character.
-                std::getline(in, s);
+                //std::getline(in, s);
 
                 for (unsigned int i=0; i<num_physical_groups; ++i)
                 {
                     // Read an entire line of the PhysicalNames section.
-                    std::getline(in, s);
-
-                    std::istringstream s_stream(s);
+                    //std::getline(in, s);
+                    
+                    //std::istringstream s_stream(s);
                     int phy_dim, phy_id;
                     string phy_name;
-                    s_stream >> phy_dim >> phy_id >> phy_name;
+                    //s_stream >> phy_dim >> phy_id >> phy_name;
+                    in >> phy_dim >> phy_id >> phy_name;
 
-                    mesh->physical_list[phy_dim] = std::make_pair(phy_dim, phy_name);
-
-
+                    mesh->physical_map[phy_id] = std::make_pair(phy_dim, phy_name);
                     
                 }
             }
@@ -100,47 +141,77 @@ mesh_t* MeshGMSHReader(const char* filename)
                 int num_elem, node_id;
                 in >> num_elem;
 
+                cout << " Num. elementos: " << num_elem;
+
                 mesh->physical_tag.resize(num_elem);
                 mesh->offset.resize(num_elem+1);
                 mesh->offset[0] = 0;
 
+                int iel = 0;
                 for(int i = 0; i < num_elem; i++)
                 {
-                    unsigned int id, type, physical=1, elementary=1, nnodes=0, ntags;
+                    unsigned int id, type, physical=1, elementary=1, nnodes=0, ntags, elem_dim;
 
                     in >> id >> type >> ntags;
-                    nnodes = element_type[type];
+                   
+                   cout << id << " " << "  " << type << "  " << ntags << " ";
 
-                    if(nnodes < 0)
+
+                    nnodes   = getGmshElemNNodes(type);
+                    elem_dim = getGmshElemTypeDim(type);
+
+                    if(nnodes < 0 )
                     {
-                        cout << "ERRO: TIPO DO ELEMENTO " << id << " INVALIDO";
+                        cout << "ERRO: TIPO DO ELEMENTO " << type << " INVALIDO";
                         in.close();
                         delete mesh;
                         exit(1);
                     }
+
+                    dim_count[elem_dim]++;
+
                     for(int j = 0; j < ntags; j++)
                     {
                         in >> physical;
                         if(j == 0)
                             mesh->physical_tag[i] = physical;
+                        cout << physical << " ";
                     }
 
                     for (unsigned int j=0; j<nnodes; j++)
                     {
                         in >> node_id;
                         mesh->conn.push_back(node_id-1);
+                        cout << node_id << " ";
                     }
 
+                    cout << endl;
+
                     mesh->offset[i+1] = nnodes;
+                       
                 }
 
                 // read the $ENDELM delimiter
                 std::getline(in, s);
+                cout << s << endl;
 
             } // End Elem
         } // end if(in)   
 
     } // end while (true)
+       
+    if(dim_count[3] != 0)
+    {
+        mesh->n_elements = dim_count[3];
+        mesh->n_face_elements = dim_count[2];
+    } else if (dim_count[2] != 0)
+    {
+        mesh->n_elements      = dim_count[2];
+        mesh->n_face_elements = dim_count[1];
+    }
+
+    cout << " Num. Elements: " << mesh->n_elements << endl;
+    cout << " Num. Baounday Elements: " << mesh->n_face_elements << endl;
 
     in.close();
     return mesh;
