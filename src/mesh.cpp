@@ -39,6 +39,12 @@ int getGmshElemTypeDim(int type)
     }
 }
 
+int GmshToVTKType()
+{
+
+
+}
+
 
 mesh_t* MeshGMSHReader(const char* filename)
 {
@@ -333,5 +339,26 @@ mesh_t* MeshReadGMSH(const char* filename)
     leitura.close();
     
     return mesh;
+
+}
+
+void    MeshVTKWriter(mesh_t* mesh, const char* filename)
+{
+
+    ofstream fout;
+
+    fout.open(filename);
+
+    if(fout.is_open())
+    {
+
+        fout << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">" << endl;
+
+        fout << "<\\VTKFILE>" << endl;
+
+        fout.close();
+    }
+
+
 
 }
