@@ -39,10 +39,19 @@ int getGmshElemTypeDim(int type)
     }
 }
 
-int GmshToVTKType()
+int GmshToVTKType(int type)
 {
-
-
+    switch (type)
+    {
+        case 1: return 3;
+        case 2: return 5;
+        case 3: return 9;
+        case 4: return 10;
+        case 5: return 12;
+        case 15: return 1;
+    default: return -1;
+        break;
+    }
 }
 
 
@@ -125,6 +134,7 @@ mesh_t* MeshGMSHReader(const char* filename)
             {
                 unsigned int num_nodes = 0;
                 in >> num_nodes;
+                mesh->n_nodes = num_nodes;
 
                 mesh->coord.resize(num_nodes*3);
 
@@ -146,22 +156,26 @@ mesh_t* MeshGMSHReader(const char* filename)
             {
                 int num_elem, node_id;
                 in >> num_elem;
-
-                cout << " Num. elementos: " << num_elem;
+#ifdef DEBUG_
+                cout << " Num. elementos: " << num_elem << endl;
+#endif
 
                 mesh->physical_tag.resize(num_elem);
                 mesh->offset.resize(num_elem+1);
+                mesh->type.resize(num_elem);
                 mesh->offset[0] = 0;
 
                 int iel = 0;
                 for(int i = 0; i < num_elem; i++)
                 {
-                    unsigned int id, type, physical=1, elementary=1, nnodes=0, ntags, elem_dim;
+                    int id, type, physical=1, elementary=1, nnodes=0, ntags, elem_dim;
 
                     in >> id >> type >> ntags;
-                   
-                   cout << id << " " << "  " << type << "  " << ntags << " ";
+#ifdef DEBUG_                   
+                   cout << id << "  " << type << "  " << ntags << " ";
+#endif
 
+                    mesh->type[i] = type;
 
                     nnodes   = getGmshElemNNodes(type);
                     elem_dim = getGmshElemTypeDim(type);
@@ -193,8 +207,10 @@ mesh_t* MeshGMSHReader(const char* filename)
 
                     cout << endl;
 
-                    mesh->offset[i+1] = nnodes;
-                       
+                    mesh->offset[i+1] =  mesh->offset[i] + nnodes;
+#ifdef DEBUG_
+                    cout << "OFFSET: " << mesh->offset[i+1] << " TYPE: "<< mesh->type[i] << endl;
+#endif                   
                 }
 
                 // read the $ENDELM delimiter
@@ -216,136 +232,17 @@ mesh_t* MeshGMSHReader(const char* filename)
         mesh->n_face_elements = dim_count[1];
     }
 
-    cout << " Num. Elements: " << mesh->n_elements << endl;
-    cout << " Num. Baounday Elements: " << mesh->n_face_elements << endl;
+    cout << " Num. Elements: "          << mesh->n_elements << endl;
+    cout << " Num. Boundary Elements: " << mesh->n_face_elements << endl;
 
     in.close();
     return mesh;
 }
 
 
-
-mesh_t* MeshReadGMSH(const char* filename)
+void MeshVTKWriter(mesh_t* mesh, const char* filename)
 {
-
-    fstream leitura(filename);
-
-    string str;
-    mesh_t * mesh = new mesh_t();
-
-    if(leitura.is_open())
-    {
-        while(!leitura.eof())
-        {
-            getline(leitura, str);
-            getline(leitura, str, ' ');
-
-            if(str != "2.2")
-            {  
-                cout << "ERRO: VERSAO .MSH NAO SUPORTADA\n";
-                cout << "Formato suportado: 2.2\nFormato aberto: " << str << "\n";
-                exit(1);
-            }
-
-            // leitura das grupos físicos
-            while(str != "$Nodes")
-            {
-                getline(leitura, str);
-            }
-            getline(leitura, str);
-
-
-            int numNodes = stoi(str);
-        
-            while(true)
-            {
-                getline(leitura, str, ' '); 
-                int identNode = stoi(str);
-
-                getline(leitura, str, ' '); // x
-                mesh->coord.push_back(stod(str));
-                getline(leitura, str, ' '); // y
-                mesh->coord.push_back(stod(str));
-                getline(leitura, str); // z
-                mesh->coord.push_back(stod(str));
-
-                if(identNode == numNodes)
-                    break;
-            }
-            while(str != "$Elements")
-            {
-                getline(leitura, str);
-            }
-            getline(leitura, str);
-            int numElements = stoi(str);
-
-            mesh->offset.push_back(0); // primeiro elemento tem como padrao offset igual a 0
-            while(true)
-            {
-                getline(leitura, str, ' '); // identElement
-                int identElement = stoi(str);
-
-                getline(leitura, str, ' '); // element type
-                int numConn = element_type[stoi(str)];
-                if(numConn == -1)
-                {
-                    cout << "ERRO: TIPO DO ELEMENTO " << identElement << " INVALIDO";
-                    exit(1);
-                }
-
-                getline(leitura, str, ' '); // numero de tags
-                int numTags = stoi(str);
-
-                getline(leitura, str, ' '); // physical group
-                mesh->physical_tag.push_back(stoi(str));
-
-                int i = 1;
-                while(i < numTags)
-                {
-                    getline(leitura, str, ' ');
-                    i++;
-                } // while para descartar as outras tags além do physical group
-
-                i = 0;
-                while(i < numConn)
-                {
-                    if(i == numConn-1)
-                    {
-                        getline(leitura, str);
-                        mesh->conn.push_back((stoi(str))-1); // -1 pois como estamos trabalhando com um vetor, o primeiro indice igual é a 0
-                                                            // a posicao dos nós no vetor está uma posicao anterior com relação ao arquivo .msh
-                        break;
-                    } // se for a ultima conn do elemento, usamos o getline dessa forma pra nao dar erro
-                    getline(leitura, str, ' ');
-                    mesh->conn.push_back(stoi(str)-1);
-
-                    i++;
-                }
-                mesh->offset.push_back(mesh->offset.back() + numConn); // o offset do elemento x é dado por offset(x-1) + numConn(x)
-
-                if(identElement == numElements)
-                    break;
-            }
-
-            getline(leitura, str);
-            getline(leitura, str); // para chegar ao final do arquivo
-        }
-    }
-    else
-    {
-        cout << "ERRO: NAO FOI POSSIVEL ABRIR O ARQUIVO DE LEITURA";
-    }
-
-    leitura.close();
-    
-    return mesh;
-
-}
-
-void    MeshVTKWriter(mesh_t* mesh, const char* filename)
-{
-
-    ofstream fout;
+    std::ofstream fout;
 
     fout.open(filename);
 
@@ -353,12 +250,65 @@ void    MeshVTKWriter(mesh_t* mesh, const char* filename)
     {
 
         fout << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">" << endl;
+        fout << "\t<UnstructuredGrid>" << endl;
+        fout << "\t\t<Piece NumberOfPoints=\"" << mesh->n_nodes <<"\" NumberOfCells=\""<< (mesh->n_elements + mesh->n_face_elements) << "\">" << endl;
+        fout << "\t\t\t<PointData>" << endl;
+        fout << "\t\t\t</PointData>" << endl;
+        fout << "\t\t\t<CellData>" << endl;
+        fout << "\t\t\t</CellData>" << endl;
+        fout << "\t\t\t<Points>" << endl;
+        fout << "\t\t\t\t<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">" << endl;
+        fout << "\t\t\t\t\t";
+        for(int i = 0 ; i < mesh->coord.size() ; i++)
+        {
+            if(i % 6 == 0 && i != 0)
+                fout << endl << "\t\t\t\t\t";
 
-        fout << "<\\VTKFILE>" << endl;
+            fout << mesh->coord[i] << " ";
+        }
+        fout << endl;
+        fout << "\t\t\t\t</DataArray>" << endl;
+        fout << "\t\t\t</Points>" << endl;
+        fout << "\t\t\t<Cells>" << endl;
+        fout << "\t\t\t\t<DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">" << endl;
+        fout << "\t\t\t\t\t";
+        for(int i = 0 ; i < mesh->conn.size() ; i++)
+        {
+            if(i % 5 == 0 && i != 0)
+                fout << endl << "\t\t\t\t\t";
+
+            fout << mesh->conn[i] << " ";
+        }
+        fout << endl;
+        fout << "\t\t\t\t</DataArray>" << endl;
+        fout << "\t\t\t\t<DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">" << endl;
+        fout << "\t\t\t\t\t";
+        for(int i = 1 ; i < mesh->offset.size() ; i++)
+        {
+            if(i % 6 == 0 && i != 0)
+                fout << endl << "\t\t\t\t\t";
+
+            fout << mesh->offset[i] << " ";
+        }
+        fout << endl;
+        fout << "\t\t\t\t</DataArray>" << endl;
+        fout << "\t\t\t\t<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">" << endl;
+        fout << "\t\t\t\t\t";
+        
+        for(int i = 0 ; i < mesh->type.size() ; i++)
+        { 
+            if(i % 6 == 0 && i != 0)
+                fout << endl << "\t\t\t\t\t";
+
+            fout << GmshToVTKType(mesh->type[i]) << " ";
+        }
+        fout << endl;
+        fout << "\t\t\t\t</DataArray>" << endl;
+        fout << "\t\t\t</Cells>" << endl;
+        fout << "\t\t</Piece>" << endl;
+        fout << "\t</UnstructuredGrid>" << endl;
+        fout << "</VTKFile>" << endl;
 
         fout.close();
     }
-
-
-
 }

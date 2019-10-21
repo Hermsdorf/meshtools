@@ -1,5 +1,5 @@
 
-CXX_COMPILER = g++
+CXX_COMPILER = g++ -DDEBUG_
 
 INCLUDE_DIRS = -I./include 
 
@@ -22,7 +22,7 @@ clean:
 #
 %.o : %.cpp
 	@echo "Compiling C++ "$<"..."
-	$(CXX) $(CXX_FLAGS) -c $< -o $@
+	$(CXX_COMPILER) $(CXX_FLAGS) -c $< -o $@
 
 
 

@@ -17,11 +17,13 @@ typedef std::pair<int, string> physical_data_t;
 typedef struct {
     vector<double> coord;                  // coordenadas nodais
     vector<int>    conn;                    // conectividade dos elementos
-    vector<int>    offset;                  // mapeia a localização de cada elemento no vetor conn
+    vector<int>    offset;     
+    vector<int>    type;                     // mapeia a localização de cada elemento no vetor conn
     vector<int>    physical_tag;
     map<int, physical_data_t>  physical_map; // 
     int n_face_elements;
     int n_elements;
+    int n_nodes;
 
 } mesh_t;
 
