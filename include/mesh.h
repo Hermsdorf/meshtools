@@ -34,6 +34,8 @@ mesh_t* MeshReadGMSH(const char* filename);
 
 void    MeshVTKWriter(mesh_t* mesh, const char* filename);
 
+void    MeshVTKWriterInternal(mesh_t* mesh, const char* filename);
+
 mesh_t* MeshGMSHReader(const char* filename);
 
 //void  MeshWrite(mesh* m, const char* outfile);

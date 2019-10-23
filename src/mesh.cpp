@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
 using namespace std;
 
 #include "mesh.h"
@@ -73,6 +74,8 @@ mesh_t* MeshGMSHReader(const char* filename)
         cout << "ERRO: Nao foi possivel abrir o arquivo: " << filename << endl;
         exit(1);
     }
+
+    cout << "Reading file " << filename << endl;
 
     mesh_t *mesh = new mesh_t();
 
@@ -195,27 +198,29 @@ mesh_t* MeshGMSHReader(const char* filename)
                         in >> physical;
                         if(j == 0)
                             mesh->physical_tag[i] = physical;
+#ifdef DEBUG_
                         cout << physical << " ";
+#endif
                     }
 
                     for (unsigned int j=0; j<nnodes; j++)
                     {
                         in >> node_id;
                         mesh->conn.push_back(node_id-1);
+#ifdef DEBUG_
                         cout << node_id << " ";
+#endif
                     }
-
-                    cout << endl;
 
                     mesh->offset[i+1] =  mesh->offset[i] + nnodes;
 #ifdef DEBUG_
+                    cout << endl;
                     cout << "OFFSET: " << mesh->offset[i+1] << " TYPE: "<< mesh->type[i] << endl;
 #endif                   
                 }
 
                 // read the $ENDELM delimiter
                 std::getline(in, s);
-                cout << s << endl;
 
             } // End Elem
         } // end if(in)   
@@ -234,6 +239,7 @@ mesh_t* MeshGMSHReader(const char* filename)
 
     cout << " Num. Elements: "          << mesh->n_elements << endl;
     cout << " Num. Boundary Elements: " << mesh->n_face_elements << endl;
+    cout << " Connectivity size: " << mesh->conn.size();
 
     in.close();
     return mesh;
@@ -259,6 +265,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename)
         fout << "\t\t\t<Points>" << endl;
         fout << "\t\t\t\t<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">" << endl;
         fout << "\t\t\t\t\t";
+        
         for(int i = 0 ; i < mesh->coord.size() ; i++)
         {
             if(i % 6 == 0 && i != 0)
@@ -272,6 +279,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename)
         fout << "\t\t\t<Cells>" << endl;
         fout << "\t\t\t\t<DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">" << endl;
         fout << "\t\t\t\t\t";
+        
         for(int i = 0 ; i < mesh->conn.size() ; i++)
         {
             if(i % 5 == 0 && i != 0)
@@ -296,6 +304,87 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename)
         fout << "\t\t\t\t\t";
         
         for(int i = 0 ; i < mesh->type.size() ; i++)
+        { 
+            if(i % 6 == 0 && i != 0)
+                fout << endl << "\t\t\t\t\t";
+
+            fout << GmshToVTKType(mesh->type[i]) << " ";
+        }
+        fout << endl;
+        fout << "\t\t\t\t</DataArray>" << endl;
+        fout << "\t\t\t</Cells>" << endl;
+        fout << "\t\t</Piece>" << endl;
+        fout << "\t</UnstructuredGrid>" << endl;
+        fout << "</VTKFile>" << endl;
+
+        fout.close();
+    }
+}
+
+
+void MeshVTKWriterInternal(mesh_t* mesh, const char* filename)
+{
+    std::ofstream fout;
+
+    fout.open(filename);
+
+    if(fout.is_open())
+    {
+
+        fout << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">" << endl;
+        fout << "\t<UnstructuredGrid>" << endl;
+        fout << "\t\t<Piece NumberOfPoints=\"" << mesh->n_nodes <<"\" NumberOfCells=\""<< (mesh->n_elements) << "\">" << endl;
+        fout << "\t\t\t<PointData>" << endl;
+        fout << "\t\t\t</PointData>" << endl;
+        fout << "\t\t\t<CellData>" << endl;
+        fout << "\t\t\t</CellData>" << endl;
+        fout << "\t\t\t<Points>" << endl;
+        fout << "\t\t\t\t<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">" << endl;
+        fout << "\t\t\t\t\t";
+        
+        for(int i = 0 ; i < mesh->coord.size() ; i++)
+        {
+            if(i % 6 == 0 && i != 0)
+                fout << endl << "\t\t\t\t\t";
+
+            fout << mesh->coord[i] << " ";
+        }
+        fout << endl;
+        fout << "\t\t\t\t</DataArray>" << endl;
+        fout << "\t\t\t</Points>" << endl;
+        fout << "\t\t\t<Cells>" << endl;
+        fout << "\t\t\t\t<DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">" << endl;
+        fout << "\t\t\t\t\t";
+        
+        int ofs = mesh->offset[mesh->n_face_elements];
+
+        cout << "OFFSET: " << ofs << endl;
+
+        for(int i = ofs ; i < mesh->conn.size() ; i++)
+        {
+            if(i % 5 == 0 )
+                fout << endl << "\t\t\t\t\t";
+
+            fout << mesh->conn[i] << " ";
+        }
+        fout << endl;
+        fout << "\t\t\t\t</DataArray>" << endl;
+        fout << "\t\t\t\t<DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">" << endl;
+        fout << "\t\t\t\t\t";
+        
+        for(int i = mesh->n_face_elements ; i < mesh->offset.size()-1 ; i++)
+        {
+            if(i % 6 == 0 && i != 0)
+                fout << endl << "\t\t\t\t\t";
+
+            fout << mesh->offset[i+1]- ofs << " ";
+        }
+        fout << endl;
+        fout << "\t\t\t\t</DataArray>" << endl;
+        fout << "\t\t\t\t<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">" << endl;
+        fout << "\t\t\t\t\t";
+        
+        for(int i = mesh->n_face_elements ; i < mesh->type.size() ; i++)
         { 
             if(i % 6 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";

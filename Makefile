@@ -1,10 +1,10 @@
 
-CXX_COMPILER = g++ -DDEBUG_
+CXX_COMPILER = g++ 
 
 INCLUDE_DIRS = -I./include 
 
-CXX_FLAGS    = -g $(INCLUDE_DIRS)
-LDFLAGS      =
+CXX_FLAGS    = -DDEBUG -g $(INCLUDE_DIRS)
+LDFLAGS      = 
 
 # source files
 srcfiles        := $(wildcard *.cpp) $(wildcard src/*.cpp)
@@ -12,7 +12,6 @@ objects         := $(patsubst %.cpp, %.o, $(srcfiles))
 
 meshtools: $(objects)
 	$(CXX_COMPILER) -o meshtools $(CXX_FLAGS) $(objects) $(LDFLAGS)
-
 
 
 clean:
