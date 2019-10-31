@@ -34,9 +34,11 @@ mesh_t* MeshReadGMSH(const char* filename);
 
 void    MeshVTKWriter(mesh_t* mesh, const char* filename);
 
-void    MeshVTKWriterInternal(mesh_t* mesh, const char* filename);
+void    MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int *npart, int *epart);
 
 mesh_t* MeshGMSHReader(const char* filename);
+
+void MeshPartitioner(mesh_t* mesh, int nparts, int* npart, int* epart);
 
 //void  MeshWrite(mesh* m, const char* outfile);
 

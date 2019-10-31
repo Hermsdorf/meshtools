@@ -1,14 +1,27 @@
 
-CXX_COMPILER = g++ 
+CXX_COMPILER = g++ -fopenmp
 
-INCLUDE_DIRS = -I./include 
+INCLUDE_DIRS =   -I./include  
+
+#  add include files from metis library
+# jcamata
+INCLUDE_DIRS += -I$(HOME)/local/metis/include
+
+# guilherme
+#INCLUDE_DIRS += -I/usr/local/include
+
+
+LDFLAGS      = -L$(HOME)/local/metis/lib -lmetis 
+
+# LDFLAGS      = -L/usr/local/lib -lmetis 
 
 CXX_FLAGS    = -DDEBUG -g $(INCLUDE_DIRS)
-LDFLAGS      = 
+
 
 # source files
 srcfiles        := $(wildcard *.cpp) $(wildcard src/*.cpp)
 objects         := $(patsubst %.cpp, %.o, $(srcfiles))
+
 
 meshtools: $(objects)
 	$(CXX_COMPILER) -o meshtools $(CXX_FLAGS) $(objects) $(LDFLAGS)

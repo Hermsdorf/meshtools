@@ -237,9 +237,11 @@ mesh_t* MeshGMSHReader(const char* filename)
         mesh->n_face_elements = dim_count[1];
     }
 
+    cout << " Num. Nodes: " << mesh->n_nodes << endl;
     cout << " Num. Elements: "          << mesh->n_elements << endl;
     cout << " Num. Boundary Elements: " << mesh->n_face_elements << endl;
-    cout << " Connectivity size: " << mesh->conn.size();
+    cout << " Connectivity size: " << mesh->conn.size() << endl;
+
 
     in.close();
     return mesh;
@@ -322,7 +324,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename)
 }
 
 
-void MeshVTKWriterInternal(mesh_t* mesh, const char* filename)
+void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* epart)
 {
     std::ofstream fout;
 
@@ -335,13 +337,33 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename)
         fout << "\t<UnstructuredGrid>" << endl;
         fout << "\t\t<Piece NumberOfPoints=\"" << mesh->n_nodes <<"\" NumberOfCells=\""<< (mesh->n_elements) << "\">" << endl;
         fout << "\t\t\t<PointData>" << endl;
+        fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"npart\" format=\"ascii\" >" << endl;
+         fout << "\t\t\t\t\t";
+        for(int i = 0 ; i < mesh->n_nodes ; i++)
+        {
+            if(i % 6 == 0 && i != 0)
+                fout << endl << "\t\t\t\t\t";
+                fout << npart[i] << " ";
+        }
+        fout << endl;
+        fout << "\t\t\t\t </DataArray> " << endl;
+
         fout << "\t\t\t</PointData>" << endl;
         fout << "\t\t\t<CellData>" << endl;
+        fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"epart\" format=\"ascii\" >" << endl;
+         fout << "\t\t\t\t\t";
+        for(int i = 0 ; i < mesh->n_elements ; i++)
+        {
+            if(i % 5 == 0 && i != 0)
+                fout << endl << "\t\t\t\t\t";
+                fout << epart[i] << " ";
+        }
+        fout << endl;
+        fout << "\t\t\t\t </DataArray> " << endl;
         fout << "\t\t\t</CellData>" << endl;
         fout << "\t\t\t<Points>" << endl;
         fout << "\t\t\t\t<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">" << endl;
         fout << "\t\t\t\t\t";
-        
         for(int i = 0 ; i < mesh->coord.size() ; i++)
         {
             if(i % 6 == 0 && i != 0)
@@ -358,7 +380,7 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename)
         
         int ofs = mesh->offset[mesh->n_face_elements];
 
-        cout << "OFFSET: " << ofs << endl;
+        //cout << "OFFSET: " << ofs << endl;
 
         for(int i = ofs ; i < mesh->conn.size() ; i++)
         {
