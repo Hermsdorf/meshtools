@@ -5,13 +5,15 @@ INCLUDE_DIRS =   -I./include
 
 #  add include files from metis library
 # jcamata
-INCLUDE_DIRS += -I$(HOME)/local/metis/include
+#INCLUDE_DIRS += -I$(HOME)/local/metis/include
 
 # guilherme
 #INCLUDE_DIRS += -I/usr/local/include
 
 
-LDFLAGS      = -L$(HOME)/local/metis/lib -lmetis 
+#LDFLAGS      = -L$(HOME)/local/metis/lib 
+LDFLAGS +=    -lmetis 
+
 
 # LDFLAGS      = -L/usr/local/lib -lmetis 
 

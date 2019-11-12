@@ -15,17 +15,24 @@ using namespace std;
 typedef std::pair<int, string> physical_data_t;
 
 typedef struct {
-    vector<double> coord;                  // coordenadas nodais
-    vector<int>    conn;                    // conectividade dos elementos
-    vector<int>    offset;     
+    vector<double> coord;                    // Coordenadas nodais
+    vector<int>    conn;                     // conectividade dos elementos
+    vector<int>    offset;                   // 
     vector<int>    type;                     // mapeia a localização de cada elemento no vetor conn
-    vector<int>    physical_tag;
+    vector<int>    physical_tag;             //  
     map<int, physical_data_t>  physical_map; // 
-    int n_face_elements;
-    int n_elements;
-    int n_nodes;
+    int n_face_elements;                     // Numeros de elementos na superficies
+    int n_elements;                          // Numero de elementos internos
+    int n_nodes;                             // Numero de nós.
 
 } mesh_t;
+
+
+typedef struct {
+    int n_partitions;
+    int *nodal_part;
+    int *elem_part;
+} mesh_partition_t;
 
 
 // Leitura do arquivo no formato GMSH. Retorna um ponteiro 
@@ -38,7 +45,9 @@ void    MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int *npart, in
 
 mesh_t* MeshGMSHReader(const char* filename);
 
-void MeshPartitioner(mesh_t* mesh, int nparts, int* npart, int* epart);
+mesh_partition_t* MeshPartitioner(mesh_t* mesh, int nparts);
+
+void MeshPartitionDestroy(mesh_partition_t* mp);
 
 //void  MeshWrite(mesh* m, const char* outfile);
 
