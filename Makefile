@@ -1,4 +1,3 @@
-
 CXX_COMPILER = g++ -fopenmp
 
 INCLUDE_DIRS =   -I./include  
@@ -8,7 +7,7 @@ INCLUDE_DIRS =   -I./include
 #INCLUDE_DIRS += -I$(HOME)/local/metis/include
 
 # guilherme
-INCLUDE_DIRS += -I/usr/local/include
+#INCLUDE_DIRS += -I/usr/local/include
 
 
 #LDFLAGS      = -L$(HOME)/local/metis/lib 
@@ -28,8 +27,8 @@ objects         := $(patsubst %.cpp, %.o, $(srcfiles))
 meshtools: $(objects)
 	$(CXX_COMPILER) -o meshtools $(CXX_FLAGS) $(objects) $(LDFLAGS)
 
-move:
-	mv test1.vtu /mnt/c/Users/luana/Desktop
+#move:
+#	mv test1.vtu /mnt/c/Users/macha/Desktop
 
 clean:
 	rm $(objects)
