@@ -8,14 +8,14 @@ INCLUDE_DIRS =   -I./include
 #INCLUDE_DIRS += -I$(HOME)/local/metis/include
 
 # guilherme
-#INCLUDE_DIRS += -I/usr/local/include
+INCLUDE_DIRS += -I/usr/local/include
 
 
 #LDFLAGS      = -L$(HOME)/local/metis/lib 
 LDFLAGS +=    -lmetis 
 
 
-# LDFLAGS      = -L/usr/local/lib -lmetis 
+LDFLAGS      = -L/usr/local/lib -lmetis 
 
 CXX_FLAGS    = -DDEBUG -g $(INCLUDE_DIRS)
 
@@ -28,6 +28,8 @@ objects         := $(patsubst %.cpp, %.o, $(srcfiles))
 meshtools: $(objects)
 	$(CXX_COMPILER) -o meshtools $(CXX_FLAGS) $(objects) $(LDFLAGS)
 
+move:
+	mv test1.vtu /mnt/c/Users/luana/Desktop
 
 clean:
 	rm $(objects)
