@@ -1,5 +1,5 @@
 
-CXX_COMPILER = g++ -fopenmp
+CXX_COMPILER = g++ -fopenmp -pg
 
 INCLUDE_DIRS =   -I./include  
 
@@ -29,7 +29,7 @@ meshtools: $(objects)
 	$(CXX_COMPILER) -o meshtools $(CXX_FLAGS) $(objects) $(LDFLAGS)
 
 move:
-	mv test1.vtu /mnt/c/Users/luana/Desktop
+	mv *.vtu /mnt/c/Users/luana/Desktop
 
 clean:
 	rm $(objects)
