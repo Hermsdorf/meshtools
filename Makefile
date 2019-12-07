@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> 98fcfa1ee5af646233ce91b11b3776f6464380df
 CXX_COMPILER = g++ -fopenmp -pg
 
 INCLUDE_DIRS =   -I./include  
@@ -31,13 +27,6 @@ objects         := $(patsubst %.cpp, %.o, $(srcfiles))
 meshtools: $(objects)
 	$(CXX_COMPILER) -o meshtools $(CXX_FLAGS) $(objects) $(LDFLAGS)
 
-<<<<<<< HEAD
-move:
-	mv *.vtu /mnt/c/Users/luana/Desktop
-=======
-#move:
-#	mv *.vtu /mnt/c/Users/luana/Desktop
->>>>>>> 98fcfa1ee5af646233ce91b11b3776f6464380df
 
 clean:
 	rm $(objects)
