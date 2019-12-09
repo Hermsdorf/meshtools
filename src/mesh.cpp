@@ -75,7 +75,7 @@ mesh_t* MeshGMSHReader(const char* filename)
         exit(1);
     }
 
-    cout << "Reading file " << filename << endl;
+    //cout << "Reading file " << filename << endl;
 
     mesh_t *mesh = new mesh_t();
 
@@ -237,10 +237,10 @@ mesh_t* MeshGMSHReader(const char* filename)
         mesh->n_face_elements = dim_count[1];
     }
 
-    cout << " Num. Nodes: " << mesh->n_nodes << endl;
-    cout << " Num. Elements: "          << mesh->n_elements << endl;
-    cout << " Num. Boundary Elements: " << mesh->n_face_elements << endl;
-    cout << " Connectivity size: " << mesh->conn.size() << endl;
+    //cout << " Num. Nodes: " << mesh->n_nodes << endl;
+    //cout << " Num. Elements: "          << mesh->n_elements << endl;
+    //cout << " Num. Boundary Elements: " << mesh->n_face_elements << endl;
+    //cout << " Connectivity size: " << mesh->conn.size() << endl;
 
 
     in.close();

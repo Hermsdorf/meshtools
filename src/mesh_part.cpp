@@ -1,4 +1,4 @@
-//
+#include <fstream>
 #include <iostream>
 
 #include "metis.h"
@@ -54,12 +54,18 @@ mesh_partition_t* MeshPartitioner(mesh_t* mesh, int nparts)
     options[METIS_OPTION_NUMBERING] = 0;
 
 
-    std::cout << "nel: "    << *ne    << std::endl;
-    std::cout << "nnodes: " << *nn << std::endl;
+    //std::cout << "nel: "    << *ne    << std::endl;
+    //std::cout << "nnodes: " << *nn << std::endl;
+    ofstream times("times.txt", fstream::app);
 
+    clock_t t;
+    t = clock();
     metis_return = METIS_PartMeshDual(ne,nn,eptr,eind,vwgt,vsize, &ncommon, &mp->n_partitions, tpwgts, options, &objval, mp->elem_part, mp->nodal_part);
+    t = clock() - t;
 
-    std::cout << "Objval: " << objval << std::endl;
+    double time_METIS = ((double)t)/CLOCKS_PER_SEC;
+    times << "METIS_PartMeshDual = " << time_METIS << endl;
+    //std::cout << "Objval: " << objval << std::endl;
 
     delete [] eptr;
 
