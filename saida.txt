@@ -1,0 +1,8 @@
+Reading file test/test3d.msh
+ Num. Nodes: 9075
+ Num. Elements: 45330
+ Num. Boundary Elements: 7034
+ Connectivity size: 202422
+nel: 45330
+nnodes: 9075
+Objval: 182163

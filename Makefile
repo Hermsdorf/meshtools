@@ -3,7 +3,6 @@ CXX_COMPILER = g++ -fopenmp
 
 CXX_COMPILER = g++ -fopenmp -pg
 
-
 INCLUDE_DIRS =   -I./include  
 
 #  add include files from metis library

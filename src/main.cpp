@@ -26,14 +26,14 @@ int main(int argc, char* argv[])
     times << out << "      n_partitions = " << n_part << endl;
 
     t = clock();
-    mesh_t* mesh            = MeshGMSHReader(argv[1]);
+    mesh_t* mesh            = MeshGmshReader(argv[1]);
     t = clock() - t;
     double time_GMSHReader = ((double)t)/CLOCKS_PER_SEC;
 
-    mesh_partition_t *parts = MeshPartitioner(mesh, n_part);
+    mesh_partition_t *parts = MeshPartitionerAll(mesh, n_part);
  
     t = clock();
-    MeshVTKWriterInternal(mesh, out, parts->nodal_part, parts->elem_part);
+    MeshVTKWriter(mesh, out, parts->nodal_part, parts->elem_part);
     t = clock() - t;
     double time_VTKWriter = ((double)t)/CLOCKS_PER_SEC;
 

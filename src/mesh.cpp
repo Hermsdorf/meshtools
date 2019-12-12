@@ -3,6 +3,7 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
 using namespace std;
 
 #include "mesh.h"
@@ -56,7 +57,7 @@ int GmshToVTKType(int type)
 }
 
 
-mesh_t* MeshGMSHReader(const char* filename)
+mesh_t* MeshGmshReader(const char* filename)
 {
 
     int format=0, size=0;
@@ -75,7 +76,7 @@ mesh_t* MeshGMSHReader(const char* filename)
         exit(1);
     }
 
-    //cout << "Reading file " << filename << endl;
+    cout << "Reading file " << filename << endl;
 
     mesh_t *mesh = new mesh_t();
 
@@ -237,10 +238,10 @@ mesh_t* MeshGMSHReader(const char* filename)
         mesh->n_face_elements = dim_count[1];
     }
 
-    //cout << " Num. Nodes: " << mesh->n_nodes << endl;
-    //cout << " Num. Elements: "          << mesh->n_elements << endl;
-    //cout << " Num. Boundary Elements: " << mesh->n_face_elements << endl;
-    //cout << " Connectivity size: " << mesh->conn.size() << endl;
+    cout << " Num. Nodes: " << mesh->n_nodes << endl;
+    cout << " Num. Elements: "          << mesh->n_elements << endl;
+    cout << " Num. Boundary Elements: " << mesh->n_face_elements << endl;
+    cout << " Connectivity size: " << mesh->conn.size() << endl;
 
 
     in.close();
@@ -248,7 +249,7 @@ mesh_t* MeshGMSHReader(const char* filename)
 }
 
 
-void MeshVTKWriter(mesh_t* mesh, const char* filename)
+void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart=NULL, int* epart=NULL)
 {
     std::ofstream fout;
 
@@ -257,12 +258,40 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename)
     if(fout.is_open())
     {
 
+        int nnodes = mesh->n_nodes;
+        int nelem =  (mesh->n_elements + mesh->n_face_elements);
         fout << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">" << endl;
         fout << "\t<UnstructuredGrid>" << endl;
-        fout << "\t\t<Piece NumberOfPoints=\"" << mesh->n_nodes <<"\" NumberOfCells=\""<< (mesh->n_elements + mesh->n_face_elements) << "\">" << endl;
+        fout << "\t\t<Piece NumberOfPoints=\"" << nnodes  <<"\" NumberOfCells=\""<< nelem << "\">" << endl;
         fout << "\t\t\t<PointData>" << endl;
+        if(npart)
+        {
+            fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"npart\" format=\"ascii\" >" << endl;
+            fout << "\t\t\t\t\t";
+            for(int i = 0 ; i < nnodes ; i++)
+            {
+                if(i % 6 == 0 && i != 0)
+                    fout << endl << "\t\t\t\t\t";
+                    fout << npart[i] << " ";
+            }
+            fout << endl;
+            fout << "\t\t\t\t </DataArray> " << endl;
+        }
         fout << "\t\t\t</PointData>" << endl;
         fout << "\t\t\t<CellData>" << endl;
+        if(epart)
+        {
+            fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"epart\" format=\"ascii\" >" << endl;
+            fout << "\t\t\t\t\t";
+            for(int i = 0 ; i < nelem ; i++)
+            {
+                if(i % 5 == 0 && i != 0)
+                    fout << endl << "\t\t\t\t\t";
+                    fout << epart[i] << " ";
+            }
+            fout << endl;
+            fout << "\t\t\t\t </DataArray> " << endl;
+        }
         fout << "\t\t\t</CellData>" << endl;
         fout << "\t\t\t<Points>" << endl;
         fout << "\t\t\t\t<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">" << endl;
@@ -351,7 +380,7 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
         fout << "\t\t\t</PointData>" << endl;
         fout << "\t\t\t<CellData>" << endl;
         fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"epart\" format=\"ascii\" >" << endl;
-         fout << "\t\t\t\t\t";
+        fout << "\t\t\t\t\t";
         for(int i = 0 ; i < mesh->n_elements ; i++)
         {
             if(i % 5 == 0 && i != 0)
@@ -423,3 +452,45 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
         fout.close();
     }
 }
+
+/*
+void MeshReordering(mesh_t* mesh)
+{
+
+    std::vector<int> numbering;
+    std::vector<int> mapping;
+    
+    numbering.resize(mesh->n_nodes);
+    mapping.resize(mesh->n_nodes);
+
+
+    for(int i = 0; i < mesh->n_nodes; i++)
+        numbering[i] = -1;
+
+    counter = 0;
+    
+    for(int i = 0; i < mesh->n_elements; i++)
+    {
+        int iel = mesh->n_face_elements + i;
+
+        for(int eno = mesh->offset[iel]; eno < mesh->offset[iel+1]; eno++)
+        {
+            if(numbering[mesh->conn[eno]] == -1)
+            {
+                numbering[mesh->conn[eno]] = counter;
+                mapping[counter] = mesh->conn[eno];
+                counter++; 
+            }
+        }
+    }
+
+
+    int nelem = mesh->n_face_elements+mesh->n_elements;
+    for(int eno = 0; eno < mesh->offset[nelem+1]; eno++)
+        mesh->conn[eno] = numbering[mesh->conn[eno]];
+
+
+}
+
+*/
+

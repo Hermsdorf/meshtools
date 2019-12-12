@@ -24,6 +24,7 @@ typedef struct {
     int n_face_elements;                     // Numeros de elementos na superficies
     int n_elements;                          // Numero de elementos internos
     int n_nodes;                             // Numero de nós.
+    int dim;
 
 } mesh_t;
 
@@ -37,13 +38,17 @@ typedef struct {
 
 // Leitura do arquivo no formato GMSH. Retorna um ponteiro 
 // para a estrutura mesh.
-mesh_t* MeshReadGMSH(const char* filename);
+//mesh_t* MeshReadGMSH(const char* filename);
 
-void    MeshVTKWriter(mesh_t* mesh, const char* filename);
+void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart);
 
-void    MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int *npart, int *epart);
+void    MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int *nparts, int *epart);
 
-mesh_t* MeshGMSHReader(const char* filename);
+mesh_t* MeshGmshReader(const char* filename);
+
+//void    MeshReordering(mesh_t *mesh);
+
+mesh_partition_t* MeshPartitionerAll(mesh_t* mesh, int nparts);
 
 mesh_partition_t* MeshPartitioner(mesh_t* mesh, int nparts);
 
