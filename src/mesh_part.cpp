@@ -8,9 +8,9 @@
 
 mesh_partition_t* MeshPartitioner(mesh_t* mesh, int nparts)
 {
-
     int metis_return; 
-
+    
+    std::cout << "Partitioning in "<< nparts <<" parts" << std::endl;
     // Allocate a new mesh partition data info and initialize
     mesh_partition_t *mp = new mesh_partition_t();
     mp->n_partitions = nparts;
@@ -53,16 +53,8 @@ mesh_partition_t* MeshPartitioner(mesh_t* mesh, int nparts)
     options[METIS_OPTION_NUMBERING] = 0;
 
 
-    ofstream times("times.txt", fstream::app);
-
-    clock_t t;
-    t = clock();
-    metis_return = METIS_PartMeshDual(ne,nn,eptr,eind,vwgt,vsize, &ncommon, &mp->n_partitions, tpwgts, options, &objval, mp->elem_part, mp->nodal_part);
-    t = clock() - t;
-
-    double time_METIS = ((double)t)/CLOCKS_PER_SEC;
-    times << "METIS_PartMeshDual = " << time_METIS << endl;
-    //std::cout << "Objval: " << objval << std::endl;
+    //metis_return = METIS_PartMeshDual(ne,nn,eptr,eind,vwgt,vsize, &ncommon, &nparts, tpwgts, options, &objval, mp->elem_part, mp->nodal_part);
+    metis_return = METIS_PartMeshNodal(ne,nn,eptr,eind,vwgt,vsize, &nparts, tpwgts, options, &objval, mp->elem_part, mp->nodal_part);
 
     delete [] eptr;
 
@@ -76,7 +68,7 @@ mesh_partition_t* MeshPartitionerAll(mesh_t* mesh, int nparts)
 
     int metis_return; 
 
-    std::cout << "Partitioning in "<<nparts<<" parts" << std::endl;
+    std::cout << "Partitioning in "<< nparts <<" parts" << std::endl;
 
     // Allocate a new mesh partition data info and initialize
     mesh_partition_t *mp = new mesh_partition_t();
@@ -119,15 +111,8 @@ mesh_partition_t* MeshPartitionerAll(mesh_t* mesh, int nparts)
     options[METIS_OPTION_NUMBERING] = 0;
 
 
-    ofstream times("times.txt", fstream::app);
-
-    clock_t t;
-    t = clock();
-    metis_return = METIS_PartMeshDual(ne,nn,eptr,eind,vwgt,vsize, &ncommon, &mp->n_partitions, tpwgts, options, &objval, mp->elem_part, mp->nodal_part);
-    t = clock() - t;
-
-    double time_METIS = ((double)t)/CLOCKS_PER_SEC;
-    times << "METIS_PartMeshDual = " << time_METIS << endl;
+    //metis_return = METIS_PartMeshDual(ne,nn,eptr,eind,vwgt,vsize, &ncommon, &mp->n_partitions, tpwgts, options, &objval, mp->elem_part, mp->nodal_part);
+    metis_return = METIS_PartMeshNodal(ne,nn,eptr,eind,vwgt,vsize, &nparts, tpwgts, options, &objval, mp->elem_part, mp->nodal_part);
 
     return mp;
 

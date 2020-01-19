@@ -42,11 +42,11 @@ typedef struct {
 
 void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart);
 
-void    MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int *nparts, int *epart);
+void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int *nparts, int *epart);
 
 mesh_t* MeshGmshReader(const char* filename);
 
-//void    MeshReordering(mesh_t *mesh);
+void MeshReordering(mesh_t *mesh);
 
 mesh_partition_t* MeshPartitionerAll(mesh_t* mesh, int nparts);
 

@@ -1,0 +1,22 @@
+msh/boxTorus.vtu      n_partitions = 10
+METIS_PartMeshNodal = 6.78125
+MeshGMSHReader = 6.29688
+MeshVTKWriter = 66.7031
+
+
+msh/boxTorus.vtu      n_partitions = 16
+METIS_PartMeshNodal = 7.46875
+MeshGMSHReader = 6.45312
+MeshVTKWriter = 67.0469
+
+
+msh/boxTorus.vtu      n_partitions = 20
+METIS_PartMeshNodal = 7.14062
+MeshGMSHReader = 5.73438
+MeshVTKWriter = 64.9844
+
+
+msh/boxTorus.vtu      n_partitions = 30
+METIS_PartMeshNodal = 7.65625
+MeshGMSHReader = 5.82812
+MeshVTKWriter = 66.5938

@@ -1,0 +1,27 @@
+METIS_PTYPE_KWAY
+METIS_OBJTYPE_CUT
+
+msh/boxTorus.vtu      n_partitions = 10
+METIS_PartMeshDual = 80.5
+MeshGMSHReader = 8.73438
+MeshVTKWriterInternal = 53.9688
+
+
+msh/boxTorus.vtu      n_partitions = 16
+METIS_PartMeshDual = 81.4844
+MeshGMSHReader = 6.70312
+MeshVTKWriterInternal = 52.1562
+
+
+msh/boxTorus.vtu      n_partitions = 20
+METIS_PartMeshDual = 83.5781
+MeshGMSHReader = 8.15625
+MeshVTKWriterInternal = 53.1094
+
+
+msh/boxTorus.vtu      n_partitions = 30
+METIS_PartMeshDual = 85.8438
+MeshGMSHReader = 7.73438
+MeshVTKWriterInternal = 52.5312
+
+

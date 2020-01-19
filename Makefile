@@ -1,8 +1,6 @@
 
 CXX_COMPILER = g++ -fopenmp
 
-CXX_COMPILER = g++ -fopenmp -pg
-
 INCLUDE_DIRS =   -I./include  
 
 #  add include files from metis library
@@ -32,7 +30,7 @@ meshtools: $(objects)
 
 
 move:
-	mv *.vtu /mnt/c/Users/macha/Desktop
+	mv msh/*.vtu /mnt/c/Users/luana/Desktop
 
 clean:
 	rm $(objects) msh/*.vtu

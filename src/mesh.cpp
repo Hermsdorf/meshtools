@@ -6,6 +6,7 @@
 #include <algorithm>
 using namespace std;
 
+#include "metis.h"
 #include "mesh.h"
 
 static int element_type[6] = {-1, 2, 3, 4, 4, 8};
@@ -259,7 +260,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart=NULL, int* epa
     {
 
         int nnodes = mesh->n_nodes;
-        int nelem =  (mesh->n_elements + mesh->n_face_elements);
+        int nelem = (mesh->n_elements + mesh->n_face_elements);
         fout << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">" << endl;
         fout << "\t<UnstructuredGrid>" << endl;
         fout << "\t\t<Piece NumberOfPoints=\"" << nnodes  <<"\" NumberOfCells=\""<< nelem << "\">" << endl;
@@ -272,7 +273,8 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart=NULL, int* epa
             {
                 if(i % 6 == 0 && i != 0)
                     fout << endl << "\t\t\t\t\t";
-                    fout << npart[i] << " ";
+                
+                fout << npart[i] << " ";
             }
             fout << endl;
             fout << "\t\t\t\t </DataArray> " << endl;
@@ -287,7 +289,8 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart=NULL, int* epa
             {
                 if(i % 5 == 0 && i != 0)
                     fout << endl << "\t\t\t\t\t";
-                    fout << epart[i] << " ";
+                
+                fout << epart[i] << " ";
             }
             fout << endl;
             fout << "\t\t\t\t </DataArray> " << endl;
@@ -372,7 +375,8 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
         {
             if(i % 6 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";
-                fout << npart[i] << " ";
+            
+            fout << npart[i] << " ";
         }
         fout << endl;
         fout << "\t\t\t\t </DataArray> " << endl;
@@ -385,7 +389,8 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
         {
             if(i % 5 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";
-                fout << epart[i] << " ";
+            
+            fout << epart[i] << " ";
         }
         fout << endl;
         fout << "\t\t\t\t </DataArray> " << endl;
@@ -453,8 +458,8 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
     }
 }
 
-/*
-void MeshReordering(mesh_t* mesh)
+
+/*void MeshReordering(mesh_t* mesh)
 {
 
     std::vector<int> numbering;
@@ -467,7 +472,7 @@ void MeshReordering(mesh_t* mesh)
     for(int i = 0; i < mesh->n_nodes; i++)
         numbering[i] = -1;
 
-    counter = 0;
+    unsigned int counter = 0;
     
     for(int i = 0; i < mesh->n_elements; i++)
     {
@@ -485,12 +490,68 @@ void MeshReordering(mesh_t* mesh)
     }
 
 
-    int nelem = mesh->n_face_elements+mesh->n_elements;
-    for(int eno = 0; eno < mesh->offset[nelem+1]; eno++)
-        mesh->conn[eno] = numbering[mesh->conn[eno]];
+    int nelem = mesh->n_face_elements + mesh->n_elements;
+}*/
 
+void MeshReordering(mesh_t* mesh)
+{
+    int connsize = mesh->conn.size();
+    int result;
 
+    idx_t *nvtxs = &connsize;
+    idx_t *xadj = new idx_t[mesh->offset.size()];
+    idx_t *adjncy = new idx_t[connsize];
+    idx_t *vwgt = 0;
+    idx_t options[METIS_NOPTIONS]; 
+    idx_t *perm = new idx_t[connsize]; 
+    idx_t *iperm = new idx_t[connsize]; 
+    
+    for(int i = 0 ; i < mesh->offset.size() ; i++)
+        xadj[i] = mesh->offset[i];
+
+    for(int i = 0 ; i < connsize ; i++)
+        adjncy[i] = mesh->conn[i];
+
+    METIS_SetDefaultOptions(options);
+
+    options[METIS_OPTION_NUMBERING] = 0;
+
+    result = METIS_NodeND(nvtxs, xadj, adjncy, vwgt, options, perm, iperm);
+    
+    if(result == METIS_OK)
+    {
+        cout << "Node reordering succesfully applied" << endl;
+    }
+    else
+    {
+        if(result == METIS_ERROR_INPUT)
+        {
+            cout << "Input error" << endl;
+            exit(1);
+        }
+        else
+        {
+            if(result == METIS_ERROR_MEMORY)
+            {
+                cout << "Memory error" << endl;
+                exit(1);
+            }
+            else
+            {
+                cout << "Another kind of error" << endl;
+                exit(1);
+            }
+        }
+    }
+
+    for(int i = 0 ; i < connsize ; i++)
+        mesh->conn[i] = perm[i];
+    
+    delete [] perm;
+    delete [] iperm;
+    delete [] adjncy;
+    delete [] xadj;
 }
 
-*/
+
 
