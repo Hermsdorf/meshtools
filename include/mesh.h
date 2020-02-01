@@ -46,6 +46,8 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int *nparts, int 
 
 mesh_t* MeshGmshReader(const char* filename);
 
+void MeshToGraph(mesh_t* mesh);
+
 void MeshReordering(mesh_t *mesh);
 
 mesh_partition_t* MeshPartitionerAll(mesh_t* mesh, int nparts);
