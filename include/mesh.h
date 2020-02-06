@@ -11,6 +11,8 @@
 #include <map>
 using namespace std;
 
+#include "metis.h"
+
 
 typedef std::pair<int, string> physical_data_t;
 
@@ -46,7 +48,7 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int *nparts, int 
 
 mesh_t* MeshGmshReader(const char* filename);
 
-void MeshToGraph(mesh_t* mesh);
+void MeshToGraph(mesh_t* mesh, idx_t** xadj, idx_t** adjncy);
 
 void MeshReordering(mesh_t *mesh);
 

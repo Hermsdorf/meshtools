@@ -493,7 +493,7 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
     int nelem = mesh->n_face_elements + mesh->n_elements;
 }*/
 
-void MeshToGraph(mesh_t* mesh)
+void MeshToGraph(mesh_t* mesh, idx_t** xadj, idx_t** adjncy)
 {
     int result;
 
@@ -502,8 +502,6 @@ void MeshToGraph(mesh_t* mesh)
     idx_t *eptr = new idx_t[mesh->offset.size()];
     idx_t *eind = new idx_t[mesh->conn.size()];
     idx_t numflag = 0;
-    idx_t *xadj = new idx_t[mesh->conn.size() + 1];
-    idx_t *adjncy = new idx_t[2 * mesh->n_face_elements];
 
     for(int i = 0 ; i < mesh->offset.size() ; i++)
         eptr[i] = mesh->offset[i];
@@ -511,7 +509,7 @@ void MeshToGraph(mesh_t* mesh)
     for(int i = 0 ; i < mesh->conn.size() ; i++)
         eind[i] = mesh->conn[i];
 
-    result = METIS_MeshToNodal(ne, nn, eptr, eind, &numflag, &xadj, &adjncy);
+    result = METIS_MeshToNodal(ne, nn, eptr, eind, &numflag, xadj, adjncy);
 
     if(result == METIS_OK)
     {
@@ -539,36 +537,34 @@ void MeshToGraph(mesh_t* mesh)
         }
     }
 
-    delete [] xadj;
-    delete [] adjncy;
     delete [] eind;
     delete [] eptr;
 }
 
 void MeshReordering(mesh_t* mesh)
 {
+    
     int connsize = mesh->conn.size();
     int result;
 
-    idx_t *nvtxs = &connsize;
-    idx_t *xadj = new idx_t[mesh->offset.size()];
-    idx_t *adjncy = new idx_t[connsize];
+    idx_t *nn = &mesh->n_nodes;
     idx_t *vwgt = 0;
     idx_t options[METIS_NOPTIONS]; 
     idx_t *perm = new idx_t[connsize]; 
-    idx_t *iperm = new idx_t[connsize]; 
-    
-    for(int i = 0 ; i < mesh->offset.size() ; i++)
-        xadj[i] = mesh->offset[i];
+    idx_t *iperm = new idx_t[connsize];
+    idx_t *xadj = new idx_t[mesh->conn.size() + 1];
+    idx_t *adjncy = new idx_t[2 * mesh->n_face_elements]; 
 
     for(int i = 0 ; i < connsize ; i++)
-        adjncy[i] = mesh->conn[i];
+        perm[i] = -1; 
+
+    MeshToGraph(mesh, &xadj, &adjncy);
 
     METIS_SetDefaultOptions(options);
 
     options[METIS_OPTION_NUMBERING] = 0;
 
-    result = METIS_NodeND(nvtxs, xadj, adjncy, vwgt, options, perm, iperm);
+    result = METIS_NodeND(nn, xadj, adjncy, vwgt, options, perm, iperm);
     
     if(result == METIS_OK)
     {
@@ -597,7 +593,8 @@ void MeshReordering(mesh_t* mesh)
     }
 
     for(int i = 0 ; i < connsize ; i++)
-        mesh->conn[i] = perm[i];
+        cout << perm[i] << " ";
+    cout << endl;
     
     delete [] perm;
     delete [] iperm;
