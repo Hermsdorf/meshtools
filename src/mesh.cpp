@@ -500,8 +500,16 @@ void MeshToGraph(mesh_t* mesh, idx_t** xadj, idx_t** adjncy)
     idx_t *ne = &mesh->n_elements;
     idx_t *nn = &mesh->n_nodes;
     idx_t numflag = 0;
-    idx_t *eptr = (idx_t*) &mesh->offset[0];
-    idx_t *eind = (idx_t*) &mesh->conn[0];
+    idx_t *eptr = new idx_t[mesh->offset.size()];
+    idx_t *eind = new idx_t[mesh->conn.size()];
+
+    for(int i = 0 ; i < mesh->offset.size() ; i++)
+        eptr[i] = mesh->offset[i];
+    for(int i = 0 ; i < mesh->conn.size() ; i++)
+        eind[i] = mesh->conn[i];
+
+    //idx_t *eptr = (idx_t*) &mesh->offset[0];
+    //idx_t *eind = (idx_t*) &mesh->conn[0];
 
     result = METIS_MeshToNodal(ne, nn, eptr, eind, &numflag, xadj, adjncy);
 
@@ -546,9 +554,6 @@ void MeshReordering(mesh_t* mesh)
     idx_t *iperm = new idx_t[mesh->n_nodes];
     idx_t *xadj  ;
     idx_t *adjncy; 
-
-    for(int i = 0 ; i < mesh->n_nodes ; i++)
-        perm[i] = -1; 
 
     MeshToGraph(mesh, &xadj, &adjncy);
 
