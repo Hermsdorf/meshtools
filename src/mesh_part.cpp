@@ -6,7 +6,7 @@
 #include "mesh.h"
 
 
-mesh_partition_t* MeshPartitioner(mesh_t* mesh, int nparts)
+mesh_partition_t* MeshPartitionerInternal(mesh_t* mesh, int nparts)
 {
     int metis_return; 
     
@@ -20,8 +20,6 @@ mesh_partition_t* MeshPartitioner(mesh_t* mesh, int nparts)
 
     for(int i = 0 ; i < mesh->n_elements ; i++)
         mp->elem_part[i] = 0;
-
-    
     for(int i = 0 ; i < mesh->n_nodes ; i++)
         mp->nodal_part[i] = 0;
 
@@ -79,7 +77,7 @@ mesh_partition_t* MeshPartitioner(mesh_t* mesh, int nparts)
 }
 
 
-mesh_partition_t* MeshPartitionerAll(mesh_t* mesh, int nparts)
+mesh_partition_t* MeshPartitioner(mesh_t* mesh, int nparts)
 {
 
     int metis_return; 
@@ -91,6 +89,12 @@ mesh_partition_t* MeshPartitionerAll(mesh_t* mesh, int nparts)
     mp->n_partitions = nparts;
     mp->elem_part    = new int [mesh->n_elements + mesh->n_face_elements];
     mp->nodal_part   = new int [mesh->n_nodes];
+
+    for(int i = 0 ; i < mesh->n_elements ; i++)
+        mp->elem_part[i] = 0;
+    for(int i = 0 ; i < mesh->n_nodes ; i++)
+        mp->nodal_part[i] = 0;
+
     
     if(nparts <= 1)
     {

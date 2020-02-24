@@ -25,9 +25,9 @@ int main(int argc, char* argv[])
 
     mesh_t* mesh            = MeshGmshReader(argv[1]);
       
-    //MeshReordering(mesh);
+    MeshReordering(mesh);
 
-    mesh_partition_t *parts = MeshPartitioner(mesh, n_part);
+    mesh_partition_t *parts = MeshPartitionerInternal(mesh, n_part);
  
     MeshVTKWriterInternal(mesh, out, parts->nodal_part, parts->elem_part);
 
