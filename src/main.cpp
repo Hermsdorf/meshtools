@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
 
     mesh_t* mesh            = MeshGmshReader(argv[1]);
       
-    MeshReordering(mesh);
+    //MeshReordering(mesh);
 
     mesh_partition_t *parts = MeshPartitioner(mesh, n_part);
  

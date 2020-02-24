@@ -1,0 +1,7 @@
+msh/boxTorus.vtu      n_partitions = 30
+METIS_PartMeshDual = 77.2031
+MeshPartitioner = 77.2656
+MeshGMSHReader = 5.5625
+MeshVTKWriterInternal = 86.5469
+
+

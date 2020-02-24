@@ -370,12 +370,12 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
         fout << "\t\t<Piece NumberOfPoints=\"" << mesh->n_nodes <<"\" NumberOfCells=\""<< (mesh->n_elements) << "\">" << endl;
         fout << "\t\t\t<PointData>" << endl;
         fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"npart\" format=\"ascii\" >" << endl;
-         fout << "\t\t\t\t\t";
+        fout << "\t\t\t\t\t";
         for(int i = 0 ; i < mesh->n_nodes ; i++)
         {
             if(i % 6 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";
-            
+
             fout << npart[i] << " ";
         }
         fout << endl;
@@ -499,16 +499,7 @@ void MeshToGraph(mesh_t* mesh, idx_t** xadj, idx_t** adjncy)
 
     idx_t *ne = &mesh->n_elements;
     idx_t *nn = &mesh->n_nodes;
-    //idx_t *eptr = new idx_t[mesh->offset.size()];
-    //idx_t *eind = new idx_t[mesh->conn.size()];
     idx_t numflag = 0;
-
-    //for(int i = 0 ; i < mesh->offset.size() ; i++)
-    //    eptr[i] = mesh->offset[i];
-
-    //for(int i = 0 ; i < mesh->conn.size() ; i++)
-    //    eind[i] = mesh->conn[i];
-
     idx_t *eptr = (idx_t*) &mesh->offset[0];
     idx_t *eind = (idx_t*) &mesh->conn[0];
 
@@ -546,8 +537,6 @@ void MeshToGraph(mesh_t* mesh, idx_t** xadj, idx_t** adjncy)
 
 void MeshReordering(mesh_t* mesh)
 {
-    
-    int connsize = mesh->conn.size();
     int result;
 
     idx_t *nn = &mesh->n_nodes;
@@ -595,10 +584,10 @@ void MeshReordering(mesh_t* mesh)
         }
     }
 
-    for(int i = 0 ; i < mesh->n_nodes ; i++)
-        cout << perm[i] << " " << iperm[i] << endl;
+    //for(int i = 0 ; i < mesh->n_nodes ; i++)
+    //    cout << perm[i] << " " << iperm[i] << endl;
     
-    
+
     delete [] perm;
     delete [] iperm;
     delete [] adjncy;

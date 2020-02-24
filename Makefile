@@ -30,7 +30,7 @@ meshtools: $(objects)
 
 
 move:
-	mv msh/*.vtu /mnt/c/Users/luana/Desktop
+	mv msh/*.vtu /mnt/c/Users/macha/Desktop
 
 clean:
 	rm $(objects) msh/*.vtu
