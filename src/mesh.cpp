@@ -588,10 +588,25 @@ void MeshReordering(mesh_t* mesh)
             }
         }
     }
-
-    //for(int i = 0 ; i < mesh->n_nodes ; i++)
-    //    cout << perm[i] << " " << iperm[i] << endl;
     
+    vector<double> newCoord;
+    newCoord.resize(mesh->coord.size());
+    for(int i = 0 ; i < mesh->n_nodes ; i++)
+    {
+        for(int j = 0 ; j < 3 ; j++)
+            newCoord[(3*i)+j] = mesh->coord[(3*perm[i])+j];
+    }
+    mesh->coord.swap(newCoord);
+    newCoord.clear();
+
+    vector<int> newConn;
+    newConn.resize(mesh->conn.size());
+    for(int i = 0 ; i < mesh->conn.size() ; i++)
+    {
+        newConn[i] = iperm[mesh->conn[i]];
+    }
+    mesh->conn.swap(newConn);
+    newConn.clear();
 
     delete [] perm;
     delete [] iperm;
