@@ -23,9 +23,16 @@ int main(int argc, char* argv[])
     out = str.c_str();
     int n_part = atoi(argv[2]);
 
+    idx_t* xadjAntes;   // variaveis para armazenar as estruturas do grafo
+    idx_t* adjncyAntes; // antes e após a reordenação nodal
+    idx_t* xadjDepois;    // para testes de desempenho
+    idx_t* adjncyDepois;
+
     mesh_t* mesh            = MeshGmshReader(argv[1]);
-      
+
+    teste(mesh, &xadjAntes, &adjncyAntes);
     MeshReordering(mesh);
+    teste(mesh, &xadjDepois, &adjncyDepois);
 
     mesh_partition_t *parts = MeshPartitionerInternal(mesh, n_part);
  

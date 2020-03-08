@@ -60,6 +60,8 @@ void MeshPartitionDestroy(mesh_partition_t* mp);
 
 //void  MeshWrite(mesh* m, const char* outfile);
 
+void teste(mesh_t* mesh, idx_t** xadj, idx_t** adjncy); // funçao temporaria para testes de desempenho
+
 #endif
 
 
