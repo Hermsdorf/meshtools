@@ -493,6 +493,49 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
     int nelem = mesh->n_face_elements + mesh->n_elements;
 }*/
 
+
+
+
+void WriteAdj(const char * fname, int nvts,  idx_t* xadj, idx_t* adjncy)
+{
+
+    ofstream fout;
+    fout.open(fname);
+    if(fout.is_open())
+    {
+
+        fout << nvts << endl;
+        for(int i = 0; i <= nvts; i++)
+            fout << xadj[i] << endl;
+        
+        for(int i = 0; i < xadj[nvts]; i++)
+            fout << adjncy[i] << endl;
+
+        fout.close();
+    }
+
+}
+
+void WriteAIJ(const char * fname, int nvts,  idx_t* xadj, idx_t* adjncy)
+{
+
+    ofstream fout;
+    fout.open(fname);
+    if(fout.is_open())
+    {
+
+        fout << nvts << endl;
+        for(int i = 0; i < nvts; i++)
+        {  
+            fout << i << " "  << i << endl;
+            for(int j = xadj[i]; j < xadj[i+1]; j++)
+                fout << i << " " << adjncy[j] << endl;
+        }
+        fout.close();
+    }
+
+}
+
 void MeshToGraph(mesh_t* mesh, idx_t** xadj, idx_t** adjncy)
 {
     int result;
@@ -500,16 +543,17 @@ void MeshToGraph(mesh_t* mesh, idx_t** xadj, idx_t** adjncy)
     idx_t *ne = &mesh->n_elements;
     idx_t *nn = &mesh->n_nodes;
     idx_t numflag = 0;
-    idx_t *eptr = new idx_t[mesh->offset.size()];
-    idx_t *eind = new idx_t[mesh->conn.size()];
 
-    for(int i = 0 ; i < mesh->offset.size() ; i++)
-        eptr[i] = mesh->offset[i];
-    for(int i = 0 ; i < mesh->conn.size() ; i++)
-        eind[i] = mesh->conn[i];
+    int ofs           = mesh->offset[mesh->n_face_elements];
+    int *eptr         = new int [mesh->n_elements+1];
+    for(int i = mesh->n_face_elements, j = 0; i < mesh->offset.size() ; i++, j++)
+    {
+            eptr[j] = mesh->offset[i] - ofs;
 
-    //idx_t *eptr = (idx_t*) &mesh->offset;
-    //idx_t *eind = (idx_t*) &mesh->conn;
+    }
+
+    idx_t *eind     = &mesh->conn[ofs];
+ 
 
     result = METIS_MeshToNodal(ne, nn, eptr, eind, &numflag, xadj, adjncy);
 
@@ -539,7 +583,6 @@ void MeshToGraph(mesh_t* mesh, idx_t** xadj, idx_t** adjncy)
         }
     }
 
-    delete [] eind;
     delete [] eptr;
 }
 
@@ -556,6 +599,9 @@ void MeshReordering(mesh_t* mesh)
     idx_t *adjncy; 
 
     MeshToGraph(mesh, &xadj, &adjncy);
+
+    WriteAdj("antes_ordering.txt", mesh->n_nodes, xadj,adjncy);
+    WriteAIJ("aij.txt",mesh->n_nodes, xadj,adjncy);
 
     METIS_SetDefaultOptions(options);
 
