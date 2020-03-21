@@ -495,46 +495,6 @@ void WriteAIJ(const char * fname, int nvts,  idx_t* xadj, idx_t* adjncy)
 
 }
 
-void WriteAdj(const char * fname, int nvts,  idx_t* xadj, idx_t* adjncy)
-{
-
-    ofstream fout;
-    fout.open(fname);
-    if(fout.is_open())
-    {
-
-        fout << nvts << endl;
-        for(int i = 0; i <= nvts; i++)
-            fout << xadj[i] << endl;
-        
-        for(int i = 0; i < xadj[nvts]; i++)
-            fout << adjncy[i] << endl;
-
-        fout.close();
-    }
-
-}
-
-void WriteAIJ(const char * fname, int nvts,  idx_t* xadj, idx_t* adjncy)
-{
-
-    ofstream fout;
-    fout.open(fname);
-    if(fout.is_open())
-    {
-
-        fout << nvts << endl;
-        for(int i = 0; i < nvts; i++)
-        {  
-            fout << i << " "  << i << endl;
-            for(int j = xadj[i]; j < xadj[i+1]; j++)
-                fout << i << " " << adjncy[j] << endl;
-        }
-        fout.close();
-    }
-
-}
-
 void MeshToGraph(mesh_t* mesh, idx_t** xadj, idx_t** adjncy)
 {
     int result;
