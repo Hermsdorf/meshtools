@@ -52,6 +52,8 @@ void MeshToGraph(mesh_t* mesh, idx_t** xadj, idx_t** adjncy);
 
 void MeshReordering(mesh_t *mesh);
 
+void MeshReorderingMETIS(mesh_t *mesh);
+
 mesh_partition_t* MeshPartitioner(mesh_t* mesh, int nparts);
 
 mesh_partition_t* MeshPartitionerInternal(mesh_t* mesh, int nparts);
@@ -59,8 +61,6 @@ mesh_partition_t* MeshPartitionerInternal(mesh_t* mesh, int nparts);
 void MeshPartitionDestroy(mesh_partition_t* mp);
 
 //void  MeshWrite(mesh* m, const char* outfile);
-
-void teste(mesh_t* mesh, idx_t** xadj, idx_t** adjncy); // funçao temporaria para testes de desempenho
 
 #endif
 
