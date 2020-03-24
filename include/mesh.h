@@ -54,6 +54,8 @@ void MeshReordering(mesh_t *mesh);
 
 void MeshReorderingMETIS(mesh_t *mesh);
 
+void MeshReorderingRCM(mesh_t *mesh);
+
 mesh_partition_t* MeshPartitioner(mesh_t* mesh, int nparts);
 
 mesh_partition_t* MeshPartitionerInternal(mesh_t* mesh, int nparts);
