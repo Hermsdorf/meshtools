@@ -553,11 +553,50 @@ void MeshReorderingRCM(mesh_t *mesh)
     int* perm = new int [mesh->n_nodes];
 
     MeshToGraph(mesh, &xadj, &adjncy);
-    genrcm(mesh->n_nodes, xadj[mesh->n_nodes], xadj, adjncy, perm);
+
+    for(int i = 0 ; i < xadj[mesh->n_nodes] ; i++)
+        adjncy[i]++;
+
+    for(int i = xadj[mesh->n_nodes]+1 ; i > 0 ; i--)
+        adjncy[i] = adjncy[i-1];
+
+    for(int i = 0 ; i < mesh->n_nodes ; i++)
+        xadj[i]++;
+
+    // Cria a estrutura auxiliar para o rcm
+    int adj_max        = xadj[mesh->n_nodes];
+    int rcm_adj_size = 0;
+    idx_t *rcm_adj_row =  new idx_t[mesh->n_nodes];
+    idx_t *rcm_adj     =  new idx_t[adj_max];
+    int istart, iend;
+
+    adj_set(mesh->n_nodes, adj_max, &rcm_adj_size, rcm_adj_row, rcm_adj, -1, -1); // inicialização dos vetores rcm_adj_row e rcm_adj
+
+    // Gera a matriz de adjacencias usando a rotina adj_set.
+    for(int n = 0; n < mesh->n_nodes; n++)
+    {
+        istart = xadj[n];
+        iend   = xadj[n+1];
+        for(int irow = istart; irow < iend; irow++)
+        {
+            int jcol =  adjncy[irow];
+
+            if(irow == jcol) continue;
+            adj_set(mesh->n_nodes, adj_max, &rcm_adj_size, rcm_adj_row, rcm_adj, irow, jcol);
+        }
+    }
+    cout << "FUNÇAO ADJ_SET CONCLUIDA" << endl;
+
+    adj_show (mesh->n_nodes, adj_max, rcm_adj_row, rcm_adj); // funçao para imprimir a matriz adjacencia
+
+    genrcm(mesh->n_nodes, rcm_adj_size, rcm_adj_row, rcm_adj, perm);
 
     for(int i = 0 ; i < mesh->n_nodes ; i++)
         cout << perm[i] << " ";
 
+
+    delete [] rcm_adj_row;
+    delete [] rcm_adj;
     delete [] perm;
 }
 
