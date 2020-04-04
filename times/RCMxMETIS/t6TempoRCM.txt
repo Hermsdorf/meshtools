@@ -1,0 +1,35 @@
+Reading Profile files in profile.*
+
+NODE 0;CONTEXT 0;THREAD 0:
+---------------------------------------------------------------------------------------
+%Time    Exclusive    Inclusive       #Call      #Subrs  Inclusive Name
+              msec   total msec                          usec/call 
+---------------------------------------------------------------------------------------
+100.0           19           90           1           5      90474 .TAU application
+ 78.0        0.332           70           1           6      70593 main 
+ 35.3            3           31           1        5030      31982 MeshReorderingRCM(mesh_t*) 
+ 33.0           29           29           1        1264      29889 MeshVTKWriterInternal(mesh_t*, char const*, int*, int*) 
+ 31.2           13           28        5027       15078          6 adj_set(int, int, int*, int*, int*, int, int) 
+ 10.2            9            9        5026           0          2 adj_insert_ij(int, int, int*, int*, int*, int, int) 
+  8.5            6            7           1        2625       7691 MeshGmshReader(char const*) 
+  6.3            5            5       10052           0          1 adj_contains_ij(int, int, int*, int*, int, int) 
+  0.8        0.721        0.721        1312           0          1 getGmshElemNNodes(int) 
+  0.8        0.706        0.706        1264           0          1 GmshToVTKType(int) 
+  0.8        0.693        0.693           1           0        693 MeshPartitionerInternal(mesh_t*, int) 
+  0.8        0.692        0.692        1312           0          1 getGmshElemTypeDim(int) 
+  0.4        0.112        0.325           1           1        325 _GLOBAL__sub_I__Z17getGmshElemNNodesi 
+  0.3        0.267        0.267           1           0        267 MeshToGraph(mesh_t*, int**, int**) 
+  0.3        0.066        0.265           1           4        265 genrcm(int, int, int*, int*, int*) 
+  0.2        0.219        0.219           4           0         55 __static_initialization_and_destruction_0(int, int) 
+  0.1        0.073        0.111           2           4         56 rcm(int, int, int*, int*, int*, int*, int*, int) 
+  0.1         0.09        0.092           1           1         92 _GLOBAL__sub_I__Z23MeshPartitionerInternalP6mesh_ti 
+  0.1        0.033        0.088           2           4         44 root_find(int*, int, int*, int*, int*, int*, int*, int*, int) 
+  0.1        0.082        0.084           1           1         84 _GLOBAL__sub_I_main 
+  0.1         0.08        0.082           1           1         82 _GLOBAL__sub_I__Z13adj_bandwidthiiPiS_ 
+  0.1        0.055        0.055           4           0         14 level_set(int, int, int*, int*, int*, int*, int*, int*, int) 
+  0.0        0.035        0.035           2           0         18 degree(int, int, int*, int*, int*, int*, int*, int*, int) 
+  0.0         0.01         0.01           1           0         10 mesh_t::mesh_t() 
+  0.0        0.004        0.004           1           0          4 mesh_t::~mesh_t() 
+  0.0        0.003        0.003           2           0          2 i4vec_reverse(int, int*) 
+  0.0        0.002        0.002           1           0          2 MeshPartitionDestroy(mesh_partition_t*) 
+  0.0        0.002        0.002           1           0          2 perm_inverse3(int, int*, int*) 

@@ -551,53 +551,72 @@ void MeshReorderingRCM(mesh_t *mesh)
     idx_t* xadj;
     idx_t* adjncy;
     int* perm = new int [mesh->n_nodes];
+    int* iperm = new int [mesh->n_nodes];
+    int adjbandAntes, adjbandDepois;
 
     MeshToGraph(mesh, &xadj, &adjncy);
-
-    for(int i = 0 ; i < xadj[mesh->n_nodes] ; i++)
-        adjncy[i]++;
-
-    for(int i = xadj[mesh->n_nodes]+1 ; i > 0 ; i--)
-        adjncy[i] = adjncy[i-1];
-
-    for(int i = 0 ; i < mesh->n_nodes ; i++)
-        xadj[i]++;
+    //WriteAIJ("torusAntes.txt", mesh->n_nodes, xadj, adjncy);
+    //adjbandAntes = adj_bandwidth(mesh->n_nodes, xadj[mesh->n_nodes], xadj, adjncy);
+    //cout << "Bandwith antes: " << adjbandAntes;
 
     // Cria a estrutura auxiliar para o rcm
     int adj_max        = xadj[mesh->n_nodes];
     int rcm_adj_size = 0;
     idx_t *rcm_adj_row =  new idx_t[mesh->n_nodes];
     idx_t *rcm_adj     =  new idx_t[adj_max];
-    int istart, iend;
+    int jstart, jend;
 
     adj_set(mesh->n_nodes, adj_max, &rcm_adj_size, rcm_adj_row, rcm_adj, -1, -1); // inicialização dos vetores rcm_adj_row e rcm_adj
 
     // Gera a matriz de adjacencias usando a rotina adj_set.
     for(int n = 0; n < mesh->n_nodes; n++)
     {
-        istart = xadj[n];
-        iend   = xadj[n+1];
-        for(int irow = istart; irow < iend; irow++)
+        int irow = n;
+        jstart = xadj[n];
+        jend   = xadj[n+1];
+        for(int j = jstart; j < jend; j++)
         {
-            int jcol =  adjncy[irow];
+            int jcol =  adjncy[j];
 
             if(irow == jcol) continue;
-            adj_set(mesh->n_nodes, adj_max, &rcm_adj_size, rcm_adj_row, rcm_adj, irow, jcol);
+            adj_set(mesh->n_nodes, adj_max, &rcm_adj_size, rcm_adj_row, rcm_adj, irow+1, jcol+1);
         }
     }
-    cout << "FUNÇAO ADJ_SET CONCLUIDA" << endl;
-
-    adj_show (mesh->n_nodes, adj_max, rcm_adj_row, rcm_adj); // funçao para imprimir a matriz adjacencia
 
     genrcm(mesh->n_nodes, rcm_adj_size, rcm_adj_row, rcm_adj, perm);
 
-    for(int i = 0 ; i < mesh->n_nodes ; i++)
-        cout << perm[i] << " ";
+    perm_inverse3(mesh->n_nodes, perm, iperm); // função responsável por retornar o iperm a partir do numero de elementos permutados e do perm
 
+
+    //adjbandDepois = adj_perm_bandwidth(mesh->n_nodes, xadj[mesh->n_nodes], xadj, adjncy, perm, iperm);
+    //cout << "Bandwith depois: " << adjbandDepois;
+
+    vector<double> newCoord;
+    newCoord.resize(mesh->coord.size());
+    for(int i = 0 ; i < mesh->n_nodes ; i++)
+    {
+        for(int j = 0 ; j < 3 ; j++)
+            newCoord[(3*i)+j] = mesh->coord[(3*perm[i])+j];
+    }
+    mesh->coord.swap(newCoord);
+    newCoord.clear();
+
+    vector<int> newConn;
+    newConn.resize(mesh->conn.size());
+    for(int i = 0 ; i < mesh->conn.size() ; i++)
+    {
+        newConn[i] = iperm[mesh->conn[i]];
+    }
+    mesh->conn.swap(newConn);
+    newConn.clear();
+
+    //MeshToGraph(mesh, &xadj, &adjncy);
+    //WriteAIJ("torusDepois.txt", mesh->n_nodes, xadj, adjncy);
 
     delete [] rcm_adj_row;
     delete [] rcm_adj;
     delete [] perm;
+    delete [] iperm;
 }
 
 void MeshReorderingMETIS(mesh_t* mesh)
@@ -613,14 +632,15 @@ void MeshReorderingMETIS(mesh_t* mesh)
     idx_t *adjncy; 
     
     MeshToGraph(mesh, &xadj, &adjncy);
-
-    WriteAIJ("aijAntes.txt",mesh->n_nodes, xadj,adjncy);
+    //WriteAIJ("aijAntes.txt",mesh->n_nodes, xadj,adjncy);
 
     METIS_SetDefaultOptions(options);
 
     options[METIS_OPTION_NUMBERING] = 0;
 
     result = METIS_NodeND(nn, xadj, adjncy, vwgt, options, perm, iperm);
+    //int adjbandDepois = adj_perm_bandwidth(mesh->n_nodes, xadj[mesh->n_nodes], xadj, adjncy, perm, iperm);
+    //cout << "Bandwith depois METIS: " << adjbandDepois << endl;
     
     if(result == METIS_OK)
     {
@@ -667,10 +687,10 @@ void MeshReorderingMETIS(mesh_t* mesh)
     mesh->conn.swap(newConn);
     newConn.clear();
 
-    MeshToGraph(mesh, &xadj, &adjncy);
+    //MeshToGraph(mesh, &xadj, &adjncy);
 
     //WriteAdj("depois_ordering.txt", mesh->n_nodes, xadj,adjncy);
-    WriteAIJ("aijDepois.txt",mesh->n_nodes, xadj,adjncy);
+    //WriteAIJ("aijDepois.txt",mesh->n_nodes, xadj,adjncy);
 
 
     delete [] perm;

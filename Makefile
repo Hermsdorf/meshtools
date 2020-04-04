@@ -1,5 +1,6 @@
 
-CXX_COMPILER = g++ -fopenmp
+#CXX_COMPILER = g++ -fopenmp
+CXX_COMPILER = tau_cc.sh -tau_options=-optCompInst -g
 
 INCLUDE_DIRS =   -I./include  
 
@@ -26,7 +27,7 @@ objects         := $(patsubst %.cpp, %.o, $(srcfiles))
 
 
 meshtools: $(objects)
-	$(CXX_COMPILER) -o meshtools $(CXX_FLAGS) $(objects) $(LDFLAGS)
+	$(CXX_COMPILER) -o meshtools  $(CXX_FLAGS) $(objects) $(LDFLAGS)
 
 
 move:
