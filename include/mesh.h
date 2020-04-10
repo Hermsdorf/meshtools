@@ -16,6 +16,8 @@ using namespace std;
 
 typedef std::pair<int, string> physical_data_t;
 
+typedef enum {METIS_ND=0, RCM, FF} reorder_t;
+
 typedef struct {
     vector<double> coord;                    // Coordenadas nodais
     vector<int>    conn;                     // conectividade dos elementos
@@ -48,13 +50,13 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int *nparts, int 
 
 mesh_t* MeshGmshReader(const char* filename);
 
-void MeshToGraph(mesh_t* mesh, idx_t** xadj, idx_t** adjncy);
+//void MeshToGraph(mesh_t* mesh, idx_t** xadj, idx_t** adjncy);
 
-void MeshReordering(mesh_t *mesh);
+void MeshReordering(mesh_t *mesh, reorder_t reorder);
 
-void MeshReorderingMETIS(mesh_t *mesh);
+//void MeshReorderingMETIS(mesh_t *mesh);
 
-void MeshReorderingRCM(mesh_t *mesh);
+//void MeshReorderingRCM(mesh_t *mesh);
 
 mesh_partition_t* MeshPartitioner(mesh_t* mesh, int nparts);
 
