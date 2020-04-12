@@ -119,43 +119,17 @@ void ReorderMesh(mesh_t* mesh, int* perm, int *iperm)
     }
     mesh->conn.swap(newConn);
     newConn.clear();
-
-
 }
 
 void MeshToRCMGraph(mesh_t* mesh, idx_t** xadj, idx_t** adjncy)
 {
-    MeshToGraph(mesh,xadj,adjncy);
-    // Gera a matriz de adjacencias usando a rotina adj_set.
-    for(int n = 0; n < mesh->n_nodes; n++)
-    {
-        int irow = n;
-        int jstart = (*xadj)[n];
-        int jend   = (*xadj)[n+1];
-        for(int j = jstart; j < jend; j++)
-        {
-            (*adjncy)[j] += 1;
-        }
-    }
+    idx_t* xadjA;
+    idx_t* adjncyA;
 
-}
-
-
-void MeshReorderingRCM(mesh_t *mesh, idx_t* xadj,idx_t* adjncy, int * perm, int* iperm)
-{
-
-
-  cout << "Applyng RCM reordering " << endl;
-/*
-    int adjbandAntes, adjbandDepois;
-
-    MeshToGraph(mesh, &xadj, &adjncy);
-    //WriteAIJ("torusAntes.txt", mesh->n_nodes, xadj, adjncy);
-    //adjbandAntes = adj_bandwidth(mesh->n_nodes, xadj[mesh->n_nodes], xadj, adjncy);
-    //cout << "Bandwith antes: " << adjbandAntes;
+    MeshToGraph(mesh, &xadjA, &adjncyA);
 
     // Cria a estrutura auxiliar para o rcm
-    int adj_max        = xadj[mesh->n_nodes];
+    int adj_max        = xadjA[mesh->n_nodes];
     int rcm_adj_size = 0;
     idx_t *rcm_adj_row =  new idx_t[mesh->n_nodes];
     idx_t *rcm_adj     =  new idx_t[adj_max];
@@ -167,37 +141,31 @@ void MeshReorderingRCM(mesh_t *mesh, idx_t* xadj,idx_t* adjncy, int * perm, int*
     for(int n = 0; n < mesh->n_nodes; n++)
     {
         int irow = n;
-        jstart = xadj[n];
-        jend   = xadj[n+1];
+        jstart = xadjA[n];
+        jend   = xadjA[n+1];
         for(int j = jstart; j < jend; j++)
         {
-            int jcol =  adjncy[j];
+            int jcol = adjncyA[j];
 
             if(irow == jcol) continue;
             adj_set(mesh->n_nodes, adj_max, &rcm_adj_size, rcm_adj_row, rcm_adj, irow+1, jcol+1);
         }
     }
 
-    
-*/
+    *xadj = rcm_adj_row;
+    *adjncy = rcm_adj;
+}
 
 
-    genrcm(mesh->n_nodes, xadj[mesh->n_nodes], xadj,adjncy, perm);
+void MeshReorderingRCM(mesh_t *mesh, idx_t* xadj, idx_t* adjncy, int* perm, int* iperm)
+{
+    cout << "Applyng RCM reordering " << endl;
+    genrcm(mesh->n_nodes, xadj[mesh->n_nodes], xadj, adjncy, perm);
+
     // função responsável por retornar o iperm a partir do numero de elementos permutados e do perm
     perm_inverse3(mesh->n_nodes, perm, iperm); 
 
-
-
-    //adjbandDepois = adj_perm_bandwidth(mesh->n_nodes, xadj[mesh->n_nodes], xadj, adjncy, perm, iperm);
-    //cout << "Bandwith depois: " << adjbandDepois;
-
-  
-    //MeshToGraph(mesh, &xadj, &adjncy);
-    //WriteAIJ("torusDepois.txt", mesh->n_nodes, xadj, adjncy);
-
     cout << "Node reordering succesfully applied" << endl;
-
-
 }
 
 void MeshReorderingMETIS(mesh_t* mesh, idx_t *xadj, idx_t *adjncy, idx_t* perm, idx_t* iperm) 
@@ -311,7 +279,7 @@ void MeshReorderingFirstTouch(mesh_t* mesh)
 void MeshReordering(mesh_t* mesh, reorder_t reorder)
 {
 
-    idx_t *xadj  ;
+    idx_t *xadj;
     idx_t *adjncy; 
 
     idx_t *perm  = new idx_t[mesh->n_nodes]; 
@@ -321,15 +289,13 @@ void MeshReordering(mesh_t* mesh, reorder_t reorder)
     {
         case METIS_ND:
             MeshToGraph(mesh, &xadj, &adjncy);
-            //int adjbandDepois = adj_perm_bandwidth(mesh->n_nodes, xadj[mesh->n_nodes], xadj, adjncy, perm, iperm);
-            //cout << "Bandwith depois METIS: " << adjbandDepois << endl;
-            MeshReorderingMETIS(mesh,xadj,adjncy,perm,iperm);
-            ReorderMesh(mesh,perm,iperm);
+            MeshReorderingMETIS(mesh, xadj, adjncy, perm, iperm);
+            ReorderMesh(mesh, perm, iperm);
             break;
         case RCM:
             MeshToRCMGraph(mesh, &xadj, &adjncy);
-            MeshReorderingRCM(mesh,xadj,adjncy,perm,iperm);
-            ReorderMesh(mesh,perm,iperm);
+            MeshReorderingRCM(mesh, xadj, adjncy, perm, iperm);
+            ReorderMesh(mesh, perm, iperm);
             break;
         default:
             MeshReorderingFirstTouch(mesh);
@@ -339,8 +305,6 @@ void MeshReordering(mesh_t* mesh, reorder_t reorder)
 
     if(xadj)   delete [] xadj;
     if(adjncy) delete [] adjncy;
-    //if(perm)   delete [] perm;
-    //if(iperm)  delete [] iperm;
-
-    
+    if(perm)   delete [] perm;
+    if(iperm)  delete [] iperm;
 }
