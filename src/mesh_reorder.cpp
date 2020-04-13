@@ -165,6 +165,11 @@ void MeshReorderingRCM(mesh_t *mesh, idx_t* xadj, idx_t* adjncy, int* perm, int*
     // função responsável por retornar o iperm a partir do numero de elementos permutados e do perm
     perm_inverse3(mesh->n_nodes, perm, iperm); 
 
+    for(int i = 0 ; i < mesh->n_nodes ; i++){
+        perm[i]--;
+        iperm[i]--;
+    }
+
     cout << "Node reordering succesfully applied" << endl;
 }
 
@@ -216,14 +221,9 @@ void MeshReorderingMETIS(mesh_t* mesh, idx_t *xadj, idx_t *adjncy, idx_t* perm, 
 
 void MeshReorderingFirstTouch(mesh_t* mesh)
 {
-    idx_t* xadj;
-    idx_t* adjncy;
     std::vector<int> numbering;
     std::vector<int> mapping;
     
-    MeshToGraph(mesh, &xadj, &adjncy);
-    WriteAIJ("aijAntes.txt",mesh->n_nodes, xadj,adjncy);
-
     numbering.resize(mesh->n_nodes);
     mapping.resize(mesh->n_nodes);
 
@@ -265,46 +265,40 @@ void MeshReorderingFirstTouch(mesh_t* mesh)
     }
     mesh->conn.swap(newConn);
     newConn.clear();
-
-    
-    MeshToGraph(mesh, &xadj, &adjncy);
-
-
-    //WriteAIJ("aijDepois.txt",mesh->n_nodes, xadj,adjncy);
-
-
 }
 
 
 void MeshReordering(mesh_t* mesh, reorder_t reorder)
 {
-
-    idx_t *xadj;
-    idx_t *adjncy; 
-
-    idx_t *perm  = new idx_t[mesh->n_nodes]; 
-    idx_t *iperm = new idx_t[mesh->n_nodes];
-
-    switch(reorder)
+    if(reorder == FF)
     {
-        case METIS_ND:
-            MeshToGraph(mesh, &xadj, &adjncy);
-            MeshReorderingMETIS(mesh, xadj, adjncy, perm, iperm);
-            ReorderMesh(mesh, perm, iperm);
-            break;
-        case RCM:
-            MeshToRCMGraph(mesh, &xadj, &adjncy);
-            MeshReorderingRCM(mesh, xadj, adjncy, perm, iperm);
-            ReorderMesh(mesh, perm, iperm);
-            break;
-        default:
-            MeshReorderingFirstTouch(mesh);
-            break;
-
+        MeshReorderingFirstTouch(mesh);
     }
+    else
+    {
+        idx_t *xadj;
+        idx_t *adjncy; 
 
-    if(xadj)   delete [] xadj;
-    if(adjncy) delete [] adjncy;
-    if(perm)   delete [] perm;
-    if(iperm)  delete [] iperm;
+        idx_t *perm  = new idx_t[mesh->n_nodes]; 
+        idx_t *iperm = new idx_t[mesh->n_nodes];
+
+        switch(reorder)
+        {
+            case METIS_ND:
+                MeshToGraph(mesh, &xadj, &adjncy);
+                MeshReorderingMETIS(mesh, xadj, adjncy, perm, iperm);
+                ReorderMesh(mesh, perm, iperm);
+                break;
+            default:
+                MeshToRCMGraph(mesh, &xadj, &adjncy);
+                MeshReorderingRCM(mesh, xadj, adjncy, perm, iperm);
+                ReorderMesh(mesh, perm, iperm);
+                break;
+        }
+
+        if(xadj)   delete [] xadj;
+        if(adjncy) delete [] adjncy;
+        if(perm)   delete [] perm;
+        if(iperm)  delete [] iperm;
+    }
 }
