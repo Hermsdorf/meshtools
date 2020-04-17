@@ -32,7 +32,7 @@ void WriteAdj(const char * fname, int nvts,  idx_t* xadj, idx_t* adjncy)
 
 }
 
-void WriteAIJ(const char * fname, int nvts,  idx_t* xadj, idx_t* adjncy)
+void WriteAIJ(const char * fname, int nvts,  idx_t* xadj, idx_t* adjncy, int one_flag)
 {
 
     ofstream fout;
@@ -41,9 +41,12 @@ void WriteAIJ(const char * fname, int nvts,  idx_t* xadj, idx_t* adjncy)
     {
         for(int i = 0; i < nvts; i++)
         {  
-            fout << i << " "  << i << endl;
-            for(int j = xadj[i]; j < xadj[i+1]; j++)
-                fout << i << " " << adjncy[j] << endl;
+            fout << "Adj. node " << i << ": ";
+            for(int j = xadj[i]; j <= xadj[i+1]-1; j++) {
+                int col = adjncy[j - one_flag] - one_flag;
+                fout << col << " ";
+            }
+            fout << endl;
         }
         fout.close();
     }
@@ -147,7 +150,7 @@ void MeshToRCMGraph(mesh_t* mesh, idx_t** xadj, idx_t** adjncy)
         {
             int jcol = adjncyA[j];
 
-            if(irow == jcol) continue;
+            //if(irow == jcol) continue;
             adj_set(mesh->n_nodes, adj_max, &rcm_adj_size, rcm_adj_row, rcm_adj, irow+1, jcol+1);
         }
     }
@@ -170,6 +173,9 @@ void MeshReorderingRCM(mesh_t *mesh, idx_t* xadj, idx_t* adjncy, int* perm, int*
         iperm[i]--;
     }
 
+#ifdef DEBUG
+    WriteAIJ("adj_rcm.txt",mesh->n_nodes,xadj,adjncy,1);
+#endif
     cout << "Node reordering succesfully applied" << endl;
 }
 
@@ -180,8 +186,6 @@ void MeshReorderingMETIS(mesh_t* mesh, idx_t *xadj, idx_t *adjncy, idx_t* perm, 
     idx_t *vwgt = 0;
     idx_t options[METIS_NOPTIONS]; 
 
-
-
     cout << "Applyng METIS ND reordering " << endl;
     METIS_SetDefaultOptions(options);
 
@@ -189,6 +193,11 @@ void MeshReorderingMETIS(mesh_t* mesh, idx_t *xadj, idx_t *adjncy, idx_t* perm, 
 
     result = METIS_NodeND(nn, xadj, adjncy, vwgt, options, perm, iperm);
  
+ #ifdef DEBUG
+    WriteAIJ("adj_metis.txt",mesh->n_nodes,xadj,adjncy,0);
+#endif
+
+
     if(result == METIS_OK)
     {
         cout << "Node reordering succesfully applied" << endl;
