@@ -22,6 +22,7 @@ int main(int argc, char* argv[])
     str = str.append(".vtu");
     out = str.c_str();
     int n_part = atoi(argv[2]);
+    
 
     mesh_t* mesh            = MeshGmshReader(argv[1]);
 

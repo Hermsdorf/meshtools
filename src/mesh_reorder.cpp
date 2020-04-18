@@ -124,13 +124,41 @@ void ReorderMesh(mesh_t* mesh, int* perm, int *iperm)
     newConn.clear();
 }
 
+int
+compare_idx (const void *a, const void *b)
+{
+  const idx_t *da = (const idx_t *) a;
+  const idx_t *db = (const idx_t *) b;
+
+  return (*da > *db) ;
+}
+
 void MeshToRCMGraph(mesh_t* mesh, idx_t** xadj, idx_t** adjncy)
 {
-    idx_t* xadjA;
-    idx_t* adjncyA;
 
-    MeshToGraph(mesh, &xadjA, &adjncyA);
+ 
 
+    MeshToGraph(mesh, xadj, adjncy);
+
+    idx_t* xadjA   = *xadj;
+    idx_t* adjncyA = *adjncy;
+
+    for(int n = 0; n < mesh->n_nodes; n++)
+    {
+        int start = xadjA[n];
+        int end   = xadjA[n+1];
+        qsort(&adjncyA[start],(end-start),sizeof(idx_t), compare_idx);
+    }
+
+    int n_adjncyA = xadjA[mesh->n_nodes];
+
+
+
+    for(int i = 0; i < n_adjncyA; i++)
+        adjncyA[i] += 1;
+    
+
+/*
     // Cria a estrutura auxiliar para o rcm
     int adj_max        = xadjA[mesh->n_nodes];
     int rcm_adj_size = 0;
@@ -157,12 +185,19 @@ void MeshToRCMGraph(mesh_t* mesh, idx_t** xadj, idx_t** adjncy)
 
     *xadj = rcm_adj_row;
     *adjncy = rcm_adj;
+    */
+
 }
 
 
 void MeshReorderingRCM(mesh_t *mesh, idx_t* xadj, idx_t* adjncy, int* perm, int* iperm)
 {
     cout << "Applyng RCM reordering " << endl;
+
+#ifdef DEBUG
+    WriteAIJ("adj_rcm.txt",mesh->n_nodes,xadj,adjncy,1);
+#endif
+
     genrcm(mesh->n_nodes, xadj[mesh->n_nodes], xadj, adjncy, perm);
 
     // função responsável por retornar o iperm a partir do numero de elementos permutados e do perm
@@ -173,9 +208,7 @@ void MeshReorderingRCM(mesh_t *mesh, idx_t* xadj, idx_t* adjncy, int* perm, int*
         iperm[i]--;
     }
 
-#ifdef DEBUG
-    WriteAIJ("adj_rcm.txt",mesh->n_nodes,xadj,adjncy,1);
-#endif
+
     cout << "Node reordering succesfully applied" << endl;
 }
 

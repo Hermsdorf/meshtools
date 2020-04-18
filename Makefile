@@ -1,25 +1,28 @@
 
-#CXX_COMPILER = g++ -fopenmp
-CXX_COMPILER = tau_cc.sh -tau_options=-optCompInst -g
+#CXX_COMPILER = g++ 
+CXX_COMPILER = tau_cc.sh -tau_options=-optCompInst
 
 INCLUDE_DIRS =   -I./include  
 
 #  add include files from metis library
 # jcamata
-#INCLUDE_DIRS += -I$(HOME)/local/metis/include
+INCLUDE_DIRS += -I$(HOME)/local/metis/include
 
 # guilherme
-INCLUDE_DIRS += -I/usr/local/include
+#INCLUDE_DIRS += -I/usr/local/include
 
 
-#LDFLAGS      = -L$(HOME)/local/metis/lib 
+LDFLAGS      = -L$(HOME)/local/metis/lib 
 LDFLAGS +=    -lmetis
 
 
-LDFLAGS      = -L/usr/local/lib -lmetis
+#LDFLAGS      = -L/usr/local/lib -lmetis
 
-CXX_FLAGS    = -DDEBUG -g $(INCLUDE_DIRS)
-
+CXX_FLAGS    = $(INCLUDE_DIRS)
+CXX_FLAGS   += -g -fbacktrace
+#CXX_FLAGS   += -O2  
+#-ftree-vectorize -fopt-info-vec 
+#CXX_FLAGS   += -DDEBUG
 
 # source files
 srcfiles        := $(wildcard *.cpp) $(wildcard src/*.cpp)
