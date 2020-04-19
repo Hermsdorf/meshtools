@@ -4,6 +4,7 @@
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
+#include <memory>
 
 using namespace std;
 
@@ -136,12 +137,14 @@ compare_idx (const void *a, const void *b)
 void MeshToRCMGraph(mesh_t* mesh, idx_t** xadj, idx_t** adjncy)
 {
 
- 
-
     MeshToGraph(mesh, xadj, adjncy);
 
     idx_t* xadjA   = *xadj;
     idx_t* adjncyA = *adjncy;
+
+#ifdef DEBUG
+    WriteAIJ("antes_rcm.txt",mesh->n_nodes,xadjA,adjncyA,1);
+#endif
 
     for(int n = 0; n < mesh->n_nodes; n++)
     {
@@ -152,11 +155,16 @@ void MeshToRCMGraph(mesh_t* mesh, idx_t** xadj, idx_t** adjncy)
 
     int n_adjncyA = xadjA[mesh->n_nodes];
 
-
+    for(int i = 0; i <= mesh->n_nodes; i++)
+        xadjA[i] += 1;
 
     for(int i = 0; i < n_adjncyA; i++)
-        adjncyA[i] += 1;
+         adjncyA[i] += 1;
     
+#ifdef DEBUG
+    WriteAIJ("apos_rcm.txt",mesh->n_nodes,xadjA,adjncyA,1);
+#endif
+
 
 /*
     // Cria a estrutura auxiliar para o rcm
@@ -212,7 +220,7 @@ void MeshReorderingRCM(mesh_t *mesh, idx_t* xadj, idx_t* adjncy, int* perm, int*
     cout << "Node reordering succesfully applied" << endl;
 }
 
-void MeshReorderingMETIS(mesh_t* mesh, idx_t *xadj, idx_t *adjncy, idx_t* perm, idx_t* iperm) 
+void MeshReorderingMETIS(mesh_t* mesh, idx_t *xadj, idx_t *adjncy, int* perm, int* iperm) 
 {
     int result;
     idx_t *nn = &mesh->n_nodes;
@@ -321,8 +329,14 @@ void MeshReordering(mesh_t* mesh, reorder_t reorder)
         idx_t *xadj;
         idx_t *adjncy; 
 
-        idx_t *perm  = new idx_t[mesh->n_nodes]; 
-        idx_t *iperm = new idx_t[mesh->n_nodes];
+        std::unique_ptr<int[]> perm_ptr  = make_unique<int[]>(mesh->n_nodes); 
+        std::unique_ptr<int[]> iperm_ptr = make_unique<int[]>(mesh->n_nodes); 
+
+        int *perm  = perm_ptr.get();
+        int *iperm = iperm_ptr.get();
+        
+        //idx_t *perm  = new idx_t[mesh->n_nodes]; 
+        //idx_t *iperm = new idx_t[mesh->n_nodes];
 
         switch(reorder)
         {
@@ -338,9 +352,8 @@ void MeshReordering(mesh_t* mesh, reorder_t reorder)
                 break;
         }
 
-        if(xadj)   delete [] xadj;
-        if(adjncy) delete [] adjncy;
-        if(perm)   delete [] perm;
-        if(iperm)  delete [] iperm;
+        METIS_Free(xadj);
+        METIS_Free(adjncy);
+
     }
 }

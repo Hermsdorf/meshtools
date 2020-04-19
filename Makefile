@@ -1,6 +1,6 @@
 
-#CXX_COMPILER = g++ 
-CXX_COMPILER = tau_cc.sh -tau_options=-optCompInst
+CXX_COMPILER = g++ 
+#CXX_COMPILER = tau_cc.sh -tau_options=-optCompInst
 
 INCLUDE_DIRS =   -I./include  
 
@@ -19,7 +19,7 @@ LDFLAGS +=    -lmetis
 #LDFLAGS      = -L/usr/local/lib -lmetis
 
 CXX_FLAGS    = $(INCLUDE_DIRS)
-CXX_FLAGS   += -g -fbacktrace
+CXX_FLAGS   += -g 
 #CXX_FLAGS   += -O2  
 #-ftree-vectorize -fopt-info-vec 
 #CXX_FLAGS   += -DDEBUG
