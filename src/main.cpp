@@ -23,8 +23,9 @@ int main(int argc, char* argv[])
     out = str.c_str();
     int n_part = atoi(argv[2]);
     
+    mesh_t* mesh = MeshCreate();
 
-    mesh_t* mesh            = MeshGmshReader(argv[1]);
+    MeshGmshReader(mesh, argv[1]);
 
     MeshReordering(mesh, RCM);
     
@@ -34,7 +35,8 @@ int main(int argc, char* argv[])
 
     MeshPartitionDestroy(parts);
     
-    delete mesh;
+    MeshDestroy(&mesh);
+
     return 0;
 }
 

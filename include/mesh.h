@@ -28,9 +28,8 @@ typedef struct {
     int n_face_elements;                     // Numeros de elementos na superficies
     int n_elements;                          // Numero de elementos internos
     int n_nodes;                             // Numero de nós.
-    int dim;
-
-} mesh_t;
+    int dim;                                 // dimensao da malha
+    } mesh_t;
 
 
 typedef struct {
@@ -44,19 +43,15 @@ typedef struct {
 // para a estrutura mesh.
 //mesh_t* MeshReadGMSH(const char* filename);
 
+mesh_t* MeshCreate();
+
 void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart);
 
 void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int *nparts, int *epart);
 
-mesh_t* MeshGmshReader(const char* filename);
-
-//void MeshToGraph(mesh_t* mesh, idx_t** xadj, idx_t** adjncy);
+void MeshGmshReader(mesh_t* mesh, const char* filename);
 
 void MeshReordering(mesh_t *mesh, reorder_t reorder);
-
-//void MeshReorderingMETIS(mesh_t *mesh);
-
-//void MeshReorderingRCM(mesh_t *mesh);
 
 mesh_partition_t* MeshPartitioner(mesh_t* mesh, int nparts);
 
@@ -65,6 +60,9 @@ mesh_partition_t* MeshPartitionerInternal(mesh_t* mesh, int nparts);
 void MeshPartitionDestroy(mesh_partition_t* mp);
 
 //void  MeshWrite(mesh* m, const char* outfile);
+
+void MeshDestroy(mesh_t **mesh);
+
 
 #endif
 
