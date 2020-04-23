@@ -270,10 +270,12 @@ void adj_insert_ij ( int node_num, int adj_max, int *adj_num, int adj_row[],
 
   return;
 }
+
+
 //****************************************************************************80
 
 int adj_perm_bandwidth ( int node_num, int adj_num, int adj_row[], int adj[],
-  int perm[], int perm_inv[], int z=1 )
+  int perm[], int perm_inv[])
 
 //****************************************************************************80
 //
@@ -336,9 +338,9 @@ int adj_perm_bandwidth ( int node_num, int adj_num, int adj_row[], int adj[],
 
   for ( i = 0; i < node_num; i++ )
   {
-    for ( j = adj_row[perm[i]-z]; j <= adj_row[perm[i]]-1; j++ )
+    for ( j = adj_row[perm[i]-1]; j <= adj_row[perm[i]]-1; j++ )
     {
-      col = perm_inv[adj[j-z]-z];
+      col = perm_inv[adj[j-1]-1];
       band_lo = i4_max ( band_lo, i - col );
       band_hi = i4_max ( band_hi, col - i );
     }

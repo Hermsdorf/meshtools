@@ -12,6 +12,46 @@ using namespace std;
 #include "mesh.h"
 #include "rcm.hpp"
 
+
+
+void convert_to_one_index( int node_num, int adj_num, int adj_row[], int adj[],
+  int perm[], int perm_inv[])
+  {
+
+        for (int i = 0; i < node_num; i++)
+        {
+            adj_row[i] += 1;
+            perm[i] += 1;
+            perm_inv[i] += 1;
+        }
+    
+        for(int i = 0; i < adj_num; i++)
+            adj[i] += 1;
+    
+        adj_row[node_num]+=1;
+
+  }
+
+  void convert_to_zero_index( int node_num, int adj_num, int adj_row[], int adj[],
+  int perm[], int perm_inv[])
+  {
+
+        for (int i = 0; i < node_num; i++)
+        {
+            adj_row[i] -= 1;
+            perm[i] -= 1;
+            perm_inv[i] -= 1;
+        }
+    
+        for(int i = 0; i < adj_num; i++)
+            adj[i] -= 1;
+    
+        adj_row[node_num]-=1;
+        
+  }
+
+
+
 void WriteAdj(const char *fname, int nvts, idx_t *xadj, idx_t *adjncy)
 {
 
@@ -40,7 +80,7 @@ void WriteAIJ(const char *fname, int nvts, idx_t *xadj, idx_t *adjncy, int one_f
     {
         for (int i = 0; i < nvts; i++)
         {
-            fout << "Adj. node " << i << ": ";
+            fout << "Adj. node " << i << "[" << xadj[i] << " - " << xadj[i + 1] - 1 << "]: ";
             for (int j = xadj[i]; j <= xadj[i + 1] - 1; j++)
             {
                 int col = adjncy[j - one_flag] - one_flag;
@@ -51,6 +91,8 @@ void WriteAIJ(const char *fname, int nvts, idx_t *xadj, idx_t *adjncy, int one_f
         fout.close();
     }
 }
+
+
 
 void MeshToGraph(mesh_t *mesh, idx_t **xadj, idx_t **adjncy)
 {
@@ -71,11 +113,10 @@ void MeshToGraph(mesh_t *mesh, idx_t **xadj, idx_t **adjncy)
 
     result = METIS_MeshToNodal(ne, nn, eptr, eind, &numflag, xadj, adjncy);
 
-    cout << "Bandwidth before: " << adj_bandwidth(mesh->n_nodes,(*xadj)[mesh->n_nodes], *xadj, *adjncy, 0) << endl;
-
     if (result == METIS_OK)
     {
-        cout << "Mesh to graph succesfully applied" << endl;
+        cout << "  Mesh to graph succesfully applied" << endl;
+        cout << "   - Original Bandwidth: " << adj_bandwidth(mesh->n_nodes,(*xadj)[mesh->n_nodes], *xadj, *adjncy, 0) << endl;
     }
     else
     {
@@ -106,6 +147,8 @@ void ApplyReorderMesh(mesh_t *mesh, int *perm, int *iperm)
 {
     vector<double> newCoord;
     newCoord.resize(mesh->coord.size());
+
+    cout << "  Applying reordering..." << endl;
 
 #pragma omp parallel for
     for (int i = 0; i < mesh->n_nodes; i++)
@@ -145,14 +188,14 @@ void MeshToRCMGraph(mesh_t *mesh, idx_t **xadj, idx_t **adjncy)
     idx_t *adjncyA = *adjncy;
 
 #ifdef DEBUG
-    WriteAIJ("antes_rcm.txt", mesh->n_nodes, xadjA, adjncyA, 1);
+    WriteAIJ("antes_rcm.txt", mesh->n_nodes, xadjA, adjncyA, 0);
 #endif
 
 #pragma omp parallel for
     for (int n = 0; n < mesh->n_nodes; n++)
     {
         int start = xadjA[n];
-        int end = xadjA[n + 1];
+        int end   = xadjA[n + 1];
         qsort(&adjncyA[start], (end - start), sizeof(idx_t), compare_idx);
     }
 
@@ -166,43 +209,12 @@ void MeshToRCMGraph(mesh_t *mesh, idx_t **xadj, idx_t **adjncy)
     for (int i = 0; i < n_adjncyA; i++)
         adjncyA[i] += 1;
 
-#ifdef DEBUG
-    WriteAIJ("apos_rcm.txt", mesh->n_nodes, xadjA, adjncyA, 1);
-#endif
 
-    /*
-    // Cria a estrutura auxiliar para o rcm
-    int adj_max        = xadjA[mesh->n_nodes];
-    int rcm_adj_size = 0;
-    idx_t *rcm_adj_row =  new idx_t[mesh->n_nodes];
-    idx_t *rcm_adj     =  new idx_t[adj_max];
-    int jstart, jend;
-
-    adj_set(mesh->n_nodes, adj_max, &rcm_adj_size, rcm_adj_row, rcm_adj, -1, -1); // inicialização dos vetores rcm_adj_row e rcm_adj
-
-    // Gera a matriz de adjacencias usando a rotina adj_set.
-    for(int n = 0; n < mesh->n_nodes; n++)
-    {
-        int irow = n;
-        jstart = xadjA[n];
-        jend   = xadjA[n+1];
-        for(int j = jstart; j < jend; j++)
-        {
-            int jcol = adjncyA[j];
-
-            //if(irow == jcol) continue;
-            adj_set(mesh->n_nodes, adj_max, &rcm_adj_size, rcm_adj_row, rcm_adj, irow+1, jcol+1);
-        }
-    }
-
-    *xadj = rcm_adj_row;
-    *adjncy = rcm_adj;
-    */
 }
 
 void MeshReorderingRCM(mesh_t *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int *iperm)
 {
-    cout << "Applyng RCM reordering " << endl;
+    cout << "  Applyng RCM reordering " << endl;
 
 #ifdef DEBUG
     WriteAIJ("adj_rcm.txt", mesh->n_nodes, xadj, adjncy, 1);
@@ -213,8 +225,7 @@ void MeshReorderingRCM(mesh_t *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int 
     // função responsável por retornar o iperm a partir do numero de elementos permutados e do perm
     perm_inverse3(mesh->n_nodes, perm, iperm);
 
-
-    cout << "Bandwidth After: " << adj_perm_bandwidth(mesh->n_nodes,xadj[mesh->n_nodes], xadj, adjncy,perm, iperm, 1) << endl;
+    cout << "   - Final Bandwidth: " << adj_perm_bandwidth(mesh->n_nodes,xadj[mesh->n_nodes], xadj, adjncy,perm, iperm) << endl;
 
 
 #pragma omp parallel for
@@ -224,7 +235,7 @@ void MeshReorderingRCM(mesh_t *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int 
         iperm[i]--;
     }
 
-    cout << "Node reordering succesfully applied" << endl;
+
 }
 
 void MeshReorderingMETIS(mesh_t *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int *iperm)
@@ -234,23 +245,19 @@ void MeshReorderingMETIS(mesh_t *mesh, idx_t *xadj, idx_t *adjncy, int *perm, in
     idx_t *vwgt = 0;
     idx_t options[METIS_NOPTIONS];
 
-    cout << "Applyng METIS ND reordering " << endl;
+    cout << "  Applyng METIS_NodeND reordering " << endl;
     METIS_SetDefaultOptions(options);
 
     options[METIS_OPTION_NUMBERING] = 0;
     result = METIS_NodeND(nn, xadj, adjncy, vwgt, options, perm, iperm);
 
-#ifdef DEBUG
-    WriteAIJ("adj_metis.txt", mesh->n_nodes, xadj, adjncy, 0);
-#endif
-
-
-    cout << "Bandwidth before: " << adj_perm_bandwidth(mesh->n_nodes,xadj[mesh->n_nodes], xadj, adjncy, perm, iperm, 0) << endl;
-
-
     if (result == METIS_OK)
     {
-        cout << "Node reordering succesfully applied" << endl;
+
+        int adj_size = xadj[*nn];
+        convert_to_one_index(*nn,adj_size,xadj, adjncy, perm, iperm);
+        cout << "  - Final Bandwidth: " << adj_perm_bandwidth(mesh->n_nodes,xadj[mesh->n_nodes], xadj, adjncy, perm, iperm) << endl;
+        convert_to_zero_index(*nn,adj_size,xadj, adjncy, perm, iperm);
     }
     else
     {
@@ -312,6 +319,7 @@ void MeshReordering(mesh_t *mesh, reorder_t reorder = RCM)
     int *perm = perm_ptr.get();
     int *iperm = iperm_ptr.get();
 
+    cout << "Starting mesh reordering... " << endl;
     switch (reorder)
     {
     case FF:
@@ -329,6 +337,7 @@ void MeshReordering(mesh_t *mesh, reorder_t reorder = RCM)
         ApplyReorderMesh(mesh, perm, iperm);
         break;
     }
+    cout << "Finished mesh reordering... " << endl;
 
     METIS_Free(xadj);
     METIS_Free(adjncy);

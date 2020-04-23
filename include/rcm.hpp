@@ -4,7 +4,7 @@ bool adj_contains_ij ( int node_num, int adj_num, int adj_row[], int adj[],
 void adj_insert_ij ( int node_num, int adj_max, int *adj_num, int adj_row[], 
   int adj[], int i, int j );
 int adj_perm_bandwidth ( int node_num, int adj_num, int adj_row[], int adj[], 
-  int perm[], int perm_inv[], int z );
+  int perm[], int perm_inv[]);
 void adj_perm_show ( int node_num, int adj_num, int adj_row[], int adj[], 
   int perm[], int perm_inv[] );
 void adj_print ( int node_num, int adj_num, int adj_row[], int adj[], 
