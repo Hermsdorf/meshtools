@@ -10,12 +10,12 @@ using namespace std;
 
 # include "rcm.hpp"
 
-//****************************************************************************80
-
-int adj_bandwidth ( int node_num, int adj_num, int adj_row[], int adj[] )
 
 //****************************************************************************80
-//
+
+int adj_bandwidth ( int node_num, int adj_num, int adj_row[], int adj[] ,int z=1)
+
+//****************************************************************************80
 //  Purpose:
 //
 //    ADJ_BANDWIDTH computes the bandwidth of an adjacency matrix.
@@ -73,7 +73,7 @@ int adj_bandwidth ( int node_num, int adj_num, int adj_row[], int adj[] )
   {
     for ( j = adj_row[i]; j <= adj_row[i+1]-1; j++ )
     {
-      col = adj[j-1] - 1;
+      col = adj[j-z] - z;
       band_lo = i4_max ( band_lo, i - col );
       band_hi = i4_max ( band_hi, col - i );
     }
@@ -273,7 +273,7 @@ void adj_insert_ij ( int node_num, int adj_max, int *adj_num, int adj_row[],
 //****************************************************************************80
 
 int adj_perm_bandwidth ( int node_num, int adj_num, int adj_row[], int adj[],
-  int perm[], int perm_inv[] )
+  int perm[], int perm_inv[], int z=1 )
 
 //****************************************************************************80
 //
@@ -336,9 +336,9 @@ int adj_perm_bandwidth ( int node_num, int adj_num, int adj_row[], int adj[],
 
   for ( i = 0; i < node_num; i++ )
   {
-    for ( j = adj_row[perm[i]-1]; j <= adj_row[perm[i]]-1; j++ )
+    for ( j = adj_row[perm[i]-z]; j <= adj_row[perm[i]]-1; j++ )
     {
-      col = perm_inv[adj[j-1]-1];
+      col = perm_inv[adj[j-z]-z];
       band_lo = i4_max ( band_lo, i - col );
       band_hi = i4_max ( band_hi, col - i );
     }

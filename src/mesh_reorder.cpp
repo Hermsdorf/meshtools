@@ -71,6 +71,8 @@ void MeshToGraph(mesh_t *mesh, idx_t **xadj, idx_t **adjncy)
 
     result = METIS_MeshToNodal(ne, nn, eptr, eind, &numflag, xadj, adjncy);
 
+    cout << "Bandwidth before: " << adj_bandwidth(mesh->n_nodes,(*xadj)[mesh->n_nodes], *xadj, *adjncy, 0) << endl;
+
     if (result == METIS_OK)
     {
         cout << "Mesh to graph succesfully applied" << endl;
@@ -211,6 +213,10 @@ void MeshReorderingRCM(mesh_t *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int 
     // função responsável por retornar o iperm a partir do numero de elementos permutados e do perm
     perm_inverse3(mesh->n_nodes, perm, iperm);
 
+
+    cout << "Bandwidth After: " << adj_perm_bandwidth(mesh->n_nodes,xadj[mesh->n_nodes], xadj, adjncy,perm, iperm, 1) << endl;
+
+
 #pragma omp parallel for
     for (int i = 0; i < mesh->n_nodes; i++)
     {
@@ -232,12 +238,15 @@ void MeshReorderingMETIS(mesh_t *mesh, idx_t *xadj, idx_t *adjncy, int *perm, in
     METIS_SetDefaultOptions(options);
 
     options[METIS_OPTION_NUMBERING] = 0;
-
     result = METIS_NodeND(nn, xadj, adjncy, vwgt, options, perm, iperm);
 
 #ifdef DEBUG
     WriteAIJ("adj_metis.txt", mesh->n_nodes, xadj, adjncy, 0);
 #endif
+
+
+    cout << "Bandwidth before: " << adj_perm_bandwidth(mesh->n_nodes,xadj[mesh->n_nodes], xadj, adjncy, perm, iperm, 0) << endl;
+
 
     if (result == METIS_OK)
     {
