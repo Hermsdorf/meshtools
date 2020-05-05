@@ -1,4 +1,3 @@
-
 CXX_COMPILER = g++ 
 #CXX_COMPILER = tau_cc.sh -tau_options=-optCompInst
 
@@ -6,10 +5,10 @@ INCLUDE_DIRS =   -I./include
 
 #  add include files from metis library
 # jcamata
-#INCLUDE_DIRS += -I$(HOME)/local/metis/include
+INCLUDE_DIRS += -I$(HOME)/local/metis/include
 
 # guilherme
-INCLUDE_DIRS += -I/usr/local/include
+#INCLUDE_DIRS += -I/usr/local/include
 
 
 LDFLAGS      = -L$(HOME)/local/metis/lib 
