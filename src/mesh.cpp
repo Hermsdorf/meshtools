@@ -27,5 +27,6 @@ void MeshDestroy(mesh_t** mesh)
      (*mesh)->type.clear();
      (*mesh)->physical_tag.clear();
      (*mesh)->physical_map.clear();
+     delete [] (*mesh)->mesh_coloring;
      delete *mesh;
 }
