@@ -13,7 +13,7 @@ using namespace std;
 
 //****************************************************************************80
 
-int adj_bandwidth ( int node_num, int adj_num, int adj_row[], int adj[] ,int z=1)
+int adj_bandwidth ( int node_num, int adj_num, int adj_row[], int adj[])
 
 //****************************************************************************80
 //  Purpose:
@@ -73,7 +73,7 @@ int adj_bandwidth ( int node_num, int adj_num, int adj_row[], int adj[] ,int z=1
   {
     for ( j = adj_row[i]; j <= adj_row[i+1]-1; j++ )
     {
-      col = adj[j-z] - z;
+      col = adj[j-1] - 1;
       band_lo = i4_max ( band_lo, i - col );
       band_hi = i4_max ( band_hi, col - i );
     }

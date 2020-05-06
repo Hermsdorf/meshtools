@@ -357,7 +357,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart=NULL, int* epa
 }
 
 
-void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* epart)
+void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* epart, int* color)
 {
     std::ofstream fout;
 
@@ -392,6 +392,17 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
                 fout << endl << "\t\t\t\t\t";
             
             fout << epart[i] << " ";
+        }
+        fout << endl;
+        fout << "\t\t\t\t </DataArray> " << endl;
+                fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"Color\" format=\"ascii\" >" << endl;
+        fout << "\t\t\t\t\t";
+        for(int i = 0 ; i < mesh->n_elements ; i++)
+        {
+            if(i % 5 == 0 && i != 0)
+                fout << endl << "\t\t\t\t\t";
+            
+            fout << color[i] << " ";
         }
         fout << endl;
         fout << "\t\t\t\t </DataArray> " << endl;

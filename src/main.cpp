@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
 
     mesh_partition_t *parts = MeshPartitionerInternal(mesh, n_part);
  
-    MeshVTKWriterInternal(mesh, out, parts->nodal_part, parts->elem_part);
+    MeshVTKWriterInternal(mesh, out, parts->nodal_part, parts->elem_part, mesh->mesh_coloring);
 
     MeshPartitionDestroy(parts);
     

@@ -48,7 +48,7 @@ mesh_t* MeshCreate();
 
 void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart);
 
-void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int *nparts, int *epart);
+void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int *nparts, int *epart, int* color);
 
 void MeshGmshReader(mesh_t* mesh, const char* filename);
 
