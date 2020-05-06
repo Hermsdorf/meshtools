@@ -24,12 +24,13 @@ typedef struct {
     vector<int>    offset;                   // 
     vector<int>    type;                     // mapeia a localização de cada elemento no vetor conn
     vector<int>    physical_tag;             //  
+    int* mesh_coloring;
     map<int, physical_data_t>  physical_map; // 
     int n_face_elements;                     // Numeros de elementos na superficies
     int n_elements;                          // Numero de elementos internos
     int n_nodes;                             // Numero de nós.
     int dim;                                 // dimensao da malha
-    } mesh_t;
+} mesh_t;
 
 
 typedef struct {
@@ -52,6 +53,8 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int *nparts, int 
 void MeshGmshReader(mesh_t* mesh, const char* filename);
 
 void MeshReordering(mesh_t *mesh, reorder_t reorder);
+
+void MeshColoring(mesh_t* mesh);
 
 mesh_partition_t* MeshPartitioner(mesh_t* mesh, int nparts);
 
