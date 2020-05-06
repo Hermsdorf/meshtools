@@ -1,0 +1,56 @@
+/usr/include/c++/7/ostream:385:9: note: basic block vectorized
+src/mesh.cpp:357:1: note: basic block vectorized
+/usr/include/c++/7/ostream:385:9: note: basic block vectorized
+src/mesh.cpp:460:1: note: basic block vectorized
+/usr/include/c++/7/bits/stl_algobase.h:753:13: note: loop vectorized
+/usr/include/c++/7/bits/stl_algobase.h:753:13: note: loop vectorized
+/usr/include/c++/7/bits/stl_tree.h:2151:46: note: basic block vectorized
+/usr/include/c++/7/bits/stl_tree.h:2157:43: note: basic block vectorized
+/usr/include/c++/7/bits/stl_tree.h:2173:47: note: basic block vectorized
+src/mesh_part.cpp:39:53: note: loop vectorized
+src/mesh_part.cpp:39:53: note: loop versioned for vectorization because of possible aliasing
+src/mesh_part.cpp:23:23: note: loop vectorized
+src/mesh_part.cpp:95:23: note: loop vectorized
+src/rcm.cpp:74:29: note: loop vectorized
+src/rcm.cpp:264:18: note: loop vectorized
+src/rcm.cpp:258:30: note: loop vectorized
+src/rcm.cpp:424:20: note: loop vectorized
+src/rcm.cpp:708:20: note: loop vectorized
+src/rcm.cpp:704:20: note: loop vectorized
+src/rcm.cpp:835:20: note: loop vectorized
+src/rcm.cpp:1183:18: note: loop vectorized
+src/rcm.cpp:1178:18: note: loop vectorized
+src/rcm.cpp:1748:18: note: loop vectorized
+src/rcm.cpp:1748:18: note: loop versioned for vectorization because of possible aliasing
+src/rcm.cpp:2153:18: note: loop vectorized
+src/rcm.cpp:2247:18: note: loop vectorized
+src/rcm.cpp:2247:18: note: loop versioned for vectorization because of possible aliasing
+src/rcm.cpp:2715:18: note: loop vectorized
+src/rcm.cpp:2953:18: note: loop vectorized
+src/rcm.cpp:2247:18: note: loop vectorized
+src/rcm.cpp:2247:18: note: loop versioned for vectorization because of possible aliasing
+src/rcm.cpp:1075:18: note: loop vectorized
+src/rcm.cpp:4225:28: note: loop vectorized
+src/rcm.cpp:4175:24: note: loop vectorized
+src/rcm.cpp:4393:24: note: loop vectorized
+src/rcm.cpp:4387:18: note: loop vectorized
+src/rcm.cpp:4636:18: note: loop vectorized
+src/rcm.cpp:4631:18: note: loop vectorized
+src/rcm.cpp:4626:18: note: loop vectorized
+src/rcm.cpp:4974:28: note: loop vectorized
+src/rcm.cpp:4877:24: note: loop vectorized
+src/rcm.cpp:5177:24: note: loop vectorized
+src/rcm.cpp:5171:18: note: loop vectorized
+src/rcm.cpp:5450:20: note: loop vectorized
+src/rcm.cpp:5440:18: note: loop vectorized
+/usr/include/c++/7/ostream:385:9: note: basic block vectorized
+src/mesh_reorder.cpp:33:1: note: basic block vectorized
+/usr/include/c++/7/ostream:385:9: note: basic block vectorized
+src/mesh_reorder.cpp:54:1: note: basic block vectorized
+src/mesh_reorder.cpp:66:49: note: loop vectorized
+src/mesh_reorder.cpp:66:49: note: loop versioned for vectorization because of possible aliasing
+/usr/include/c++/7/bits/stl_algobase.h:753:13: note: loop vectorized
+/usr/include/c++/7/bits/stl_algobase.h:753:13: note: loop vectorized
+/usr/include/c++/7/bits/stl_vector.h:691:2: note: basic block vectorized
+/usr/include/c++/7/bits/stl_vector.h:691:2: note: basic block vectorized
+/usr/include/c++/7/bits/stl_vector.h:691:2: note: basic block vectorized

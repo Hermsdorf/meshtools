@@ -1,0 +1,9 @@
+Adj. node 0[0 - 2]: 8 7 4 
+Adj. node 1[3 - 5]: 5 8 4 
+Adj. node 2[6 - 8]: 6 8 5 
+Adj. node 3[9 - 11]: 6 7 8 
+Adj. node 4[12 - 16]: 5 8 1 7 0 
+Adj. node 5[17 - 21]: 2 6 8 4 1 
+Adj. node 6[22 - 26]: 2 8 5 3 7 
+Adj. node 7[27 - 31]: 6 3 8 0 4 
+Adj. node 8[32 - 39]: 2 6 5 4 1 3 7 0 

@@ -3,7 +3,9 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**", "${workspaceFolder}/include"
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/include",
+                "/home/jcamata/local/metis/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

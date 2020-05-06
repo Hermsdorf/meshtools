@@ -20,9 +20,9 @@ LDFLAGS +=    -lmetis
 
 CXX_FLAGS    = $(INCLUDE_DIRS)
 CXX_FLAGS   += -g 
-#CXX_FLAGS   += -O2  
+#CXX_FLAGS   += -O3 
 #-ftree-vectorize -fopt-info-vec 
-#CXX_FLAGS   += -DDEBUG
+CXX_FLAGS   += -DDEBUG
 
 # source files
 srcfiles        := $(wildcard *.cpp) $(wildcard src/*.cpp)
@@ -30,7 +30,8 @@ objects         := $(patsubst %.cpp, %.o, $(srcfiles))
 
 
 meshtools: $(objects)
-	$(CXX_COMPILER) -o meshtools  $(CXX_FLAGS) $(objects) $(LDFLAGS)
+	@echo "Linking C++ "$@"..."
+	@$(CXX_COMPILER) -o meshtools  $(CXX_FLAGS) $(objects) $(LDFLAGS)
 
 
 move:
@@ -43,7 +44,7 @@ clean:
 #
 %.o : %.cpp
 	@echo "Compiling C++ "$<"..."
-	$(CXX_COMPILER) $(CXX_FLAGS) -c $< -o $@
+	@$(CXX_COMPILER) $(CXX_FLAGS) -c $< -o $@
 
 
 
