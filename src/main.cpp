@@ -24,10 +24,10 @@ int main(int argc, char* argv[])
     int n_part = atoi(argv[2]);
     
     mesh_t* mesh = MeshCreate();
-
+    
     MeshGmshReader(mesh, argv[1]);
 
-    MeshReordering(mesh, RCM);
+    //MeshReordering(mesh, RCM);
 
     MeshColoring(mesh);
 
@@ -36,7 +36,6 @@ int main(int argc, char* argv[])
     MeshVTKWriterInternal(mesh, out, parts->nodal_part, parts->elem_part, mesh->mesh_coloring);
 
     MeshPartitionDestroy(parts);
-    
     MeshDestroy(&mesh);
 
     return 0;

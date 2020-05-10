@@ -148,9 +148,9 @@ void MeshGmshReader(mesh_t* mesh, const char* filename)
                 double x,y,z;
                 for(int i = 0; i < num_nodes; i++) {
                     in >> node_id >> x >> y >> z;
-                    mesh->coord[i*3+0] = x;
-                    mesh->coord[i*3+1] = y;
-                    mesh->coord[i*3+2] = z;
+                    mesh->coord[(i*3)+0] = x;
+                    mesh->coord[(i*3)+1] = y;
+                    mesh->coord[(i*3)+2] = z;
                 }
 
                 // read the $ENDNOD delimiter
@@ -239,6 +239,10 @@ void MeshGmshReader(mesh_t* mesh, const char* filename)
         mesh->n_elements      = dim_count[2];
         mesh->n_face_elements = dim_count[1];
     }
+    
+    mesh->mesh_coloring = new int [mesh->n_elements];
+    for(int i = 0 ; i < mesh->n_elements ; i++)
+        mesh->mesh_coloring[i] = -1;
 
     cout << " Num. Nodes: " << mesh->n_nodes << endl;
     cout << " Num. Elements: "          << mesh->n_elements << endl;

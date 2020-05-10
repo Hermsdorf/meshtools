@@ -16,7 +16,6 @@ mesh_t* MeshCreate()
     mesh->n_nodes = 0; 
     mesh->dim = 0;
     return mesh;
-
 }
 
 void MeshDestroy(mesh_t** mesh)

@@ -16,7 +16,6 @@ using namespace std;
 
 void convert_to_one_index( int node_num, int adj_num, int adj_row[], int adj[])
 {
-
         for (int i = 0; i < node_num; i++)
         {
             adj_row[i] += 1;
@@ -31,7 +30,6 @@ void convert_to_one_index( int node_num, int adj_num, int adj_row[], int adj[])
 
 void convert_to_zero_index( int node_num, int adj_num, int adj_row[], int adj[])
   {
-
         for (int i = 0; i < node_num; i++)
         {
             adj_row[i] -= 1;
@@ -42,11 +40,8 @@ void convert_to_zero_index( int node_num, int adj_num, int adj_row[], int adj[])
         adj_row[node_num]-=1;
   }
 
-
-
 void WriteAdj(const char *fname, int nvts, idx_t *xadj, idx_t *adjncy)
 {
-
     ofstream fout;
     fout.open(fname);
     if (fout.is_open())
@@ -107,13 +102,13 @@ void MeshToGraph(mesh_t *mesh, idx_t **xadj, idx_t **adjncy)
 
     if (result == METIS_OK)
     {
-        
+        /*
         int adj_size = (*xadj)[*nn]; 
         convert_to_one_index(*nn, adj_size, *xadj, *adjncy);
 
         cout << "   - Original Bandwidth: " << adj_bandwidth(mesh->n_nodes, (*xadj)[mesh->n_nodes], *xadj, *adjncy) << endl;
 
-        convert_to_zero_index(*nn, adj_size, *xadj, *adjncy);
+        convert_to_zero_index(*nn, adj_size, *xadj, *adjncy);*/
      
         cout << "Mesh to graph succesfully applied" << endl;
     }
@@ -221,7 +216,7 @@ void MeshReorderingRCM(mesh_t *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int 
     // função responsável por retornar o iperm a partir do numero de elementos permutados e do perm
     perm_inverse3(mesh->n_nodes, perm, iperm);
 
-    cout << "   - Final Bandwidth: " << adj_perm_bandwidth(mesh->n_nodes,xadj[mesh->n_nodes], xadj, adjncy,perm, iperm) << endl;
+    //cout << "   - Final Bandwidth: " << adj_perm_bandwidth(mesh->n_nodes,xadj[mesh->n_nodes], xadj, adjncy,perm, iperm) << endl;
 
 #pragma omp parallel for
     for (int i = 0; i < mesh->n_nodes; i++)
@@ -247,7 +242,7 @@ void MeshReorderingMETIS(mesh_t *mesh, idx_t *xadj, idx_t *adjncy, int *perm, in
     if (result == METIS_OK)
     {
         cout << "METIS reordering succesfully applied" << endl;
-        int adj_size = xadj[*nn];
+        /*int adj_size = xadj[*nn];
         convert_to_one_index(*nn,adj_size,xadj, adjncy);
         for(int i = 0; i < mesh->n_nodes; i++)
         {
@@ -255,8 +250,8 @@ void MeshReorderingMETIS(mesh_t *mesh, idx_t *xadj, idx_t *adjncy, int *perm, in
             iperm[i]++;
         }
         cout << "  - Final Bandwidth: " << adj_perm_bandwidth(mesh->n_nodes,xadj[mesh->n_nodes], xadj, adjncy, perm, iperm) << endl;
-        convert_to_zero_index(*nn,adj_size,xadj, adjncy);
-                for(int i = 0; i < mesh->n_nodes; i++)
+        convert_to_zero_index(*nn,adj_size,xadj, adjncy);*/
+        for(int i = 0; i < mesh->n_nodes; i++)
         {
             perm[i]--;
             iperm[i]--;

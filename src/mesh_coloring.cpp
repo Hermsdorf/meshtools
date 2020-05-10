@@ -27,13 +27,6 @@ void MeshToDualGraph(mesh_t *mesh, idx_t **xadj, idx_t **adjncy)
     if (result == METIS_OK)
     {
         cout << "Mesh to Dual Graph sucessfully applied" << endl;
-        /*cout << "XADJ: ";
-        for(int i = 0 ; i < *ne+1 ; i++)
-            cout << (*xadj)[i] << " ";
-        cout << endl << "ADJNCY: ";
-        for(int i = 0 ; i < (*xadj)[*ne] ; i++)
-            cout << (*adjncy)[i] << " ";
-        cout << endl;*/
     }
     else
     {
@@ -60,12 +53,86 @@ void MeshToDualGraph(mesh_t *mesh, idx_t **xadj, idx_t **adjncy)
     delete[] eptr;
 }
 
+void UpdateMeshArrays(mesh_t* mesh, int* newConn, int* newOffset)
+{
+    int ne = mesh->n_elements;
+    int nfe = mesh->n_face_elements;
+
+    for(int i = nfe, j = 0 ; i <= nfe + ne ; i++, j++)
+        mesh->offset[i] = newOffset[j];
+
+    for(int i = mesh->offset[nfe], j = 0 ; i < mesh->conn.size() ; i++, j++)
+        mesh->conn[i] = newConn[j];
+
+    /*cout << "NOVO CONN: ";
+    for(int i = mesh->offset[nfe]; i < mesh->conn.size() ; i++)
+        cout << mesh->conn[i] << " ";
+    cout << endl << "NOVO OFFSET: ";
+    for(int i = nfe ; i <= nfe + ne ; i++)
+        cout << mesh->offset[i] << " ";
+    cout << endl;*/
+}
+
+void ReorderElements(mesh_t* mesh, int* sort)
+{
+    int ne = mesh->n_elements;
+    int nfe = mesh->n_face_elements;
+    int* newConn = new int [mesh->offset.back() - mesh->offset[nfe]];
+    int* newOffset = new int [ne + 1];
+    unsigned int countConn = 0;
+    unsigned int countOffset = 1;
+
+    newOffset[0] = mesh->offset[nfe];
+
+    for(int i = 0 ; i < ne ; i++)
+    {
+        int start = mesh->offset[nfe + sort[i]];
+        int end = mesh->offset[nfe + sort[i] + 1];
+
+        newOffset[countOffset] = newOffset[countOffset - 1] + (end-start);
+        countOffset++;
+        for(int j = start ; j < end ; j++)
+        {
+            newConn[countConn] = mesh->conn[j];
+            countConn++;
+        }
+    }
+
+    UpdateMeshArrays(mesh, newConn, newOffset);
+
+    delete [] newConn;
+    delete [] newOffset;    
+}
+void CreateSort(mesh_t* mesh, int biggestColor)
+{
+    int ne = mesh->n_elements;
+    int* sort = new int [ne];
+    int count = 0;
+
+    for(int i = 1 ; i <= biggestColor ; i++)
+    {
+        for(int j = 0 ; j < ne ; j++)
+        {
+            if(mesh->mesh_coloring[j] == i)
+            {
+                sort[count] = j;
+                count++;
+            }
+        }
+    }
+
+    ReorderElements(mesh, sort);
+
+    delete [] sort;
+}
+
 void MeshColoring(mesh_t* mesh)
 {
     idx_t* xadj;
     idx_t* adjncy;
     int ne = mesh->n_elements;
     int* elementsColor = new int [ne];
+    int biggestColor = 1; // variavel importante para a função MeshColoringReorder()
 
     cout << "Starting mesh coloring..." << endl;
     
@@ -95,18 +162,20 @@ void MeshColoring(mesh_t* mesh)
                 j++;
         }
 
-
         elementsColor[i] = count;
+
+        if(count > biggestColor)
+            biggestColor = count;
     }
     
+    delete [] mesh->mesh_coloring; // delete do new feito na função MeshGmshReader onde inicializa todo o vetor mesh_coloring com -1
+
     mesh->mesh_coloring = elementsColor;
 
-    /*cout << "MESH_COLORING: ";
-    for(int i = 0 ; i < ne ; i++)
-        cout << mesh->mesh_coloring[i] << " ";
-    cout << endl;*/
-
     cout << "Finished mesh coloring..." << endl;
+
+    CreateSort(mesh, biggestColor);
+
     METIS_Free(xadj);
     METIS_Free(adjncy);
 }
