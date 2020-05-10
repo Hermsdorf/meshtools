@@ -1,9 +1,19 @@
 #include <iostream>
+#include <algorithm>
 
 using namespace std;
 
 #include "metis.h"
 #include "mesh.h"
+
+
+int compare_int(const void *a, const void *b)
+{
+    const int *da = (const int *)a;
+    const int *db = (const int *)b;
+
+    return (*da > *db);
+}
 
 void MeshToDualGraph(mesh_t *mesh, idx_t **xadj, idx_t **adjncy)
 {
@@ -98,11 +108,14 @@ void ReorderElements(mesh_t* mesh, int* sort)
         }
     }
 
+    qsort(mesh->mesh_coloring, ne, sizeof(int), compare_int);
+
     UpdateMeshArrays(mesh, newConn, newOffset);
 
     delete [] newConn;
-    delete [] newOffset;    
+    delete [] newOffset;   
 }
+
 void CreateSort(mesh_t* mesh, int biggestColor)
 {
     int ne = mesh->n_elements;
