@@ -401,12 +401,15 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
         fout << "\t\t\t\t </DataArray> " << endl;
                 fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"Color\" format=\"ascii\" >" << endl;
         fout << "\t\t\t\t\t";
-        for(int i = 0 ; i < mesh->n_elements ; i++)
+        for(int i = 0 ; i < mesh->biggestColor ; i++)
         {
-            if(i % 5 == 0 && i != 0)
-                fout << endl << "\t\t\t\t\t";
-            
-            fout << color[i] << " ";
+            for(int j = 0 ; j < color[i] ; j++)
+            {
+                if(j % 5 == 0 && i != 0)
+                    fout << endl << "\t\t\t\t\t";
+
+                fout << i+1 << " ";
+            }
         }
         fout << endl;
         fout << "\t\t\t\t </DataArray> " << endl;

@@ -25,6 +25,7 @@ typedef struct {
     vector<int>    type;                     // mapeia a localização de cada elemento no vetor conn
     vector<int>    physical_tag;             //  
     int* mesh_coloring;
+    int biggestColor;
     map<int, physical_data_t>  physical_map; // 
     int n_face_elements;                     // Numeros de elementos na superficies
     int n_elements;                          // Numero de elementos internos
