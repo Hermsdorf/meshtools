@@ -240,9 +240,13 @@ void MeshGmshReader(mesh_t* mesh, const char* filename)
         mesh->n_face_elements = dim_count[1];
     }
     
-    mesh->mesh_coloring = new int [mesh->n_elements];
+    mesh->mesh_coloring_internal = new int [mesh->n_elements];
+    mesh->mesh_coloring_bound = new int [mesh->n_face_elements];
+
     for(int i = 0 ; i < mesh->n_elements ; i++)
-        mesh->mesh_coloring[i] = -1;
+        mesh->mesh_coloring_internal[i] = -1;
+    for(int i = 0 ; i < mesh->n_face_elements ; i++)
+        mesh->mesh_coloring_bound[i] = -1;
 
     cout << " Num. Nodes: " << mesh->n_nodes << endl;
     cout << " Num. Elements: "          << mesh->n_elements << endl;
@@ -401,7 +405,7 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
         fout << "\t\t\t\t </DataArray> " << endl;
                 fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"Color\" format=\"ascii\" >" << endl;
         fout << "\t\t\t\t\t";
-        for(int i = 0 ; i < mesh->biggestColor ; i++)
+        for(int i = 0 ; i < mesh->n_internal_colors ; i++)
         {
             for(int j = 0 ; j < color[i] ; j++)
             {

@@ -110,7 +110,7 @@ void MeshToGraph(mesh_t *mesh, idx_t **xadj, idx_t **adjncy)
 
         convert_to_zero_index(*nn, adj_size, *xadj, *adjncy);*/
      
-        cout << "Mesh to graph succesfully applied" << endl;
+        cout << "Mesh to Nodal Graph succesfully applied" << endl;
     }
     else
     {

@@ -29,11 +29,11 @@ int main(int argc, char* argv[])
 
     MeshReordering(mesh, RCM);
 
-    MeshColoring(mesh);
+    MeshColoring(mesh, INTBOUND);
 
     mesh_partition_t *parts = MeshPartitionerInternal(mesh, n_part);
  
-    MeshVTKWriterInternal(mesh, out, parts->nodal_part, parts->elem_part, mesh->mesh_coloring);
+    MeshVTKWriterInternal(mesh, out, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal);
 
     MeshPartitionDestroy(parts);
     MeshDestroy(&mesh);
