@@ -6,3 +6,6 @@ src/mesh_reorder.o
 src/mesh_part.o
 .vscode/settings.json
 .vscode/c_cpp_properties.json
+build
+build/*
+
