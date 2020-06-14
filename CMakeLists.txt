@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.0.0)
 
+cmake_policy(SET CMP0057 NEW)
+
 project(meshtools)
 
 include(CTest)
@@ -15,21 +17,27 @@ file(GLOB source_files
     )
 
 
-add_executable(meshtools ${source_files})
-include_directories(include)
-
 # Finding Depedencies
 # Looking for Metis Library
 
-find_package(METIS REQUIRED)
-include_directories(${METIS_INCLUDE_DIRS})
-
 find_package(MPI)
-find_package(ParaView CONFIG REQUIRED)
-INCLUDE(${PARAVIEW_USE_FILE})
+find_package(METIS REQUIRED)
 
-set(LIBS ${LIB} "${METIS_LIBRARIES}")
-target_link_libraries(meshtools ${LIBS})
+find_package(ParaView CONFIG COMPONENTS Catalyst PythonCatalyst)
+
+include_directories(${METIS_INCLUDE_DIRS})
+include_directories(include)
+
+add_executable(meshtools ${source_files})
+
+target_link_libraries(meshtools 
+PRIVATE
+ParaView::Catalyst 
+ParaView::PythonCatalyst 
+VTK::CommonDataModel 
+MPI::MPI_C
+${METIS_LIBRARIES}
+)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
