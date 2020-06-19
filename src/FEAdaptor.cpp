@@ -16,98 +16,103 @@
 
 namespace
 {
-vtkCPProcessor* Processor = NULL;
-vtkUnstructuredGrid* VTKGrid;
+  vtkCPProcessor *Processor = NULL;
+  vtkUnstructuredGrid *VTKGrid;
 
-void BuildVTKGrid(mesh_t* mesh)
-{
-  // create the points information
-  vtkNew<vtkDoubleArray> pointArray;
-  pointArray->SetNumberOfComponents(3);
-  pointArray->SetArray(mesh->coord, static_cast<vtkIdType>(mesh->n_nodes * 3), 1);
-  vtkNew<vtkPoints> points;
-  points->SetData(pointArray.GetPointer());
-  VTKGrid->SetPoints(points.GetPointer());
-
-  // create the cells
-  int ne = mesh->n_elements;
-  VTKGrid->Allocate(static_cast<vtkIdType>(ne * 9)); // por que vezes 9?
-  for (unsigned int cell = 0; cell < ne; cell++)
+  void BuildVTKGrid(mesh_t *mesh)
   {
-    int n_conn = mesh->offset[cell+1] - mesh->offset[cell];
-    unsigned int* cellPoints = cellsData + n_conn * cell;
+    // create the points information
+    vtkNew<vtkDoubleArray> pointArray;
+    pointArray->SetNumberOfComponents(3);
+    pointArray->SetArray(mesh->coord, static_cast<vtkIdType>(mesh->n_nodes * 3), 1);
+    vtkNew<vtkPoints> points;
+    points->SetData(pointArray.GetPointer());
+    VTKGrid->SetPoints(points.GetPointer());
 
-    vtkIdType tmp = new vtdIdType[n_conn];
-    for(int i = 0 ; i < n_conn ; i++)
+    // create the cells
+    int ne = mesh->n_elements;
+
+    /**
+   *  TODO: trocar ne*9 pelo tamanho do offset
+   * */
+    VTKGrid->Allocate(static_cast<vtkIdType>(ne * 9)); // por que vezes 9?
+    for (unsigned int cell = 0; cell < ne; cell++)
+    {
+      // TODO: remover elementos de superfice e deixar apenas internos
+      int n_conn = mesh->offset[cell + 1] - mesh->offset[cell];
+      unsigned int *cellPoints = cellsData + n_conn * cell;
+
+      vtkIdType tmp = new vtdIdType[n_conn];
+      for (int i = 0; i < n_conn; i++)
         tmp[i] = cellPoints[i]; // conectividade
 
-    VTKGrid->InsertNextCell(GmshToVTKType(mesh->type[cell]), n_conn, tmp); // (tipo do elemento, numero de nós, vetor com as conn)
-    delete [] tmp;
-  }
-}
-
-void UpdateVTKAttributes(vtkCPInputDataDescription* idd, mesh_t* mesh,
-  double* velocityData, float* pressureData)
-{
-  int nn = mesh->n_nodes;
-  int ne = mesh->n_elements;
-  if (idd->IsFieldNeeded("velocity", vtkDataObject::POINT) == true)
-  {
-    if (VTKGrid->GetPointData()->GetNumberOfArrays() == 0)
-    {
-      // velocity array
-      vtkNew<vtkDoubleArray> velocity;
-      velocity->SetName("velocity");
-      velocity->SetNumberOfComponents(3);
-      velocity->SetNumberOfTuples(static_cast<vtkIdType>(nn));
-      VTKGrid->GetPointData()->AddArray(velocity.GetPointer());
-    }
-    vtkDoubleArray* velocity =
-      vtkDoubleArray::SafeDownCast(VTKGrid->GetPointData()->GetArray("velocity"));
-    // The velocity array is ordered as vx0,vx1,vx2,..,vy0,vy1,vy2,..,vz0,vz1,vz2,..
-    // so we need to create a full copy of it with VTK's ordering of
-    // vx0,vy0,vz0,vx1,vy1,vz1,..
-    for (unsigned int i = 0; i < nn; i++)
-    {
-      double values[3] = { velocityData[i], velocityData[i + nn],
-        velocityData[i + 2 * nn] };
-      velocity->SetTypedTuple(i, values);
+      VTKGrid->InsertNextCell(GmshToVTKType(mesh->type[cell]), n_conn, tmp); // (tipo do elemento, numero de nós, vetor com as conn)
+      delete[] tmp;
     }
   }
-  if (idd->IsFieldNeeded("pressure", vtkDataObject::CELL) == true)
+
+  void UpdateVTKAttributes(vtkCPInputDataDescription *idd, mesh_t *mesh,
+                           double *velocityData, float *pressureData)
   {
-    if (VTKGrid->GetCellData()->GetNumberOfArrays() == 0)
+    int nn = mesh->n_nodes;
+    int ne = mesh->n_elements;
+    if (idd->IsFieldNeeded("velocity", vtkDataObject::POINT) == true)
     {
-      // pressure array
-      vtkNew<vtkFloatArray> pressure;
-      pressure->SetName("pressure");
-      pressure->SetNumberOfComponents(1);
-      VTKGrid->GetCellData()->AddArray(pressure.GetPointer());
+      if (VTKGrid->GetPointData()->GetNumberOfArrays() == 0)
+      {
+        // velocity array
+        vtkNew<vtkDoubleArray> velocity;
+        velocity->SetName("velocity");
+        velocity->SetNumberOfComponents(3);
+        velocity->SetNumberOfTuples(static_cast<vtkIdType>(nn));
+        VTKGrid->GetPointData()->AddArray(velocity.GetPointer());
+      }
+      vtkDoubleArray *velocity =
+          vtkDoubleArray::SafeDownCast(VTKGrid->GetPointData()->GetArray("velocity"));
+      // The velocity array is ordered as vx0,vx1,vx2,..,vy0,vy1,vy2,..,vz0,vz1,vz2,..
+      // so we need to create a full copy of it with VTK's ordering of
+      // vx0,vy0,vz0,vx1,vy1,vz1,..
+      for (unsigned int i = 0; i < nn; i++)
+      {
+        double values[3] = {velocityData[i], velocityData[i + nn],
+                            velocityData[i + 2 * nn]};
+        velocity->SetTypedTuple(i, values);
+      }
     }
-    vtkFloatArray* pressure =
-      vtkFloatArray::SafeDownCast(VTKGrid->GetCellData()->GetArray("pressure"));
-    // The pressure array is a scalar array so we can reuse
-    // memory as long as we ordered the points properly.
-    pressure->SetArray(pressureData, static_cast<vtkIdType>(ne), 1);
+    if (idd->IsFieldNeeded("pressure", vtkDataObject::CELL) == true)
+    {
+      if (VTKGrid->GetCellData()->GetNumberOfArrays() == 0)
+      {
+        // pressure array
+        vtkNew<vtkFloatArray> pressure;
+        pressure->SetName("pressure");
+        pressure->SetNumberOfComponents(1);
+        VTKGrid->GetCellData()->AddArray(pressure.GetPointer());
+      }
+      vtkFloatArray *pressure =
+          vtkFloatArray::SafeDownCast(VTKGrid->GetCellData()->GetArray("pressure"));
+      // The pressure array is a scalar array so we can reuse
+      // memory as long as we ordered the points properly.
+      pressure->SetArray(pressureData, static_cast<vtkIdType>(ne), 1);
+    }
   }
-}
 
-void BuildVTKDataStructures(vtkCPInputDataDescription* idd, mesh_t* mesh,
-   double* velocity, float* pressure)
-{
-  if (VTKGrid == NULL)
+  void BuildVTKDataStructures(vtkCPInputDataDescription *idd, mesh_t *mesh,
+                              double *velocity, float *pressure)
   {
-    // The grid structure isn't changing so we only build it
-    // the first time it's needed. If we needed the memory
-    // we could delete it and rebuild as necessary.
-    VTKGrid = vtkUnstructuredGrid::New();
-    BuildVTKGrid(mesh);
+    if (VTKGrid == NULL)
+    {
+      // The grid structure isn't changing so we only build it
+      // the first time it's needed. If we needed the memory
+      // we could delete it and rebuild as necessary.
+      VTKGrid = vtkUnstructuredGrid::New();
+      BuildVTKGrid(mesh);
+    }
+    UpdateVTKAttributes(idd, mesh, velocity, pressure);
   }
-  UpdateVTKAttributes(idd, mesh, velocity, pressure);
-}
-}
+} // namespace
 
-void CatalystInitialize(int numScripts, char* scripts[])
+void CatalystInitialize(int numScripts, char *scripts[])
 {
   if (Processor == NULL)
   {
@@ -140,8 +145,8 @@ void CatalystFinalize()
   }
 }
 
-void CatalystCoProcess(mesh_t* mesh, double* velocityData, float* pressureData, double time,
-  unsigned int timeStep, int lastTimeStep)
+void CatalystCoProcess(mesh_t *mesh, double *velocityData, float *pressureData, double time,
+                       unsigned int timeStep, int lastTimeStep)
 {
   vtkNew<vtkCPDataDescription> dataDescription;
   dataDescription->AddInput("input");
@@ -154,7 +159,7 @@ void CatalystCoProcess(mesh_t* mesh, double* velocityData, float* pressureData, 
   }
   if (Processor->RequestDataDescription(dataDescription.GetPointer()) != 0)
   {
-    vtkCPInputDataDescription* idd = dataDescription->GetInputDescriptionByName("input");
+    vtkCPInputDataDescription *idd = dataDescription->GetInputDescriptionByName("input");
     BuildVTKDataStructures(idd, mesh, velocityData, pressureData);
     idd->SetGrid(VTKGrid);
     Processor->CoProcess(dataDescription.GetPointer());

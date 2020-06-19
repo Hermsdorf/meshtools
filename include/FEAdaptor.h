@@ -1,6 +1,8 @@
 #ifndef FEADAPTOR_HEADER
 #define FEADAPTOR_HEADER
 
+#include "mesh.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

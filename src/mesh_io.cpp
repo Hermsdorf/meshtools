@@ -258,7 +258,7 @@ void MeshGmshReader(mesh_t* mesh, const char* filename)
     //return mesh;
 }
 
-
+// TODO: Incluir escrita da velocidade e pressão.
 void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart=NULL, int* epart=NULL)
 {
     std::ofstream fout;
