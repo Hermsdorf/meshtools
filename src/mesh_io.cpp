@@ -181,7 +181,7 @@ void MeshGmshReader(mesh_t* mesh, const char* filename)
                    cout << id << "  " << type << "  " << ntags << " ";
 #endif
 
-                    mesh->type[i] = type;
+                    mesh->type[i] = GmshToVTKType(type);
 
                     nnodes   = getGmshElemNNodes(type);
                     elem_dim = getGmshElemTypeDim(type);
@@ -351,7 +351,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart=NULL, int* epa
             if(i % 6 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";
 
-            fout << GmshToVTKType(mesh->type[i]) << " ";
+            fout << mesh->type[i] << " ";
         }
         fout << endl;
         fout << "\t\t\t\t</DataArray>" << endl;
@@ -365,7 +365,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart=NULL, int* epa
 }
 
 
-void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* epart, int* color)
+void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* epart, int* color, double* velocity, float* pressure)
 {
     std::ofstream fout;
 
@@ -389,7 +389,29 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
         }
         fout << endl;
         fout << "\t\t\t\t </DataArray> " << endl;
+        fout << "\t\t\t\t <DataArray type=\"Float64\" Name=\"velocity\" format=\"ascii\" >" << endl;
+        fout << "\t\t\t\t\t";
+        for(int i = 0 ; i < mesh->n_nodes * 3 ; i++)
+        {
+            if(i % 6 == 0 && i != 0)
+                fout << endl << "\t\t\t\t\t";
 
+            fout << velocity[i] << " ";
+        }
+        fout << endl;
+        
+        fout << "\t\t\t\t </DataArray> " << endl;
+        fout << "\t\t\t\t <DataArray type=\"Float32\" Name=\"pressure\" format=\"ascii\" >" << endl;
+        fout << "\t\t\t\t\t";
+        for(int i = 0 ; i < mesh->n_nodes ; i++)
+        {
+            if(i % 6 == 0 && i != 0)
+                fout << endl << "\t\t\t\t\t";
+
+            fout << pressure[i] << " ";
+        }
+        fout << endl;
+        fout << "\t\t\t\t </DataArray> " << endl;
         fout << "\t\t\t</PointData>" << endl;
         fout << "\t\t\t<CellData>" << endl;
         fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"epart\" format=\"ascii\" >" << endl;
@@ -437,8 +459,6 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
         
         int ofs = mesh->offset[mesh->n_face_elements];
 
-        //cout << "OFFSET: " << ofs << endl;
-
         for(int i = ofs ; i < mesh->conn.size() ; i++)
         {
             if(i % 5 == 0 )
@@ -468,7 +488,7 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
             if(i % 6 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";
 
-            fout << GmshToVTKType(mesh->type[i]) << " ";
+            fout << mesh->type[i] << " ";
         }
         fout << endl;
         fout << "\t\t\t\t</DataArray>" << endl;

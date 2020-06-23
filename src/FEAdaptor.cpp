@@ -22,33 +22,42 @@ namespace
   void BuildVTKGrid(mesh_t *mesh)
   {
     // create the points information
+    int size_coord = mesh->coord.size();
+    double* pointData = new double[size_coord];
+    for(int i = 0 ; i < size_coord ; i++)
+      pointData[i] = mesh->coord[i];
+
     vtkNew<vtkDoubleArray> pointArray;
     pointArray->SetNumberOfComponents(3);
-    pointArray->SetArray(mesh->coord, static_cast<vtkIdType>(mesh->n_nodes * 3), 1);
+    pointArray->SetArray(pointData, static_cast<vtkIdType>(mesh->n_nodes * 3), 1); 
     vtkNew<vtkPoints> points;
     points->SetData(pointArray.GetPointer());
     VTKGrid->SetPoints(points.GetPointer());
 
     // create the cells
     int ne = mesh->n_elements;
+    int nfe = mesh->n_face_elements;
+    int ntotal_elements = ne + nfe;
+    int size_conn = mesh->conn.size();
+    unsigned int* cellsData = new unsigned int[size_conn];
+    for(int i = 0 ; i < size_conn ; i++)
+      cellsData[i] = mesh->conn[i];
 
-    /**
-   *  TODO: trocar ne*9 pelo tamanho do offset
-   * */
-    VTKGrid->Allocate(static_cast<vtkIdType>(ne * 9)); // por que vezes 9?
-    for (unsigned int cell = 0; cell < ne; cell++)
+    VTKGrid->Allocate(static_cast<vtkIdType>(mesh->offset[ntotal_elements] - mesh->offset[nfe]));
+    for (unsigned int cell = nfe; cell < ntotal_elements; cell++)
     {
-      // TODO: remover elementos de superfice e deixar apenas internos
       int n_conn = mesh->offset[cell + 1] - mesh->offset[cell];
       unsigned int *cellPoints = cellsData + n_conn * cell;
 
-      vtkIdType tmp = new vtdIdType[n_conn];
+      vtkIdType* tmp = new vtkIdType[n_conn];
       for (int i = 0; i < n_conn; i++)
         tmp[i] = cellPoints[i]; // conectividade
 
-      VTKGrid->InsertNextCell(GmshToVTKType(mesh->type[cell]), n_conn, tmp); // (tipo do elemento, numero de nós, vetor com as conn)
+      VTKGrid->InsertNextCell(mesh->type[cell], n_conn, tmp); // (tipo do elemento, numero de nós, vetor com as conn)
       delete[] tmp;
     }
+
+    //delete [] pointData; // devo deletar o pointData pois o pointArray aponta pra ele, não sei se o pointArray é deletado automaticamente
   }
 
   void UpdateVTKAttributes(vtkCPInputDataDescription *idd, mesh_t *mesh,
