@@ -23,9 +23,7 @@ namespace
   {
     // create the points information
     int size_coord = mesh->coord.size();
-    double* pointData = new double[size_coord];
-    for(int i = 0 ; i < size_coord ; i++)
-      pointData[i] = mesh->coord[i];
+    double* pointData = &mesh->coord[0];
 
     vtkNew<vtkDoubleArray> pointArray;
     pointArray->SetNumberOfComponents(3);
@@ -39,9 +37,7 @@ namespace
     int nfe = mesh->n_face_elements;
     int ntotal_elements = ne + nfe;
     int size_conn = mesh->conn.size();
-    unsigned int* cellsData = new unsigned int[size_conn];
-    for(int i = 0 ; i < size_conn ; i++)
-      cellsData[i] = mesh->conn[i];
+    unsigned int* cellsData = (unsigned int*)mesh->conn[0];
 
     VTKGrid->Allocate(static_cast<vtkIdType>(mesh->offset[ntotal_elements] - mesh->offset[nfe]));
     for (unsigned int cell = nfe; cell < ntotal_elements; cell++)

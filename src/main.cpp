@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
 
     MeshColoring(mesh, INTERNAL);
 
-    //mesh_partition_t *parts = MeshPartitionerInternal(mesh, n_part);
+    mesh_partition_t *parts = MeshPartitionerInternal(mesh, n_part);
 
     double *velocity = new double[mesh->n_nodes*3];
     float *pressure  = new float[mesh->n_nodes];
@@ -63,10 +63,9 @@ int main(int argc, char* argv[])
     }
 
     CatalystFinalize();
-    MeshVTKWriterInternal(mesh, out, NULL, NULL, mesh->mesh_coloring_internal, velocity, pressure);
-    //MeshVTKWriterInternal(mesh, out, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal);
+    MeshVTKWriterInternal(mesh, out, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
 
-    //MeshPartitionDestroy(parts);
+    MeshPartitionDestroy(parts);
     MeshDestroy(&mesh);
 
     return 0;
