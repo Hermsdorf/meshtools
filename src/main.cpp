@@ -6,23 +6,29 @@
 
 #include "mesh.h"
 
+
+// TODO: Aqui colocar função de velocidade conhecida 
+//     
 void UpdateAttr(int n, int time, double*v, float *p)
 {
     for(int i = 0; i < n; i++)
     {
-        v[i*3] = time;
+        v[i*3]    = time;
         v[i*3+1] = time;
         v[i*3+2] = time;
-        p[i] =  time;
+        p[i]     =  time;
     }
 }
 
 int main(int argc, char* argv[])
 {
-    if(argc != 4)
+    /* TODO:Considerar que a entrada do script catalyst
+     *      
+    /*/       
+    if(argc < 3)
     {
         cout << "ERROR: WRONG EXECUTION" << endl;
-	    cout << "./meshtools filename.msh n_partitions catalyst.py" << endl;
+	    cout << "./meshtools filename.msh n_partitions [catalyst.py]" << endl;
 
 	    return 0;
     }
@@ -35,7 +41,11 @@ int main(int argc, char* argv[])
     out = str.c_str();
     int n_part = atoi(argv[2]);
 
-    //CatalystInitialize(1, argv+3);
+    int n_script = 0;
+    if(argc == 4)
+        n_script = 1
+
+    CatalystInitialize(n_script, argv+3);
     
     mesh_t* mesh = MeshCreate();
     
@@ -57,13 +67,21 @@ int main(int argc, char* argv[])
     while(time < max_time)
     {
         UpdateAttr(mesh->n_nodes,time, velocity, pressure);
-        //CatalystCoProcess(mesh, velocity, pressure,time,timeStep, 0);
+        
+        CatalystCoProcess(mesh, velocity, pressure,time,timeStep, 0);
+
+        //MeshVTKWriter(mesh, out, timeStep,...)
+        MeshVTKWriter(mesh, out, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, mesh->mesh_coloring_bound, velocity, pressure);
 
         time += dt;
+        timeStep++;
     }
 
-    //CatalystFinalize();
-    MeshVTKWriter(mesh, out, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, mesh->mesh_coloring_bound, velocity, pressure);
+
+
+    CatalystFinalize();
+
+    //MeshVTKWriter(mesh, out, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, mesh->mesh_coloring_bound, velocity, pressure);
     //MeshVTKWriterInternal(mesh, out, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
 
     MeshPartitionDestroy(parts);

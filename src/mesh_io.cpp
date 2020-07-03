@@ -258,6 +258,7 @@ void MeshGmshReader(mesh_t* mesh, const char* filename)
     //return mesh;
 }
 
+// TODO: Implementar uma versão binária.
 void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, int* colorInt, int* colorBound, double* velocity, float* pressure)
 {
     cout << "Writing VTK boundary and internal elements..." << endl;

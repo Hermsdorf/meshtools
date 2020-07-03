@@ -22,7 +22,7 @@ namespace
   void BuildVTKGrid(mesh_t *mesh)
   {
     // create the points information
-    int size_coord = mesh->coord.size();
+    int size_coord    = mesh->coord.size();
     double* pointData = &mesh->coord[0];
 
     vtkNew<vtkDoubleArray> pointArray;
@@ -83,7 +83,8 @@ namespace
         velocity->SetTypedTuple(i, values);
       }
     }
-    if (idd->IsFieldNeeded("pressure", vtkDataObject::CELL) == true)
+    //
+    if (idd->IsFieldNeeded("pressure", vtkDataObject::POINT) == true)
     {
       if (VTKGrid->GetCellData()->GetNumberOfArrays() == 0)
       {
