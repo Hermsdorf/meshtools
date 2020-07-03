@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
     out = str.c_str();
     int n_part = atoi(argv[2]);
 
-    CatalystInitialize(1, argv+3);
+    //CatalystInitialize(1, argv+3);
     
     mesh_t* mesh = MeshCreate();
     
@@ -43,9 +43,9 @@ int main(int argc, char* argv[])
 
     MeshReordering(mesh, RCM);
 
-    MeshColoring(mesh, INTERNAL);
+    MeshColoring(mesh, INTBOUND);
 
-    mesh_partition_t *parts = MeshPartitionerInternal(mesh, n_part);
+    mesh_partition_t *parts = MeshPartitioner(mesh, n_part);
 
     double *velocity = new double[mesh->n_nodes*3];
     float *pressure  = new float[mesh->n_nodes];
@@ -57,13 +57,14 @@ int main(int argc, char* argv[])
     while(time < max_time)
     {
         UpdateAttr(mesh->n_nodes,time, velocity, pressure);
-        CatalystCoProcess(mesh, velocity, pressure,time,timeStep, 0);
+        //CatalystCoProcess(mesh, velocity, pressure,time,timeStep, 0);
 
         time += dt;
     }
 
-    CatalystFinalize();
-    MeshVTKWriterInternal(mesh, out, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
+    //CatalystFinalize();
+    MeshVTKWriter(mesh, out, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, mesh->mesh_coloring_bound, velocity, pressure);
+    //MeshVTKWriterInternal(mesh, out, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
 
     MeshPartitionDestroy(parts);
     MeshDestroy(&mesh);

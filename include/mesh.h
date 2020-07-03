@@ -51,7 +51,7 @@ typedef struct {
 
 mesh_t* MeshCreate();
 
-void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart);
+void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, int* colorInt, int* colorBound, double* velocity, float* pressure);
 
 void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int *nparts, int *epart, int* color, double* velocity, float* pressure);
 

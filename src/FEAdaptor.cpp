@@ -35,12 +35,11 @@ namespace
     // create the cells
     int ne = mesh->n_elements;
     int nfe = mesh->n_face_elements;
-    int ntotal_elements = ne + nfe;
     int size_conn = mesh->conn.size();
-    unsigned int* cellsData = (unsigned int*)mesh->conn[0];
+    unsigned int* cellsData = (unsigned int*)&mesh->conn[nfe];
 
-    VTKGrid->Allocate(static_cast<vtkIdType>(mesh->offset[ntotal_elements] - mesh->offset[nfe]));
-    for (unsigned int cell = nfe; cell < ntotal_elements; cell++)
+    VTKGrid->Allocate(static_cast<vtkIdType>(mesh->offset.back() - mesh->offset[nfe]));
+    for (unsigned int cell = 0; cell < ne; cell++)
     {
       int n_conn = mesh->offset[cell + 1] - mesh->offset[cell];
       unsigned int *cellPoints = cellsData + n_conn * cell;

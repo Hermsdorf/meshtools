@@ -258,9 +258,9 @@ void MeshGmshReader(mesh_t* mesh, const char* filename)
     //return mesh;
 }
 
-// TODO: Incluir escrita da velocidade e pressão.
-void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart=NULL, int* epart=NULL)
+void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, int* colorInt, int* colorBound, double* velocity, float* pressure)
 {
+    cout << "Writing VTK boundary and internal elements..." << endl;
     std::ofstream fout;
 
     fout.open(filename);
@@ -280,10 +280,39 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart=NULL, int* epa
             fout << "\t\t\t\t\t";
             for(int i = 0 ; i < nnodes ; i++)
             {
-                if(i % 6 == 0 && i != 0)
+                if(i % 15 == 0 && i != 0)
                     fout << endl << "\t\t\t\t\t";
                 
                 fout << npart[i] << " ";
+            }
+            fout << endl;
+            fout << "\t\t\t\t </DataArray> " << endl;
+        }
+        if(velocity)
+        {
+            fout << "\t\t\t\t <DataArray type=\"Float64\" Name=\"velocity\" format=\"ascii\" >" << endl;
+            fout << "\t\t\t\t\t";
+            for(int i = 0 ; i < mesh->n_nodes * 3 ; i++)
+            {
+                if(i % 15 == 0 && i != 0)
+                    fout << endl << "\t\t\t\t\t";
+
+                fout << velocity[i] << " ";
+            }
+            fout << endl;
+            
+            fout << "\t\t\t\t </DataArray> " << endl;
+        }
+        if(pressure)
+        {
+            fout << "\t\t\t\t <DataArray type=\"Float32\" Name=\"pressure\" format=\"ascii\" >" << endl;
+            fout << "\t\t\t\t\t";
+            for(int i = 0 ; i < mesh->n_nodes ; i++)
+            {
+                if(i % 15 == 0 && i != 0)
+                    fout << endl << "\t\t\t\t\t";
+
+                fout << pressure[i] << " ";
             }
             fout << endl;
             fout << "\t\t\t\t </DataArray> " << endl;
@@ -296,10 +325,41 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart=NULL, int* epa
             fout << "\t\t\t\t\t";
             for(int i = 0 ; i < nelem ; i++)
             {
-                if(i % 5 == 0 && i != 0)
+                if(i % 15 == 0 && i != 0)
                     fout << endl << "\t\t\t\t\t";
                 
                 fout << epart[i] << " ";
+            }
+            fout << endl;
+            fout << "\t\t\t\t </DataArray> " << endl;
+        }
+        if(colorInt && colorBound)
+        {
+            fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"colorInternal\" format=\"ascii\" >" << endl;
+            fout << "\t\t\t\t\t";
+            for(int i = 0 ; i < mesh->n_internal_colors ; i++)
+            {
+                for(int j = 0 ; j < colorInt[i] ; j++)
+                {
+                    if(j % 15 == 0 && i != 0)
+                        fout << endl << "\t\t\t\t\t";
+
+                    fout << i+1 << " ";
+                }
+            }
+            fout << endl;
+            fout << "\t\t\t\t </DataArray> " << endl;
+            fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"colorBound\" format=\"ascii\" >" << endl;
+            fout << "\t\t\t\t\t";
+            for(int i = 0 ; i < mesh->n_bound_colors ; i++)
+            {
+                for(int j = 0 ; j < colorBound[i] ; j++)
+                {
+                    if(j % 15 == 0 && i != 0)
+                        fout << endl << "\t\t\t\t\t";
+
+                    fout << i+1 << " ";
+                }
             }
             fout << endl;
             fout << "\t\t\t\t </DataArray> " << endl;
@@ -311,7 +371,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart=NULL, int* epa
         
         for(int i = 0 ; i < mesh->coord.size() ; i++)
         {
-            if(i % 6 == 0 && i != 0)
+            if(i % 15 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";
 
             fout << mesh->coord[i] << " ";
@@ -325,7 +385,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart=NULL, int* epa
         
         for(int i = 0 ; i < mesh->conn.size() ; i++)
         {
-            if(i % 5 == 0 && i != 0)
+            if(i % 15 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";
 
             fout << mesh->conn[i] << " ";
@@ -336,7 +396,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart=NULL, int* epa
         fout << "\t\t\t\t\t";
         for(int i = 1 ; i < mesh->offset.size() ; i++)
         {
-            if(i % 6 == 0 && i != 0)
+            if(i % 15 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";
 
             fout << mesh->offset[i] << " ";
@@ -348,7 +408,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart=NULL, int* epa
         
         for(int i = 0 ; i < mesh->type.size() ; i++)
         { 
-            if(i % 6 == 0 && i != 0)
+            if(i % 15 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";
 
             fout << mesh->type[i] << " ";
@@ -361,12 +421,14 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart=NULL, int* epa
         fout << "</VTKFile>" << endl;
 
         fout.close();
+        cout << "Writing completed successfully" << endl;
     }
 }
 
 
 void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* epart, int* color, double* velocity, float* pressure)
 {
+    cout << "Writing VTK internal elements..." << endl;
     std::ofstream fout;
 
     fout.open(filename);
@@ -425,7 +487,7 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
         }
         fout << endl;
         fout << "\t\t\t\t </DataArray> " << endl;
-                fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"Color\" format=\"ascii\" >" << endl;
+        fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"Color\" format=\"ascii\" >" << endl;
         fout << "\t\t\t\t\t";
         for(int i = 0 ; i < mesh->n_internal_colors ; i++)
         {
@@ -498,5 +560,6 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
         fout << "</VTKFile>" << endl;
 
         fout.close();
+        cout << "Writing completed successfully" << endl;
     }
 }
