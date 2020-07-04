@@ -15,7 +15,7 @@ int compare_int(const void *a, const void *b)
     return (*da > *db);
 }
 
-void MeshToDualGraph(mesh_t *mesh, idx_t **xadj, idx_t **adjncy, coloring_t coloring)
+void MeshToDualGraph(mesh_t *mesh, idx_t **xadj, idx_t **adjncy)
 {
     int result;
     idx_t* eptr;
@@ -25,31 +25,16 @@ void MeshToDualGraph(mesh_t *mesh, idx_t **xadj, idx_t **adjncy, coloring_t colo
     idx_t numflag = 0;
     idx_t ncommon = 1;
 
-    if(coloring == INTERNAL)
+    ne = &mesh->n_elements;
+    int ofs = mesh->offset[mesh->n_face_elements];
+    eptr = new idx_t[mesh->n_elements + 1];
+
+    for (int i = mesh->n_face_elements, j = 0; i < mesh->offset.size(); i++, j++)
     {
-        ne = &mesh->n_elements;
-        int ofs = mesh->offset[mesh->n_face_elements];
-        eptr = new idx_t[mesh->n_elements + 1];
-
-        for (int i = mesh->n_face_elements, j = 0; i < mesh->offset.size(); i++, j++)
-        {
-            eptr[j] = mesh->offset[i] - ofs;
-        }
-
-        eind = &mesh->conn[ofs];
+        eptr[j] = mesh->offset[i] - ofs;
     }
-    else
-    {
-        ne = &mesh->n_face_elements;
-        eptr = new idx_t[mesh->n_face_elements + 1];
 
-        for (int i = 0; i <= mesh->n_face_elements; i++)
-        {
-            eptr[i] = mesh->offset[i];
-        }
-
-        eind = &mesh->conn[0];
-    }
+    eind = &mesh->conn[ofs];
 
     result = METIS_MeshToDual(ne, nn, eptr, eind, &ncommon, &numflag, xadj, adjncy);
 
@@ -82,7 +67,7 @@ void MeshToDualGraph(mesh_t *mesh, idx_t **xadj, idx_t **adjncy, coloring_t colo
     delete[] eptr;
 }
 
-void UpdateMeshArrays(mesh_t* mesh, int* sort, int** new_conn, int** new_offset, coloring_t coloring)
+void UpdateMeshArrays(mesh_t* mesh, int* sort, int** new_conn, int** new_offset)
 {
     int ne;
     int nfe = mesh->n_face_elements;
@@ -92,21 +77,10 @@ void UpdateMeshArrays(mesh_t* mesh, int* sort, int** new_conn, int** new_offset,
     int count = 0;
     int color = 1;
 
-    if(coloring == INTERNAL)
-    {
-        ne = mesh->n_elements;
-        skip = nfe;
-        mesh_coloring = mesh->mesh_coloring_internal;
-        n_colors = mesh->mesh_coloring_internal[sort[ne-1]];
-    }
-    else
-    {
-        ne = nfe;
-        skip = 0;
-        mesh_coloring = mesh->mesh_coloring_bound;
-        n_colors = mesh->mesh_coloring_bound[sort[ne-1]];
-    }
-    
+    ne = mesh->n_elements;
+    skip = nfe;
+    mesh_coloring = mesh->mesh_coloring_internal;
+    n_colors = mesh->mesh_coloring_internal[sort[ne-1]];
 
     for(int i = skip, j = 0 ; i <= skip + ne ; i++, j++)
         mesh->offset[i] = (*new_offset)[j];
@@ -124,37 +98,20 @@ void UpdateMeshArrays(mesh_t* mesh, int* sort, int** new_conn, int** new_offset,
         mesh_coloringAux[mesh_coloring[i]-1]++;
     }
 
-    if(coloring == INTERNAL)
-    {
-        delete [] mesh->mesh_coloring_internal;
-        mesh->mesh_coloring_internal = mesh_coloringAux;
-    }
-    else
-    {
-        delete [] mesh->mesh_coloring_bound;
-        mesh->mesh_coloring_bound = mesh_coloringAux;
-    }
+    delete [] mesh->mesh_coloring_internal;
+    mesh->mesh_coloring_internal = mesh_coloringAux;
 }
 
-void ReorderElements(mesh_t* mesh, int* sort, int** new_conn, int** new_offset, coloring_t coloring)
+void ReorderElements(mesh_t* mesh, int* sort, int** new_conn, int** new_offset)
 {
     int ne;
     int skip;
     int nfe = mesh->n_face_elements;
 
-    if(coloring == INTERNAL)
-    {
-        ne = mesh->n_elements;
-        skip = nfe;
-        *new_conn = new int [mesh->offset.back() - mesh->offset[skip]];
-    }
-    else
-    {
-        ne = nfe;
-        skip = 0;
-        *new_conn = new int [mesh->offset[ne]];
-    }
-    
+    ne = mesh->n_elements;
+    skip = nfe;
+    *new_conn = new int [mesh->offset.back() - mesh->offset[skip]];
+
     *new_offset = new int [ne + 1];
     int count_conn = 0;
     int count_offset = 1;
@@ -176,22 +133,14 @@ void ReorderElements(mesh_t* mesh, int* sort, int** new_conn, int** new_offset, 
     }
 }
 
-void CreateSort(mesh_t* mesh, int n_colors, int* sort, coloring_t coloring)
+void CreateSort(mesh_t* mesh, int n_colors, int* sort)
 {
     int ne;
     int* mesh_coloring;
 
-    if(coloring == INTERNAL) 
-    {
-        ne = mesh->n_elements;
-        mesh_coloring = mesh->mesh_coloring_internal;
-    }
-    else
-    {
-        ne = mesh->n_face_elements;
-        mesh_coloring = mesh->mesh_coloring_bound;
-    }
-    
+    ne = mesh->n_elements;
+    mesh_coloring = mesh->mesh_coloring_internal;
+
     int count = 0;
 
     for(int i = 1 ; i <= n_colors ; i++)
@@ -207,22 +156,19 @@ void CreateSort(mesh_t* mesh, int n_colors, int* sort, coloring_t coloring)
     }
 }
 
-int Coloring(mesh_t* mesh, coloring_t coloring)
+int Coloring(mesh_t* mesh)
 {
     idx_t* xadj;
     idx_t* adjncy;
     int ne;
     int* elements_color;
 
-    if(coloring == INTERNAL)
-        ne = mesh->n_elements;
-    else
-        ne = mesh->n_face_elements;
+    ne = mesh->n_elements;
 
     elements_color = new int [ne];
     int n_colors = 1; // variavel importante para a função CreateSort()
 
-    MeshToDualGraph(mesh, &xadj, &adjncy, coloring);
+    MeshToDualGraph(mesh, &xadj, &adjncy);
 
     for(int i = 0 ; i < ne ; i++)
         elements_color[i] = -1; // flag para elemento sem cor
@@ -254,25 +200,17 @@ int Coloring(mesh_t* mesh, coloring_t coloring)
             n_colors = count;
     }
 
-    if(coloring == INTERNAL)
-    {
-        delete [] mesh->mesh_coloring_internal; // delete do new feito na função MeshGmshReader onde inicializa todo o vetor mesh_coloring_bound com -1
-        mesh->mesh_coloring_internal = elements_color;
-    }
-    else
-    {
-        delete [] mesh->mesh_coloring_bound; // delete do new feito na função MeshGmshReader onde inicializa todo o vetor mesh_coloring_bound com -1
-        mesh->mesh_coloring_bound = elements_color;
-    }
 
-
+    delete [] mesh->mesh_coloring_internal; // delete do new feito na função MeshGmshReader onde inicializa todo o vetor mesh_coloring_bound com -1
+    mesh->mesh_coloring_internal = elements_color;
+    
     METIS_Free(xadj);
     METIS_Free(adjncy);
 
     return n_colors;
 }
 
-void MeshColoring(mesh_t* mesh, coloring_t coloring)
+void MeshColoring(mesh_t* mesh)
 {
     cout << "Starting mesh coloring..." << endl;
     int* sort_internal = new int [mesh->n_elements];;
@@ -280,29 +218,11 @@ void MeshColoring(mesh_t* mesh, coloring_t coloring)
     int* new_offset;
     int n_colors;
 
-    n_colors = Coloring(mesh, INTERNAL);
-    CreateSort(mesh, n_colors, sort_internal, INTERNAL);
-    ReorderElements(mesh, sort_internal, &new_conn, &new_offset, INTERNAL);
-    UpdateMeshArrays(mesh, sort_internal, &new_conn, &new_offset, INTERNAL);
+    n_colors = Coloring(mesh);
+    CreateSort(mesh, n_colors, sort_internal);
+    ReorderElements(mesh, sort_internal, &new_conn, &new_offset);
+    UpdateMeshArrays(mesh, sort_internal, &new_conn, &new_offset);
     mesh->n_internal_colors = n_colors;
-
-
-    if(coloring == INTBOUND)
-    {
-        int* sort_bound = new int [mesh->n_face_elements];
-        int* new_conn_bound;
-        int* new_offset_bound;
-        
-        n_colors = Coloring(mesh, INTBOUND);
-        CreateSort(mesh, n_colors, sort_bound, INTBOUND);
-        ReorderElements(mesh, sort_bound, &new_conn_bound, &new_offset_bound, INTBOUND);
-        UpdateMeshArrays(mesh, sort_bound, &new_conn_bound, &new_offset_bound, INTBOUND);
-        mesh->n_bound_colors = n_colors;
-        
-        delete [] sort_bound;
-        delete [] new_conn_bound;
-        delete [] new_offset_bound;
-    }
     
     cout << "Finished mesh coloring..." << endl;  
 

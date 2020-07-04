@@ -18,8 +18,6 @@ typedef std::pair<int, string> physical_data_t;
 
 typedef enum {METIS_ND=0, RCM, FF} reorder_t;
 
-typedef enum {INTERNAL=0, INTBOUND} coloring_t;
-
 typedef struct {
     vector<double> coord;                    // Coordenadas nodais
     vector<int>    conn;                     // conectividade dos elementos
@@ -27,9 +25,7 @@ typedef struct {
     vector<int>    type;                     // mapeia a localização de cada elemento no vetor conn
     vector<int>    physical_tag;             //  
     int* mesh_coloring_internal;
-    int* mesh_coloring_bound;
     int n_internal_colors;
-    int n_bound_colors = 1;
     map<int, physical_data_t>  physical_map; // 
     int n_face_elements;                     // Numeros de elementos na superficies
     int n_elements;                          // Numero de elementos internos
@@ -51,7 +47,7 @@ typedef struct {
 
 mesh_t* MeshCreate();
 
-void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, int* colorInt, int* colorBound, double* velocity, float* pressure);
+void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, int* color, double* velocity, float* pressure);
 
 void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int *nparts, int *epart, int* color, double* velocity, float* pressure);
 
@@ -59,7 +55,7 @@ void MeshGmshReader(mesh_t* mesh, const char* filename);
 
 void MeshReordering(mesh_t *mesh, reorder_t reorder);
 
-void MeshColoring(mesh_t* mesh, coloring_t coloring);
+void MeshColoring(mesh_t* mesh);
 
 mesh_partition_t* MeshPartitioner(mesh_t* mesh, int nparts);
 

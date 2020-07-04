@@ -241,12 +241,9 @@ void MeshGmshReader(mesh_t* mesh, const char* filename)
     }
     
     mesh->mesh_coloring_internal = new int [mesh->n_elements];
-    mesh->mesh_coloring_bound = new int [mesh->n_face_elements];
 
     for(int i = 0 ; i < mesh->n_elements ; i++)
         mesh->mesh_coloring_internal[i] = -1;
-    for(int i = 0 ; i < mesh->n_face_elements ; i++)
-        mesh->mesh_coloring_bound[i] = -1;
 
     cout << " Num. Nodes: " << mesh->n_nodes << endl;
     cout << " Num. Elements: "          << mesh->n_elements << endl;
@@ -259,7 +256,7 @@ void MeshGmshReader(mesh_t* mesh, const char* filename)
 }
 
 // TODO: Implementar uma versão binária.
-void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, int* colorInt, int* colorBound, double* velocity, float* pressure)
+void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, int* color, double* velocity, float* pressure)
 {
     cout << "Writing VTK boundary and internal elements..." << endl;
     std::ofstream fout;
@@ -281,7 +278,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, i
             fout << "\t\t\t\t\t";
             for(int i = 0 ; i < nnodes ; i++)
             {
-                if(i % 15 == 0 && i != 0)
+                if(i % 18 == 0 && i != 0)
                     fout << endl << "\t\t\t\t\t";
                 
                 fout << npart[i] << " ";
@@ -295,7 +292,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, i
             fout << "\t\t\t\t\t";
             for(int i = 0 ; i < mesh->n_nodes * 3 ; i++)
             {
-                if(i % 15 == 0 && i != 0)
+                if(i % 18 == 0 && i != 0)
                     fout << endl << "\t\t\t\t\t";
 
                 fout << velocity[i] << " ";
@@ -310,7 +307,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, i
             fout << "\t\t\t\t\t";
             for(int i = 0 ; i < mesh->n_nodes ; i++)
             {
-                if(i % 15 == 0 && i != 0)
+                if(i % 18 == 0 && i != 0)
                     fout << endl << "\t\t\t\t\t";
 
                 fout << pressure[i] << " ";
@@ -326,7 +323,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, i
             fout << "\t\t\t\t\t";
             for(int i = 0 ; i < nelem ; i++)
             {
-                if(i % 15 == 0 && i != 0)
+                if(i % 18 == 0 && i != 0)
                     fout << endl << "\t\t\t\t\t";
                 
                 fout << epart[i] << " ";
@@ -334,29 +331,15 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, i
             fout << endl;
             fout << "\t\t\t\t </DataArray> " << endl;
         }
-        if(colorInt && colorBound)
+        if(color)
         {
-            fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"colorInternal\" format=\"ascii\" >" << endl;
+            fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"color\" format=\"ascii\" >" << endl;
             fout << "\t\t\t\t\t";
             for(int i = 0 ; i < mesh->n_internal_colors ; i++)
             {
-                for(int j = 0 ; j < colorInt[i] ; j++)
+                for(int j = 0 ; j < color[i] ; j++)
                 {
-                    if(j % 15 == 0 && i != 0)
-                        fout << endl << "\t\t\t\t\t";
-
-                    fout << i+1 << " ";
-                }
-            }
-            fout << endl;
-            fout << "\t\t\t\t </DataArray> " << endl;
-            fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"colorBound\" format=\"ascii\" >" << endl;
-            fout << "\t\t\t\t\t";
-            for(int i = 0 ; i < mesh->n_bound_colors ; i++)
-            {
-                for(int j = 0 ; j < colorBound[i] ; j++)
-                {
-                    if(j % 15 == 0 && i != 0)
+                    if(j % 18 == 0 && j != 0)
                         fout << endl << "\t\t\t\t\t";
 
                     fout << i+1 << " ";
@@ -372,7 +355,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, i
         
         for(int i = 0 ; i < mesh->coord.size() ; i++)
         {
-            if(i % 15 == 0 && i != 0)
+            if(i % 18 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";
 
             fout << mesh->coord[i] << " ";
@@ -386,7 +369,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, i
         
         for(int i = 0 ; i < mesh->conn.size() ; i++)
         {
-            if(i % 15 == 0 && i != 0)
+            if(i % 18 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";
 
             fout << mesh->conn[i] << " ";
@@ -397,7 +380,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, i
         fout << "\t\t\t\t\t";
         for(int i = 1 ; i < mesh->offset.size() ; i++)
         {
-            if(i % 15 == 0 && i != 0)
+            if(i % 18 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";
 
             fout << mesh->offset[i] << " ";
@@ -409,7 +392,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, i
         
         for(int i = 0 ; i < mesh->type.size() ; i++)
         { 
-            if(i % 15 == 0 && i != 0)
+            if(i % 18 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";
 
             fout << mesh->type[i] << " ";
@@ -445,7 +428,7 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
         fout << "\t\t\t\t\t";
         for(int i = 0 ; i < mesh->n_nodes ; i++)
         {
-            if(i % 6 == 0 && i != 0)
+            if(i % 18 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";
 
             fout << npart[i] << " ";
@@ -456,7 +439,7 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
         fout << "\t\t\t\t\t";
         for(int i = 0 ; i < mesh->n_nodes * 3 ; i++)
         {
-            if(i % 6 == 0 && i != 0)
+            if(i % 18 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";
 
             fout << velocity[i] << " ";
@@ -468,7 +451,7 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
         fout << "\t\t\t\t\t";
         for(int i = 0 ; i < mesh->n_nodes ; i++)
         {
-            if(i % 6 == 0 && i != 0)
+            if(i % 18 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";
 
             fout << pressure[i] << " ";
@@ -481,7 +464,7 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
         fout << "\t\t\t\t\t";
         for(int i = 0 ; i < mesh->n_elements ; i++)
         {
-            if(i % 5 == 0 && i != 0)
+            if(i % 18 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";
             
             fout << epart[i] << " ";
@@ -494,13 +477,12 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
         {
             for(int j = 0 ; j < color[i] ; j++)
             {
-                if(j % 5 == 0 && i != 0)
+                if(j % 18 == 0 && j != 0)
                     fout << endl << "\t\t\t\t\t";
 
                 fout << i+1 << " ";
             }
         }
-        fout << endl;
         fout << "\t\t\t\t </DataArray> " << endl;
         fout << "\t\t\t</CellData>" << endl;
         fout << "\t\t\t<Points>" << endl;
@@ -508,7 +490,7 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
         fout << "\t\t\t\t\t";
         for(int i = 0 ; i < mesh->coord.size() ; i++)
         {
-            if(i % 6 == 0 && i != 0)
+            if(i % 18 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";
 
             fout << mesh->coord[i] << " ";
@@ -524,7 +506,7 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
 
         for(int i = ofs ; i < mesh->conn.size() ; i++)
         {
-            if(i % 5 == 0 )
+            if(i % 18 == 0 )
                 fout << endl << "\t\t\t\t\t";
 
             fout << mesh->conn[i] << " ";
@@ -536,7 +518,7 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
         
         for(int i = mesh->n_face_elements ; i < mesh->offset.size()-1 ; i++)
         {
-            if(i % 6 == 0 && i != 0)
+            if(i % 18 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";
 
             fout << mesh->offset[i+1]- ofs << " ";
@@ -548,7 +530,7 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
         
         for(int i = mesh->n_face_elements ; i < mesh->type.size() ; i++)
         { 
-            if(i % 6 == 0 && i != 0)
+            if(i % 18 == 0 && i != 0)
                 fout << endl << "\t\t\t\t\t";
 
             fout << mesh->type[i] << " ";
