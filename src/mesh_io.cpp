@@ -288,7 +288,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, i
         }
         if(velocity)
         {
-            fout << "\t\t\t\t <DataArray type=\"Float64\" Name=\"velocity\" format=\"ascii\" >" << endl;
+            fout << "\t\t\t\t <DataArray type=\"Float64\" Name=\"velocity\" format=\"ascii\">" << endl;
             fout << "\t\t\t\t\t";
             for(int i = 0 ; i < mesh->n_nodes * 3 ; i++)
             {
@@ -303,7 +303,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, i
         }
         if(pressure)
         {
-            fout << "\t\t\t\t <DataArray type=\"Float32\" Name=\"pressure\" format=\"ascii\" >" << endl;
+            fout << "\t\t\t\t <DataArray type=\"Float32\" Name=\"pressure\" format=\"ascii\">" << endl;
             fout << "\t\t\t\t\t";
             for(int i = 0 ; i < mesh->n_nodes ; i++)
             {
@@ -319,7 +319,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, i
         fout << "\t\t\t<CellData>" << endl;
         if(epart)
         {
-            fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"epart\" format=\"ascii\" >" << endl;
+            fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"epart\" format=\"ascii\">" << endl;
             fout << "\t\t\t\t\t";
             for(int i = 0 ; i < nelem ; i++)
             {
@@ -333,8 +333,14 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, i
         }
         if(color)
         {
-            fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"color\" format=\"ascii\" >" << endl;
+            fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"Color\" format=\"ascii\">" << endl;
             fout << "\t\t\t\t\t";
+            for(int i = 0 ; i < mesh->n_face_elements ; i++)
+            {
+                if(i % 18 == 0 && i != 0)
+                    fout << endl << "\t\t\t\t\t";
+                fout << -1 << " "; // cor dos elementos de superficie
+            }
             for(int i = 0 ; i < mesh->n_internal_colors ; i++)
             {
                 for(int j = 0 ; j < color[i] ; j++)
@@ -424,66 +430,80 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int* npart, int* 
         fout << "\t<UnstructuredGrid>" << endl;
         fout << "\t\t<Piece NumberOfPoints=\"" << mesh->n_nodes <<"\" NumberOfCells=\""<< (mesh->n_elements) << "\">" << endl;
         fout << "\t\t\t<PointData>" << endl;
-        fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"npart\" format=\"ascii\" >" << endl;
-        fout << "\t\t\t\t\t";
-        for(int i = 0 ; i < mesh->n_nodes ; i++)
+        if(npart)
         {
-            if(i % 18 == 0 && i != 0)
-                fout << endl << "\t\t\t\t\t";
-
-            fout << npart[i] << " ";
-        }
-        fout << endl;
-        fout << "\t\t\t\t </DataArray> " << endl;
-        fout << "\t\t\t\t <DataArray type=\"Float64\" Name=\"velocity\" format=\"ascii\" >" << endl;
-        fout << "\t\t\t\t\t";
-        for(int i = 0 ; i < mesh->n_nodes * 3 ; i++)
-        {
-            if(i % 18 == 0 && i != 0)
-                fout << endl << "\t\t\t\t\t";
-
-            fout << velocity[i] << " ";
-        }
-        fout << endl;
-        
-        fout << "\t\t\t\t </DataArray> " << endl;
-        fout << "\t\t\t\t <DataArray type=\"Float32\" Name=\"pressure\" format=\"ascii\" >" << endl;
-        fout << "\t\t\t\t\t";
-        for(int i = 0 ; i < mesh->n_nodes ; i++)
-        {
-            if(i % 18 == 0 && i != 0)
-                fout << endl << "\t\t\t\t\t";
-
-            fout << pressure[i] << " ";
-        }
-        fout << endl;
-        fout << "\t\t\t\t </DataArray> " << endl;
-        fout << "\t\t\t</PointData>" << endl;
-        fout << "\t\t\t<CellData>" << endl;
-        fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"epart\" format=\"ascii\" >" << endl;
-        fout << "\t\t\t\t\t";
-        for(int i = 0 ; i < mesh->n_elements ; i++)
-        {
-            if(i % 18 == 0 && i != 0)
-                fout << endl << "\t\t\t\t\t";
-            
-            fout << epart[i] << " ";
-        }
-        fout << endl;
-        fout << "\t\t\t\t </DataArray> " << endl;
-        fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"Color\" format=\"ascii\" >" << endl;
-        fout << "\t\t\t\t\t";
-        for(int i = 0 ; i < mesh->n_internal_colors ; i++)
-        {
-            for(int j = 0 ; j < color[i] ; j++)
+            fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"npart\" format=\"ascii\">" << endl;
+            fout << "\t\t\t\t\t";
+            for(int i = 0 ; i < mesh->n_nodes ; i++)
             {
-                if(j % 18 == 0 && j != 0)
+                if(i % 18 == 0 && i != 0)
                     fout << endl << "\t\t\t\t\t";
 
-                fout << i+1 << " ";
+                fout << npart[i] << " ";
             }
+            fout << endl;
+            fout << "\t\t\t\t </DataArray> " << endl;
         }
-        fout << "\t\t\t\t </DataArray> " << endl;
+        if(velocity)
+        {
+            fout << "\t\t\t\t <DataArray type=\"Float64\" Name=\"velocity\" format=\"ascii\">" << endl;
+            fout << "\t\t\t\t\t";
+            for(int i = 0 ; i < mesh->n_nodes * 3 ; i++)
+            {
+                if(i % 18 == 0 && i != 0)
+                    fout << endl << "\t\t\t\t\t";
+
+                fout << velocity[i] << " ";
+            }
+            fout << endl;
+            fout << "\t\t\t\t </DataArray> " << endl;
+        }
+        if(pressure)
+        {
+            fout << "\t\t\t\t <DataArray type=\"Float32\" Name=\"pressure\" format=\"ascii\">" << endl;
+            fout << "\t\t\t\t\t";
+            for(int i = 0 ; i < mesh->n_nodes ; i++)
+            {
+                if(i % 18 == 0 && i != 0)
+                    fout << endl << "\t\t\t\t\t";
+
+                fout << pressure[i] << " ";
+            }
+            fout << endl;
+            fout << "\t\t\t\t </DataArray> " << endl;
+        }
+        fout << "\t\t\t</PointData>" << endl;
+        fout << "\t\t\t<CellData>" << endl;
+        if(epart)
+        {
+            fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"epart\" format=\"ascii\">" << endl;
+            fout << "\t\t\t\t\t";
+            for(int i = 0 ; i < mesh->n_elements ; i++)
+            {
+                if(i % 18 == 0 && i != 0)
+                    fout << endl << "\t\t\t\t\t";
+                
+                fout << epart[i] << " ";
+            }
+            fout << endl;
+            fout << "\t\t\t\t </DataArray> " << endl;
+        }
+        if(color)
+        {
+            fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"Color\" format=\"ascii\">" << endl;
+            fout << "\t\t\t\t\t";
+            for(int i = 0 ; i < mesh->n_internal_colors ; i++)
+            {
+                for(int j = 0 ; j < color[i] ; j++)
+                {
+                    if(j % 18 == 0 && j != 0)
+                        fout << endl << "\t\t\t\t\t";
+
+                    fout << i+1 << " ";
+                }
+            }
+            fout << "\t\t\t\t </DataArray> " << endl;
+        }
         fout << "\t\t\t</CellData>" << endl;
         fout << "\t\t\t<Points>" << endl;
         fout << "\t\t\t\t<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">" << endl;
