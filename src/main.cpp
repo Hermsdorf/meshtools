@@ -21,10 +21,7 @@ void UpdateAttr(int n, int time, double*v, float *p)
 }
 
 int main(int argc, char* argv[])
-{
-    /* TODO:Considerar que a entrada do script catalyst
-     *      
-    /*/       
+{      
     if(argc < 3)
     {
         cout << "ERROR: WRONG EXECUTION" << endl;
@@ -63,15 +60,14 @@ int main(int argc, char* argv[])
     double time      = 0.0;
     double max_time  = 1.0;
     double dt        = 0.05; 
-    int timeStep = 0;
+    int timeStep = 1;
     while(time < max_time)
     {
         UpdateAttr(mesh->n_nodes,time, velocity, pressure);
         
         //CatalystCoProcess(mesh, velocity, pressure,time,timeStep, 0);
 
-        //MeshVTKWriter(mesh, out, timeStep,...)
-        //MeshVTKWriter(mesh, out, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
+        //MeshVTKWriter(mesh, out, timeStep, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
 
         time += dt;
         timeStep++;
@@ -80,8 +76,8 @@ int main(int argc, char* argv[])
 
 
     //CatalystFinalize();
-    MeshVTKWriter(mesh, out, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
-    //MeshVTKWriterInternal(mesh, out, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
+    MeshVTKWriterBin(mesh, out, 0, parts->nodal_part, parts->elem_part, NULL, velocity, pressure);
+    //MeshVTKWriterInternalBin(mesh, out, 0, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
 
     MeshPartitionDestroy(parts);
     MeshDestroy(&mesh);

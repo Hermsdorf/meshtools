@@ -20,12 +20,12 @@ typedef enum {METIS_ND=0, RCM, FF} reorder_t;
 
 typedef struct {
     vector<double> coord;                    // Coordenadas nodais
-    vector<int>    conn;                     // conectividade dos elementos
-    vector<int>    offset;                   // 
-    vector<int>    type;                     // mapeia a localização de cada elemento no vetor conn
+    vector<int>    conn;                     // Conectividade dos elementos
+    vector<int>    offset;                   // Mapeia a localização de cada elemento no vetor conn
+    vector<int>    type;                     // Vetor indicando o tipo de cada elemento
     vector<int>    physical_tag;             //  
-    int* mesh_coloring_internal;
-    int n_internal_colors;
+    int* mesh_coloring_internal;             // Vetor com as cores dos elementos
+    int n_internal_colors;                   // Número total de cores da malha
     map<int, physical_data_t>  physical_map; // 
     int n_face_elements;                     // Numeros de elementos na superficies
     int n_elements;                          // Numero de elementos internos
@@ -47,9 +47,13 @@ typedef struct {
 
 mesh_t* MeshCreate();
 
-void MeshVTKWriter(mesh_t* mesh, const char* filename, int *npart, int* epart, int* color, double* velocity, float* pressure);
+void MeshVTKWriter(mesh_t* mesh, const char* filename, int timeStep, int *npart, int* epart, int* color, double* velocity, float* pressure);
 
-void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int *nparts, int *epart, int* color, double* velocity, float* pressure);
+void MeshVTKWriterBin(mesh_t* mesh, const char* filename, int timeStep, int *npart, int* epart, int* color, double* velocity, float* pressure);
+
+void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int timeStep, int *nparts, int *epart, int* color, double* velocity, float* pressure);
+
+void MeshVTKWriterInternalBin(mesh_t* mesh, const char* filename, int timeStep, int *nparts, int *epart, int* color, double* velocity, float* pressure);
 
 void MeshGmshReader(mesh_t* mesh, const char* filename);
 
