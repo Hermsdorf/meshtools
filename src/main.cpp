@@ -9,14 +9,14 @@
 
 // TODO: Aqui colocar função de velocidade conhecida 
 //     
-void UpdateAttr(int n, int time, double*v, float *p)
+void UpdateAttr(int n, double time, double** v, float** p)
 {
     for(int i = 0; i < n; i++)
     {
-        v[i*3]    = time;
-        v[i*3+1] = time;
-        v[i*3+2] = time;
-        p[i]     =  time;
+        (*v)[i*3]    = time*i;
+        (*v)[i*3+1] = time*i;
+        (*v)[i*3+2] = time*i;
+        (*p)[i]     =  time*i;
     }
 }
 
@@ -63,11 +63,11 @@ int main(int argc, char* argv[])
     int timeStep = 1;
     while(time < max_time)
     {
-        UpdateAttr(mesh->n_nodes,time, velocity, pressure);
+        UpdateAttr(mesh->n_nodes, time, &velocity, &pressure);
         
-        //CatalystCoProcess(mesh, velocity, pressure,time,timeStep, 0);
+        CatalystCoProcess(mesh, velocity, pressure,time,timeStep, 0);
 
-        //MeshVTKWriter(mesh, out, timeStep, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
+        MeshVTKWriter(mesh, out, timeStep, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
 
         time += dt;
         timeStep++;
@@ -75,8 +75,9 @@ int main(int argc, char* argv[])
 
 
 
-    //CatalystFinalize();
-    MeshVTKWriterBin(mesh, out, 0, parts->nodal_part, parts->elem_part, NULL, velocity, pressure);
+    CatalystFinalize();
+    //MeshVTKWriter(mesh, out, 0, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
+    //MeshVTKWriterBin(mesh, out, 0, parts->nodal_part, parts->elem_part, NULL, velocity, pressure);
     //MeshVTKWriterInternalBin(mesh, out, 0, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
 
     MeshPartitionDestroy(parts);

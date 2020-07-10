@@ -160,13 +160,11 @@ int Coloring(mesh_t* mesh)
 {
     idx_t* xadj;
     idx_t* adjncy;
-    int ne;
+    int ne = mesh->n_elements;
     int* elements_color;
 
-    ne = mesh->n_elements;
-
     elements_color = new int [ne];
-    int n_colors = 1; // variavel importante para a função CreateSort()
+    int n_colors = 1; // Número total de cores da malha
 
     MeshToDualGraph(mesh, &xadj, &adjncy);
 

@@ -35,20 +35,20 @@ namespace
     // create the cells
     int ne = mesh->n_elements;
     int nfe = mesh->n_face_elements;
-    int size_conn = mesh->conn.size();
-    unsigned int* cellsData = (unsigned int*)&mesh->conn[nfe];
+    unsigned int* cellsData = (unsigned int*)&mesh->conn[mesh->offset[nfe]];
 
     VTKGrid->Allocate(static_cast<vtkIdType>(mesh->offset.back() - mesh->offset[nfe]));
     for (unsigned int cell = 0; cell < ne; cell++)
     {
-      int n_conn = mesh->offset[cell + 1] - mesh->offset[cell];
-      unsigned int *cellPoints = cellsData + n_conn * cell;
+      unsigned int cell_skip = cell + nfe;
+      int n_conn = mesh->offset[cell_skip + 1] - mesh->offset[cell_skip];
+      unsigned int *cellPoints = cellsData + (n_conn * cell);
 
       vtkIdType* tmp = new vtkIdType[n_conn];
       for (int i = 0; i < n_conn; i++)
         tmp[i] = cellPoints[i]; // conectividade
 
-      VTKGrid->InsertNextCell(mesh->type[cell], n_conn, tmp); // (tipo do elemento, numero de nós, vetor com as conn)
+      VTKGrid->InsertNextCell(mesh->type[cell_skip], n_conn, tmp); // (tipo do elemento, numero de nós, vetor com as conn)
       delete[] tmp;
     }
 
