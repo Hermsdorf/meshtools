@@ -2,21 +2,25 @@
 #include <fstream>
 #include <string>
 #include <time.h>
+#include <math.h>
 #include "FEAdaptor.h"
 
 #include "mesh.h"
 
-
-// TODO: Aqui colocar função de velocidade conhecida 
-//     
-void UpdateAttr(int n, double time, double** v, float** p)
+void UpdateAttr(int n, double time, mesh_t* mesh, double** v, float** p)
 {
+    float variable_a = 0.02;
+    float variable_v = 0.01;
+    
     for(int i = 0; i < n; i++)
     {
-        (*v)[i*3]    = time*i;
-        (*v)[i*3+1] = time*i;
-        (*v)[i*3+2] = time*i;
-        (*p)[i]     =  time*i;
+        double x = mesh->coord[i*3];
+        double y = mesh->coord[i*3+1];
+
+        (*v)[i*3]    = (-1)*cos(variable_a*M_PI*x)*sin(variable_a*M_PI*y)*exp(-2*variable_a*variable_a*M_PI*M_PI*time*variable_v);
+        (*v)[i*3+1]  = sin(variable_a*M_PI*x)*cos(variable_a*M_PI*y)*exp(-2*variable_a*variable_a*M_PI*M_PI*time*variable_v);
+        (*v)[i*3+2]  = 0;
+        (*p)[i]      = -0.25*(cos(2*variable_a*M_PI*x)+cos(2*variable_a*M_PI*y))*exp(-4*variable_a*variable_a*M_PI*M_PI*time*variable_v);
     }
 }
 
@@ -63,7 +67,7 @@ int main(int argc, char* argv[])
     int timeStep = 1;
     while(time < max_time)
     {
-        UpdateAttr(mesh->n_nodes, time, &velocity, &pressure);
+        UpdateAttr(mesh->n_nodes, time, mesh, &velocity, &pressure);
         
         CatalystCoProcess(mesh, velocity, pressure,time,timeStep, 0);
 
