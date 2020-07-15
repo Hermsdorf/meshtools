@@ -22,7 +22,7 @@ typedef struct {
     vector<double> coord;                    // Coordenadas nodais
     vector<int>    conn;                     // Conectividade dos elementos
     vector<int>    offset;                   // Mapeia a localização de cada elemento no vetor conn
-    vector<int>    type;                     // Vetor indicando o tipo de cada elemento
+    vector<unsigned short>    type;                     // Vetor indicando o tipo de cada elemento
     vector<int>    physical_tag;             //  
     int* mesh_coloring_internal;             // Vetor com as cores dos elementos
     int n_internal_colors;                   // Número total de cores da malha
