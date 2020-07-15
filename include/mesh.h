@@ -53,6 +53,8 @@ void MeshVTKWriterBin(mesh_t* mesh, const char* filename, int timeStep, int *npa
 
 void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int timeStep, int *nparts, int *epart, int* color, double* velocity, float* pressure);
 
+void MeshVTKWriterInternalBinAppended(mesh_t* mesh, const char* filename, int timeStep, int* npart, int* epart, int* color, double* velocity, float* pressure);
+
 void MeshVTKWriterInternalBin(mesh_t* mesh, const char* filename, int timeStep, int *nparts, int *epart, int* color, double* velocity, float* pressure);
 
 void MeshGmshReader(mesh_t* mesh, const char* filename);

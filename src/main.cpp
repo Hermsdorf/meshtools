@@ -11,7 +11,7 @@ void UpdateAttr(int n, double time, mesh_t* mesh, double** v, float** p)
 {
     float variable_a = 0.02;
     float variable_v = 0.01;
-    
+
     for(int i = 0; i < n; i++)
     {
         double x = mesh->coord[i*3];
@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
         
         CatalystCoProcess(mesh, velocity, pressure,time,timeStep, 0);
 
-        MeshVTKWriter(mesh, out, timeStep, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
+        //MeshVTKWriter(mesh, out, timeStep, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
 
         time += dt;
         timeStep++;
@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
 
     CatalystFinalize();
     //MeshVTKWriter(mesh, out, 0, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
-    //MeshVTKWriterBin(mesh, out, 0, parts->nodal_part, parts->elem_part, NULL, velocity, pressure);
+    MeshVTKWriterInternalBinAppended(mesh, out, 0, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
     //MeshVTKWriterInternalBin(mesh, out, 0, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
 
     MeshPartitionDestroy(parts);
