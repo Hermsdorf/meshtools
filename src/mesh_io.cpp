@@ -820,7 +820,7 @@ void MeshVTKWriterInternalBinAppended(mesh_t* mesh, const char* filename, int ti
     cout << "Writing VTK internal elements..." << endl;
     
     FILE*         fout;
-    unsigned int boffset = 0; /* Offset into binary file */
+    
     const char *byte_order = BinaryBigEndian() ? "BigEndian" : "LittleEndian";
 
     string str = filename;
@@ -832,6 +832,7 @@ void MeshVTKWriterInternalBinAppended(mesh_t* mesh, const char* filename, int ti
 
     fout = fopen(str.c_str(), "wb");
 
+    unsigned int boffset = 0; /* Offset into binary file */
     if(fout)
     {
 
@@ -853,7 +854,7 @@ void MeshVTKWriterInternalBinAppended(mesh_t* mesh, const char* filename, int ti
         boffset += sz*sizeof(int);
         fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","offsets",1, boffset);
         sz = mesh->offset.size() - mesh->n_face_elements;
-        biffset += sz*sizeof(int);
+        boffset += sz*sizeof(int);
 
         fprintf(fout,"        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","UInt8","types",1, boffset);
         boffset += sz*sizeof(unsigned short);
@@ -909,11 +910,14 @@ void MeshVTKWriterInternalBinAppended(mesh_t* mesh, const char* filename, int ti
         int *start_c = &mesh->conn[ofs]; 
         fwrite((void*)start_c, sizeof(int),sz,fout);
 
-         // writting element offsets
-        ofs = mesh->n_face_elements;
-        sz  = mesh->offset.size() - ofs;
-        int *start_o = &mesh->offset[ofs]; 
-        fwrite((void*)start_o, sizeof(int),sz,fout);
+        // writting element offsets
+        ofs = mesh->offset[mesh->n_face_elements];
+        sz  = mesh->offset.size() - mesh->n_face_elements - 1;
+        for(int i = mesh->n_face_elements ; i < mesh->offset.size()-1 ; i++)
+        {
+            int tmp = mesh->offset[i+1] - ofs;
+            fwrite((void*)&tmp,sizeof(int),1,fout);
+        }
 
         // writting types
         ofs = mesh->n_face_elements;
@@ -925,7 +929,7 @@ void MeshVTKWriterInternalBinAppended(mesh_t* mesh, const char* filename, int ti
         if(npart)    fwrite((void*)npart,sizeof(int), mesh->n_nodes,fout);
         if(velocity) fwrite((void*)velocity,sizeof(double), 3*mesh->n_nodes,fout);
         if(pressure) fwrite((void*)pressure,sizeof(float) , 3*mesh->n_nodes,fout);
-        if(epart)    fwrite((void*)epart,sizeof(int) , 3*mesh->n_elements,fout);
+        if(epart)    fwrite((void*)epart,sizeof(int) , mesh->n_elements,fout);
         if(color)
         {
             for(int i = 0 ; i < mesh->n_internal_colors ; i++)
@@ -938,13 +942,9 @@ void MeshVTKWriterInternalBinAppended(mesh_t* mesh, const char* filename, int ti
             }
         }
 
-    
         fprintf(fout,"\n </AppendedData>\n");
         fprintf(fout,"</VTKFile>");
-
-
         fclose(fout);
-
         cout << "Writing completed successfully" << endl;
     }
 }
