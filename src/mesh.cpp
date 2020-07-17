@@ -29,3 +29,85 @@ void MeshDestroy(mesh_t** mesh)
      delete [] (*mesh)->mesh_coloring_internal;
      delete *mesh;
 }
+
+int* GetElementConn(mesh_t* mesh, int element_num)
+{
+    if(element_num < mesh->n_elements)
+    {
+        return &mesh->conn[mesh->offset[element_num + mesh->n_face_elements]];
+    }
+    else
+    {
+        cout << "ERROR: element number >= n_elements" << endl;
+        exit(1);
+    }
+    
+} // element_num = [0, n_elements);
+
+int* GetElementOffset(mesh_t* mesh, int element_num)
+{
+    if(element_num < mesh->n_elements)
+    {
+        return &mesh->offset[element_num + mesh->n_face_elements];
+    }
+    else
+    {
+        cout << "ERROR: element number >= n_elements" << endl;
+        exit(1);
+    }
+    
+} 
+
+int* GetSurfaceElementConn(mesh_t* mesh, int element_num)
+{
+    if(element_num < mesh->n_face_elements)
+    {
+        return &mesh->conn[mesh->offset[element_num]];
+    }
+    else
+    {
+        cout << "ERROR: element number >= n_face_elements" << endl;
+        exit(1);
+    }
+    
+} // element_num = [0, n_surface_elements);
+
+int* GetSurfaceElementOffset(mesh_t* mesh, int element_num)
+{
+    if(element_num < mesh->n_face_elements)
+    {
+        return &mesh->offset[element_num];
+    }
+    else
+    {
+        cout << "ERROR: element number >= n_face_elements" << endl;
+        exit(1);
+    }
+}
+
+int GetElementConnSize(mesh_t* mesh, int element_num)
+{
+    if(element_num < mesh->n_elements)
+    {
+        return (mesh->offset[mesh->n_face_elements + element_num + 1] - mesh->offset[mesh->n_face_elements + element_num]);
+    }
+    else
+    {
+        cout << "ERROR: element number >= n_elements" << endl;
+        exit(1);
+    }
+    
+}
+
+int GetSurfaceElementConnSize(mesh_t* mesh, int element_num)
+{
+    if(element_num < mesh->n_face_elements)
+    {
+        return (mesh->offset[element_num + 1] - mesh->offset[element_num]);
+    }
+    else
+    {
+        cout << "ERROR: element number >= n_face_elements" << endl;
+        exit(1);
+    }
+}

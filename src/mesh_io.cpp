@@ -255,7 +255,6 @@ void MeshGmshReader(mesh_t* mesh, const char* filename)
     //return mesh;
 }
 
-// TODO: Implementar uma versão binária.
 void MeshVTKWriter(mesh_t* mesh, const char* filename, int timeStep, int *npart, int* epart, int* color, double* velocity, float* pressure)
 {
     cout << "Writing VTK boundary and internal elements..." << endl;
@@ -585,6 +584,295 @@ void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int timeStep, int
     }
 }
 
+bool BinaryBigEndian(void) 
+{
+    long _v = 1; 
+    return ((char*)&_v)[0] ? false : true;
+}
+
+void MeshVTKWriterInternalBinAppended(mesh_t* mesh, const char* filename, int timeStep, int* npart, int* epart, int* color, double* velocity, float* pressure)
+{
+    cout << "Writing VTK internal elements..." << endl;
+    
+    FILE*         fout;
+    unsigned int boffset = 0; /* Offset into binary file */
+    const char *byte_order = BinaryBigEndian() ? "BigEndian" : "LittleEndian";
+
+    string str = filename;
+    if(timeStep)
+    {
+        string str = filename;
+        str.insert(str.length() - 4, "_" + to_string(timeStep));
+    }
+
+    fout = fopen(str.c_str(), "wb");
+
+    if(fout)
+    {
+
+        // Writting header info
+        fprintf(fout, "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"%s\" header_type=\"UInt64\">\n", byte_order);
+        fprintf(fout, " <UnstructuredGrid>\n");
+        fprintf(fout, "  <Piece NumberOfPoints=\"%d\" NumberOfCells=\"%d\">\n", mesh->n_nodes, mesh->n_elements);
+
+
+        // writing mesh info
+        fprintf(fout, "   <Points>\n");
+        fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Float64","Points",3, boffset);
+        boffset += 3*mesh->n_nodes*sizeof(double) + sizeof(unsigned long);
+
+        fprintf(fout, "   </Points>\n") ;
+        fprintf(fout, "   <Cells>\n");
+
+        fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","connectivity",1, boffset);
+        int ofs = mesh->offset[mesh->n_face_elements];
+        int sz  = mesh->conn.size() - ofs;
+        boffset += sz*sizeof(int) + sizeof(unsigned long);
+
+
+        fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","offsets",1, boffset);
+        sz = mesh->offset.size() - mesh->n_face_elements;
+        boffset += sz*sizeof(int) + sizeof(unsigned long);
+
+        fprintf(fout,"        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","UInt8","types",1, boffset);
+        boffset += mesh->n_elements*sizeof(unsigned short) + sizeof(unsigned long);
+        fprintf(fout, "   </Cells>\n");
+
+
+        // Writting nodal attribute data
+        fprintf(fout, "   <PointData>\n");
+        if(npart)
+        {
+            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","npart",1,boffset);
+            boffset += mesh->n_nodes*sizeof(int) + sizeof(unsigned long);
+        }
+        if(velocity)
+        {
+            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Float64","velocity",3,boffset);
+            boffset += 3*mesh->n_nodes*sizeof(double) + sizeof(unsigned long);
+        }
+        if(pressure)
+        {
+            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Float32","pressure",1,boffset);
+            boffset += mesh->n_nodes*sizeof(float) + sizeof(unsigned long);
+        }
+
+        fprintf(fout, "   </PointData>\n");
+        fprintf(fout, "   <CellData>\n");
+       
+        if(epart)
+        {
+            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","epart",1, boffset);
+            boffset += mesh->n_elements*sizeof(int) + sizeof(unsigned long);
+        }
+        if(color)
+        {
+                  
+            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","Color",1, boffset);
+            boffset += mesh->n_elements*sizeof(int) + sizeof(unsigned long);
+        }
+
+        fprintf(fout, "   </CellData>\n");
+        fprintf(fout, "  </Piece>\n");
+        fprintf(fout, " </UnstructuredGrid>\n");
+        fprintf(fout, "  <AppendedData encoding=\"raw\">\n");
+        fprintf(fout, "_");
+
+        // writting nodes coordinates
+        double *start_xyz = &mesh->coord[0];
+        unsigned long nbytes = sizeof(double)*mesh->n_nodes*3;
+        fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+        fwrite((void*)start_xyz, sizeof(double),mesh->n_nodes*3,fout);
+        
+        // writting element connectivity
+        ofs = mesh->offset[mesh->n_face_elements];
+        sz  = mesh->conn.size() - ofs;
+        int *start_c = &mesh->conn[ofs]; 
+        nbytes = sizeof(int)*sz;
+        fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+        fwrite((void*)start_c, sizeof(int),sz,fout);
+
+         // writting element offsets
+        ofs = mesh->n_face_elements;
+        sz  = mesh->offset.size() - ofs;
+        int *start_o = &mesh->offset[ofs]; 
+        //fwrite((void*)start_o, sizeof(int),sz,fout);
+        nbytes = sizeof(int)*sz;
+        fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+        for(int i = ofs ; i < mesh->offset.size(); i++)
+        {
+            int offset = mesh->offset[i] - mesh->offset[ofs];
+            fwrite((void*)&offset, sizeof(int),1,fout);
+        }
+
+        // writting types
+        ofs = mesh->n_face_elements;
+        sz  = mesh->type.size() - ofs;
+        unsigned short* start_t = &mesh->type[ofs]; 
+        nbytes = sizeof(unsigned short)*sz;
+        fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+        fwrite((void*)start_t, sizeof(unsigned short),sz,fout);
+
+        // Writing attribute data
+        if(npart)    fwrite((void*)npart,sizeof(int), mesh->n_nodes,fout);
+        if(velocity) fwrite((void*)velocity,sizeof(double), 3*mesh->n_nodes,fout);
+        if(pressure) fwrite((void*)pressure,sizeof(float) , mesh->n_nodes,fout);
+        if(epart)    fwrite((void*)epart,sizeof(int) , mesh->n_elements,fout);
+        if(color)
+        {
+            for(int i = 0 ; i < mesh->n_internal_colors ; i++)
+            {
+                for(int j = 0 ; j < color[i] ; j++)
+                {
+                    int colorAux = i+1;
+                    fwrite((void*)&colorAux,sizeof(int),1, fout);
+                }
+            }
+        }
+
+    
+        fprintf(fout,"\n </AppendedData>\n");
+        fprintf(fout,"</VTKFile>");
+
+
+        fclose(fout);
+
+        cout << "Writing completed successfully" << endl;
+    }
+}
+
+void MeshVTKWriterBinAppended(mesh_t* mesh, const char* filename, int timeStep, int* npart, int* epart, int* color, double* velocity, float* pressure)
+{
+    cout << "Writing VTK internal elements..." << endl;
+    
+    FILE*         fout;
+    unsigned int boffset = 0; /* Offset into binary file */
+    const char *byte_order = BinaryBigEndian() ? "BigEndian" : "LittleEndian";
+
+    string str = filename;
+    if(timeStep)
+    {
+        string str = filename;
+        str.insert(str.length() - 4, "_" + to_string(timeStep));
+    }
+
+    fout = fopen(str.c_str(), "wb");
+
+    if(fout)
+    {
+        // Writting header info
+        fprintf(fout, "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"%s\" header_type=\"UInt64\">\n", byte_order);
+        fprintf(fout, " <UnstructuredGrid>\n");
+        fprintf(fout, "  <Piece NumberOfPoints=\"%d\" NumberOfCells=\"%d\">\n", mesh->n_nodes, mesh->n_elements + mesh->n_face_elements);
+
+        // writing mesh info
+        fprintf(fout, "   <Points>\n");
+        fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Float64","Points",3, boffset);
+        boffset += 3*mesh->n_nodes*sizeof(double) + sizeof(unsigned long);
+        
+        fprintf(fout, "   </Points>\n") ;
+        fprintf(fout, "   <Cells>\n");
+
+        fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","connectivity",1, boffset);
+        boffset += mesh->conn.size()*sizeof(int) + sizeof(unsigned long);
+
+
+        fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","offsets",1, boffset);
+        boffset += mesh->offset.size()*sizeof(int) + sizeof(unsigned long);
+
+        fprintf(fout,"        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","UInt16","types",1, boffset);
+        boffset += mesh->type.size()*sizeof(unsigned short) + sizeof(unsigned long);
+
+        fprintf(fout, "   </Cells>\n");
+
+        // Writting nodal attribute data
+        fprintf(fout, "   <PointData>\n");
+        if(npart)
+        {
+            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","npart",1,boffset);
+            boffset += mesh->n_nodes*sizeof(int) + sizeof(unsigned long);
+        }
+        if(velocity)
+        {
+            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Float64","velocity",3,boffset);
+            boffset += 3*mesh->n_nodes*sizeof(double) + sizeof(unsigned long);
+        }
+        if(pressure)
+        {
+            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Float32","pressure",1,boffset);
+            boffset += mesh->n_nodes*sizeof(float) + sizeof(unsigned long);
+        }
+
+        fprintf(fout, "   </PointData>\n");
+        fprintf(fout, "   <CellData>\n");
+        
+        // Writting element attribute data
+        if(epart)
+        {
+            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","epart",1, boffset);
+            boffset += mesh->n_elements*sizeof(int) + sizeof(unsigned long);
+        }
+        if(color)
+        {
+            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","Color",1, boffset);
+            boffset += mesh->n_elements*sizeof(int) + sizeof(unsigned long);
+        }
+
+        fprintf(fout, "   </CellData>\n");
+        fprintf(fout, "  </Piece>\n");
+        fprintf(fout, " </UnstructuredGrid>\n");
+        fprintf(fout, "  <AppendedData encoding=\"raw\">\n");
+        fprintf(fout, "_");
+
+        // writting nodes coordinates
+        int nbytes = sizeof(double)*mesh->n_nodes*3;
+        fwrite((void*)&nbytes, sizeof(int),1,fout);
+        fwrite((void*)&mesh->coord[0], sizeof(double),mesh->n_nodes*3,fout);
+        
+        // writting element connectivity
+        nbytes = sizeof(int)*mesh->conn.size();
+        fwrite((void*)&nbytes, sizeof(int),1,fout);
+        fwrite((void*)&mesh->conn[0], sizeof(int),mesh->conn.size(),fout);
+
+        // writting element offsets
+        nbytes = sizeof(int)*(mesh->offset.size()-1);
+        fwrite((void*)&nbytes, sizeof(int),1,fout);
+        fwrite((void*)&mesh->offset[1], sizeof(int),mesh->offset.size()-1,fout);
+
+        // writting types
+        nbytes = sizeof(unsigned short)*(mesh->n_elements + mesh->n_face_elements);
+        fwrite((void*)&nbytes, sizeof(int),1,fout);
+        fwrite((void*)&mesh->type[0], sizeof(unsigned short),mesh->type.size(),fout);
+
+        // Writing attribute data
+        if(npart)    fwrite((void*)npart,sizeof(int), mesh->n_nodes,fout);
+        if(velocity) fwrite((void*)velocity,sizeof(double), 3*mesh->n_nodes,fout);
+        if(pressure) fwrite((void*)pressure,sizeof(float) , mesh->n_nodes,fout);
+        if(epart)    fwrite((void*)epart,sizeof(int) , mesh->n_elements,fout);
+        if(color)
+        {
+            for(int i = 0 ; i < mesh->n_internal_colors ; i++)
+            {
+                for(int j = 0 ; j < color[i] ; j++)
+                {
+                    int colorAux = i+1;
+                    fwrite((void*)&colorAux,sizeof(int),1, fout);
+                }
+            }
+        }
+
+    
+        fprintf(fout,"\n </AppendedData>\n");
+        fprintf(fout,"</VTKFile>");
+
+
+        fclose(fout);
+
+        cout << "Writing completed successfully" << endl;
+    }
+}
+
+/*
 void MeshVTKWriterBin(mesh_t* mesh, const char* filename, int timeStep, int *npart, int* epart, int* color, double* velocity, float* pressure)
 {
     cout << "Writing VTK boundary and internal elements..." << endl;
@@ -808,143 +1096,4 @@ void MeshVTKWriterInternalBin(mesh_t* mesh, const char* filename, int timeStep, 
         cout << "Writing completed successfully" << endl;
     }
 }
-
-bool BinaryBigEndian(void) 
-{
-    long _v = 1; 
-    return ((char*)&_v)[0] ? false : true;
-}
-
-void MeshVTKWriterInternalBinAppended(mesh_t* mesh, const char* filename, int timeStep, int* npart, int* epart, int* color, double* velocity, float* pressure)
-{
-    cout << "Writing VTK internal elements..." << endl;
-    
-    FILE*         fout;
-    unsigned int boffset = 0; /* Offset into binary file */
-    const char *byte_order = BinaryBigEndian() ? "BigEndian" : "LittleEndian";
-
-    string str = filename;
-    if(timeStep)
-    {
-        string str = filename;
-        str.insert(str.length() - 4, "_" + to_string(timeStep));
-    }
-
-    fout = fopen(str.c_str(), "wb");
-
-    if(fout)
-    {
-
-        // Writting header info
-        fprintf(fout, "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"%s\" header_type=\"UInt64\">\n", byte_order);
-        fprintf(fout, " <UnstructuredGrid>\n");
-        fprintf(fout, "  <Piece NumberOfPoints=\"%d\" NumberOfCells=\"%d\">\n", mesh->n_nodes, mesh->n_elements);
-
-
-        // writing mesh info
-        fprintf(fout, "   <Points>\n");
-        fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Float64","Points",3, boffset);
-        boffset += 3*mesh->n_nodes*sizeof(double);
-        fprintf(fout, "   </Points>\n") ;
-        fprintf(fout, "   <Cells>\n");
-        fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","connectivity",1, boffset);
-        int ofs = mesh->offset[mesh->n_face_elements];
-        int sz  = mesh->conn.size() - ofs;
-        boffset += sz*sizeof(int);
-        fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","offsets",1, boffset);
-        sz = mesh->offset.size() - mesh->n_face_elements;
-        biffset += sz*sizeof(int);
-
-        fprintf(fout,"        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","UInt8","types",1, boffset);
-        boffset += sz*sizeof(unsigned short);
-        fprintf(fout, "   </Cells>\n");
-
-
-        // Writting nodal attribute data
-        fprintf(fout, "   <PointData>\n");
-        if(npart)
-        {
-            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","npart",1,boffset);
-            boffset += mesh->n_nodes*sizeof(int);
-        }
-        if(velocity)
-        {
-            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Float64","velocity",3,boffset);
-            boffset += 3*mesh->n_nodes*sizeof(double);
-        }
-        if(pressure)
-        {
-            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Float32","pressure",1,boffset);
-            boffset += mesh->n_nodes*sizeof(float);
-        }
-
-        fprintf(fout, "   </PointData>\n");
-        fprintf(fout, "   <CellData>\n");
-       
-        if(epart)
-        {
-            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","epart",1, boffset);
-            boffset += mesh->n_elements*sizeof(int);
-        }
-        if(color)
-        {
-                  
-            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","Color",1, boffset);
-            boffset += mesh->n_elements*sizeof(int);
-        }
-
-        fprintf(fout, "   </CellData>\n");
-        fprintf(fout, "  </Piece>\n");
-        fprintf(fout, " </UnstructuredGrid>\n");
-        fprintf(fout, "  <AppendedData encoding=\"raw\">\n");
-        fprintf(fout, "_");
-
-        // writting nodes coordinates
-        double *start_xyz = &mesh->coord[0];
-        fwrite((void*)start_xyz, sizeof(double),mesh->n_nodes*3,fout);
-
-        // writting element connectivity
-        ofs = mesh->offset[mesh->n_face_elements];
-        sz  = mesh->conn.size() - ofs;
-        int *start_c = &mesh->conn[ofs]; 
-        fwrite((void*)start_c, sizeof(int),sz,fout);
-
-         // writting element offsets
-        ofs = mesh->n_face_elements;
-        sz  = mesh->offset.size() - ofs;
-        int *start_o = &mesh->offset[ofs]; 
-        fwrite((void*)start_o, sizeof(int),sz,fout);
-
-        // writting types
-        ofs = mesh->n_face_elements;
-        sz  = mesh->type.size() - ofs;
-        int *start_t = &mesh->type[ofs]; 
-        fwrite((void*)start_t, sizeof(unsigned short),sz,fout);
-
-        // Writing attribute data
-        if(npart)    fwrite((void*)npart,sizeof(int), mesh->n_nodes,fout);
-        if(velocity) fwrite((void*)velocity,sizeof(double), 3*mesh->n_nodes,fout);
-        if(pressure) fwrite((void*)pressure,sizeof(float) , 3*mesh->n_nodes,fout);
-        if(epart)    fwrite((void*)epart,sizeof(int) , 3*mesh->n_elements,fout);
-        if(color)
-        {
-            for(int i = 0 ; i < mesh->n_internal_colors ; i++)
-            {
-                for(int j = 0 ; j < color[i] ; j++)
-                {
-                    int colorAux = i+1;
-                    fwrite((void*)&colorAux,sizeof(int),1, fout);
-                }
-            }
-        }
-
-    
-        fprintf(fout,"\n </AppendedData>\n");
-        fprintf(fout,"</VTKFile>");
-
-
-        fclose(fout);
-
-        cout << "Writing completed successfully" << endl;
-    }
-}
+*/

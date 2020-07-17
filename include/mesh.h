@@ -22,7 +22,7 @@ typedef struct {
     vector<double> coord;                    // Coordenadas nodais
     vector<int>    conn;                     // Conectividade dos elementos
     vector<int>    offset;                   // Mapeia a localização de cada elemento no vetor conn
-    vector<unsigned short>    type;                     // Vetor indicando o tipo de cada elemento
+    vector<unsigned short>    type;          // Vetor indicando o tipo de cada elemento
     vector<int>    physical_tag;             //  
     int* mesh_coloring_internal;             // Vetor com as cores dos elementos
     int n_internal_colors;                   // Número total de cores da malha
@@ -47,15 +47,25 @@ typedef struct {
 
 mesh_t* MeshCreate();
 
-void MeshVTKWriter(mesh_t* mesh, const char* filename, int timeStep, int *npart, int* epart, int* color, double* velocity, float* pressure);
+int* GetElementConn(mesh_t* mesh, int numElement); // retorna a posição inicial no vetor conn do elemento numElement
 
-void MeshVTKWriterBin(mesh_t* mesh, const char* filename, int timeStep, int *npart, int* epart, int* color, double* velocity, float* pressure);
+int* GetElementOffset(mesh_t* mesh, int numElement); // retorna a posição inicial no vetor offset do elemento numElement
+
+int* GetSurfaceElementConn(mesh_t* mesh, int numElement); // retorna a posição inicial no vetor conn do elemento de superfície numElement
+
+int* GetSurfaceElementOffset(mesh_t* mesh, int numElement); // retornar a posição inicial no vetor offset do elemento de superfície numElement
+
+int GetElementConnSize(mesh_t*, int numElement); // retorna a quantidade de conectividades presente no elemento numElement
+
+int GetSurfaceElementConnSize(mesh_t* mesh, int numElement); // retorna a quantidade de conectividades presente no elemento de superfície numElement
+
+void MeshVTKWriter(mesh_t* mesh, const char* filename, int timeStep, int *npart, int* epart, int* color, double* velocity, float* pressure);
 
 void MeshVTKWriterInternal(mesh_t* mesh, const char* filename, int timeStep, int *nparts, int *epart, int* color, double* velocity, float* pressure);
 
 void MeshVTKWriterInternalBinAppended(mesh_t* mesh, const char* filename, int timeStep, int* npart, int* epart, int* color, double* velocity, float* pressure);
 
-void MeshVTKWriterInternalBin(mesh_t* mesh, const char* filename, int timeStep, int *nparts, int *epart, int* color, double* velocity, float* pressure);
+void MeshVTKWriterBinAppended(mesh_t* mesh, const char* filename, int timeStep, int* npart, int* epart, int* color, double* velocity, float* pressure);
 
 void MeshGmshReader(mesh_t* mesh, const char* filename);
 
@@ -73,6 +83,9 @@ void MeshPartitionDestroy(mesh_partition_t* mp);
 
 void MeshDestroy(mesh_t **mesh);
 
+
+//void MeshVTKWriterInternalBin(mesh_t* mesh, const char* filename, int timeStep, int *nparts, int *epart, int* color, double* velocity, float* pressure);
+//void MeshVTKWriterBin(mesh_t* mesh, const char* filename, int timeStep, int *npart, int* epart, int* color, double* velocity, float* pressure);
 
 #endif
 

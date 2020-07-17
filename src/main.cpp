@@ -25,7 +25,7 @@ void UpdateAttr(int n, double time, mesh_t* mesh, double** v, float** p)
 }
 
 int main(int argc, char* argv[])
-{      
+{          
     if(argc < 3)
     {
         cout << "ERROR: WRONG EXECUTION" << endl;
@@ -80,8 +80,7 @@ int main(int argc, char* argv[])
 
 
     CatalystFinalize();
-    //MeshVTKWriter(mesh, out, 0, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
-    MeshVTKWriterInternalBinAppended(mesh, out, 0, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
+    MeshVTKWriterBinAppended(mesh, out, 0, NULL, NULL, NULL, NULL, NULL);
     //MeshVTKWriterInternalBin(mesh, out, 0, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
 
     MeshPartitionDestroy(parts);
