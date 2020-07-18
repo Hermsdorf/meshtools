@@ -80,8 +80,8 @@ int main(int argc, char* argv[])
 
 
     CatalystFinalize();
-    MeshVTKWriterBinAppended(mesh, out, 0, NULL, NULL, NULL, NULL, NULL);
-    //MeshVTKWriterInternalBin(mesh, out, 0, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
+    //MeshVTKWriterBinAppended(mesh, out, 0, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
+    MeshVTKWriterInternalBinAppended(mesh, out, 0, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
 
     MeshPartitionDestroy(parts);
     MeshDestroy(&mesh);

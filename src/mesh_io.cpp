@@ -631,10 +631,10 @@ void MeshVTKWriterInternalBinAppended(mesh_t* mesh, const char* filename, int ti
 
 
         fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","offsets",1, boffset);
-        sz = mesh->offset.size() - mesh->n_face_elements;
+        sz = mesh->offset.size() - (mesh->n_face_elements + 1);
         boffset += sz*sizeof(int) + sizeof(unsigned long);
 
-        fprintf(fout,"        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","UInt8","types",1, boffset);
+        fprintf(fout,"        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","UInt16","types",1, boffset);
         boffset += mesh->n_elements*sizeof(unsigned short) + sizeof(unsigned long);
         fprintf(fout, "   </Cells>\n");
 
@@ -679,47 +679,63 @@ void MeshVTKWriterInternalBinAppended(mesh_t* mesh, const char* filename, int ti
         fprintf(fout, "_");
 
         // writting nodes coordinates
-        double *start_xyz = &mesh->coord[0];
         unsigned long nbytes = sizeof(double)*mesh->n_nodes*3;
         fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-        fwrite((void*)start_xyz, sizeof(double),mesh->n_nodes*3,fout);
+        fwrite((void*)&mesh->coord[0], sizeof(double),mesh->n_nodes*3,fout);
         
         // writting element connectivity
-        ofs = mesh->offset[mesh->n_face_elements];
-        sz  = mesh->conn.size() - ofs;
-        int *start_c = &mesh->conn[ofs]; 
-        nbytes = sizeof(int)*sz;
-        fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-        fwrite((void*)start_c, sizeof(int),sz,fout);
+        int nfe = mesh->n_face_elements;
+        int ne = mesh->n_elements;
+        ofs = mesh->offset[nfe];
 
-         // writting element offsets
-        ofs = mesh->n_face_elements;
-        sz  = mesh->offset.size() - ofs;
-        int *start_o = &mesh->offset[ofs]; 
-        //fwrite((void*)start_o, sizeof(int),sz,fout);
-        nbytes = sizeof(int)*sz;
+        nbytes = sizeof(int)*(mesh->conn.size() - ofs);
         fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-        for(int i = ofs ; i < mesh->offset.size(); i++)
+        fwrite((void*)&mesh->conn[ofs], sizeof(int),mesh->conn.size() - ofs,fout);
+
+        // writting element offsets
+        nbytes = sizeof(int)*(mesh->offset.size() - (nfe + 1));
+        fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+        for(int i = nfe+1 ; i < mesh->offset.size() ; i++)
         {
-            int offset = mesh->offset[i] - mesh->offset[ofs];
-            fwrite((void*)&offset, sizeof(int),1,fout);
+            int offset = mesh->offset[i] - mesh->offset[nfe];
+            fwrite((void*)&offset, sizeof(int), 1,fout);
         }
 
         // writting types
-        ofs = mesh->n_face_elements;
-        sz  = mesh->type.size() - ofs;
-        unsigned short* start_t = &mesh->type[ofs]; 
-        nbytes = sizeof(unsigned short)*sz;
+        nbytes = sizeof(unsigned short)*(ne);
         fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-        fwrite((void*)start_t, sizeof(unsigned short),sz,fout);
+        fwrite((void*)&mesh->type[nfe], sizeof(unsigned short),ne,fout);
 
         // Writing attribute data
-        if(npart)    fwrite((void*)npart,sizeof(int), mesh->n_nodes,fout);
-        if(velocity) fwrite((void*)velocity,sizeof(double), 3*mesh->n_nodes,fout);
-        if(pressure) fwrite((void*)pressure,sizeof(float) , mesh->n_nodes,fout);
-        if(epart)    fwrite((void*)epart,sizeof(int) , mesh->n_elements,fout);
+        if(npart)
+        {
+            nbytes = sizeof(int)*mesh->n_nodes;
+            fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+            fwrite((void*)npart,sizeof(int), mesh->n_nodes,fout);
+        }
+        if(velocity)
+        {
+            nbytes = sizeof(double)*3*mesh->n_nodes;
+            fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+            fwrite((void*)velocity,sizeof(double), 3*mesh->n_nodes,fout);
+        }
+        if(pressure)
+        {
+            nbytes = sizeof(float)*mesh->n_nodes;
+            fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+            fwrite((void*)pressure,sizeof(float), mesh->n_nodes,fout);
+        }
+        if(epart)
+        {
+            nbytes = sizeof(int)*mesh->n_elements;
+            fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+            fwrite((void*)epart,sizeof(int), mesh->n_elements,fout);
+        }
         if(color)
         {
+            nbytes = sizeof(int)* mesh->n_elements;
+            fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+
             for(int i = 0 ; i < mesh->n_internal_colors ; i++)
             {
                 for(int j = 0 ; j < color[i] ; j++)
@@ -778,7 +794,7 @@ void MeshVTKWriterBinAppended(mesh_t* mesh, const char* filename, int timeStep, 
 
 
         fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","offsets",1, boffset);
-        boffset += mesh->offset.size()*sizeof(int) + sizeof(unsigned long);
+        boffset += (mesh->offset.size()-1)*sizeof(int) + sizeof(unsigned long);
 
         fprintf(fout,"        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","UInt16","types",1, boffset);
         boffset += mesh->type.size()*sizeof(unsigned short) + sizeof(unsigned long);
@@ -825,37 +841,66 @@ void MeshVTKWriterBinAppended(mesh_t* mesh, const char* filename, int timeStep, 
         fprintf(fout, "_");
 
         // writting nodes coordinates
-        int nbytes = sizeof(double)*mesh->n_nodes*3;
-        fwrite((void*)&nbytes, sizeof(int),1,fout);
+        unsigned long nbytes = sizeof(double)*mesh->n_nodes*3;
+        fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
         fwrite((void*)&mesh->coord[0], sizeof(double),mesh->n_nodes*3,fout);
         
         // writting element connectivity
         nbytes = sizeof(int)*mesh->conn.size();
-        fwrite((void*)&nbytes, sizeof(int),1,fout);
+        fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
         fwrite((void*)&mesh->conn[0], sizeof(int),mesh->conn.size(),fout);
 
         // writting element offsets
         nbytes = sizeof(int)*(mesh->offset.size()-1);
-        fwrite((void*)&nbytes, sizeof(int),1,fout);
+        fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
         fwrite((void*)&mesh->offset[1], sizeof(int),mesh->offset.size()-1,fout);
 
         // writting types
         nbytes = sizeof(unsigned short)*(mesh->type.size());
-        fwrite((void*)&nbytes, sizeof(int),1,fout);
+        fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
         fwrite((void*)&mesh->type[0], sizeof(unsigned short),mesh->type.size(),fout);
 
         // Writing attribute data
-        if(npart)    fwrite((void*)npart,sizeof(int), mesh->n_nodes,fout);
-        if(velocity) fwrite((void*)velocity,sizeof(double), 3*mesh->n_nodes,fout);
-        if(pressure) fwrite((void*)pressure,sizeof(float) , mesh->n_nodes,fout);
-        if(epart)    fwrite((void*)epart,sizeof(int) , mesh->n_elements,fout);
+        if(npart)
+        {
+            nbytes = sizeof(int)*mesh->n_nodes;
+            fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+            fwrite((void*)npart,sizeof(int), mesh->n_nodes,fout);
+        }
+        if(velocity)
+        {
+            nbytes = sizeof(double)*3*mesh->n_nodes;
+            fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+            fwrite((void*)velocity,sizeof(double), 3*mesh->n_nodes,fout);
+        }
+        if(pressure)
+        {
+            nbytes = sizeof(float)*mesh->n_nodes;
+            fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+            fwrite((void*)pressure,sizeof(float), mesh->n_nodes,fout);
+        }
+        if(epart)
+        {
+            nbytes = sizeof(int)*(mesh->n_face_elements + mesh->n_elements);
+            fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+            fwrite((void*)epart,sizeof(int), mesh->n_face_elements + mesh->n_elements,fout);
+        }
         if(color)
         {
+            nbytes = sizeof(int)*(mesh->n_face_elements + mesh->n_elements);
+            fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+            int colorAux = -1; // cor dos elementos de superfície
+
+            for(int i = 0 ; i < mesh->n_face_elements ; i++)
+            {
+                fwrite((void*)&colorAux,sizeof(int),1, fout);
+            }
+
             for(int i = 0 ; i < mesh->n_internal_colors ; i++)
             {
                 for(int j = 0 ; j < color[i] ; j++)
                 {
-                    int colorAux = i+1;
+                    colorAux = i+1;
                     fwrite((void*)&colorAux,sizeof(int),1, fout);
                 }
             }
