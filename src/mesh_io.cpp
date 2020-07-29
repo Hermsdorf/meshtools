@@ -265,7 +265,7 @@ void MeshVTKWriter(mesh_t* mesh, const char* filename, int timeStep, int *npart,
     {
 
         int nnodes = mesh->n_nodes;
-        int nelem = (mesh->n_elements + mesh->n_face_elements);
+        int nelem = mesh->n_elements + mesh->n_face_elements;
         fout << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">" << endl;
         fout << "\t<UnstructuredGrid>" << endl;
         fout << "\t\t<Piece NumberOfPoints=\"" << nnodes  <<"\" NumberOfCells=\""<< nelem << "\">" << endl;
@@ -720,7 +720,7 @@ void MeshVTKWriterInternalBinAppended(mesh_t* mesh, const char* filename, int ti
         }
         if(color)
         {
-            nbytes = sizeof(int)* mesh->n_elements;
+            nbytes = sizeof(int)*mesh->n_elements;
             fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
 
             for(int i = 0 ; i < mesh->n_internal_colors ; i++)
@@ -732,6 +732,7 @@ void MeshVTKWriterInternalBinAppended(mesh_t* mesh, const char* filename, int ti
                 }
             }
         }
+
 
     
         fprintf(fout,"\n </AppendedData>\n");
@@ -810,12 +811,12 @@ void MeshVTKWriterBinAppended(mesh_t* mesh, const char* filename, int timeStep, 
         if(epart)
         {
             fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","epart",1, boffset);
-            boffset += mesh->n_elements*sizeof(int) + sizeof(unsigned long);
+            boffset += (mesh->n_elements+mesh->n_face_elements)*sizeof(int) + sizeof(unsigned long);
         }
         if(color)
         {
             fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","Color",1, boffset);
-            boffset += mesh->n_elements*sizeof(int) + sizeof(unsigned long);
+            boffset += (mesh->n_elements+mesh->n_face_elements)*sizeof(int) + sizeof(unsigned long);
         }
 
         fprintf(fout, "   </CellData>\n");

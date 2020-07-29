@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
         
         CatalystCoProcess(mesh, velocity, pressure,time,timeStep, 0);
 
-        MeshVTKWriterInternalBinAppended(mesh, out, 0, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
+        MeshVTKWriterBinAppended(mesh, out, 0, parts->nodal_part, parts->elem_part, mesh->mesh_coloring_internal, velocity, pressure);
 
         time += dt;
         timeStep++;
