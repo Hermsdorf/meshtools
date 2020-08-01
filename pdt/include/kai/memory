@@ -1,0 +1,393 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+/**
+ **  Lib++  : The Modena C++ Standard Library,
+ **           Version 2.4, October 1997
+ **
+ **  Copyright (c) 1995-1997 Modena Software Inc.
+ **/
+
+#ifndef MSIPL_DEFMEMORY_H
+#define MSIPL_DEFMEMORY_H
+
+#include <mcompile.h>
+
+#include <cstdlib>
+#include <cstring>
+#ifdef KAI_ALLOCATOR_CHECKING
+#include <cassert>
+#endif /* KAI_ALLOCATOR_CHECKING */
+
+#include <new>
+#include <iterator>
+#include <utility>	/* Need definition of class pair from here */
+
+namespace __kai {
+
+class fast_allocator {
+public:
+    static const size_t unit_size = sizeof(void*);
+    static const size_t max_fast_size = 32*unit_size;
+	// Size of largest object that we can allocate quickly.
+	// We can still allocate bigger objects, albeit by always using operator new.
+    static void * allocate( size_t size );
+	// Allocate storage of given size.
+    static void deallocate( void * p, size_t size );
+	// Deallocate storage of given size.  
+	// The size parameter *must* match that for the allocation.  
+};
+
+} // namespace __kai
+
+namespace std {
+
+// 20.4.1, the default allocator:
+template <class T> class allocator; // forward declaration
+
+template<>
+class allocator<void> {
+public:
+     typedef void*            pointer;
+     typedef const void*      const_pointer;
+     typedef void             value_type;
+#if KAI_NONSTD_ALLOCATOR
+     typedef size_t           size_type;
+     typedef ptrdiff_t        difference_type;
+#endif
+     template <class U> struct rebind { typedef allocator<U>  other; };
+};
+
+template <class T>
+class allocator {
+public:
+    typedef size_t                        size_type;
+    typedef ptrdiff_t                     difference_type;
+    typedef T*                            pointer;
+    typedef const T*                      const_pointer;
+    typedef T&                            reference;
+    typedef const T&                      const_reference;
+    typedef T                             value_type;
+    template <class U> struct rebind { typedef allocator<U> other; };
+
+    allocator() MSIPL_THROW {}
+    allocator(const allocator&) MSIPL_THROW {}
+    template<class U> allocator(const allocator<U>&) MSIPL_THROW {}
+    ~allocator () MSIPL_THROW {}
+
+    pointer address(reference x) const { return (pointer)&x; }
+    const_pointer address(const_reference x) const { return (const_pointer)&x; }
+
+    pointer allocate (size_type n, 
+                      typename allocator<void>::const_pointer /*hint*/ = 0) { 
+        size_t bytes = (size_t)(n*sizeof (T) );
+#ifdef KAI_ALLOCATOR_CHECKING
+	++bytes;
+#endif /* KAI_ALLOCATOR_CHECKING */
+        // Comparison resolved a compile-time.			
+	T* tmp = sizeof(T) > __kai::fast_allocator::max_fast_size ? 
+		 (T*)::operator new( bytes ) :
+		 (T*)__kai::fast_allocator::allocate( bytes );
+#ifndef _EXCEPTIONS
+	// KAI change - check result only if exceptions are disabled.
+	// When exceptions are enabled, Section 5.3.4p13 of ISO C++ Standard requires
+	// that operator new throw an exception if it fails.
+	if (tmp == 0)
+	    bad_alloc::__throw();
+#endif /*_EXCEPTIONS*/
+#ifdef KAI_ALLOCATOR_CHECKING
+	((char*)(void*)tmp)[bytes-1] = n % 253;
+#endif /* KAI_ALLOCATOR_CHECKING */
+	return tmp; 
+    }
+    void deallocate(pointer p, size_type n) {
+        size_t bytes = (size_t)(n*sizeof (T) );
+#ifdef KAI_ALLOCATOR_CHECKING
+	++bytes;
+#endif /* KAI_ALLOCATOR_CHECKING */
+#ifdef KAI_ALLOCATOR_CHECKING
+	assert( ((char*)(void*)p)[bytes-1] == n % 253 );
+	((char*)(void*)p)[bytes-1] ^= 0xFF;
+#endif /* KAI_ALLOCATOR_CHECKING */
+        // Comparison resolved a compile-time.			
+	if( sizeof(T) > __kai::fast_allocator::max_fast_size ) 
+	    ::operator delete( (void*)p );
+	else    
+	    __kai::fast_allocator::deallocate(p,bytes);
+    }
+
+    size_type max_size() const MSIPL_THROW {
+#ifdef _CRAYT3E
+	// Cray T3E backend sometimes incorrectly uses signed comparisons
+	// instead of unsigned comparisons.  Therefore for T3E, we use
+	// a max_size that is positive even if misinterpreted by backend.
+	return sizeof(T)==1 ? size_type( size_type (-1)/2u ) :
+	    ( size_type(1) > size_type (size_type (-1)/sizeof (T)) ) ? size_type(1) :
+	    size_type (size_type (-1)/sizeof (T));
+#else
+	return ( size_type(1) > size_type (size_type (-1)/sizeof (T)) ) ? size_type(1):size_type(size_type(-1)/sizeof (T));
+#endif /*_CRAYT3E*/
+    }
+
+    void construct(pointer p, const T& val) {
+	// KAI change - removed Modena's non-ISO-compliant checking for NULL pointer.
+	new ((void*)p) T(val); 
+    }
+
+    void destroy(pointer p) { 
+	// KAI change - removed Modena's non-ISO-compliant checking for NULL pointer.
+	((T*)p)->~T(); 
+    }
+};
+
+// 20.4.1.2 allocator globals
+template <class T1, class T2>
+inline bool operator==(const allocator<T1>& , const allocator<T2>&) MSIPL_THROW { return true; }
+ 
+template <class T1, class T2>
+inline bool operator!=(const allocator<T1>& , const allocator<T2>&) MSIPL_THROW { return false; }
+
+
+} // namespace std
+
+// Modena uses these template function throught the library to help clarify things.
+// I've placed them in namespace __kai to make it clear that they are not for general use.
+namespace __kai {
+    template <class T1, class T2>
+    inline void construct(T1* p, const T2& value) { new (p) T1(value); }
+
+    template <class T>
+    inline void destroy(T* pointer) { pointer->~T(); }
+
+    template <class ForwardIterator>
+    inline void destroy(ForwardIterator first, ForwardIterator last) { 
+	for(; first != last; ++first) 
+	    destroy(&*first);
+    }
+} // namespace __kai
+
+namespace std {
+
+
+// 20.4.2 Raw storage iterator
+template <class OutputIterator, class T>
+class raw_storage_iterator 
+    : public iterator<output_iterator_tag, void, void, void, void> {
+public:
+    explicit raw_storage_iterator(OutputIterator x) : iter(x) { }
+
+    raw_storage_iterator<OutputIterator, T>& operator*() { return *this; }
+
+    raw_storage_iterator<OutputIterator, T>& operator=(const T& element) { 
+	// 20.4.2 requires that the user provide & that returns a T*.
+	new (&*iter) T(element);
+	return *this; 
+    }
+
+    raw_storage_iterator<OutputIterator, T>& operator++() { 
+	++iter; 
+	return *this; 
+    }
+
+    raw_storage_iterator<OutputIterator, T> operator++(int) {   
+	raw_storage_iterator<OutputIterator, T> tmp = *this;
+	++iter; 
+	return tmp; 
+    }
+protected:
+    OutputIterator iter;
+};
+
+// 20.4.3 Temporary buffers
+template <class T>
+inline pair<T*, ptrdiff_t> get_temporary_buffer(ptrdiff_t n) {
+    // Note that older STL's (1) use a statically allocated buffer.
+    // The ISO C++ Standard would seem to implicitly disallow this behavior, because no where
+    // does it say that there is at most one buffer.
+    T * tmp;
+    do {
+        tmp = (T*) std::malloc( n==0 ? 1 : n*sizeof(T) );
+	if( tmp ) break;
+    } while( n/=2 ); 
+    return pair<T*, ptrdiff_t>(tmp,n);
+}
+
+template <class T>
+inline void return_temporary_buffer(T* p) {
+    if( p ) std::free(p);
+}
+
+// 20.4.4 Specialized algorithms
+template <class InputIterator, class ForwardIterator>
+inline ForwardIterator
+uninitialized_copy(InputIterator first, InputIterator last,
+		    ForwardIterator result) { 
+    ForwardIterator next = result;
+    MSIPL_TRY
+    {
+	for(; first != last; ++first, ++next) 
+	    new (static_cast<void *>(&*next)) typename iterator_traits<ForwardIterator>::value_type(*first);
+    }
+    MSIPL_CATCH
+    {
+	__kai::destroy(result, next);
+	MSIPL_RETHROW;
+    }
+    return next; 
+}
+
+// Now for some specializations for performance reasons.
+template<> inline char*
+uninitialized_copy(char* first, char* last, char* result)
+{  memcpy (result, first, last - first); return result + (last - first); }
+
+#ifdef MSIPL_WCHAR
+template<> inline wchar_t*
+uninitialized_copy(wchar_t* first, wchar_t* last, wchar_t* result)
+{  wmemcpy (result, first, last - first); return result + (last - first); }
+#endif
+
+
+template <class ForwardIterator, class T>
+inline void uninitialized_fill(ForwardIterator first, ForwardIterator last, const T& x) { 
+    ForwardIterator next = first;
+    MSIPL_TRY
+    {
+	for (; next != last; ++next)
+	    new (static_cast<void *>(&*next)) typename iterator_traits<ForwardIterator>::value_type(x);
+    }
+    MSIPL_CATCH
+    {
+	__kai::destroy(first, next);
+	MSIPL_RETHROW;
+    }
+}
+
+// Now for some specializations for performance reasons.
+template<>
+inline void uninitialized_fill(char* first, char* last, const char& x)
+{ memset(first, x, last - first); }
+
+#ifdef MSIPL_WCHAR
+template<> 
+inline void uninitialized_fill(wchar_t* first, wchar_t* last, const wchar_t& x)
+{ wmemset(first, x, last - first); }
+#endif
+
+
+template <class ForwardIterator, class Size, class T>
+inline void uninitialized_fill_n(ForwardIterator first, Size n, const T& x)
+{ 
+    ForwardIterator next = first;
+    MSIPL_TRY
+    {
+	for(; n > 0; --n, ++next)
+	    new( static_cast<void *>(&*next)) typename iterator_traits<ForwardIterator>::value_type(x);
+    }
+    MSIPL_CATCH
+    {
+	__kai::destroy (first, next);
+	MSIPL_RETHROW;
+    }
+}
+ 
+template<>
+inline void uninitialized_fill_n(char* first, unsigned int n, const char& x) { memset(first, x, n); }
+template<>
+inline void uninitialized_fill_n(char* first, int n, const char& x) { memset(first, x, n); }
+ 
+#ifdef MSIPL_WCHAR
+template<>
+inline void uninitialized_fill_n(wchar_t* first, unsigned int n, const wchar_t& x) { wmemset(first, x, n); }
+
+template<> 
+inline void uninitialized_fill_n(wchar_t* first, int n, const wchar_t& x) { wmemset(first, x, n); }
+#endif
+
+// 20.4.5 Template class auto_ptr
+// Implementation of auto_ptr rewritten by KAI.  
+// Do not update with Modena's versions.
+template <class X>
+class auto_ptr {
+    template <class Y> struct auto_ptr_ref {
+	auto_ptr_ref(auto_ptr<Y>&r) : my_ref(r) { }
+	auto_ptr<Y> & my_ref;
+    };
+public:
+    typedef X   element_type;
+
+    template <class Y> friend class auto_ptr;
+
+    explicit auto_ptr(X* p = 0) MSIPL_THROW : my_ptr(p) { }
+
+    auto_ptr( auto_ptr& a ) MSIPL_THROW {
+        my_ptr=a.my_ptr;
+        a.my_ptr = (X*)0; 
+    }
+
+    template <class Y> 
+    auto_ptr( auto_ptr<Y>& a ) MSIPL_THROW {
+        my_ptr=a.my_ptr;
+        a.my_ptr = (Y*)0;
+    }
+
+    auto_ptr& operator=(auto_ptr& a) MSIPL_THROW {
+        if( my_ptr && my_ptr!=a.my_ptr ) { 
+	    delete my_ptr;
+        }
+        // Assignment to my_ptr not inside if because we get cleaner 
+        // (non-conditional) dataflow analysis for my_ptr this way. 
+	// Furthermore, the temporary t and ordering of assignments
+	// is important for getting the case this==&a right. -ADR
+	X * t = a.my_ptr;
+	a.my_ptr = (X*)0;
+	my_ptr = t;
+	return *this;
+    }
+
+    template <class Y> 
+    auto_ptr& operator=(auto_ptr<Y>& a) MSIPL_THROW {
+        if( my_ptr && my_ptr!=a.my_ptr ) { 
+	    delete my_ptr;
+        }
+	X * t = a.my_ptr;
+	a.my_ptr = (Y*)0;
+	my_ptr = t;
+	return *this; 
+    }
+
+    ~auto_ptr() { 
+        if( my_ptr ) {
+	    delete my_ptr;
+        }
+    }
+
+    X& operator*() const MSIPL_THROW { return *my_ptr; }
+    X* operator->() const MSIPL_THROW { return my_ptr; }
+    X* get() const MSIPL_THROW { return my_ptr; }
+    X* release() MSIPL_THROW {
+	X * t = my_ptr;
+	my_ptr=(X*)0;
+	return t;
+    }
+    void reset(X* p = 0) MSIPL_THROW {
+	if( my_ptr!=p )
+	    delete my_ptr;
+	my_ptr = p;
+    }
+
+    auto_ptr(auto_ptr_ref<X> r) MSIPL_THROW : my_ptr( r.my_ref.release() ) {}
+    template<class Y> operator auto_ptr_ref<Y>() MSIPL_THROW { return auto_ptr_ref<Y>(*this); }
+    template<class Y> operator auto_ptr<Y>() MSIPL_THROW { return auto_ptr<Y>(release()); }
+
+private:
+    X* my_ptr; 		// *this owns *my_ptr if and only if my_ptr!=0;
+};
+
+} // namespace std
+
+#endif /* MSIPL_DEFMEMORY_H */
+

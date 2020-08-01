@@ -1,0 +1,58 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+/* Edison Design Group, 1994. */
+/*
+ * <exception> -- Include file for exception handling (see 18.6)
+ */
+#ifndef _EXCEPTION_NS
+#define _EXCEPTION_NS
+
+// NOTE: In recent drafts, <exception> no longer includes <stdexcept>. 
+
+#include <mcompile.h>
+
+namespace std {
+
+// Section 19.1 -- Exception classes
+
+class exception {
+public :
+    exception() MSIPL_THROW;
+    exception(const exception& exarg) MSIPL_THROW;
+    exception& operator=(const exception& exarg) MSIPL_THROW;
+    virtual ~exception() MSIPL_THROW;
+    virtual const char* what() const MSIPL_THROW;
+
+    static void __issue_msg_to_stderr( const char * );
+};
+
+class bad_exception : public exception {
+public:
+    bad_exception() MSIPL_THROW;
+    bad_exception(const bad_exception&) MSIPL_THROW;
+    bad_exception& operator=(const bad_exception&) MSIPL_THROW;
+    virtual ~bad_exception() MSIPL_THROW;
+    virtual const char* what() const MSIPL_THROW;
+};
+
+// Current draft requires throw specification for set_terminate and
+// set_unexpected, but doing so causes EDG 2.34 front-end to generate incorrect
+// code.  ADR 97/1/2.  As of 97/11/21, EDG 2.37 front-end has same problem.  
+typedef void (*unexpected_handler)();
+unexpected_handler set_unexpected(unexpected_handler f) /*throw()*/;
+void unexpected();
+
+typedef void (*terminate_handler)();
+terminate_handler set_terminate(terminate_handler f) /*throw()*/;
+void terminate();
+
+bool uncaught_exception();
+
+}  /* namespace */
+
+#endif /* _EXCEPTION_H */
+

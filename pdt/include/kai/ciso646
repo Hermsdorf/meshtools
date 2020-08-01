@@ -1,0 +1,13 @@
+/* KAI header file: ciso646 alternative spellings. C++ version of c99 standard 7.9 */
+/**
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 2000-2001 Intel Corp. All rights reserved.
+ **/
+
+#ifndef _CISO646
+#define _CISO646
+
+#include <iso646.h>
+
+#endif

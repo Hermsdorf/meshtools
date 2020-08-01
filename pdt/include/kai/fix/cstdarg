@@ -1,0 +1,19 @@
+/**
+ **  PDT 
+ **
+ **/
+
+#ifndef __PDT_CSTDARG
+#define __PDT_CSTDARG
+
+
+#include <../cstdarg>
+
+namespace std
+{
+  using ::va_list;
+}
+
+
+
+#endif /* __PDT_CSTDARG */

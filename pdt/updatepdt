@@ -1,0 +1,4 @@
+#!/bin/sh
+wget http://tau.uoregon.edu/pdtupdate.tgz
+tar zxf pdtupdate.tgz
+cd pdtupdate; ./install.sh

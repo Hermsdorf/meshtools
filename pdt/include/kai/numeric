@@ -1,0 +1,163 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+/**
+ **  Lib++  : The Modena C++ Standard Library,
+ **           Version 2.4, October 1997
+ **
+ **  Copyright (c) 1995-1997 Modena Software Inc.
+ **/
+
+#ifndef __KAI_NUMERIC
+#define __KAI_NUMERIC
+
+#include <mcompile.h>
+#include <iterator>		/* Need iterator_traits from here */
+#include <new>			/* Need placement new from here */
+
+namespace std {
+
+// Section 26.4 -- Generic numeric operations
+
+// Section 26.4.1 -- Accumulate
+
+template <class InputIterator, class T>
+inline
+T accumulate(InputIterator first, InputIterator last, T init)
+{
+    for (; first != last; ++first) 
+        init = init + *first;
+    return init;
+}
+
+template <class InputIterator, class T, class BinaryOperation>
+inline
+T accumulate(InputIterator first, InputIterator last, T init, BinaryOperation binary_op)
+{
+    for (; first != last; ++first) 
+        init = binary_op (init, *first);
+    return init;
+}
+
+// Section 26.4.2 -- inner product
+
+template <class InputIterator1, class InputIterator2, class T>
+inline
+T inner_product(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, T init)
+{
+    for (; first1 != last1; ++first1, ++first2) 
+        init = init + (*first1 * *first2);
+    return init;
+}
+
+template <class InputIterator1, class InputIterator2, class T, class BinaryOperation1, class BinaryOperation2>
+inline
+T inner_product (InputIterator1 first1, InputIterator1 last1,
+                 InputIterator2 first2, T init,
+                 BinaryOperation1 binary_op1,
+                 BinaryOperation2 binary_op2)
+{
+    for (; first1 != last1; ++first1, ++first2) 
+        init = binary_op1 (init, binary_op2 (*first1, *first2));
+    return init;
+}
+
+// Section 26.4.3 -- Partial Sum
+
+// KAI change: do not replace with Modena's version, which is verbose,
+// possibly slower, and not type correct.  Auxilary function __partial sum 
+// has been removed.  Likewise of other overloading of sum and __partial_sum.
+// Modena's auxilary's are a useless appendage from the original HP STL.
+template <class InputIterator, class OutputIterator>
+OutputIterator partial_sum(InputIterator first, InputIterator last, OutputIterator result)
+{
+    typedef iterator_traits<InputIterator>::value_type sum_type;
+    if( first!=last ) {
+	sum_type sum1( *first );
+	for(;;) {
+	    *result = sum1;
+	    ++result;
+	    if( ++first==last )
+		break;
+	    sum_type sum2( sum1 + *first );
+	    *result = sum2;
+	    ++result;
+	    if( ++first==last )
+		break;
+	    sum1.~sum_type();
+	    new((void*)&sum1) sum_type( sum2 + *first );
+	}
+    }
+    return result;
+}
+
+template <class InputIterator, class OutputIterator, class BinaryOperation>
+OutputIterator partial_sum(InputIterator first, InputIterator last, OutputIterator result, BinaryOperation op)
+{
+    typedef iterator_traits<InputIterator>::value_type sum_type;
+    if( first!=last ) {
+	sum_type sum1( *first );
+	for(;;) {
+	    *result = sum1;
+	    ++result;
+	    if( ++first==last )
+		break;
+	    sum_type sum2( op( sum1, *first ) );
+	    *result = sum2;
+	    ++result;
+	    if( ++first==last )
+		break;
+	    sum1.~sum_type();
+	    new((void*)&sum1) sum_type( op( sum2, *first ) );
+	}
+    }
+    return result;
+}
+
+// Section 26.4.4 -- Adjacent Difference
+
+// KAI change: do not replace with Modena's version, which is verbose,
+// possibly slow, and not type correct in esoteric cases.
+template <class InputIterator, class OutputIterator>
+OutputIterator
+adjacent_difference(InputIterator first, InputIterator last, OutputIterator result)
+{
+    typedef typename iterator_traits <InputIterator>::value_type value_type;
+    if (first != last) {
+	value_type value0( *first );
+	*result = value0;
+	while( ++result, ++first!=last ) {
+	    value_type value1(*first);
+	    *result = value1 - value0;
+	    value0.~value_type();
+	    new((void*)&value0) value_type( value1 );
+	}
+    }
+    return result;
+}
+
+template <class InputIterator, class OutputIterator, class BinaryOperation>
+OutputIterator
+adjacent_difference(InputIterator first, InputIterator last, OutputIterator result, BinaryOperation binary_op)
+{
+    typedef typename iterator_traits <InputIterator>::value_type value_type;
+    if (first != last) {
+	value_type value0( *first );
+	*result = value0;
+	while( ++result, ++first!=last ) {
+	    value_type value1(*first);
+	    *result = binary_op(value1,value0);
+	    value0.~value_type();
+	    new((void*)&value0) value_type( value1 );
+	}
+    }
+    return result;
+}
+
+} // namespace std
+
+#endif /* __KAI_NUMERIC */
+

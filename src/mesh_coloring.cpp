@@ -15,26 +15,29 @@ int compare_int(const void *a, const void *b)
     return (*da > *db);
 }
 
-void MeshToDualGraph(mesh_t *mesh, idx_t **xadj, idx_t **adjncy)
+void MeshToDualGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
 {
     int result;
+    int nelem = mesh->get_N_elements();
+    int nnodes = mesh->get_N_nodes();
+    int nfe = mesh->get_N_face_elements();
     idx_t* eptr;
     idx_t* eind;
     idx_t* ne;
-    idx_t* nn = &mesh->n_nodes;
+    idx_t* nn = &nnodes;
     idx_t numflag = 0;
     idx_t ncommon = 1;
 
-    ne = &mesh->n_elements;
-    int ofs = mesh->offset[mesh->n_face_elements];
-    eptr = new idx_t[mesh->n_elements + 1];
+    ne = &nelem;
+    int ofs = mesh->getOffset()[nfe];
+    eptr = new idx_t[mesh->get_N_elements() + 1];
 
-    for (int i = mesh->n_face_elements, j = 0; i < mesh->offset.size(); i++, j++)
+    for (int i = nfe, j = 0; i < mesh->getOffset().size(); i++, j++)
     {
-        eptr[j] = mesh->offset[i] - ofs;
+        eptr[j] = mesh->getOffset()[i] - ofs;
     }
 
-    eind = &mesh->conn[ofs];
+    eind = &mesh->getConn()[ofs];
 
     result = METIS_MeshToDual(ne, nn, eptr, eind, &ncommon, &numflag, xadj, adjncy);
 
@@ -67,26 +70,26 @@ void MeshToDualGraph(mesh_t *mesh, idx_t **xadj, idx_t **adjncy)
     delete[] eptr;
 }
 
-void UpdateMeshArrays(mesh_t* mesh, int* sort, int** new_conn, int** new_offset)
+void UpdateMeshArrays(Mesh* mesh, int* sort, int** new_conn, int** new_offset)
 {
     int ne;
-    int nfe = mesh->n_face_elements;
+    int nfe = mesh->get_N_face_elements();
     int skip;
     int n_colors;
     int* mesh_coloring;
     int count = 0;
     int color = 1;
 
-    ne = mesh->n_elements;
+    ne = mesh->get_N_elements();
     skip = nfe;
-    mesh_coloring = mesh->mesh_coloring_internal;
-    n_colors = mesh->mesh_coloring_internal[sort[ne-1]];
+    mesh_coloring = mesh->get_Mesh_coloring_internal();
+    n_colors = mesh->get_N_internal_colors();
 
     for(int i = skip, j = 0 ; i <= skip + ne ; i++, j++)
-        mesh->offset[i] = (*new_offset)[j];
+        mesh->setOffsetPosition((*new_offset)[j], i);
 
-    for(int i = mesh->offset[skip], j = 0 ; i < mesh->offset[skip + ne] ; i++, j++)
-        mesh->conn[i] = (*new_conn)[j];
+    for(int i = mesh->getOffset()[skip], j = 0 ; i < mesh->getOffset()[skip + ne] ; i++, j++)
+        mesh->setConnPosition((*new_conn)[j], i);
 
     int* mesh_coloringAux = new int [n_colors];
     
@@ -98,52 +101,52 @@ void UpdateMeshArrays(mesh_t* mesh, int* sort, int** new_conn, int** new_offset)
         mesh_coloringAux[mesh_coloring[i]-1]++;
     }
 
-    delete [] mesh->mesh_coloring_internal;
-    mesh->mesh_coloring_internal = mesh_coloringAux;
+    delete [] mesh->get_Mesh_coloring_internal();
+    mesh->set_Mesh_coloring_internal(mesh_coloringAux);
 }
 
-void ReorderElements(mesh_t* mesh, int* sort, int** new_conn, int** new_offset)
+void ReorderElements(Mesh* mesh, int* sort, int** new_conn, int** new_offset)
 {
     int ne;
     int skip;
-    int nfe = mesh->n_face_elements;
+    int nfe = mesh->get_N_face_elements();
 
-    ne = mesh->n_elements;
+    ne = mesh->get_N_elements();
     skip = nfe;
-    *new_conn = new int [mesh->offset.back() - mesh->offset[skip]];
+    *new_conn = new int [mesh->getOffset().back() - mesh->getOffset()[skip]];
 
     *new_offset = new int [ne + 1];
     int count_conn = 0;
     int count_offset = 1;
 
-    (*new_offset)[0] = mesh->offset[skip];
+    (*new_offset)[0] = mesh->getOffset()[skip];
 
     for(int i = 0 ; i < ne ; i++)
     {
-        int start = mesh->offset[skip + sort[i]];
-        int end = mesh->offset[skip + sort[i] + 1];
+        int start = mesh->getOffset()[skip + sort[i]];
+        int end = mesh->getOffset()[skip + sort[i] + 1];
 
         (*new_offset)[count_offset] = (*new_offset)[count_offset - 1] + (end-start);
         count_offset++;
         for(int j = start ; j < end ; j++)
         {
-            (*new_conn)[count_conn] = mesh->conn[j];
+            (*new_conn)[count_conn] = mesh->getConn()[j];
             count_conn++;
         }
     }
 }
 
-void CreateSort(mesh_t* mesh, int n_colors, int* sort)
+void CreateSort(Mesh* mesh, int* sort)
 {
     int ne;
     int* mesh_coloring;
 
-    ne = mesh->n_elements;
-    mesh_coloring = mesh->mesh_coloring_internal;
+    ne = mesh->get_N_elements();
+    mesh_coloring = mesh->get_Mesh_coloring_internal();
 
     int count = 0;
 
-    for(int i = 1 ; i <= n_colors ; i++)
+    for(int i = 1 ; i <= mesh->get_N_internal_colors() ; i++)
     {
         for(int j = 0 ; j < ne ; j++)
         {
@@ -156,11 +159,11 @@ void CreateSort(mesh_t* mesh, int n_colors, int* sort)
     }
 }
 
-int Coloring(mesh_t* mesh)
+int Coloring(Mesh* mesh)
 {
     idx_t* xadj;
     idx_t* adjncy;
-    int ne = mesh->n_elements;
+    int ne = mesh->get_N_elements();
     int* elements_color;
 
     elements_color = new int [ne];
@@ -199,8 +202,8 @@ int Coloring(mesh_t* mesh)
     }
 
 
-    delete [] mesh->mesh_coloring_internal; // delete do new feito na função MeshGmshReader onde inicializa todo o vetor mesh_coloring_bound com -1
-    mesh->mesh_coloring_internal = elements_color;
+    delete [] mesh->get_Mesh_coloring_internal(); // delete do new feito na função MeshGmshReader onde inicializa todo o vetor mesh_coloring_bound com -1
+    mesh->set_Mesh_coloring_internal(elements_color);
     
     METIS_Free(xadj);
     METIS_Free(adjncy);
@@ -208,19 +211,20 @@ int Coloring(mesh_t* mesh)
     return n_colors;
 }
 
-void MeshColoring(mesh_t* mesh)
+void Mesh::MeshColoring()
 {
     cout << "Starting mesh coloring..." << endl;
-    int* sort_internal = new int [mesh->n_elements];;
+    int* sort_internal = new int [this->get_N_elements()];
     int* new_conn;
     int* new_offset;
     int n_colors;
 
-    n_colors = Coloring(mesh);
-    CreateSort(mesh, n_colors, sort_internal);
-    ReorderElements(mesh, sort_internal, &new_conn, &new_offset);
-    UpdateMeshArrays(mesh, sort_internal, &new_conn, &new_offset);
-    mesh->n_internal_colors = n_colors;
+    n_colors = Coloring(this);
+    this->n_internal_colors = n_colors;
+
+    CreateSort(this, sort_internal);
+    ReorderElements(this, sort_internal, &new_conn, &new_offset);
+    UpdateMeshArrays(this, sort_internal, &new_conn, &new_offset);
     
     cout << "Finished mesh coloring..." << endl;  
 

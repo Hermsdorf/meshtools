@@ -1,0 +1,122 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+
+#ifndef __KAI_CWCHAR
+#define __KAI_CWCHAR
+
+#include <wchar.h>
+#include <time.h>
+
+#if defined(__cray) 
+#ifndef _crayx1
+typedef int mbstate_t;
+#endif /* _crayx1 */
+#endif 
+
+#if defined(__hpux) || defined(__SR8000)
+#define __KAI_MBSTATE_IS_INCOMPARABLE 1
+#endif
+
+#if defined(__sun) && defined(__i386)
+typedef char mbstate_t;	
+#endif
+
+#ifdef _AIX
+typedef char *   mbstate_t;
+#endif /* _AIX */
+
+namespace std {
+#ifndef __alpha
+
+#ifdef PDT_GLOBAL_SYMBOLS
+using ::size_t;
+using ::wint_t;
+using ::mbstate_t;
+
+using ::fgetwc;
+using ::fgetws;
+using ::fputwc;
+using ::fputws;
+using ::fwprintf;
+using ::fwscanf;
+using ::getwc;
+using ::getwchar;
+
+using ::mbrlen;
+using ::mbrtowc;
+using ::mbsrtowcs;
+using ::wcrtomb;
+using ::wcsrtombs;
+
+using ::putwc;
+using ::putwchar;
+using ::swprintf;
+using ::swscanf;
+using ::ungetwc;
+
+using ::wprintf;
+using ::wscanf;
+using ::wcstol;
+using ::wcscat;
+using ::wcschr;
+using ::wcscmp;
+using ::wcscoll;
+using ::wcscpy;
+using ::wcscspn;
+using ::wcslen;
+using ::wcsncat;
+using ::wcsncmp;
+using ::wcsncpy;
+using ::wcspbrk;
+using ::wcsrchr;
+using ::wcsspn;
+using ::wcstod;
+using ::wcstoul;
+using ::wcstok;
+using ::wcsxfrm;
+using ::wmemchr;
+using ::wmemcmp;
+using ::wmemcpy;
+using ::wmemmove;
+using ::wmemset;
+
+using ::tm;
+using ::wcsftime;
+#endif /* PDT_GLOBAL_SYMBOLS */
+#endif /* __alpha */
+
+#if defined(__sparc) && defined(_WIDEC_H)
+  /* Solaris 2.5 and 2.6 libraries are missing a few functions */
+#else
+
+#  if !defined(__SR8000) && !defined(__sgi) && !defined(__hpux)
+      using ::btowc;
+      using ::wctob;
+      using ::mbsinit;
+#     if defined(__linux) && !defined(__KAI_NO_FWIDE)
+         using ::fwide;
+#     endif
+#     if defined(__alpha)
+         using ::fwide;
+#     endif
+#endif
+
+#  if !defined(__SR8000) && !defined(__hpux)
+      using ::wcsstr;
+#  endif
+
+#ifdef PDT_GLOBAL_SYMBOLS
+   using ::vfwprintf;
+   using ::vswprintf;
+   using ::vwprintf;
+#endif /* PDT_GLOBAL_SYMBOLS */
+
+#endif /* defined(__sparc) && defined(_WIDEC_H) */
+
+}  /* namespace std */
+
+#endif /* __KAI_CWCHAR */

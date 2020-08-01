@@ -1,0 +1,141 @@
+#!/bin/bash 
+COMPILER_OPTS=" -D_GNU_SOURCE "
+
+#!/bin/sh 
+
+BINDIR=/home/guilherme/pdt/x86_64//bin
+PDTDIR=/home/guilherme/pdt
+FLINTHOME=${PDTDIR}/etc
+export FLINTHOME
+STDINC=
+VERBOSE=off
+PDB=pdtfilenotspecified
+
+if [ "x$TMPDIR" = "x" ]; then
+  TMP="/tmp"
+else
+  TMP=${TMPDIR}
+fi
+
+PDTOPT=""
+if [ $# = 0 ]
+then
+  echo "Usage: `basename $0` [-v] [-o<file>] [files]" 1>&2
+  exit 1
+fi
+
+if [ ! -f ${BINDIR}/pdtflint ]
+then
+  echo "f95parse invoking f90parse ..."
+  ${BINDIR}/f90parse $* -v
+  exit
+fi
+# Remove Mutek front-end options from the commandline
+MUTEKARGS=0
+
+
+# default compiler options
+
+# Architecture specific options for KAI headers
+# ---------------------------------------------
+# local options, if any
+LOCOPT=" " 
+
+for arg in "$@"
+do
+  MUTEKARGS=0
+  if [ "y$arg" = "y-ffixed-line-length-132" ] ; then
+      NOTHING=1
+  elif [ "y$arg" = "y-v" ]
+  then
+    VERBOSE=on
+  else
+    for t in -M -F -r -U -u -A -L -q 
+    do
+      testarg=${arg#$t}
+      if [ "y$testarg" != "y$arg" ]
+      then 
+        MUTEKARGS=1
+      fi
+    done
+# CHECK for  -o<file> option
+    testarg=${arg#-o}
+    if [ "y$testarg" != "y$arg" ]
+    then
+      PDB=$testarg
+      MUTEKARGS=1
+    fi
+    if [ "y$MUTEKARGS" != "y1" ]
+    then
+      mod_arg=`echo "x$arg" | sed -e 's/^x//' -e 's/"/\\\"/g' -e 's/'\''/'\\\'\''/g' -e 's/ /\\\ /g'`
+      SPAWNARGS="$SPAWNARGS $mod_arg"
+      MUTEKARGS=0
+    fi
+  fi
+done
+
+# What is the name of the first file on the commandline? 
+for arg in "$@"
+do
+  case $arg in 
+    *.? | *.?? | *.??? ) INF=$arg
+         break
+    ;;
+  esac
+
+done
+#echo "SPAWNARGS=$SPAWNARGS"
+
+#
+# if the -o<file> option is not specified, create the pdb file based on the
+# the name of the first source file
+#
+
+if [ $PDB = pdtfilenotspecified ]
+then
+  case ${INF} in
+    *.f)	PDB=`basename ${INF} .f`.pdb
+	;;
+    *.F)	PDB=`basename ${INF} .F`.pdb
+	;;
+    *.F90)	PDB=`basename ${INF} .F90`.pdb
+	;;
+    *.f90)	PDB=`basename ${INF} .f90`.pdb
+	;;
+    *.f95)	PDB=`basename ${INF} .f95`.pdb
+	;;
+    *)	PDB=${INF}.pdb
+	;;
+  esac
+fi
+
+if [ ${PDB} = ".pdb" ]
+then
+  echo "ERROR: Source file not specified."
+  echo "PDT accepts upto three letter suffixes in file names (e.g. foo.f90)"
+  exit 1
+fi
+
+#
+# run the FLINT parser
+#
+if [ $VERBOSE = on ] 
+then
+# print the output of the pdtflint command
+  echo "	pdtflint ${SPAWNARGS} --> ${PDB}"
+  echo "Executing ${BINDIR}/pdtflint ${SPAWNARGS} ${LOCOPT} ${EDGOPT} ${ARCHOPT} -Mpdb=pdtf$$.pdb; mv pdtf$$.pdb $PDB; "
+  eval ${BINDIR}/pdtflint ${ARCHOPT} ${SPAWNARGS} ${LOCOPT} ${EDGOPT} -Mpdb=pdtf$$.pdb
+else
+# disable printing of stdout/stderr unless there is an error
+  eval ${BINDIR}/pdtflint ${ARCHOPT} ${SPAWNARGS} ${LOCOPT} ${EDGOPT} -Mpdb=pdtf$$.pdb 1> /dev/null  2>&1
+  if [ $? != 0 ] 
+  then
+    eval ${BINDIR}/pdtflint ${ARCHOPT} ${SPAWNARGS} ${LOCOPT} ${EDGOPT} -Mpdb=pdtf$$.pdb
+  fi
+fi
+
+# Move the file to the output file
+mv pdtf$$.pdb ${PDB}
+
+
+# EOF

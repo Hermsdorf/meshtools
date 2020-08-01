@@ -1,0 +1,92 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+#ifndef __KAI_IOMANIP
+#define __KAI_IOMANIP
+// This is a total rewrite of the Modena code.  The original
+// code was rather bloated and took >400 lines to express what is
+// expressed in about 90 lines. -- dcn
+
+#include <mcompile.h>
+#include <istream>
+#include <ostream>
+
+namespace __kai {
+    // forward declare the implementation classes.
+    template <class T> class smanip_gen;
+    template <class charT> class omanip_setfill;
+}
+
+namespace std {
+
+//
+// Manipulator Magic
+//
+
+template <class charT, class traits, class T>
+inline basic_ostream<charT, traits>& operator<<(basic_ostream<charT, traits>& os, const __kai::smanip_gen<T>& m)
+{
+    (*m.fct)(os, m.val);
+    return os;
+}
+template <class charT, class traits, class T>
+inline basic_istream<charT, traits>& operator>>(basic_istream<charT, traits>& is, const __kai::smanip_gen<T>& m)
+{
+    (*m.fct)(is, m.val);
+    return is;
+}
+
+template <class charT, class traits>
+inline basic_ostream<charT, traits>& operator<<(basic_ostream<charT, traits>& os, const __kai::omanip_setfill<charT>& m)
+{
+    os.fill(m.val);	// set fill character
+    return os;
+}
+
+//
+// Standard Manipulators
+//
+__kai::smanip_gen<ios_base::fmtflags>	resetiosflags(ios_base::fmtflags mask);
+__kai::smanip_gen<ios_base::fmtflags>	setiosflags(ios_base::fmtflags mask);
+__kai::smanip_gen<int>			setbase(int base);
+template<class charT>
+__kai::omanip_setfill<charT>		setfill(charT c) { return __kai::omanip_setfill<charT>(c); }
+__kai::smanip_gen<streamsize>		setprecision(streamsize n);
+__kai::smanip_gen<streamsize>		setw(streamsize n);
+
+
+} // namespace std
+
+
+namespace __kai {
+
+template <class T>
+class smanip_gen {
+    typedef ios_base& (*pmf)(ios_base&,T);
+    pmf fct;
+    T val;
+public:
+    smanip_gen(pmf f, T v) : fct(f),val(v) { }
+    template <class C, class T1, class T2>
+    friend std::basic_ostream<C, T1>& std::operator<<(std::basic_ostream<C, T1>& os, const smanip_gen<T2>& m);
+    template <class C, class T1, class T2>
+    friend std::basic_istream<C, T1>& std::operator>>(std::basic_istream<C, T1>& is, const smanip_gen<T2>& m);
+};
+
+template <class charT>
+class omanip_setfill {
+    charT val;
+public:
+    omanip_setfill(charT v) : val(v) { }
+
+    template <class C, class T>
+    friend std::basic_ostream<C, T>& std::operator<<(std::basic_ostream<C, T>& os, const omanip_setfill<C>& m);
+};
+
+} // namespace __kai
+
+
+#endif /* __KAI_IOMANIP */

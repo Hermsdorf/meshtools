@@ -1,113 +1,254 @@
-#include <fstream>
-#include <sstream>
 #include <iostream>
-#include <iomanip>
-#include <algorithm>
+#include "mesh.h" 
 
 using namespace std;
-#include "mesh.h"
 
-
-mesh_t* MeshCreate()
+Mesh::Mesh()
 {
-    mesh_t* mesh = new mesh_t();
-    mesh->n_face_elements = 0;
-    mesh->n_elements = 0;
-    mesh->n_nodes = 0; 
-    mesh->dim = 0;
-    return mesh;
+    this->n_face_elements = 0;
+    this->n_elements = 0;
+    this->n_nodes = 0; 
+    this->dim = 0;
 }
 
-void MeshDestroy(mesh_t** mesh)
+Mesh::Mesh(const char* filename)
 {
-     (*mesh)->conn.clear();
-     (*mesh)->coord.clear();
-     (*mesh)->offset.clear();
-     (*mesh)->type.clear();
-     (*mesh)->physical_tag.clear();
-     (*mesh)->physical_map.clear();
-     delete [] (*mesh)->mesh_coloring_internal;
-     delete *mesh;
+    this->n_face_elements = 0;
+    this->n_elements = 0;
+    this->n_nodes = 0; 
+    this->dim = 0;
+
+    MeshGmshReader(filename);
 }
 
-int* GetElementConn(mesh_t* mesh, int element_num)
+Mesh::~Mesh()
 {
-    if(element_num < mesh->n_elements)
+    this->conn.clear();
+    this->coord.clear();
+    this->offset.clear();
+    this->type.clear();
+    this->physical_tag.clear();
+    this->physical_map.clear();
+    delete [] this->mesh_coloring_internal;
+}
+
+vector<double> Mesh::getCoord()
+{
+    return this->coord;
+}
+
+vector<int> Mesh::getConn()
+{
+    return this->conn;
+}
+
+vector<int> Mesh::getOffset()
+{
+    return this->offset;
+}
+
+vector<unsigned short> Mesh::getType()
+{
+    return this->type;
+}
+
+vector<int> Mesh::get_Physical_tag()
+{
+    return this->physical_tag;
+}
+
+int* Mesh::get_Mesh_coloring_internal()
+{
+    return this->mesh_coloring_internal;
+}
+
+int Mesh::get_N_internal_colors()
+{
+    return this->n_internal_colors;
+}
+
+map<int, physical_data_t> Mesh::getPhysical_map()
+{
+    return this->physical_map;
+}
+
+int Mesh::get_N_face_elements()
+{
+    return this->n_face_elements;
+}
+
+int Mesh::get_N_elements()
+{
+    return this->n_elements;
+}
+
+int Mesh::get_N_nodes()
+{
+    return this->n_nodes;
+}
+
+int Mesh::getDim()
+{
+    return this->dim;
+}
+
+string Mesh::getFilename()
+{
+    return this->filename;
+}
+
+void Mesh::setCoord(vector<double> coord)
+{
+    this->coord = coord;
+}
+
+void Mesh::setConn(vector<int> conn)
+{
+    this->conn = conn;
+}
+
+void Mesh::setConnPosition(unsigned int value, int position)
+{
+    this->conn[position] = value;
+}
+
+void Mesh::setOffset(vector<int> offset)
+{
+    this->offset = offset;
+}
+
+void Mesh::setOffsetPosition(unsigned int value, int position)
+{
+    this->offset[position] = value;
+}
+
+void Mesh::setType(vector<unsigned short> type)
+{
+    this->type = type;
+}
+
+void Mesh::set_Physical_tag(vector<int> physical_tag)
+{
+    this->physical_tag = physical_tag;
+}
+
+void Mesh::set_Mesh_coloring_internal(int* mesh_coloring_internal)
+{
+    this->mesh_coloring_internal = mesh_coloring_internal;
+}
+
+void Mesh::set_N_internal_colors(int n_internal_colors)
+{
+    this->n_internal_colors = n_internal_colors;
+}
+
+void Mesh::set_Physical_map(map<int, physical_data_t> physical_map)
+{
+    this->physical_map = physical_map;
+}
+
+void Mesh::set_N_face_elements(int n_face_elements)
+{
+    this->n_face_elements = n_face_elements;
+}
+
+void Mesh::set_N_elements(int n_elements)
+{
+    this->n_elements = n_elements;
+}
+
+void Mesh::set_N_nodes(int n_nodes)
+{
+    this->n_nodes = n_nodes;
+}
+
+void Mesh::setDim(int dim)
+{
+    this->dim = dim;
+}
+
+void Mesh::setFilename(string filename)
+{
+    this->filename = filename;
+}
+
+int* Mesh::getElementConn(int element_num)
+{
+    if(element_num < this->n_elements)
     {
-        return &mesh->conn[mesh->offset[element_num + mesh->n_face_elements]];
+        return &this->conn[this->offset[element_num + this->n_face_elements]];
     }
     else
     {
-        cout << "ERROR: element number >= n_elements" << endl;
+        cout << "ERROR getElementConn: element number = " << element_num << " >= n_elements"  << endl;
         exit(1);
     }
     
 } // element_num = [0, n_elements);
 
-int* GetElementOffset(mesh_t* mesh, int element_num)
+int* Mesh::getElementOffset(int element_num)
 {
-    if(element_num < mesh->n_elements)
+    if(element_num <= this->n_elements)
     {
-        return &mesh->offset[element_num + mesh->n_face_elements];
+        return &this->offset[element_num + this->n_face_elements];
     }
     else
     {
-        cout << "ERROR: element number >= n_elements" << endl;
+        cout << "ERROR getElementOffset: element number = " << element_num << " > n_elements"  << endl;
         exit(1);
     }
     
 } 
 
-int* GetSurfaceElementConn(mesh_t* mesh, int element_num)
+int* Mesh::getSurfaceElementConn(int element_num)
 {
-    if(element_num < mesh->n_face_elements)
+    if(element_num < this->n_face_elements)
     {
-        return &mesh->conn[mesh->offset[element_num]];
+        return &this->conn[this->offset[element_num]];
     }
     else
     {
-        cout << "ERROR: element number >= n_face_elements" << endl;
+        cout << "ERROR getSurfaceElementConn: element number = " << element_num << " >= n_elements"  << endl;
         exit(1);
     }
     
 } // element_num = [0, n_surface_elements);
 
-int* GetSurfaceElementOffset(mesh_t* mesh, int element_num)
+int* Mesh::getSurfaceElementOffset(int element_num)
 {
-    if(element_num < mesh->n_face_elements)
+    if(element_num < this->n_face_elements)
     {
-        return &mesh->offset[element_num];
+        return &this->offset[element_num];
     }
     else
     {
-        cout << "ERROR: element number >= n_face_elements" << endl;
+        cout << "ERROR getSurfaceElementOffset: element number = " << element_num << " >= n_elements"  << endl;
         exit(1);
     }
 }
 
-int GetElementConnSize(mesh_t* mesh, int element_num)
+int Mesh::getElementConnSize(int element_num)
 {
-    if(element_num < mesh->n_elements)
+    if(element_num < this->n_elements)
     {
-        return (mesh->offset[mesh->n_face_elements + element_num + 1] - mesh->offset[mesh->n_face_elements + element_num]);
+        return (this->offset[this->n_face_elements + element_num + 1] - this->offset[this->n_face_elements + element_num]);
     }
     else
     {
-        cout << "ERROR: element number >= n_elements" << endl;
-        exit(1);
+        cout << "ERROR getElementConnSize: element number = " << element_num << " >= n_elements"  << endl;
     }
     
 }
 
-int GetSurfaceElementConnSize(mesh_t* mesh, int element_num)
+int Mesh::getSurfaceElementConnSize(int element_num)
 {
-    if(element_num < mesh->n_face_elements)
+    if(element_num < this->n_face_elements)
     {
-        return (mesh->offset[element_num + 1] - mesh->offset[element_num]);
+        return (this->offset[element_num + 1] - this->offset[element_num]);
     }
     else
     {
-        cout << "ERROR: element number >= n_face_elements" << endl;
+        cout << "ERROR getSurfaceElementConnSize: element number = " << element_num << " >= n_elements"  << endl;
         exit(1);
     }
 }

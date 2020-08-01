@@ -1,0 +1,690 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+/**
+ **  Lib++  : The Modena C++ Standard Library,
+ **           Version 2.4, October 1997
+ **
+ **  Copyright (c) 1995-1997 Modena Software Inc.
+ **/
+
+#ifndef __KAI_LOCALEBASE
+#define __KAI_LOCALEBASE
+
+#include <mcompile.h>
+
+#ifdef MSIPL_NL_TYPES
+#include <nl_types>
+#endif
+
+#include <kai_lvec>
+#include <string>
+/* Inclusion of <mtools> removed by ADR - not needed in <localebase>. */
+#include <clocale>
+#include <climits>	/* Need UCHAR_MAX */
+#include <typeinfo>	/* Need std::bad_cast from here */
+
+namespace __kai {
+class localeimp;
+}
+
+namespace std {
+
+class locale;
+template <class Facet>
+inline bool has_facet(const locale& loc) MSIPL_THROW;
+
+template <class Facet>
+inline const Facet & use_facet(const locale& loc) MSIPL_THROW;
+
+class locale {
+public :
+    class facet;
+    class id;
+    friend class id;
+    typedef int category;
+
+    static const category none    =0x000;
+    static const category collate =0x010;
+    static const category ctype   =0x020;
+    static const category monetary=0x040;
+    static const category numeric =0x080;
+    static const category time    =0x100;
+    static const category messages=0x200;
+    static const category all     =collate|ctype|monetary|numeric|time|messages;
+
+    inline locale() MSIPL_THROW;
+    inline locale(const locale& other) MSIPL_THROW;
+
+
+    explicit locale(const char* std_name);
+
+    locale(const locale& other, const char* std_name, category cat);
+
+    template<class Facet>
+    locale(const locale& loc, Facet* f);
+
+    locale(const locale& other, const locale& one, category cat);
+
+    inline ~locale() MSIPL_THROW;  // non-virtual
+    
+
+    const locale& operator=(const locale& other) MSIPL_THROW;
+
+    template <class Facet>
+    inline locale combine(const locale& other) {
+	size_t ind=Facet::id.my_id;
+	__KAI_SREAD_LOCK(recursive_mutex,other.imp->_mutex);
+	if (! (other.imp->vec_[ind]))
+	    runtime_error::__throw("Null arg for locale::facet*\n");
+	locale tmp(*this);
+	tmp.imp->set_imp(other.imp, Facet::id);
+	return tmp;
+    }
+
+    // locale operations
+    inline string name() const;
+
+    bool operator==(const locale& other) const {
+	return (imp==other.imp || ((name() != "*") && (name() == other.name())));
+    }
+
+    bool operator!=(const locale& other) const {
+	return !(*this == other);
+    }
+
+    template <class charT, class traits, class Allocator>
+    inline bool operator()(const basic_string<charT, traits, Allocator>& s1,
+			   const basic_string<charT, traits, Allocator>& s2) const;
+
+    // global locale objects : static members functions
+    static locale global(const locale& loc);
+    static const locale& classic();
+
+private:
+    __KAI_DEC_STATIC_MUTEX(gl_mutex,locale_static_lock_id) // static lock for global_;
+
+    __kai::localeimp* imp;  // the only data member
+    static __kai::localeimp* volatile global_;
+
+    inline locale(__kai::localeimp* imp_arg);
+
+public:
+
+    class facet 
+    {
+    protected:
+	explicit facet(size_t refs=0):refcount(0), keep_refc(!refs) { }
+
+	virtual ~facet();
+
+    private:
+	friend class __kai::localeimp;
+	friend class locale;
+
+	bool keep_refc;
+	__KAI_DEC_MUTEX_ARITH(size_t, __kai::recursive_mutex, refcount);
+
+	facet(const facet&);          // not defined
+	void  operator=(const facet&);// not defined
+
+	void add_ref() {
+	    if (keep_refc)
+		++refcount;
+	}
+
+	bool rem_ref() {
+	    return (keep_refc ? (--refcount == 0) : false);
+	}
+
+	bool operator==(const facet& f) const {
+	    return (this == &f);
+	}
+
+
+    }; //end class locale::facet
+
+    class id {
+	friend class locale;
+	friend class __kai::localeimp;
+	template <class Facet>
+	friend bool has_facet(const locale& loc) MSIPL_THROW;
+	template <class Facet>
+	friend const Facet & use_facet(const locale& loc) MSIPL_THROW;
+
+	size_t my_id;
+
+    public :
+	id() { }
+
+    private:
+	void operator=(const id&); // not defined
+	id(const id&);             // not defined
+
+	void init() {
+	    static int master_id;
+	    if (!my_id) {
+		__KAI_LOCK_STATIC(gl_block, gl_mutex,locale_static_lock_id);
+		my_id = ++master_id;
+	    }
+	}
+
+	// operator size_t() const { return id_; }
+	// bool operator<(const id& ix) const { return (id_ < ix.id_); }
+
+    }; 
+
+private:
+
+    template <class Facet>
+    friend bool has_facet(const locale& loc) MSIPL_THROW;
+    template <class Facet>
+    friend const Facet & use_facet(const locale& loc) MSIPL_THROW;
+
+};  /* end class locale */
+
+} // namespace std;
+
+namespace __kai {
+
+class localeimp
+{
+    friend class std::locale;
+    template <class Facet>
+    friend bool std::has_facet(const locale& loc) MSIPL_THROW;
+    template <class Facet>
+    friend const Facet & std::use_facet(const locale& loc) MSIPL_THROW;
+
+    std::string name_;
+    size_t rc;
+    __KAI_DECL_SHARED_OBJ_LOCK(recursive_mutex,_mutex)
+    //    public:
+    //	typedef locale::facet base_type;
+    typedef std::locale::facet* fptr;
+    typedef __kai::lw_vector<fptr> vector_type;
+    vector_type vec_;
+    private:
+    void set_imp(localeimp *, const std::locale::id &);
+    void set_cat(localeimp *, std::locale::category);
+
+    fptr& chksize(std::locale::id& rid) {
+	size_t ind = rid.my_id;
+	if (!ind) {
+	    rid.init();
+	    ind = rid.my_id;
+	}
+	__KAI_SWRITE_LOCK(recursive_mutex,_mutex);
+	if (ind >= vec_.size()) 
+	    vec_.resize(ind + 1, (fptr)0);
+	return vec_[ind];
+    }
+       
+    template <class Facet>
+    void add_facet(Facet *f) {
+	std::locale::id& f_id = f->id;
+	chksize(f_id) = f;
+	++f->refcount;
+    }
+    localeimp(const char* std_name, std::locale::category cat = std::locale::all);
+
+    localeimp(size_t size = 13) : rc(1), name_("*", 1), vec_(size, (fptr)0) { }
+
+    localeimp(const localeimp& other) : rc(1), name_(other.name_), vec_(other.vec_) {
+	for (int i=1;i<vec_.size();i++) 
+	    if (vec_[i]) 
+		vec_[i]->add_ref();
+    }
+
+    void add_ref() {
+	__KAI_SWRITE_LOCK(recursive_mutex,_mutex);
+	rc++;
+    }
+
+    bool rem_ref() {
+	__KAI_SWRITE_LOCK(recursive_mutex,_mutex);
+	bool ret=!--rc;
+	if (ret)
+	    for (int i = 1; i < vec_.size (); i++)
+		if (vec_[i] && vec_[i]->rem_ref())
+		    delete vec_[i];
+	return ret;
+    }
+
+};  /* end class __kai::localeimp */
+
+} // namespace __kai
+
+namespace std {
+
+inline locale::locale() MSIPL_THROW
+{
+    if (!global_) {
+	__KAI_LOCK_STATIC(mutex_bl, gl_mutex,locale_static_lock_id);
+	if (!global_)
+	    global_= (locale::classic()).imp;
+    }
+    imp=global_;
+    imp->add_ref();
+}
+
+inline locale::locale(const locale& other) MSIPL_THROW : imp(other.imp)
+{
+    imp->add_ref();
+}
+
+inline locale::locale(__kai::localeimp* imp_arg) : imp(imp_arg)
+{
+    imp_arg->add_ref();
+}
+
+inline locale::~locale() MSIPL_THROW   // non-virtual
+{
+    if (imp->rem_ref() && imp!=global_) 
+	delete imp;
+}
+
+string locale::name() const { return imp->name_; }
+
+template <class Facet> 
+locale::locale(const locale& other, Facet* f)
+{
+    {
+	__KAI_SREAD_LOCK(recursive_mutex,other.imp->_mutex);
+	imp = new __kai::localeimp(*other.imp);
+    }
+     if (f) {
+          imp->chksize(f->id);
+          size_t i=f->id.my_id;
+          if (imp->vec_[i] && imp->vec_[i]->rem_ref ())
+               delete imp->vec_[i];
+          imp->vec_[i]=f;
+          f->add_ref ();
+     } 
+     imp->name_="*";
+}
+
+template <class Facet>
+inline const Facet& use_facet(const locale& loc) MSIPL_THROW
+{
+    if (!has_facet<Facet>(loc))
+	bad_cast::__throw("Facet not present\n");
+    size_t ind=Facet::id.my_id;
+    return (const Facet&)(* (loc.imp->vec_[ind]));
+}
+
+template <class Facet>
+inline bool has_facet(const locale& loc) MSIPL_THROW
+{
+    Facet::id.init();
+    size_t ind=Facet::id.my_id;
+    return (ind<loc.imp->vec_.size()?loc.imp->vec_[ind]:false);
+}
+ 
+// Note that the following functions are renamed from isF to is_F.
+// for possible clash with C functions of same name.
+
+#undef isspace
+template <class charT>
+inline bool isspace(charT c, const locale& l)
+{ 
+     return use_facet<ctype<charT> >(l).is(ctype<charT>::space, c); 
+}
+
+#undef isprint
+template <class charT>
+inline bool isprint(charT c, const locale& l)
+{ 
+     return use_facet<ctype<charT> >(l).is(ctype<charT>::print, c); 
+}
+
+#undef iscntrl
+template <class charT>
+inline bool iscntrl(charT c, const locale& l)
+{ 
+     return use_facet<ctype<charT> >(l).is(ctype<charT>::cntrl, c); 
+}
+
+#undef isupper
+template <class charT>
+inline bool isupper(charT c, const locale& l)
+{ 
+     return use_facet<ctype<charT> >(l).is(ctype<charT>::upper, c); 
+}
+
+#undef islower
+template <class charT>
+inline bool islower(charT c, const locale& l)
+{ 
+     return use_facet<ctype<charT> >(l).is(ctype<charT>::lower, c); 
+}
+
+#undef isalpha
+template <class charT>
+inline bool isalpha(charT c, const locale& l)
+{ 
+     return use_facet<ctype<charT> >(l).is(ctype<charT>::alpha, c); 
+}
+
+#undef isdigit
+template <class charT>
+inline bool isdigit(charT c, const locale& l)
+{ 
+     return use_facet<ctype<charT> >(l).is(ctype<charT>::digit, c); 
+}
+
+#undef ispunct
+template <class charT>
+inline bool ispunct(charT c, const locale& l)
+{ 
+     return use_facet<ctype<charT> >(l).is(ctype<charT>::punct, c); 
+}
+
+#undef isxdigit
+template <class charT>
+inline bool isxdigit(charT c, const locale& l)
+{ 
+     return use_facet<ctype <charT> >(l).is(ctype<charT>::xdigit, c); 
+}
+
+#undef isalnum
+template <class charT>
+inline bool isalnum(charT c, const locale& l)
+{ 
+     return use_facet<ctype<charT> >(l).is(ctype<charT>::alnum, c); 
+}
+
+#undef isgraph
+template <class charT>
+inline bool isgraph(charT c, const locale& l)
+{ 
+     return use_facet<ctype<charT> >(l).is(ctype<charT>::graph, c); 
+}
+
+#undef toupper
+template <class charT>
+inline charT toupper(charT c, const locale& l)
+{ 
+     return use_facet<ctype<charT> >(l).toupper(c); 
+}
+
+#undef tolower
+template <class charT>
+inline charT tolower(charT c, const locale& l)
+{ 
+     return use_facet<ctype<charT> >(l).tolower(c); 
+}
+
+//
+// **************** CTYPE FACETS ***********************
+//
+
+class ctype_base 
+{
+public:
+   enum mask 
+   {
+       space = 1<<0, print = 1<<1, cntrl  = 1<<2, 
+       upper = 1<<3, lower = 1<<4, alpha  = 1<<5, 
+       digit = 1<<6, punct = 1<<7, xdigit = 1<<8, 
+       alnum = alpha|digit, graph = alnum|punct, 
+       spcnt = space | cntrl, spprn = space | print, 
+       prpug = print | punct, prxag = print | xdigit | digit, 
+       puxag = print | upper  | xdigit | alpha, 
+       pualg = print | upper  | alpha, 
+       plxag = print | lower  | xdigit | alpha, 
+       plalg = print | lower  | alpha
+   };
+};
+
+template <class charT>
+class ctype : public locale::facet, public ctype_base
+{
+    friend class __kai::localeimp;
+
+public:
+    typedef charT char_type;
+
+    bool is(mask mask_, charT c) const { return do_is(mask_, c); }
+    const charT* is(const charT* low, const charT* high, mask* vec) const { return do_is(low, high, vec); }
+    const charT* scan_is(mask mask_, const charT* low, const charT* high) const { return do_scan_is(mask_, low, high); }
+    const charT* scan_not(mask mask_, const charT* low, const charT* high) const { return do_scan_not(mask_, low, high); }
+
+    charT toupper(charT c) const { return do_toupper(c); }
+    const charT* toupper(charT* low, const charT* high) const { return do_toupper(low, high); }
+
+    charT tolower(charT c) const { return do_tolower (c); }
+    const charT* tolower(charT* low, const charT* high) const { return do_tolower(low, high); }
+
+    charT widen(char c) const { return do_widen(c); }
+    const char* widen(const char* lo, const char* hi, charT* to) const { return do_widen(lo, hi, to); }
+
+    char narrow(charT c, char dfault) const { return do_narrow(c, dfault); }
+    const char* narrow(const charT* lo, const charT* hi, char dfault, char* to) const {
+	return do_narrow (lo, hi, dfault, to); }
+
+    explicit ctype(size_t refs = 0) : locale::facet(refs) { }
+
+    static locale::id id;
+
+protected:
+    virtual bool do_is(mask mask_, charT c) const;
+
+    virtual const charT* do_is(const charT* low, const charT* high, mask* vec) const;
+
+    virtual const char* do_scan_is(mask mask_, const charT* low, const charT* high) const;
+
+    virtual const char* do_scan_not(mask mask_, const charT* low, const charT* high) const;
+
+    virtual charT do_toupper(charT) const;
+    virtual const charT* do_toupper(charT* low, const charT* high) const;
+
+    virtual charT do_tolower(charT) const;
+    virtual const charT* do_tolower(charT* low, const charT* high) const;
+
+    virtual charT do_widen(charT) const;
+    virtual const charT* do_widen(const charT* lo, const charT* hi, charT* dest) const;
+
+    virtual charT do_narrow (charT, charT dfault) const;
+    virtual const charT* do_narrow(const charT* lo, const charT* hi, charT dfault, charT* dest) const;
+
+protected:
+    ~ctype() { }
+};
+
+template<class charT> locale::id ctype<charT>::id;
+
+template <class charT> 
+class ctype_byname : public ctype<charT> 
+{
+    friend class __kai::localeimp;
+
+public:
+    typedef charT char_type;
+
+    explicit ctype_byname(const char*, size_t  refs = 0) : ctype<charT>(refs) { }
+
+protected:
+    ~ctype_byname () { }
+};
+
+template<>
+class ctype<char> : public locale::facet, public ctype_base
+{
+
+public:
+    typedef char char_type;
+
+    explicit ctype(const mask* tab=0, bool del=false, size_t refs=0)
+	: locale::facet(refs), table_(tab? (mask*)tab: (mask*)classic_table_), delete_it_(tab?del:false)
+	{ }
+
+    bool is(mask mask_, char_type c) const { return (table_[(unsigned char)c] & mask_); }
+
+    const char * is(const char* lo, const char* hi, mask* vec) const {
+	const char* p = lo;
+	while (lo <= p && p < hi) {
+	    vec[p-lo] = table_[(unsigned char) *p];	// The standard has this backwards. See 22.2.1.1.2
+	    p++;
+	}
+	return hi;
+    }
+
+    const char* scan_is(mask mask_, const char* low, const char* high) const {
+	const char* p = low;
+	while (p < high && !(table_[(unsigned char) *p]&mask_)) 
+	    ++p;
+	return p;
+    }
+
+    const char* scan_not(mask mask_, const char* low, const char* high) const {
+	const char* p = low;
+	while (p < high && (table_[(unsigned char) *p] & mask_)) 
+	    ++p;
+	return p;
+    }
+
+
+    inline char toupper(char c) const { return do_toupper(c); }
+    inline const char* toupper(char* low, const char* high) const { return do_toupper(low, high); }
+    inline char tolower(char c) const { return do_tolower(c); }
+    inline const char* tolower(char* low, const char* high) const { return do_tolower(low, high); }
+
+    char widen(char c) const { return do_widen(c); }
+    const char* widen(const char* lo, const char* hi, char* to) const { return do_widen(lo, hi, to); }
+    char narrow(char c, char dfault ) const { return do_narrow(c, dfault); }
+    const char* narrow(const char* lo, const char* hi, char dfault, char* to) const
+	{ return do_narrow(lo, hi, dfault, to); }
+
+
+    static locale::id id;
+    static const size_t table_size = UCHAR_MAX+1;
+
+protected:
+    const mask* table() const MSIPL_THROW { return table_; }
+    static const mask* classic_table() MSIPL_THROW { return classic_table_; }
+
+    ~ctype();
+
+    virtual char do_toupper(char c) const { return toupper_tab[(unsigned int)c+1]; }
+    virtual const char* do_toupper(char* low, const char* high) const {
+	while (low < high ) { 
+	    *low = toupper_tab[(unsigned int) *low + 1]; 
+	    ++low; 
+	}
+	return high;
+    }
+
+    virtual char do_tolower(char c) const { return tolower_tab[(unsigned int)c+1]; }
+    virtual const char* do_tolower(char* low, const char* high) const {
+	while (low < high ) {
+	    *low = tolower_tab[(unsigned int) *low + 1];
+	    ++low; 
+	}
+	return high;
+    }
+
+    virtual char do_widen(char c) const { return c; }
+    virtual const char* do_widen(const char* low, const char* high, char* to) const;
+
+    virtual char do_narrow(char c, char dfault) const { return c; }
+    virtual const char* do_narrow(const char* low, const char* high, char dfault, char* to) const;
+
+    mask* table_;
+    static const mask classic_table_[UCHAR_MAX+1];	// classic_table_[numeric_limits<unsigned char>::max ()+1];
+    static const short toupper_tab[UCHAR_MAX+3]; 	// toupper_tab   [numeric_limits<unsigned char>::max ()+3];
+    static const short tolower_tab[UCHAR_MAX+3];	// tolower_tab   [numeric_limits<unsigned char>::max ()+3];
+
+private :
+    bool delete_it_;
+};
+
+// We need to figure out how to make this work. -- dcn 27 Jan 1999
+template<>
+class ctype_byname<char> : public ctype<char> 
+{
+public :
+    explicit ctype_byname(const char*, size_t refs = 0) : ctype<char>(0, false, refs) { }
+   
+protected :
+   ~ctype_byname();
+
+#if 0
+       // If we are going to just redirect to ctype<char>, why bother overriding?
+       // Just inherit the virtual implementations. I don't believe that this
+       // class is doing the right thing. It should use the requested locale.
+       // -- dcn 27 Jan 1999
+    virtual char do_toupper(char c) const { return ctype<char>::do_toupper(c); }
+    virtual const char* do_toupper(char* low, const char* high) const { return ctype<char>::do_toupper(low, high); }
+
+    virtual char do_tolower(char c) const { return ctype<char>::do_tolower(c); }
+    virtual const char* do_tolower(char* low, const char* high) const { return ctype<char>::do_tolower(low, high); }
+#endif
+};
+
+#ifdef MSIPL_WCHART
+template<>
+class ctype<wchar_t> : public locale::facet, public ctype_base
+{
+public:
+    typedef wchar_t char_type;
+
+    explicit ctype(size_t refs = 0) : locale::facet (refs) { }
+
+    static locale::id id;
+
+    bool is(mask mask_, wchar_t c) const { return do_is(mask_, c); }
+
+    const wchar_t* is(const wchar_t* low, const wchar_t* high, mask* vec) const { return do_is(low, high, vec); }
+
+    const wchar_t* scan_is(mask mask_, const wchar_t* low, const wchar_t* high) const {
+	return do_scan_is(mask_, low, high); 
+    }
+
+    const wchar_t* scan_not(mask mask_, const wchar_t* low, const wchar_t* high) const { 
+	return do_scan_not(mask_, low, high); 
+    }
+
+    wchar_t toupper(wchar_t c) const { return do_toupper(c); }
+    const wchar_t* toupper(wchar_t* low, const wchar_t* high) const { return do_toupper(low, high); }
+    wchar_t tolower(wchar_t c) const { return do_tolower(c); }
+    const wchar_t* tolower(wchar_t* low, const wchar_t* high) const { return do_tolower(low, high); }
+
+    wchar_t widen(char c) const { return do_widen(c); }
+    const char* widen(const char* lo, const char* hi, wchar_t* to) const { return do_widen(lo, hi, to); }
+    char narrow(wchar_t c, wchar_t dfault) const { return do_narrow(c, dfault); }
+    const wchar_t* narrow (const wchar_t* lo, const wchar_t* hi, wchar_t dfault, wchar_t* to) const { 
+	return do_narrow(lo, hi, (char)dfault, (char*)to); 
+    }
+
+private:
+    ctype_base::mask get_mask (wchar_t c) const;
+
+protected:
+    virtual bool do_is (mask mask_, wchar_t c) const;
+
+    virtual const wchar_t* do_is(const wchar_t* low, const wchar_t* high, mask* vec) const;
+    virtual const wchar_t* do_scan_is(mask mask_, const wchar_t* low, const wchar_t* high) const;
+    virtual const wchar_t* do_scan_not(mask mask_, const wchar_t* low, const wchar_t* high) const;
+
+    virtual wchar_t do_toupper(wchar_t) const;
+    virtual const wchar_t* do_toupper(wchar_t* low, const wchar_t* high) const;
+
+   virtual wchar_t do_tolower(wchar_t) const;
+   virtual const wchar_t* do_tolower(wchar_t* low, const wchar_t* high) const;
+
+   virtual wchar_t do_widen(char) const;
+   virtual const char* do_widen(const char* lo, const char* hi, wchar_t* dest) const;
+
+   virtual wchar_t do_narrow(wchar_t, wchar_t dfault) const;
+   virtual const wchar_t* do_narrow(const wchar_t* lo, const wchar_t* hi, char dfault, char* dest) const;
+
+   ~ctype() { }
+};
+#endif
+
+} // namespace std
+
+#endif /* __KAI_LOCALEBASE */

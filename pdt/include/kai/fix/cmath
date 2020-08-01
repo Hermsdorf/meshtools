@@ -1,0 +1,196 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+#ifndef __KAI_CMATH
+#define __KAI_CMATH
+
+#include <mcompile.h>
+#if defined(__sun)
+#define _XOPEN_SOURCE
+#endif /* __sun */
+#include <math.h>
+#undef isnan
+#undef isinf
+namespace std {
+extern int isnan (const double x);
+extern int isinf (const double x);
+}
+#if defined(__sun) && defined(__i386)
+#include <sunmath.h>
+#endif
+
+// It is a bit inconsistent to have abs properly defined in std, 
+// and the other functions imported from the global namespace.
+// But abs for floating types is not at all part of ANSI C, 
+// and defining it for floating types could conceivably lead to trouble.
+// There are still issues to resolve with putting the math functions
+// truly in namespace std and still allowing existing codes to compile.
+
+namespace std {
+#if defined(__hpux) && !defined(__hpux_11) && !defined(_HITACHI_SR2201)
+using ::abs; /* HP defines ::abs in their <math.h> */
+#else 
+extern double abs( double x );
+#endif /*__hpux*/
+}
+
+#ifndef __ICC
+#if defined(_AIX)||defined(__sparc)||(defined(cray) && !defined(_CRAYMPP))||(defined(__linux)&&!defined(__ICC))||defined(__sun)||defined(_HITACHI_SR2201)||defined(__SR8000)
+namespace std {
+extern float abs  (float x) ;
+}
+extern float fabs (float x) ;
+extern float sin  (float x) ;
+extern float cos  (float x) ;
+extern float tan  (float x) ;
+extern float exp  (float x) ;
+extern float log  (float x) ;
+extern float sqrt (const float x) ;
+extern float asin (float x) ;
+extern float acos (float x) ;
+extern float sinh (float x) ;
+extern float cosh (float x) ;
+extern float tanh (float x) ;
+extern float atan (float x) ;
+extern float log10 (float x) ;
+extern float pow  (float x, float y) ;
+extern float atan2 (float x, float y) ;
+
+#else
+namespace std {
+extern float abs  (float x) ;
+}
+extern float fabs (float x) ;
+extern float sin  (float x) ;
+extern float cos  (float x) ;
+extern float tan  (float x) ;
+extern float exp  (float x) ;
+extern float log  (float x) ;
+extern float sqrt (const float x) ;
+extern float asin (float x) ;
+extern float acos (float x) ;
+extern float sinh (float x) ;
+extern float cosh (float x) ;
+extern float tanh (float x) ;
+extern float atan (float x) ;
+extern float log10 (float x) ;
+extern float pow  (float x, float y) ;
+extern float atan2 (float x, float y) ;
+#endif
+#endif
+
+#ifndef __ICC
+#if defined(cray) || (defined(__sgi) && !defined(_CFE)) || defined(__sparc) || defined(__i386)
+// The SGI library uses the name fabsl, not absl. 
+extern "C" {
+    long double fabsl(long double);
+    long double sinl(long double);
+    long double cosl(long double);
+    long double tanl(long double);
+    long double expl(long double);
+    long double logl(long double);
+    long double sqrtl(long double);
+    long double asinl(long double);
+    long double acosl(long double);
+    long double sinhl(long double);
+    long double coshl(long double);
+    long double tanhl(long double);
+    long double atanl(long double);
+    long double log10l(long double);
+    long double powl(long double, long double);
+    long double atan2l(long double, long double);
+}
+
+namespace std {
+extern long double abs (long double x) ;
+}
+extern long double fabs (long double x) ;
+extern long double sin  (long double x) ;
+extern long double cos  (long double x) ;
+extern long double tan  (long double x) ;
+extern long double exp  (long double x) ;
+extern long double log  (long double x) ;
+extern long double sqrt (long double x) ;
+extern long double asin (long double x) ;
+extern long double acos (long double x) ;
+extern long double sinh (long double x) ;
+extern long double cosh (long double x) ;
+extern long double tanh (long double x) ;
+extern long double atan (long double x) ;
+extern long double log10(long double x) ;
+extern long double pow  (long double x, long double y) ;
+extern long double atan2(long double x, long double y) ;
+
+#else 
+/* Platforms without true long double */
+namespace std {
+extern long double abs  (long double x) ;
+}
+extern long double fabs (long double x) ;
+extern long double sin  (long double x) ;
+extern long double cos  (long double x) ;
+extern long double tan  (long double x) ;
+extern long double exp  (long double x) ;
+extern long double log  (long double x) ;
+extern long double sqrt (long double x) ;
+extern long double asin (long double x) ;
+extern long double acos (long double x) ;
+extern long double sinh (long double x) ;
+extern long double cosh (long double x) ;
+extern long double tanh (long double x) ;
+extern long double atan (long double x) ;
+extern long double log10 (long double x) ;
+extern long double pow   (long double x, long double y) ;
+extern long double atan2 (long double x, long double y) ;
+#endif /* Whether platform has true long double or not */
+#endif
+
+// Provide signatures for pow(*,int) required by Section 26.5 of C++ Standard 
+#if defined(__alpha)
+/* Alpha has special support for these.  The Alpha intrinsics are declared inside
+   the {...} so as not to pollute the global namespace.  They must be declared since
+   the Alpha's math.h conditionally declares them. */
+extern float pow(float x, int i); 
+extern double pow(double x, int i);
+extern long double pow(long double x, int i); 
+#elif defined(__hpux) && !defined(__hpux_11)
+  extern float pow(float x, int i) ;
+  /* HP's <math.h> defines "double pow(double x, int i)" */
+  extern long double pow(long double x, int i) ;
+#else /* Default. */
+#ifndef __ICC
+  extern float pow(float x, int i) ;
+  extern double pow(double x, int i) ;
+  extern long double pow(long double x, int i);
+#endif
+#endif
+
+namespace std {
+using ::acos;
+using ::asin;
+using ::atan;
+using ::atan2;
+using ::cos;
+using ::sin;
+using ::tan;
+using ::cosh;
+using ::sinh;
+using ::tanh;
+using ::exp;
+using ::frexp;
+using ::ldexp;
+using ::log;
+using ::log10;
+using ::modf;
+using ::pow;
+using ::sqrt;
+using ::ceil;
+using ::fabs;
+using ::floor;
+using ::fmod;
+}  /* namespace std */
+
+#endif /* __KAI_CMATH */

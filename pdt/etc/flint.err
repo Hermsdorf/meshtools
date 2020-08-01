@@ -1,0 +1,1212 @@
+             FORTRAN-lint Rev 5.00
+
+Error message file (#1-#854, #9000-#9162)
+--------------------------------------------------
+
+num typ       message
+--- --- -------------------
+
+syntactical errors:
+  2 SE illegal character in label field.
+  3 SE expected symbol name.
+  5 SE missing "/".
+  6 SE illegal character.
+ 17 SE missing "(".
+  7 SE missing ")".
+ 10 SE filename must be enclosed in quotes.
+ 16 SE illegal delimiter after array subscript.
+ 20 SE extra characters following an otherwise valid statement.
+ 21 SE unexpected end of line.
+ 25 SE illegal character after argument.
+ 28 SE not a fortran statement.
+ 29 SE missing "." after logical constant.
+ 33 SE expected "=".
+ 36 SE missing delimiter (expected a comma).
+ 43 SE missing label.
+ 42 SE missing expression.
+ 62 SE not enough chars in hollerith (only %0 of %1).
+ 64 SE expected "TO".
+ 67 SE unterminated string.
+ 69 SE this is not a valid constant.
+ 70 SE missing operand.
+ 71 SE missing operator after period.
+ 72 SE unknown operator after period.
+ 73 SE missing period after operator.
+ 75 SE missing '>'
+ 77 SE illegal value for repeater.
+ 87 SE expected ':'.
+ 99 SE expected a ',' or a '/'.
+107 SE illegal character after argument in function call.
+108 SE illegal character after argument in subroutine call.
+109 SE missing "THEN".
+157 SE no matching "(".
+199 SE no preceding line to continue from.
+ 98 SE exceeded internal limit of %0 continuation lines.
+262 SE label field of continuation line must be blank.
+ 12 SE invalid length specifier.
+150 SE missing structure name.
+151 SE missing field name.
+188 SE missing constant list.
+231 SE the %0 i/o specifier requires a value.
+232 SE unknown i/o specifier %0.
+283 SE bad value for length specifier.
+284 SE variable expression where constant required.
+ 32 SE missing constant (expected .TRUE. or .FALSE.)
+ 15 SW symbol name %0 is split onto a continuation line.
+ 19 SW symbol name %0 is broken by white space.
+540 SE expected ']'.
+611 SE expected "=>".
+612 SE cannot have nested internal subprograms.
+616 SE expected double colon "::".
+621 SE may occur only in a subprogram or an interface block.
+537 SW allowed only as the upper bound of last dimension.
+635 SW contiguous arithmetic operators (missing parentheses).
+647 SE expected '%'.
+648 SE allocatable arrays, pointers and intrinsic names cannot be initialized.
+709 SE missing keyword "FUNCTION". { ANSI90/ISO in internal or module subp }
+710 SE missing keyword "SUBROUTINE". { ANSI90/ISO in internal or module subp }
+728 SE illegal use of array section in structure component.
+732 SE bad value for kind parameter of this data type.
+773 SE base must be a constant between 2 and 36.
+785 SE this form of initialization list not allowed here.
+
+data and symbol classification errors:
+  8 SE fixed value data item not allowed here.
+  9 SE symbol %1 previously used and implicitly typed as %0.
+ 14 SW symbol %1 re-declared with the same data type %0.
+244 SE symbol %2 previously declared as %0, now %1.
+ 11 SE array %0 redimensioned with different dimensions.
+242 SW array %0 redimensioned with same dimensions.
+ 13 SE only a variable or array may be initialized in a data statement.
+ 18 SE illegal program name.
+ 22 SE symbol name already used.
+ 23 SE maximum of 20 dimensions.
+ 24 SE bad symbol name.
+ 26 SE illegal label.
+ 38 SE not a structure name.
+ 40 SE subprogram name not allowed here.
+ 37 SE subroutine name not allowed here.
+ 41 SE duplicate dummy argument names in statement function.
+ 44 SE illegal use of statement function dummy argument.
+ 50 SE dummy argument not allowed in a common block.
+ 52 OO maximum of 256 statement function dummy arguments.
+ 58 SE illegal argument.
+ 65 SE parameter already assigned a value.
+ 68 SE structure name already used.
+ 88 SE variable is already in common block /%0/.
+115 SE function reference not allowed here.
+116 SE illegal dummy argument in statement function.
+144 SE statement function dummy argument should be a variable.
+120 SE structure reference not allowed here.
+145 SE program name not allowed here.
+146 SE block data name not allowed here.
+147 SE not a valid field name.
+167 SE this symbol was declared as an array.
+445 SE array referenced with too many subscripts.
+169 SE character string %0 subscript out of bounds.
+170 SE nonconstant subscript where constant required.
+171 SE invalid equivalence of common block members %0 and %1.
+172 SE equiv of %0 and %1 back-extends common /%2/ by %3 bytes.
+173 SE %0 is inconsistently equivalenced to itself thru %1.
+174 SE scalar variable %0 referenced with %1 subscript(s).
+175 SE reference to %0-dimensional array %1 with %2 subscript(s).
+176 SW subscript #%1 of array %0 out of bounds.{except case in #275}
+275 SF subscript #%1 of array %0 out of bounds (declared as single element).{highest dimension, single element, passed array}
+178 SE lower bound greater than upper bound in array declaration.
+267 SE unclosed structure block.
+197 SE dummy argument not allowed here.
+259 SW length of initializer list exceeds variable list by %0 items (after %1).
+260 SW list of initialization constants is short by %0 items (no value for %1).
+ 27 SE this variable should not have an array subscript.
+158 SE not an intrinsic procedure.
+123 SE right bound less than left bound in character substring.
+148 SE no matching structure statement for this end structure.
+149 SE field-namelist allowed only in nested structures.
+152 SE this field should not have a subscript.
+180 SE constant required here.
+229 SE equivalenced symbol %0 is not a variable or array.
+233 SW symbol of type %0 used as pointer (forced to %0).
+234 SE pointer variable cannot be an array.
+235 SE a pointer variable cannot be pointer based.
+236 SE symbol %0 already based by pointer %1.
+263 SE a common block member cannot be pointer based.
+264 SE a dummy argument cannot be pointer based.
+266 SE this symbol not allowed as a pointer based variable.
+237 SE external subprogram name not allowed here.
+238 SE a pointer variable cannot be a record.
+239 SE cannot equivalence function variable.
+240 SE cannot equivalence dummy argument.
+241 SE cannot equivalence pointer based variable %0.
+160 SE function variable cannot be an array.
+243 SE a pointer variable cannot be an array.
+ 86 SE function variable not allowed here.
+ 51 SE function variable cannot be initialized.
+449 SE array section not allowed here.
+450 SE variable not allowed here.
+451 SE array sections not conformable (%0 vs %1 dimensions).
+452 SE cannot assign an array expression to a variable.
+294 SW multiple blank SAVE statements.
+245 SE symbol %0 appears in multiple SAVE statements.
+454 SE dummy arguments cannot appear in a SAVE statement or have the SAVE attribute.
+455 SE common block members cannot appear in a SAVE statement or have the SAVE attribute.
+481 SE only variables, arrays or common blocks may appear in a SAVE statement.
+532 SE illegal argument (possibly missing specifier keyword).
+539 SE %0 undefined. {nested structure}
+607 SE unrecognized attribute.
+608 SW same attribute can only appear once in a statement; ignored.
+609 SE expected module name.
+610 SE not current subprogram name.
+613 SE a module must not reference itself.
+614 SE local names of module entities not allowed here.
+615 SE USE renames cannot appear in a common or equivalence statement.
+617 SE PUBLIC and PRIVATE may appear only in a module.
+618 SE only one access statement allowed without access name lists per module.
+619 SE public access is not allowed here.
+620 SE must be a dummy argument which is not a dummy procedure or pointer.
+622 SE constant not allowed here.
+623 SE must be a deferred-shape array (:, :, ...).
+624 SE pointer variable cannot have the INTENT attribute.
+625 SE must not have both the TARGET and PARAMETER attributes.
+626 SE pointer cannot have the INTENT, EXTERNAL or INTRINSIC attribute.
+627 SE must not have both the POINTER and ALLOCATABLE attributes.
+628 SE target cannot have the EXTERNAL or INTRINSIC attribute.
+629 SE cannot have both EXTERNAL and INTRINSIC attributes.
+630 SE must be: IN, OUT or INOUT.
+631 SE may only have one access attribute (PRIVATE or PUBLIC) in a statement.
+632 SE must be a dummy argument.  {INTENT, OPTIONAL, INHERIT}
+633 SE a dummy argument or function result must not have the ALLOCATABLE, PARAMETER or SAVE attribute.
+636 SE must specify "KIND=".
+637 SE must specify "LEN=".
+638 SE must be a nonnegative integer.
+639 SE kind type parameter not allowed on this data type.
+640 SE optional comma allowed only if no :: appears in the statement.
+641 SE must be: PUBLIC or PRIVATE.
+642 SE no matching TYPE statement for this END TYPE.
+643 SE not a type name.
+644 SE only POINTER and DIMENSION allowed in structure component definition statements; attribute ignored.
+645 SE cannot have nested type definitions.
+655 SE duplicate CASE DEFAULT in case construct.
+656 SE case values overlap.
+660 SW only subroutines and functions can be internal subprograms.
+661 SE entity not accessible in module %0.
+663 SE must be a pointer or an allocatable array; object ignored.
+664 SW must be an explicit-shape array.
+665 SE STAT= specifier cannot be allocated or deallocated in the same statement.
+666 SE %0 must be a pointer.
+667 SE %0 is not currently allocated.
+668 SE object is already allocated.
+669 SE pointer %0 is not associated with any target.
+670 SE illegal target (missing the TARGET or POINTER attribute).
+671 UW %0 is currently associated with a target.
+672 UW memory previously allocated by %0 will become inaccessible.
+673 SE target was not created by an ALLOCATE statement.
+674 SE only creator can deallocate allocatable arrays.
+675 UW memory to be deallocated by %0 is associated with other pointers.
+676 SE target has different rank from the pointer.
+677 SE module procedures not allowed here.
+678 SE internal procedures must not appear in an interface block.
+683 SE only subroutines allowed in the INTERFACE ASSIGNMENT block.
+684 SE only functions allowed in the INTERFACE OPERATOR block.
+685 SE OPERATOR must not be specified for functions with zero or more than two arguments.
+686 SE arguments must be nonoptional in INTERFACE OPERATOR or ASSIGNMENT block.
+687 SE dummy arg %0 of interface procedure must have INTENT(IN).
+688 SE dummy arg %0 of interface procedure must have INTENT(OUT) or INTENT(INOUT).
+689 SE cannot be a module procedure.
+690 SE unclosed interface block.
+691 SE procedures in an interface with a generic name must be all subroutines or all functions.
+692 SE statement not allowed in interface blocks. {format, data, entry and statment functions}
+693 SE interface not allowed in block data.
+694 SE dummy args of interface procedures must be nonoptional.
+699 SE statement not allowed in modules. {format, entry and statement function}
+705 SE illegal argument (possibly missing argument keyword =).
+719 SE cannot assign an array record to a record.
+720 SE function name and entry not allowed in a common block.
+721 SE pointer cannot be specified with an explicit-shape array.
+722 SE allocatable array not allowed in a common block.
+723 SE cannot equivalence a function name or an entry.
+724 SE cannot equivalence a pointer.
+725 SE cannot equivalence an allocatable array.
+729 SE must not appear more than once in a type definition. {PRIVATE, SEQUENCE}
+730 SE can only appear in a type definition. {SEQUENCE statement}
+731 SE module is not available.
+733 SE incomplete structure constructor.
+734 SE pointers and allocatable arrays cannot be initialized in a DATA statement.
+735 SE variables made accessible by use association or host association cannot be initialized in a DATA statement.
+741 SE structure constructor not allowed here.
+746 SE must be a positive integer.
+748 SW same prefix can only appear once in a statement.
+749 SW a SUBROUTINE statement must not contain a type specification.
+778 SE a common block member cannot have the AUTOMATIC attribute.
+779 SE a use-associated item cannot have the AUTOMATIC or STATIC attribute.
+780 SE automatic objects not allowed in modules.
+781 SE a dummy argument or function result cannot have the STATIC attribute.
+782 SE procedures, function results or namelists cannot have the VOLATILE attribute.
+788 SE variables cannot have both the AUTOMATIC and STATIC attributes.
+793 SE result of elemental function %0 must not be an array or a pointer.
+794 SE dummy arg %0 of an elemental procedure must not be an array, a pointer or a dummy procedure.
+795 SE dummy args of an elemental procedure cannot be alternate returns.
+796 SE must be identical with the generic name in the INTERFACE statement.
+805 SE dummy arg %0 of a pure function must have INTENT(IN).
+806 SE dummy arg %0 of a pure subroutine must specify the INTENT.
+807 SE variables declared in a PURE procedure must not have the SAVE attribute.
+808 SE variables declared in a PURE procedure cannot be initialized.
+821 SE common block members that appear with an array specification must not be pointers.
+822 SF substring starting point exceeds the ending point.
+
+variable usage checking:
+106 UW function variable %0 was not set.
+192 UE variable %0 is used as a label but was never assigned one.
+193 UW variable %0 is assigned a label but never used as such.
+194 UW variable %0 is used to hold both a label and a value.
+195 UW dummy argument %0 is used as a label.
+124 UF dummy argument %0 is unused.
+126 UE local variable %0 is referenced but never set. {except 824}
+824 UW local variable %0 is referenced, possibly never set. {may be set in internal subprogs}
+480 UW local pointer based variable %0 is referenced but never set.
+127 UW local variable %0 is set but never referenced. {except 825}
+825 UW local variable %0 is set, possibly never referenced. {may be referenced in internal subprogs}
+482 UW local pointer based variable %0 is set but never referenced.
+128 UF local variable %0 declared but unused.
+133 UE common block members referenced but not set:  %0~~, %0~~
+134 UW common block members set but not referenced:  %0~~, %0~~
+135 UF unused common block members:  %0~~, %0~~
+500 UE local variable %0%4 always referenced before set.
+501 UE local variable %0%4 conditionally referenced with no way of being set first.
+502 UW local variable %0%4 conditionally set but always referenced. Not set on %1%% of possible paths (%2 of %3).
+503 UW local variable %0%4 is referenced before set on %1%% of possible paths (%2 of %3).
+505 UE local variable %0%4 always referenced (in a called subroutine) before set.
+506 UE local variable %0%4 conditionally referenced (in a called subroutine) with no way of being set first.
+507 UW local variable %0%4 conditionally set but always referenced (in a called subroutine). Not set on %1%% of possible paths (%2 of %3).
+508 UW local variable %0%4 is referenced (in a called subroutine) before set on %1%% of possible paths (%2 of %3).
+510 UE SAVEd variable %0 always referenced before set.
+511 UE SAVEd variable %0 conditionally referenced with no way of being set first (even on a prior invocation of subprogram).
+512 UF SAVEd variable %0 conditionally set but always referenced. Not set on %1%% of possible paths (%2 of %3).
+513 UF SAVEd variable %0 is referenced before set on %1%% of possible paths (%2 of %3).
+514 UF SAVEd variable %0 conditionally referenced, possibly set first on a prior invocation of subprogram.
+515 UE SAVEd variable %0 always referenced (in a called subroutine) before set.
+516 UE SAVEd variable %0 conditionally referenced (in a called subroutine) with no way of being set first (even on a prior invocation of subprogram).
+517 UF SAVEd variable %0 conditionally set but always referenced (in a called subroutine). Not set on %1%% of possible paths (%2 of %3).
+518 UF SAVEd variable %0 is referenced (in a called subroutine) before set on %1%% of possible paths (%2 of %3).
+519 UF SAVEd variable %0 conditionally referenced (in a called subroutine), possibly set first on a prior invocation of subprogram.
+520 UE local pointer based variable %0 always referenced before set.
+521 UF local pointer based variable %0 conditionally referenced with no way of being set first (other than prior invocation of subprogram).
+522 UF local pointer based variable %0 conditionally set but always referenced. Not set on %1%% of possible paths (%2 of %3).
+523 UF local pointer based variable %0 is referenced before set on %1%% of possible paths (%2 of %3).
+525 UE local pointer based variable %0 always referenced (in a called subroutine) before set.
+526 UF local pointer based variable %0 conditionally referenced (in a called subroutine) with no way of being set first (other than prior invocation of subprogram).
+527 UF local pointer based variable %0 conditionally set but always referenced (in a called subroutine). Not set on %1%% of possible paths (%2 of %3).
+528 UF local pointer based variable %0 is referenced (in a called subroutine) before set on %1%% of possible paths (%2 of %3).
+739 UE INTENT(IN) dummy arg %0 was redefined or became undefined.
+740 UW INTENT(OUT) dummy arg %0 is never set.
+742 UE module entity referenced but not set:  %0~~, %0~~
+743 UW module entity set but not referenced:  %0~~, %0~~
+744 UF unused module entity:  %0~~, %0~~
+745 UW INTENT(IN) dummy arg %0 is a target.
+809 UE global variables and their subobjects may not be set in a PURE procedure.
+810 UE dummy argument %0 of a PURE function cannot be set.
+811 UE global variables and their subobjects cannot be used as the target of a pointer assignment statement in a PURE procedure.
+812 UE dummy argument %0 of a PURE procedure cannot be used as the target of a pointer assignment statement.
+813 UE global variables and their subobjects cannot be assigned to a derived-type variable that has a POINTER component at any level in a PURE procedure.
+814 UE dummy argument %0 of a PURE procedure cannot be assigned to a derived-type variable that has a POINTER component at any level.
+815 UE global variables and their subobjects may not be allocated, deallocated or nullified in a PURE procedure.
+816 UE pointer dummy argument %0 of a PURE procedure cannot be allocated, deallocated or nullified in a PURE procedure.
+823 UF local variable %0 possibly referenced before set.
+
+miscellaneous errors:
+  1 ZE missing include file.
+477 ZE problem with CDD dictionary definition.
+478 ZE problem with DBMS invoke statement.
+479 SE unknown DBMS clause %0.
+349 ZE label not found in include file; nothing included.
+350 ZE no include file currently open; nothing included.
+  4 OO include nesting too deep.
+ 35 SE unknown compiler directive.
+ 60 SE cannot mix IMPLICIT NONE and IMPLICIT statements.
+ 66 SE statement out of order, statement ignored.
+ 74 SE must occur before %0 in line %1, statement ignored.
+100 ZE missing text library.
+118 ZE text library module not found.
+156 SE invalid specifier.
+166 OO expression too complex.
+179 SE division by zero.
+186 SE executable statements not allowed in block data, modules or interface blocks.
+531 SW line length exceeds 72 columns.
+600 SF obsolete feature: arithmetic IF or alternate return.
+601 SF obsolete feature: real or double precision in DO loop control.
+602 SF obsolete feature: shared DO termination.
+603 SF obsolete feature: DO block not terminated by END DO or CONTINUE.
+604 SF obsolete feature: branch to END IF from outside block if.
+605 SF obsolete feature: assigned goto, ASSIGN or PAUSE statement.
+606 SF obsolete feature: assigned format specifiers.
+634 SE F90 statements not supported.
+702 SF deprecated feature; use MODULEs instead. {COMMON blocks}
+703 SF deprecated feature: computed goto.  Use the CASE construct instead.
+
+control structures:
+137 SE referenced but undefined labels:  %0~~, %0~~
+138 SF unused labels:  %0~~, %0~~
+104 SE entry not allowed in this subprogram.
+196 SE inconsistent usage of label.
+ 46 SW branch into block if via label %0.
+ 47 SW branch into do loop via label %0.
+554 SW branch into forall construct via label %0. {F90 extension}
+555 SW branch into case construct via label %0.
+556 SW branch into where construct via label %0.
+ 48 SE unclosed block if.
+ 49 SE unclosed do loop.
+714 SE unclosed where construct.
+715 SE unclosed case construct.
+551 SE unclosed forall construct. {F90 extension}
+ 53 SW branch to label %0 from outside block if.
+ 54 SW branch to label %0 from outside do loop.
+649 SW branch to label %0 from outside where construct.
+650 SW branch to label %0 from outside case construct.
+552 SW branch to label %0 from outside forall construct. {F90 extension}
+101 SE label multiply defined.
+110 SE no matching "IF" for this "ELSE IF".
+111 SE no matching "IF" for this "ELSE".
+112 SE no matching "IF" for this "END IF".
+113 SE do loop end label inside nested do loop or block if.
+114 SE no matching "DO" for this "END DO".
+651 SE no matching "WHERE" for this "ELSEWHERE".
+652 SE no matching "WHERE" for this "END WHERE".
+653 SE no matching "SELECT CASE" for this "CASE".
+654 SE no matching "SELECT CASE" for this "END SELECT".
+679 SE no matching "INTERFACE" for this "END INTERFACE".
+553 SE no matching "FORALL" for this "END FORALL". {F90 extension}
+117 SE missing end statement.
+153 SE $ELSE directive with no matching $IF directive.
+265 SE $ENDIF directive with no matching $IF directive.
+464 SE $ELSE directive inside $ELSE block.
+103 SW dead code.
+680 SE statement not inside an interface block.
+695 SE missing end statement for subprog inside the interface.
+706 SE construct name not allowed here.
+707 SE symbol is not the construct name of the current construct.
+708 SE missing construct name.
+711 SE must be inside a do loop.
+712 SE named construct %0 is out of range. {do loop}
+713 SE %0 is not a do construct.
+557 SF branch to END DO from outside do loop.
+558 SF branch to END SELECT from outside case construct.
+559 SF branch to END WHERE from outside where construct.
+560 SF branch to END FORALL from outside forall construct.
+747 SE the value of the increment must be nonzero. {do loop, stride}
+
+local data type checking:
+ 34 SE only character values allowed with // operator.
+154 SE must be character data type.
+161 SE %0{numeric/logical} data assigned to a character variable.
+162 SE character data assigned to a %0{numeric/logical} variable.
+177 SE non-character variable %0 referenced as character substring.
+181 SE character expression where numeric data required.
+ 84 SE variable used in assigned goto must be I*4 data type.
+ 39 SE illegal data type.
+ 80 SE %0{numeric/char} expression not allowed in logical if.
+ 81 SE %0{char} expression not allowed in arithmetic if.
+ 82 SE arithmetic expression expected.
+105 SF string will be truncated (from %0 to %1 chars).
+125 SM symbols were implicitly typed as %0:  %1~~, %1~~
+136 SE type declaration for symbol %0 missing.{implicit undef/none}
+187 SE cannot assign label to non-integer variable.
+ 76 SF mixed-mode arithmetic: (%0 op %1).{all operators other than '='}
+276 SF data type conversion: (%0 = %1).{only = operator, others use #76}
+
+261 SF %0 initializer converted to match %1 variable %2.
+222 SF %1 variable %2 incompatible with %0 initializer.
+
+509 UW array subscript is not integer data type.
+538 SE %0 data assigned/passed to %1.
+646 SE must be integer data type.
+657 SE only integer/logical/char expression allowed in select case.
+658 SE must be of the same type as the case expression in the select case statement.
+659 SE case value range using a colon must not be used for logical.
+565 SE stop code must be an integer number or a character constant.
+
+interface checking (argument passing):
+
+  obvious mismatches (subprogram name passed to alternate return, etc...)
+250 IE %0 passed to dummy arg which is %1 %2.{obvious mismatches, ANSI 15.9.3}
+696 IE ambiguous generic procedure reference to %0 between %1 and %2.
+751 IE kind parameters of the actual and dummy args differ (%0 vs %1).
+752 IW ranks of the actual and dummy args differ (%0 vs %1 dimensions). {except for the following}
+753 IE ranks of the actual and dummy args differ (%0 vs %1 dimensions). {dummy arg is a pointer array}
+754 IE nonpointer passed to a POINTER dummy arg.
+834 IE call to generic %0 doesn't match available specific %1
+
+  mismatches with scalar entity passed to variable.
+ 55 IE %0 actual arg passed to a %1 dummy arg.{except for the following}{ANSI 15.9.3}
+736 IW %0 actual arg passed to a %1 dummy arg.{same data type, different storage size}
+
+I9074 /DECUNIX/VMS/DECNT/ULTRIX:217          -DECUNIX-VMS-DECNT-ULTRIX:223 ; int constant passed to larger int
+I9075 /DECUNIX/VMS/DECNT/ULTRIX:226          -DECUNIX-VMS-DECNT-ULTRIX:223 ; int expression passed to larger int
+I9080 /DECUNIX/VMS/DECNT/ULTRIX:226 *DECUNIX*VMS*DECNT*ULTRIX:203 -DECUNIX-VMS-DECNT-ULTRIX:223 ; int variable passed to larger int and not modified
+I9076 /DECUNIX/VMS/DECNT/ULTRIX:226 *DECUNIX*VMS*DECNT*ULTRIX:289 -DECUNIX-VMS-DECNT-ULTRIX:223 ; int variable passed to larger int and modified
+217 IE %0 actual arg passed to %1 dummy arg.{int const -> larger int}
+226 IE %0 actual arg passed to %1 dummy arg.
+223 PW %p doesn't allow an %0 actual arg to be passed to an %1 dummy arg.
+203 IW an %0 variable passed to an %1 dummy arg will incorporate surrounding memory into its value.
+289 IE an %0 variable passed to an %1 dummy arg which modifies its value will overwrite surrounding memory.
+
+I9078 /DECUNIX/VMS/DECNT/ULTRIX:277          -DECUNIX-VMS-DECNT-ULTRIX:410 ; int passed to smaller int that is not modified
+I9079 /DECUNIX/VMS/DECNT/ULTRIX:277 *DECUNIX*VMS*DECNT*ULTRIX:227 -DECUNIX-VMS-DECNT-ULTRIX:410 ; int passed to smaller int that is modified
+277 IE %0 actual arg passed to %1 dummy arg.
+410 PW %p doesn't allow an %0 actual arg to be passed to an %1 dummy arg.
+227 IW an %0 actual arg passed to an %1 dummy arg which modifies its value will not change the upper bytes.
+
+I9081 /DECUNIX/VMS/DECNT/ULTRIX:457          -DECUNIX-VMS-DECNT-ULTRIX:413 ; logical constant passed to larger log
+I9082 /DECUNIX/VMS/DECNT/ULTRIX:412          -DECUNIX-VMS-DECNT-ULTRIX:413 ; logical expression passed to larger log
+I9083 /DECUNIX/VMS/DECNT/ULTRIX:412          -DECUNIX-VMS-DECNT-ULTRIX:413 ; logical variable passed to larger log and not modified
+I9084 /DECUNIX/VMS/DECNT/ULTRIX:412 *DECUNIX*VMS*DECNT*ULTRIX:414 -DECUNIX-VMS-DECNT-ULTRIX:413 ; logical variable passed to larger log and modified
+457 IE %0 actual arg passed to %1 dummy arg.{log const -> larger log}
+412 IE %0 actual arg passed to %1 dummy arg.
+413 PW %p doesn't allow a %0 actual arg to be passed to an %1 dummy arg.
+414 IE an %0 variable passed to an %1 dummy arg which modifies its value will overwrite surrounding memory.
+
+I9087 /DECUNIX/VMS/DECNT/ULTRIX:278 -DECUNIX-VMS-DECNT-ULTRIX:411 ; logical passed to smaller logical
+278 IE %0 actual arg passed to %1 dummy arg.
+411 PW %p doesn't allow a %0 actual arg to be passed to a %1 dummy arg.
+
+I9077 /DECUNIX/VMS/DECNT/ULTRIX:61 -DECUNIX-VMS-DECNT-ULTRIX:224 ; char constant passed to non-char
+ 61 IE %0{character} actual arg passed to %1{non-character} dummy arg.
+224 PW %p doesn't allow a %0{character} actual arg to be passed to a %1{non-character} dummy arg.
+
+249 IE %0{structure} passed to a %1{structure} dummy arg (same size but different format).
+255 IE %0{structure} passed to a %1{structure} dummy arg (different size and different format).
+256 IF %0{structure} passed to a %1{structure} dummy arg (same format but different names).
+248 IE %0{structure} passed to a %1 dummy arg.{structure passed to non-structure}
+>>>future replacement of #248...246 IE %0{structure} passed to a %1 dummy arg of the same size.
+>>>future replacement of #248...247 IE %0{structure} passed to a %1 dummy arg of different size.
+280 IW %0{character} constant passed to a %1{smaller character} dummy arg.
+281 IF %0{character} actual arg passed to a %1{smaller character} dummy arg.
+282 IE %0{character} actual arg passed to a %1{larger character} dummy arg.
+
+  mismatches with array passed to another array.
+252 IE %0 array passed to dummy arg which is a %1 array.{ANSI 15.9.3}
+253 IE %0 array member passed to dummy arg which is a %1 array.{ANSI 15.9.3}
+272 IE %0{structure} array passed to a %1{structure} array dummy arg (structures have same length but a different format).
+273 IE %0{structure} array passed to a %1{structure} array dummy arg (structures have different lengths and different formats).
+274 IF %0{structure} array passed to a %1{structure} array dummy arg (structures have same format but different names).
+287 IE %0 array passed to %1 array of larger size (by %2 bytes).
+279 IF %0 array passed to %1 array of smaller size (by %2 bytes).
+
+  mismatches with scalar entity passed to an array.
+251 IE %0 variable passed to dummy arg which is a %1 array.{except I9086}{ANSI 15.9.3.3}
+257 IE %0 expression passed to dummy arg which is a %1 array.{except I9085}{ANSI 15.9.3.3}
+
+I9085 /SUN:268 -SUN:228 ; character expression passed to byte or L*1 array
+I9086 /SUN:230 -SUN:409 ; character variable passed to byte or L*1 array
+268 IE %0 expression passed to dummy arg which is a %1 array.
+228 PW %p doesn't allow a %0 expression to be passed to a %1 array.
+230 IE %0 variable passed to dummy arg which is a %1 array.
+409 PW %p doesn't allow a %0 variable to be passed to a %1 array.
+
+271 IE %0{structure} passed to a %1 array dummy arg.{structure passed to non-structure array}
+>>>future replacement of #271...269 IE %0{structure} passed to a %1 array dummy arg of the same size.
+>>>future replacement of #271...270 IE %0{structure} passed to a %1 array dummy arg of different size.
+
+  mismatches with an array passed to a variable.
+254 IE %0 array passed to a %1 dummy arg.{ANSI 15.9.3.2}
+
+  usage conflicts
+ 59 IE constant is changed by subprogram.{ANSI 15.9.3.2}
+ 63 IW expression is changed by subprogram.{ANSI 15.9.3.2}
+750 IE constant passed to an INTENT(OUT) or INTENT(INOUT) dummy arg.
+
+>>> conflict in number of arguments:
+258 IE missing argument.
+ 56 IE not enough arguments.{ANSI 15.9}
+ 57 IE too many arguments.{ANSI 15.9}
+681 IE not enough arguments (missing nonoptional arguments).
+682 IE no such keyword in dummy argument list.
+716 IE dummy arg is associated with another actual arg.
+
+>>> intrinsic procedure checking:
+198 IE intrinsic procedure called with improper number of arguments.
+292 IE %0 is not an allowable type for this intrinsic procedure.
+293 IE %0 argument is not compatible with the %1 argument.
+737 IW %0 argument is not compatible with the %1 argument. {same data type, different storage size}
+295 IE this intrinsic procedure may not be passed to a subprogram.
+700 IE must be an array of rank one.
+704 IE must be an optional dummy argument.
+718 IE no such keyword used by this intrinsic procedure.
+726 IE the length of argument %0 must be at least %1. {character data type }
+727 IE the size of argument %0 must be at least %1. {array size}
+738 IE must be an array.
+771 IE must have the SAVE attribute or in a common block. {break()}
+772 IE must be a 9 element array of type INTEGER. {CF90:intrup()}
+
+>>> overloading(interface) checking:
+717 SE operator redefined.
+570 IW %0 has less arguments as an interface body at %1 line %2 than as an external subprogram at %3 line %4.
+571 IW %0 has more arguments as an interface body at %1 line %2 than as an external subprogram at %3 line %4.
+572 IW dummy arg #%0 of %1 renamed (%2 in external subprogram near %3 line %4, and %5 in interface body near %6 line %7).
+573 IW data type differs for dummy arg %0 of %1 (%2 in external subprogram near %3 line %4, and %5 in interface body near %6 line %7).
+574 IW length differs for dummy arg %0 of %1 (%2 in external subprogram near %3 line %4, and %5 in interface body near %6 line %7). {character data type}
+575 IW data type differs for function %0 (%1 as an external subprogram at %2 line %3, and %4 as an interface body at %5 line %6).
+576 IW length differs for function %0 (%1 as an external subprogram at %2 line %3, and %4 as an interface body at %5 line %6). {character data type}
+835 IW INTENT differs for dummy arg %0 of %1 (external near %2 line %3 and interface body near %4 line %5)
+
+>>> OpenMP CRITICAL:
+838 SE Missing OpenMP END CRITICAL directive
+844 IW Orphaned CRITICAL section (outside PARALLEL region)
+
+>>> OpenMP PARALLEL:
+839 SE Invalid symbol %0 in PRIVATE clause
+840 SE Invalid symbol %0 in SHARED clause
+843 SE Missing OpenMP END PARALLEL directive
+854 SE PARALLEL can't set both DEFAULT(PRIVATE) and DEFAULT(SHARED)
+
+>>> OpenMP THREADPRIVATE:
+845 SE THREADPRIVATE symbols must be bracketed with slashes
+846 SE Malformed THREADPRIVATE symbol list
+847 SE Invalid symbol %0 in THREADPRIVATE list
+848 SE THREADPRIVATE symbol %0 isn't a named common block
+
+>>> OpenMP miscellaneous:
+836 SE %0
+837 SE Misplaced OpenMP %0 directive
+841 SE Nested OpenMP %0 block
+849 IW Modifying shared variable %0 outside critical sections
+850 IW This routine always returns %0 when called from %1 code
+851 IW %0
+852 IW OpenMP %0 directive in serial code
+
+other interface checking:
+ 85 IE %0 function locally typed as %1.
+140 IW calling a function.
+ 90 IE cannot call a common block.
+ 91 IE cannot call a function with a type of CHAR, R*16 or C*16.
+ 92 IE cannot call a program name.
+ 93 IE cannot call a block data name.
+ 94 IE this name is a common block name.
+ 95 IE this name is defined as a subroutine.
+ 96 IE this name is a program name.
+ 97 IE this name is a block data name.
+121 IF common block /%0/ member names differ (compared to initial use in routine %1).
+122 IW common block /%0/ organization differs at member %2 (compared to initial use in routine %1).
+185 IW common block /%0/ length mismatch (compared to initial use in routine %1).
+129 IE missing functions:  %0~~, %0~~
+130 IE missing subroutines:  %0~~, %0~~
+131 IF unused functions:  %0~~, %0~~
+132 IF unused subroutines:  %0~~, %0~~
+189 IW no main program module present.
+190 IW there are %0 program modules.
+191 IE symbol %0 is multiply defined (%1 at %2 line %3 and %4 at %5 line %6).
+662 IE this name is a module name.
+826 IW common block /%0/ member %2 allocated with different array bounds (compared to initial use in routine %1).
+827 SE variable initialized more than once.
+828 SE conflicts with previous structure initialization.
+829 SE structure component initialized more than once.
+830 IF common block /%0/ member names differ (compared to use in library %1).
+831 IW common block /%0/ organization differs at member %2 (compared to use in library %1).
+832 IW common block /%0/ length mismatch (compared to use in library %1).
+833 IE missing interface routine %0 (accessed via %1).
+853 SE Unresolved forward reference to type %0
+
+HPF directives:
+577 SE not an HPF directive.
+578 SE HPF directives not supported.
+579 SE missing "WITH".
+580 SE a common block member may not have the DYNAMIC attribute.
+581 SE a common block member cannot be a template.
+582 SE The number of subscript triplets in the align spec for target %0 must equal the number of colons (':') in the align source list for the alignee.
+583 SE The number of subscript triplets in the align spec for target %0 must equal the rank of %1. {no align source list}
+584 SE alignment for %0 in dimension #%1 is not HPF conforming.
+585 SE The length of align source list must equal the rank of the alignee.
+586 SE an object cannot be both an alignee and a distributee.
+587 SE must have the DYNAMIC attribute.
+588 SE subobjects not allowed as distributees.
+589 SE the length of distribution format list must equal the rank of distributee %0.
+590 SE must be declared as a PROCESSORS name.
+591 SE the number of dimensions to be distributed in the distribution format list must equal the rank of the processor. {has dist-fmt-list}
+592 SE the number of dimensions to be distributed for %0 must equal the rank of the processor. {no dist-fmt-list}
+593 SE block distribution for %0 in dimension #%1 is not HPF conforming.
+594 SE must be BLOCK, CYCLIC or '*'.
+595 SE no such extrinsic kind keyword.
+596 IE incompatible mapping between actual and dummy args; call is not HPF conforming.
+597 IW distribution is changed between actual and dummy args; remapping required.
+598 SE objects may not have both the INHERIT and ALIGN attributes.
+599 SE array-valued functions not allowed here. {HPF SEQUENCE}
+755 UF possibly undistributed data mixed with distributed data.
+756 UF arrays left undistributed:  %0~~, %0~~
+759 SE missing keyword "NEW".
+760 SE variables with the POINTER, TARGET or SAVE attribute not allowed here.
+761 SE the first statement following an INDEPENDENT directive must be DO or FORALL.
+762 SE INDEPENDENT directives with the NEW option must apply to a DO loop.
+763 SE missing keyword "OF".
+764 SE expected an array constructor.
+765 SE expected an assignment or pointer assignment statement following a FORALL statement.
+766 SE only FORALL, WHERE, assignment or pointer assignment statements allowed inside a FORALL construct.
+767 SE must be an assignment statement. {WHERE}
+768 SE must not redefine an index variable of an outer construct. {DO, FORALL}
+799 SE an object with the SAVE attribute may not be declared DYNAMIC.
+800 SE EXTRINSIC(HPF_LOCAL) routines may not be recursive.
+801 SE EXTRINSIC(HPF_LOCAL) routines may not have alternate returns.
+802 SE EXTRINSIC(HPF_LOCAL) routines not allowed inside a FORALL construct or an INDEPENDENT loop.
+803 SE a dummy argument of an EXTRINSIC(HPF_LOCAL) routine may not be a procedure or a pointer.
+804 SE a dummy argument of an EXTRINSIC(HPF_LOCAL) routine must be nonsequential.
+
+***** port stuff *****
+
+/*      *CM = from CM             (/version=CM)                             */
+/*      /CM = from all but CM     (/version=!CM)                            */
+/*      +CM = port to CM          (/port=CM)  (/ansi same as /PORT=ANSI)    */
+/*      -CM = port to all but CM  (/port=!CM)                               */
+
+------------------------------------------------------------------------------
+preprocessor
+
+I9004 /DECUNIX/VMS/DECNT/ULTRIX/HP/EPC/IRIS:308 -DECUNIX-VMS-DECNT-ULTRIX-HP-EPC-IRIS:201 ;debugging lines with D in column one
+308 SE D-style debugging lines not supported.
+201 PE D-style debugging lines not supported by %p.{ANSI 3.2}
+
+I9072 /OS32/EPC:405 -OS32-EPC:406 ;debugging lines with X in column one
+405 SE X-style debugging lines not supported.
+406 PE X-style debugging lines not supported by %p.{ANSI 3.2}
+
+I9146 /EPC:561 -EPC:562 ;debugging lines with Y in column one
+561 SE Y-style debugging lines not supported.
+562 PE Y-style debugging lines not supported by %p.
+
+I9055 /SUN/IRIS:318 -SUN-IRIS:320 ;continuation line with "&" in column 1
+318 SE &-style continuation lines not supported.
+320 PE %p does not support &-style continuation lines.
+
+I9005 /DECUNIX/VMS/DECNT/ULTRIX/AOS/SUN/CRAY/IRIS/HP/NCUBE/LAHEY:310 -DECUNIX-VMS-DECNT-ULTRIX-AOS-SUN-CRAY-IRIS-HP-NCUBE-LAHEY:202 ;"!"-style inline comments
+310 SE exclamation point inline comments are not supported.
+202 PE exclamation point inline comments are not supported by %p.{ANSI 3.2}
+
+I9070 /OS32:347 -OS32:348 ;";"-style inline comments
+347 SE semicolon inline comments are not supported.
+348 PE semicolon inline comments are not supported by %p.{ANSI 3.2}
+
+I9000 *ANSI77:322 +ANSI77:219 ;sym 6-31 chars
+I9001 *ANSI77:322 *DECUNIX*VMS*DECNT*ULTRIX*CRAY*NCUBE*ANSI90*LAHEY:301 +ANSI77:219 +DECUNIX+VMS+DECNT+ULTRIX+CRAY+NCUBE+ANSI90+LAHEY:302 ;sym 32 chars
+I9129 *ANSI77:322 *DECUNIX*VMS*DECNT*ULTRIX*CRAY*NCUBE*ANSI90*LAHEY:301 *SUN:30 +ANSI77:219 +DECUNIX+VMS+DECNT+ULTRIX+CRAY+NCUBE+ANSI90+LAHEY:302 +SUN:31 ;sym 33-36 chars
+I9130 *ANSI77:322 *DECUNIX*VMS*DECNT*ULTRIX*CRAY*NCUBE*ANSI90*LAHEY:301 *SUN:30 *OS32:300 +ANSI77:219 +DECUNIX+VMS+DECNT+ULTRIX+CRAY+NCUBE+ANSI90+LAHEY:302 +SUN:31 +OS32:286 ;sym 37-xx chars
+322 SE symbol name longer than 6 characters. {ANSI 77}
+301 SE symbol name longer than 31 characters. {ANSI90/ISO}
+ 30 SE symbol name longer than 32 characters.
+300 SE symbol name longer than 36 characters.
+219 PE symbol names longer than 6 characters not supported by %p.{ANSI 2.2}
+302 PE symbol names longer than 31 characters not supported by %p.
+ 31 PE symbol names longer than 32 characters not supported by %p.
+286 PE symbol names longer than 36 characters not supported by %p.
+
+I9007 /DECUNIX/VMS/DECNT/ULTRIX/SUN/OS32/CRAY/IRIS/HP/NCUBE/LAHEY:45 -DECUNIX-VMS-DECNT-ULTRIX-SUN-OS32-CRAY-IRIS-HP-NCUBE-LAHEY:204 ;"_" in mid symbol name
+I9008 /DECUNIX/VMS/DECNT/ULTRIX/SUN/IRIS/HP/NCUBE/CRAY/EPC/LAHEY:45  -DECUNIX-VMS-DECNT-ULTRIX-SUN-IRIS-HP-NCUBE-CRAY-EPC-LAHEY:204  ;"$" in mid symbol name
+I9009 /AOS:45                             -AOS:204                             ;"?" in symbol name
+ 45 SE invalid character in symbol name.
+204 PE non-alphanumeric characters in symbol names not supported by %p.{ANSI 2.2}
+
+I9135 *NCUBE:497 /NCUBE:498 -NCUBE:499  ; $ or _ as first char in sym name
+497 SF using an _ or $ to start a symbol name is not recommended
+498 SE symbol names must begin with a letter
+499 PE %p requires symbol names start with a letter
+
+I9073 /OS32/NCUBE:407 -OS32-NCUBE:408 ; F77: symbolic relational operators   == < > <= >=
+I9154 /OS32/NCUBE:407 -OS32-NCUBE:408 ; symbolic relational operator <>
+I9155 /LAHEY:407 -LAHEY:408 ; F77: symbolic relational operator /=
+407 SE symbolic form of relational operator not supported.
+408 PE %p does not support symbolic forms of relational operators.
+
+I9133 /OS32:493 -OS32:494 ; symbolic logical operators   & (and)  ! (or)
+493 SE symbolic form of logical operator not supported.
+494 PE %p does not support symbolic forms of logical operators.
+
+I9147 /SUN/IRIS/EPC/DECUNIX/VMS/DECNT/ULTRIX:563  -SUN-IRIS-EPC-DECUNIX-VMS-DECNT-ULTRIX:564  ; C-style escape sequence
+563 SE C-style escape sequence not supported.
+564 SE C-style escape sequence not supported by %p.
+------------------------------------------------------------------------------
+constants
+
+I9015 /DECUNIX/VMS/DECNT/ULTRIX:325 -DECUNIX-VMS-DECNT-ULTRIX:326 ;"123 style octal constant
+325 SE double quote style octal constants not supported.
+326 PE double quote style octal constants not supported by %p.{ANSI 3.1.4}
+
+I9062 /IRIS:345 -IRIS:346 ;$123 style hex constant
+345 SE $123 style hex constants not supported.
+346 PE $123 style hex constants not supported by %p.{ANSI 4.2}
+
+I9016 /DECUNIX/VMS/DECNT/ULTRIX/SUN/IRIS/HP/NCUBE/EPC:327 -DECUNIX-VMS-DECNT-ULTRIX-SUN-IRIS-HP-NCUBE-EPC:212 ;'123'O style octal constant
+327 SE octal constants of the form '123'O are not supported.
+212 PE octal constants of the form '123'O are not supported by %p.{ANSI 4.2}
+
+I9017 /DECUNIX/VMS/DECNT/ULTRIX/SUN/IRIS/HP/NCUBE/EPC:329 -DECUNIX-VMS-DECNT-ULTRIX-SUN-IRIS-HP-NCUBE-EPC:213 ;'123'X style hex constant
+329 SE hex constants of the form '123'X are not supported.
+213 PE hex constants of the form '123'X are not supported by %p.{ANSI 4.2}
+
+I9056 /SUN/IRIS:311 -SUN-IRIS:324 ;F77: B'010101' style binary constant
+311 SE B'01'-style binary constants not supported.
+324 PE %p does not support B'01' style binary constants.
+
+I9126 /IRIS/DECUNIX/VMS/DECNT/ULTRIX:462 -IRIS-DECUNIX-VMS-DECNT-ULTRIX:463 ;F77: '010101'B style binary constant
+I9150 /ANSI77:462 -ANSI77:463 ; F90: '010101'B style binary constant
+462 SE '01'B style binary constants not supported.
+463 PE %p does not support '01'B style binary constants.
+
+I9127 /IRIS:485 -IRIS:486 ;'ff'Z style hex constant
+485 SE 'ff'Z style hex constants not supported.
+486 PE %p does not support 'ff'Z style hex constants.
+
+I9128 /IRIS:487 -IRIS:488 ;F77: O"77" style octal constant
+487 SE O"77" style octal constants not supported.
+488 PE %p does not support O"77" style octal constants.
+
+I9057 /SUN/CRAY/IRIS/HP:328 -SUN-CRAY-IRIS-HP:330 ;F77: O'157' style octal constant
+328 SE O'17'-style octal constants not supported.
+330 PE %p does not support O'17' style octal constants.
+
+I9058 /SUN/OS32/CRAY/IRIS/DECUNIX/VMS/DECNT:332 -SUN-OS32-CRAY-IRIS-DECUNIX-VMS-DECNT:334 ;F77: X'3EF' style hex constant
+I9149 /SUN/OS32:332 -SUN-OS32:334 ;F90: X'3EF' style hex constant
+332 SE X'3F'-style hex constants not supported.
+334 PE %p does not support X'3F' style hex constants.
+
+I9089 *SUN:419 *OS32:419 +SUN:420 +OS32:420   ;X'1ef' constant contains +/- or spaces.
+419 SE hexadecimal constant must be composed only of hexadecimal digits.
+420 PE non-hexadecimal characters in hex constant not supported by %p.
+
+I9059 /OS32:335 -OS32:336 ;Y'3EF' style hex constant
+335 SE Y'3F'-style hex constants not supported.
+336 PE %p does not support Y'3F' style hex constants.
+
+I9060 /SUN/CRAY/IRIS/HP/LAHEY:338 -SUN-CRAY-IRIS-HP-LAHEY:340 ;F77: Z'3EF' style hex constant
+338 SE Z'3F'-style hex constants not supported.
+340 PE %p does not support Z'3F' style hex constants.
+
+I9061 /OS32/HP:342 -OS32-HP:344 ;Z1234 style hex constant
+342 SE Z3FFF-style hex constants not supported.
+344 PE %p does not support Z3FFF style hex constants.
+
+I9018 /DECUNIX/VMS/DECNT/ULTRIX/SUN/HP:331 -DECUNIX-VMS-DECNT-ULTRIX-SUN-HP:214 ;Q-style real constant (quad precision)
+331 SE Q-style real constants not supported.
+214 PE Q-style real constants not supported by %p.{ANSI 4.5}
+
+I9069 /DECUNIX/VMS/DECNT/ULTRIX/SUN/HP/LAHEY:415 -DECUNIX-VMS-DECNT-ULTRIX-SUN-HP-LAHEY:416 ; double precision real in complex constant
+415 SE double precision real is not allowed as a part of a complex constant.
+416 PE %p does not allow a double precision real as a part of a complex constant.
+
+I9125 /DECUNIX/VMS/DECNT/ULTRIX/SUN:483 -DECUNIX-VMS-DECNT-ULTRIX-SUN:484 ; quad precision real in complex constant
+483 SE quad precision real is not allowed as a part of a complex constant.
+484 PE %p does not allow a quad precision real as a part of a complex constant.
+
+I9088 /CRAY/HP:417 -CRAY-HP:418 ;1234567B style octal constant
+417 SE octal constants of the form 377B are not supported.
+418 PE octal constants of the form 377B are not supported by %p.{ANSI 4.2}
+
+I9093 /CRAY:427 -CRAY:428 ; .T. and .F. abbreviations of .TRUE. and .FALSE.
+427 SE .T. and .F. abbreviations not supported.
+428 PE .T. and .F. abbreviations not supported by %p.
+
+I9094 /CRAY:429 -CRAY:430 ; .N., .A., .O. and .X. operator abbreviations.
+429 SE .N., .A., .O. and .X. operator abbreviations not supported.
+430 PE .N., .A., .O. and .X. operator abbreviations not supported by %p.
+
+I9105 /CRAY:182 -CRAY:183 ;'abc'h or 'abc'r or 'abc'l form of hollerith
+182 SE this form of hollerith constant is not supported.
+183 PE %p does not support this form of hollerith constant.
+
+I9148 *ANSI77*ANSI90:566 +ANSI77+ANSI90:567  ; stop code more than 5 digits
+566 SE stop code not allowed to have more than 5 digits.
+567 PE %p does not allow stop code to have more than 5 digits.
+
+I9156 /DECUNIX/VMS/DECNT:774 -DECUNIX-VMS-DECNT:775 ; base# integer constant
+774 SE this form of integer constant is not supported.
+775 PE %p does not support this form of integer constant.
+
+I9157 /DECUNIX/VMS/DECNT:776 -DECUNIX-VMS-DECNT:777 ; C string specifier
+776 SE character constant with a C string specifier not supported.
+777 PE %p does not support character constant with a C string specifier.
+
+------------------------------------------------------------------------------
+data type conversions
+
+I9025 /DECUNIX/VMS/DECNT/ULTRIX/SUN:163 -DECUNIX-VMS-DECNT-ULTRIX-SUN:220 ;numeric assigned to a logical.
+163 SE %0{numeric} data assigned to a %1{logical} variable.
+220 PE %p does not allow a numeric expression to be assigned to a logical variable.
+
+I9026 /DECUNIX/VMS/DECNT/ULTRIX/SUN:164 -DECUNIX-VMS-DECNT-ULTRIX-SUN:221 ;logical assigned to a numeric.
+164 SE %0{logical} data assigned to a %1{numeric} variable.
+221 PE %p does not allow a logical expression to be assigned to a numeric variable.
+
+I9020 /DECUNIX/VMS/DECNT/ULTRIX/SUN/IRIS:313 -DECUNIX-VMS-DECNT-ULTRIX-SUN-IRIS:314 ;using integer val as logical
+313 SE %0{integer} expression where a logical value required.
+314 PE %p does not allow an integer expression to be used as a logical value.
+
+I9027 /DECUNIX/VMS/DECNT/ULTRIX/SUN/IRIS:184 -DECUNIX-VMS-DECNT-ULTRIX-SUN-IRIS:218 ;using logical val as integer
+184 SE %0{logical} value where numeric required.
+218 PE %p does not allow logical data to be referenced as an integer value.
+
+I9107 /DECUNIX/VMS/DECNT/ULTRIX/OS32:460 -DECUNIX-VMS-DECNT-ULTRIX-OS32:216 ;character constant in place of logical
+I9029 /DECUNIX/VMS/DECNT/ULTRIX/OS32/CRAY/SUN/IRIS:353 -DECUNIX-VMS-DECNT-ULTRIX-OS32-CRAY-SUN-IRIS:165 ;character constant in place of numeric
+460 SE character constant where logical data required.
+353 SE character constant where numeric data required.
+216 PE %p does not allow a character constant to be used as a logical value.
+165 PE %p does not allow a character constant to be used as a numeric value.
+
+I9054 /SUN:317 -SUN:225 ;using hollerith as a character string
+317 SE hollerith where character type required.
+225 PE %p does not allow hollerith to be used in place of character type.
+
+I9110 /CRAY/SUN/DECUNIX/VMS/DECNT/ULTRIX/IRIS:468 *CRAY:467                        -CRAY-SUN-DECUNIX-VMS-DECNT-ULTRIX:474 +CRAY:473                        ;log     .or. int/hol/char*X
+I9111 /CRAY/SUN/DECUNIX/VMS/DECNT/ULTRIX/IRIS:468 *CRAY:467 *SUN:465 *DECUNIX*VMS*DECNT*ULTRIX*IRIS:465 -CRAY-SUN-DECUNIX-VMS-DECNT-ULTRIX:474 +CRAY:473 +SUN:471 +DECUNIX+VMS+DECNT+ULTRIX+IRIS:471 ;log     .or. real
+I9112 /CRAY/SUN/DECUNIX/VMS/DECNT/ULTRIX/IRIS:468                                  -CRAY-SUN-DECUNIX-VMS-DECNT-ULTRIX:474                                  ;int/h*8 .or. int/hol*8
+I9113 /CRAY/SUN/DECUNIX/VMS/DECNT/ULTRIX/IRIS:468           *SUN:465 *DECUNIX*VMS*DECNT*ULTRIX*IRIS:465 -CRAY-SUN-DECUNIX-VMS-DECNT-ULTRIX:474           +SUN:471 +DECUNIX+VMS+DECNT+ULTRIX+IRIS:471 ;real    .or. int/real/hol*8/char*8
+I9114 /CRAY/SUN/DECUNIX/VMS/DECNT/ULTRIX/IRIS:468 *CRAY:469                        -CRAY-SUN-DECUNIX-VMS-DECNT-ULTRIX:474 +CRAY:475                        ;hol*9   .or. int/hol*x
+I9115 /CRAY/SUN/DECUNIX/VMS/DECNT/ULTRIX/IRIS:468           *SUN:466               -CRAY-SUN-DECUNIX-VMS-DECNT-ULTRIX:474           +SUN:472               ;char*8  .or. int/hol*8/char*x
+I9116 /CRAY/SUN/DECUNIX/VMS/DECNT/ULTRIX/IRIS:468 *CRAY:470 *SUN:466               -CRAY-SUN-DECUNIX-VMS-DECNT-ULTRIX:474 +CRAY:476 +SUN:472               ;char*9  .or. int/hol*8/char*X
+I9117 /CRAY/SUN/DECUNIX/VMS/DECNT/ULTRIX/IRIS:468 *CRAY:469 *SUN:465 *DECUNIX*VMS*DECNT*ULTRIX*IRIS:465 -CRAY-SUN-DECUNIX-VMS-DECNT-ULTRIX:474 +CRAY:475 +SUN:472 +DECUNIX+VMS+DECNT+ULTRIX+IRIS:471 ;real    .or. hol*9
+I9118 /CRAY/SUN/DECUNIX/VMS/DECNT/ULTRIX/IRIS:468 *CRAY:470 *SUN:465 *DECUNIX*VMS*DECNT*ULTRIX*IRIS:465 -CRAY-SUN-DECUNIX-VMS-DECNT-ULTRIX:474 +CRAY:476 +SUN:472 +DECUNIX+VMS+DECNT+ULTRIX+IRIS:471 ;real    .or. char*9
+I9119 /CRAY/SUN/DECUNIX/VMS/DECNT/ULTRIX/IRIS:468 *CRAY:469 *SUN:466               -CRAY-SUN-DECUNIX-VMS-DECNT-ULTRIX:474 +CRAY:475 +SUN:472               ;hol*9   .or. char*X
+461 SE cannot use a %0 value with a logical operator.
+465 SE cannot use a logical operator on a real value.
+466 SE cannot use a logical operator on a character string.
+467 SE cannot mix logical and non-logical with logical operator.
+468 SE logical operator can only be used on logical values.
+469 SE cannot use logical operator on a hollerith value > 8 chars
+470 SE cannot use logical operator on a character value > 8 chars
+471 PE %p does not allow a logical operator to be used on a real value.
+472 PE %p does not allow a logical operator to be used on a character string.
+473 PE %p does not allow logical and non-logical values to be mixed with a logical operator.
+474 PE %p allows a logical operator to be used only on logical values.
+475 PE %p does not allow a logical operator to be used on a hollerith value longer than 8 chars.
+476 PE %p does not allow a logical operator to be used on a character value longer than 8 chars.
+
+------------------------------------------------------------------------------
+statements
+
+I9106 /CRAY:458 -CRAY:459 ; BUFFER IN/OUT statements
+458 SE BUFFER IN and BUFFER OUT statements not supported.
+459 PE BUFFER IN and BUFFER OUT statements not supported by %p.{ANSI 3.3}
+
+I9032 /DECUNIX/VMS/DECNT/ULTRIX/SUN/IRIS/HP/EPC:354 -DECUNIX-VMS-DECNT-ULTRIX-SUN-IRIS-HP-EPC:355 ; F77: any type of structure statement
+I9141 *DECUNIX*VMS*DECNT*ULTRIX*EPC*SUN*IRIS*HP:701 /DECUNIX/VMS/DECNT/ULTRIX/EPC/SUN/IRIS/HP:354 -DECUNIX-VMS-DECNT-ULTRIX-EPC-SUN-IRIS-HP:355  ; F90: any type of structure statement
+354 SE structures and unions not supported.
+355 PE structures and unions not supported by %p.{ANSI 3.3}
+701 SF deprecated feature; use derived types instead.
+
+I9033 /DECUNIX/VMS/DECNT/ULTRIX/OS32/CRAY/SUN/IRIS/HP/EPC:356 -DECUNIX-VMS-DECNT-ULTRIX-OS32-CRAY-SUN-IRIS-HP-EPC:357 ; encode/decode statements
+356 SE ENCODE and DECODE statements not supported.
+357 PE ENCODE and DECODE statements not supported by %p.{ANSI 3.3}
+
+I9034 /DECUNIX/VMS/DECNT/ULTRIX/OS32/SUN/IRIS/HP/EPC:358 -DECUNIX-VMS-DECNT-ULTRIX-OS32-SUN-IRIS-HP-EPC:359 ; accept statement
+358 SE ACCEPT statement not supported.
+359 PE ACCEPT statement not supported by %p.{ANSI 3.3}
+
+I9035 /DECUNIX/VMS/DECNT/ULTRIX/IRIS/EPC:360 -DECUNIX-VMS-DECNT-ULTRIX-IRIS-EPC:361 ; definefile statement
+360 SE DEFINE FILE statement not supported.
+361 PE DEFINE FILE statement not supported by %p.{ANSI 3.3}
+
+I9036 /DECUNIX/VMS/DECNT/ULTRIX/IRIS:362 -DECUNIX-VMS-DECNT-ULTRIX-IRIS:363 ; delete statement
+362 SE DELETE statement not supported.
+363 PE DELETE statement not supported by %p.{ANSI 3.3}
+
+I9037 /DECUNIX/VMS/DECNT/ULTRIX/IRIS/EPC:364 -DECUNIX-VMS-DECNT-ULTRIX-IRIS-EPC:365 ; find statement
+364 SE FIND statement not supported.
+365 PE FIND statement not supported by %p.{ANSI 3.3}
+
+I9038 /DECUNIX/VMS/DECNT/ULTRIX/IRIS:366 -DECUNIX-VMS-DECNT-ULTRIX-IRIS:367 ; rewrite statement
+366 SE REWRITE statement not supported.
+367 PE REWRITE statement not supported by %p.{ANSI 3.3}
+
+I9039 /DECUNIX/VMS/DECNT/ULTRIX/OS32/SUN/IRIS/HP/EPC:368 -DECUNIX-VMS-DECNT-ULTRIX-OS32-SUN-IRIS-HP-EPC:369 ; i/o type statement
+368 SE TYPE statement not supported.
+369 PE TYPE statement not supported by %p.{ANSI 3.3}
+
+I9040 /DECUNIX/VMS/DECNT/ULTRIX:370 -DECUNIX-VMS-DECNT-ULTRIX:371 ; unlock statement
+370 SE UNLOCK statement not supported.
+371 PE UNLOCK statement not supported by %p.{ANSI 3.3}
+
+I9041 /DECUNIX/VMS/DECNT/ULTRIX/OS32/SUN/CRAY/IRIS/HP/NCUBE/EPC/ANSI90/LAHEY:372 -DECUNIX-VMS-DECNT-ULTRIX-OS32-SUN-CRAY-IRIS-HP-NCUBE-EPC-ANSI90-LAHEY:373 ; implicit none statement
+372 SE IMPLICIT NONE statement not supported.
+373 PE IMPLICIT NONE statement not supported by %p.{ANSI 3.3}
+
+I9042 /DECUNIX/VMS/DECNT/ULTRIX/SUN/IRIS/HP/EPC:374 -DECUNIX-VMS-DECNT-ULTRIX-SUN-IRIS-HP-EPC:375 ; virtual statement
+374 SE VIRTUAL statement not supported.
+375 PE VIRTUAL statement not supported by %p.{ANSI 3.3}
+
+I9043 /DECUNIX/VMS/DECNT/ULTRIX/SUN/IRIS/HP/EPC:376 -DECUNIX-VMS-DECNT-ULTRIX-SUN-IRIS-HP-EPC:377 ; volatile statement
+376 SE VOLATILE statement not supported.
+377 PE VOLATILE statement not supported by %p.{ANSI 3.3}
+
+I9044 /DECUNIX/VMS/DECNT/ULTRIX/SUN/IRIS:378 -DECUNIX-VMS-DECNT-ULTRIX-SUN-IRIS:379 ; options statement
+378 SE OPTIONS statement not supported.
+379 PE OPTIONS statement not supported by %p.{ANSI 3.3}
+
+I9045 /DECUNIX/VMS/DECNT/ULTRIX:380 -DECUNIX-VMS-DECNT-ULTRIX:381 ; dictionary statement
+380 SE DICTIONARY statement not supported.
+381 PE DICTIONARY statement not supported by %p.{ANSI 3.3}
+
+I9046 /DECUNIX/VMS/DECNT/ULTRIX/SUN/CRAY/IRIS/HP/NCUBE/LAHEY:382 -DECUNIX-VMS-DECNT-ULTRIX-SUN-CRAY-IRIS-HP-NCUBE-LAHEY:383 ; include statement
+382 SE INCLUDE statement not supported.
+383 PE INCLUDE statement not supported by %p.{ANSI 3.3}
+
+I9047 /DECUNIX/VMS/DECNT/ULTRIX/SUN/IRIS/HP/EPC/LAHEY:384 -DECUNIX-VMS-DECNT-ULTRIX-SUN-IRIS-HP-EPC-LAHEY:385 ; byte statement
+384 SE BYTE statement not supported.
+385 PE BYTE statement not supported by %p.{ANSI 3.3}
+
+I9048 /DECUNIX/VMS/DECNT/ULTRIX/SUN/CRAY/IRIS/HP/EPC/LAHEY:386 -DECUNIX-VMS-DECNT-ULTRIX-SUN-CRAY-IRIS-HP-EPC-LAHEY:387 ; doublecomplex statement
+386 SE DOUBLE COMPLEX statement not supported.
+387 PE DOUBLE COMPLEX statement not supported by %p.{ANSI 3.3}
+
+I9049 /DECUNIX/VMS/DECNT/ULTRIX/SUN/OS32/CRAY/IRIS/HP/NCUBE/ANSI90:388 -DECUNIX-VMS-DECNT-ULTRIX-SUN-OS32-CRAY-IRIS-HP-NCUBE-ANSI90:389 ; enddo statement
+388 SE END DO statement not supported.
+389 PE END DO statement not supported by %p.{ANSI 3.3}
+
+I9050 /DECUNIX/VMS/DECNT/ULTRIX/SUN/OS32/CRAY/IRIS/HP/NCUBE/LAHEY:390 -DECUNIX-VMS-DECNT-ULTRIX-SUN-OS32-CRAY-IRIS-HP-NCUBE-LAHEY:391 ; namelist statement
+390 SE NAMELIST statement not supported.
+391 PE NAMELIST statement not supported by %p.{ANSI 3.3}
+
+I9051 /SUN/EPC/DECUNIX/VMS/DECNT:392 -SUN-EPC-DECUNIX-VMS-DECNT:393 ; static,automatic statements and attributes
+392 SE STATIC and AUTOMATIC statements and attributes not supported.
+393 PE STATIC and AUTOMATIC statements and attributes not supported by %p.{ANSI 3.3}
+
+I9052 /SUN/CRAY/IRIS/HP/EPC/DECUNIX/VMS/DECNT:394 -SUN-CRAY-IRIS-HP-EPC-DECUNIX-VMS-DECNT:395 ;F77, pointer statement
+394 SE pointers not supported.
+395 PE pointers not supported by %p.{ANSI 3.3}
+
+I9090 /CRAY:421 -CRAY:422 ; task common statement
+421 SE task common blocks not supported.
+422 PE task common blocks not supported by %p.
+
+I9091 /CRAY:423 -CRAY:424 ; local common statement
+423 SE local common blocks not supported.
+424 PE local common blocks not supported by %p.
+
+I9092 /CRAY:425 -CRAY:426 ; RECURSIVE qualifier to function statement.
+425 SE RECURSIVE function qualifier not supported.
+426 PE RECURSIVE function qualifier not supported by %p.
+
+I9096 /CRAY:433 -CRAY:434 ; two-branch arithmetic IF
+433 SE two-branch arithmetic IF not supported.
+434 PE two-branch arithmetic IF not supported by %p.
+
+I9097 /CRAY:435 -CRAY:436 ; indirect logical IF
+435 SE indirect logical IF not supported.
+436 PE indirect logical IF not supported by %p.
+
+I9100 /CRAY:441 *CRAY:83 -CRAY:442 +CRAY:89; PUNCH statement
+441 SE PUNCH statement not supported.
+442 PE PUNCH statement not supported by %p.
+ 83 SE PUNCH statement not supported in CRAY CFT77 5.0.
+ 89 PE PUNCH statement not supported by in CRAY CFT77 5.0.
+
+I9101 /CRAY:443 -CRAY:444 ; DOUBLE statement
+443 SE DOUBLE statement not supported.
+444 PE DOUBLE statement not supported by %p.
+
+I9124 /DECUNIX/VMS/DECNT/ULTRIX:298 -DECUNIX-VMS-DECNT-ULTRIX:299 ; DBMS statements
+298 SE DBMS statements not supported.
+299 PE DBMS statements not supported by %p.
+
+I9144 /DECUNIX/VMS/DECNT/ULTRIX:547 -DECUNIX-VMS-DECNT-ULTRIX:548 ;  FORALL and END FORALL statements
+547 SE FORALL and END FORALL statements not supported.
+548 PE FORALL and END FORALL statements not supported by %p.
+
+I9145 /DECUNIX/VMS/DECNT/ULTRIX:549 -DECUNIX-VMS-DECNT-ULTRIX:550 ; HPF prefix to procedure statement.
+549 SE EXTRINSIC procedure qualifier not supported.
+550 PE EXTRINSIC procedure qualifier not supported by %p.
+
+I9160 *ANSI77*ANSI90:789 +ANSI77+ANSI90:790 ; F95 procedure prefixs ELEMENTAL, PURE
+789 SE ELEMENTAL and PURE procedure qualifiers not supported.
+790 PE ELEMENTAL and PURE procedure qualifiers not supported by %p.
+
+I9152 /DECUNIX/VMS/DECNT/ULTRIX:757 -DECUNIX-VMS-DECNT-ULTRIX:758 ; F77: SELECT CASE constructs
+757 SE SELECT CASE, CASE and END SELECT statements not supported.
+758 PE SELECT CASE, CASE and END SELECT statements not supported by %p.
+
+I9153 /LAHEY:769 -LAHEY:770  ; F77: ALLOCATABLE, ALLOCATE, DEALLOCATE statements
+769 SE ALLOCATABLE, ALLOCATE, DEALLOCATE statements not supported.
+770 PE ALLOCATABLE, ALLOCATE, DEALLOCATE statements not supported by %p.
+
+I9158 /DECUNIX/VMS/DECNT:783 -DECUNIX-VMS-DECNT:784 ; VOLATILE attribute
+783 SE VOLATILE attribute not supported.
+784 PE VOLATILE attribute not supported by %p.
+
+I9161 /DECUNIX/VMS/DECNT:791 -DECUNIX-VMS-DECNT:792 ; F95 statements
+791 SE F95 statements not supported.
+792 PE F95 statements not supported by %p.
+
+------------------------------------------------------------------------------
+miscellaneous
+
+I9028 /CRAY:168 *CRAY:351 -CRAY:456 ;array referenced with too few arguments
+168 SE array referenced with too few subscripts.
+351 SW array referenced with too few subscripts.
+456 PE %p does not allow an array to be referenced with too few subscripts.
+
+I9102 *CRAY/CRAY:453 +CRAY-CRAY:446 ; pointer based character variable
+453 SE character variables may not be pointer-based.          {OK in 5.0}
+446 PE pointer-based character variables not supported by %p. {OK in 5.0}
+
+I9103 /CRAY:447 -CRAY:448 ; array section
+447 SE array sections not supported.
+448 PE array sections not supported by %p.
+
+I9098 /CRAY:437 -CRAY:438 ; file name as unit number
+437 SE use of a file name in place of unit number not supported.
+438 PE %p does not support the use of a file name in place of a unit number.
+
+I9099 /CRAY:439 -CRAY:440 ; WRITE statement w/o control list
+439 SE WRITE statement without a control list not supported.
+440 PE WRITE statement without a control list not supported by %p.
+
+I9019 /OS32/IRIS:333 -OS32-IRIS:209 ;non-char data type length specifier surrounded by parens
+333 SE non-character length specifiers may not be enclosed in parentheses.
+209 PE %p does not allow non-character length specifiers to be enclosed in parentheses.
+
+I9021 /DECUNIX/VMS/DECNT/ULTRIX/SUN/IRIS:337 -DECUNIX-VMS-DECNT-ULTRIX-SUN-IRIS:215 ;linear array reference
+337 SE reference to %0-dimensional array %1 with a single subscript.
+215 PE linear element array reference not supported by %p.{ANSI 5.3}
+
+I9022 /DECUNIX/VMS/DECNT/ULTRIX/SUN:339 -DECUNIX-VMS-DECNT-ULTRIX-SUN:141 ;sub name in CALL used to be a variable
+339 SE this symbol was previously declared as a variable name.
+141 PE %p requires subroutine names to be untyped.{ANSI 8.4}
+
+I9023 /DECUNIX/VMS/DECNT/ULTRIX/SUN:341 -DECUNIX-VMS-DECNT-ULTRIX-SUN:142 ;sub name in CALL used to be a function name
+341 SE this symbol was previously used as a function name.
+142 PE %p does not allow functions to be called by the CALL statement.{ANSI 15.6.2.1}
+
+I9024 /DECUNIX/VMS/DECNT/ULTRIX/SUN:343 -DECUNIX-VMS-DECNT-ULTRIX-SUN:143 ;func name used to be a sub name
+343 SE this symbol was previously used as a subroutine name.
+143 PE %p does not allow subroutines to be referenced as functions.{ANSI 15.2.1}
+
+I9002 /DECUNIX/VMS/DECNT/ULTRIX:304 -DECUNIX-VMS-DECNT-ULTRIX:139 ;missing parens on function statement
+304 SE parentheses required on function definition.
+139 PE %p requires parentheses on function definitions.{ANSI 15.5.1}
+
+I9003 /DECUNIX/VMS/DECNT/ULTRIX/SUN/IRIS/HP/EPC:306 -DECUNIX-VMS-DECNT-ULTRIX-SUN-IRIS-HP-EPC:200 ;the & form of alternate return specifier in call
+I9131 /HP:489 -HP:490 ;the & form of alternate return specifier in subroutine statement
+306 SE the & form of alternate return in call statements is not supported; use *.
+200 PE the & form of alternate return in call statements is not supported by %p; use *.{ANSI 15.6.2.3}
+489 SE the & form of alternate return in subroutine statements is not supported; use *.
+490 PE the & form of alternate return in subroutine statements is not supported by %p; use *.{ANSI 15.6.2.3}
+
+I9006 /DECUNIX/VMS/DECNT/ULTRIX/SUN/IRIS/HP:312 -DECUNIX-VMS-DECNT-ULTRIX-SUN-IRIS-HP:205 ;parameter statement without parens
+312 SE parameter statement requires parentheses.
+205 PE constant-typed parameter statement not supported by %p.{ANSI 8.6}
+
+I9030 /SUN:303 -SUN:305 ;parameter statement with comma outside of parens
+303 SE commas must be placed within parentheses.
+305 PE %p requires comma to be placed within parentheses.{ANSI 8.6}
+
+I9010 /AOS/SUN/OS32/CRAY/IRIS/HP/NCUBE/EPC/LAHEY:316 -AOS-SUN-OS32-CRAY-IRIS-HP-NCUBE-EPC-LAHEY:208 ;double quoted string
+316 SE double quote string delimiters not supported.
+208 PE double quote string delimiters not supported by %p.{ANSI 4.8.1}
+
+I9011 +ANSI77+ANSI90:207 ;hollerith constant
+207 PF hollerith constants are not recommended.{ANSI C1}
+
+I9012 /DECUNIX/VMS/DECNT/ULTRIX/IRIS/HP/EPC:319 -DECUNIX-VMS-DECNT-ULTRIX-IRIS-HP-EPC:211 ; built in function %LOC()
+319 SE built in function %%LOC is not supported.
+211 PE built in function %%LOC is not supported by %p.
+
+I9013 /DECUNIX/VMS/DECNT/ULTRIX/SUN/IRIS/HP/EPC:321 -DECUNIX-VMS-DECNT-ULTRIX-SUN-IRIS-HP-EPC:206 ;actual arg %VAL()
+321 SE %%VAL is not supported.
+206 PE %%VAL is not supported by %p.
+
+I9031 /DECUNIX/VMS/DECNT/ULTRIX/HP/EPC:307 -DECUNIX-VMS-DECNT-ULTRIX-HP-EPC:309 ;actual arg %REF()
+307 SE %%REF are not supported.
+309 PE %%REF are not supported by %p.
+
+I9151 /VMS/HP:568 -VMS-HP:569 ;actual arg %DESCR()
+568 SE %%DESCR are not supported.
+569 PE %%DESCR are not supported by %p.
+
+I9071 /OS32:352 -OS32:404 ;dummy args surrounded by slashes
+352 SE slashes on dummy arguments are not supported.
+404 PE slashes on dummy arguments are not supported by %p.{ANSI 3.2}
+
+I9014 /DECUNIX/VMS/DECNT/ULTRIX/OS32/SUN/IRIS/HP/NCUBE/EPC/LAHEY:323 -DECUNIX-VMS-DECNT-ULTRIX-OS32-SUN-IRIS-HP-NCUBE-EPC-LAHEY:210 ; data type statement initialization list surrounded by slashes
+323 SE type statement initialization lists surrounded by slashes not supported.
+210 PE type statement initialization lists surrounded by slashes not supported by %p.{ANSI 8.4.1}
+
+I9053 /SUN/IRIS/EPC:155 -SUN-IRIS-EPC:315 ;undefined data type in implicit statement
+155 SE undefined data type not supported.
+315 PE undefined data type not supported by %p.
+
+I9063 /DECUNIX/VMS/DECNT/ULTRIX/SUN/OS32/CRAY/IRIS/HP/NCUBE/LAHEY:396      -DECUNIX-VMS-DECNT-ULTRIX-SUN-OS32-CRAY-IRIS-HP-NCUBE-LAHEY:397      ;NONCHAR*2 BAR*2,BAR()*2
+I9064 /DECUNIX/VMS/DECNT/ULTRIX/SUN/OS32/IRIS/HP/NCUBE/LAHEY:396           -DECUNIX-VMS-DECNT-ULTRIX-SUN-OS32-IRIS-HP-NCUBE-LAHEY:397           ;NONCHAR*2 FUNCTION BAR()
+I9065 /DECUNIX/VMS/DECNT/ULTRIX/SUN/OS32/IRIS/LAHEY:396 *ULTRIX*SUN*NCUBE:400 -DECUNIX-VMS-DECNT-ULTRIX-SUN-OS32-IRIS-LAHEY:397 +ULTRIX+SUN+NCUBE:401 ;NONCHAR BAR*2()
+I9066 /DECUNIX/VMS/DECNT/ULTRIX/SUN/OS32/IRIS/HP/LAHEY:396  *SUN*NCUBE*LAHEY:402 -DECUNIX-VMS-DECNT-ULTRIX-SUN-OS32-IRIS-HP-LAHEY:397  +SUN+NCUBE+LAHEY:403 ;NONCHAR FUNCTION BAR*2()
+I9067 /OS32:400  -OS32:401 ;CHARACTER BAR*2()
+I9068 /DECUNIX/VMS/DECNT/ULTRIX/OS32/IRIS:402 -DECUNIX-VMS-DECNT-ULTRIX-OS32-IRIS:403 ;CHARACTER FUNCTION BAR*2()
+285 SE length specifier not allowed on this data type.
+288 SE a length specifier can only be used if a data type is given.
+396 SE length specifier allowed only on character data type.
+397 PE %p does not support length specifiers on non-character data types.
+398 SE length specifier on non-character function statement must appear after function name.
+399 PE %p requires that the length specifier on a non-character function statement appear after the function name.
+400 SE length specifier must appear after the array declaration.
+401 PE %p requires length specifier to appear after the array declaration.
+402 SE length specifier must appear before FUNCTION.
+403 PE %p requires length specifier to appear before FUNCTION.
+
+I9095 /CRAY/HP:431 -CRAY-HP:432 ; arguments on PROGRAM statement
+431 SE arguments not allowed on PROGRAM statement.
+432 PE %p does not allow arguments on a PROGRAM statement.
+
+I9104 /EPC/DECUNIX/VMS/DECNT:541 -EPC-DECUNIX-VMS-DECNT:542 ; square brackets used to delimit array constructors
+541 SE square brackets not allowed to delimit array constructors.
+542 PE %p does not allow square brackets to delimit array constructors.
+
+I9120 *ANSI77*ANSI90:102 +ANSI77+ANSI90:119 ; array or subprogram as a statement function actual arg
+102 SE only expressions or variables are allowed as statement function arguments.
+119 PE %p only allows expressions or variables as statement function arguments.{ANSI 15.4.2}
+
+I9121 /DECUNIX/VMS/DECNT/ULTRIX:78 -DECUNIX-VMS-DECNT-ULTRIX:79 ; statement function dummy arg is modified
+ 78 SE statement function dummy arguments may not be modified.
+ 79 PE %p does not allow a statement function dummy argument to be modified.{ANSI 15.4.3}
+
+I9122 /DECUNIX/VMS/DECNT/ULTRIX:78 -DECUNIX-VMS-DECNT-ULTRIX:79 ; statement function dummy arg is an array
+290 SE an array may not be a statement function dummy argument.
+291 PE %p does not allow an array as a statement function dummy argument.{ANSI 15.4.1}
+
+I9123 /SUN:296 -SUN:297 ; null string
+296 SE character constants must contain at least one character.
+297 PE %p does not allow null character constants.
+
+I9132 /NCUBE:491 -NCUBE:492 ; type statement CHARACTER ([LEN=]length) v, v...
+491 SE missing asterisk or symbol name.
+492 PE non-asterisk form of character length specification not allowed by %p.
+
+I9134 /NCUBE:495 -NCUBE:496 ; routine type and name on end statement
+495 SE extra characters on the END statement.
+496 PE %p does not allow routine types or names on the END statement.
+
+I9136 *ANSI77*ANSI90:529 +ANSI77+ANSI90:530 ; fixed form, more than 19 continuation lines
+529 SE cannot exceed 19 continuation lines. {ANSI/ISO fixed form}
+530 PE %p does not allow more than 19 continuation lines.
+
+I9137 *DECUNIX*VMS*DECNT*ULTRIX*SUN*HP*IRIS*LAHEY:533 /DECUNIX/VMS/DECNT/ULTRIX/SUN/HP/IRIS/LAHEY:535 +DECUNIX+VMS+DECNT+ULTRIX+SUN+HP+IRIS+LAHEY:534 -DECUNIX-VMS-DECNT-ULTRIX-SUN-HP-IRIS-LAHEY:536 ; optional comma in CHARACTER stmt
+I9138 *SUN*HP*IRIS:533 /SUN/HP/IRIS:535 +SUN+HP+IRIS:534 -SUN-HP-IRIS:536 ; optional comma in non-CHARACTER type stmt
+533 SF possibly missing argument in declaration (optional comma.)
+534 PF possibly missing argument in declaration (%p allows optional commas.)
+535 SE bad symbol in declaration (optional commas not allowed here.)
+536 PE bad symbol in declaration (%p does not allow optional commas here.)
+
+I9139 *CRAY:543 +CRAY:544 ; fixed form, more than 58 continuation lines
+543 SE cannot exceed 58 continuation lines.
+544 PE %p does not allow more than 58 continuation lines.
+I9140 *ANSI90:697 +ANSI90:698 ; freeform, more than 39 continuation lines
+697 SE cannot exceed 39 continuation lines. {ANSI freeform}
+698 PE %p does not allow more than 39 continuation lines.
+I9142 *DECUNIX*VMS*DECNT*ULTRIX*CRAY*IRIS*EPC:545 +DECUNIX+VMS+DECNT+ULTRIX+CRAY+IRIS+EPC:546 ; freeform, more than 99 continuation lines
+I9143 *DECUNIX*VMS*DECNT*ULTRIX*IRIS*EPC:545 +DECUNIX+VMS+DECNT+ULTRIX+IRIS+EPC:546 ; fixed form, more than 99 continuation lines
+545 SE cannot exceed 99 continuation lines.
+546 PE %p does not allow more than 99 continuation lines.
+
+I9159 /DECUNIX/VMS/DECNT:786 -DECUNIX-VMS-DECNT:787 ; pointer initialization in type declaration statements
+786 SE initialization for pointers not allowed in type declaration statements.
+787 PE %p does not allow initialization for pointers in type declaration statements.
+
+I9162 /DECUNIX/VMS/DECNT:797 -DECUNIX-VMS-DECNT:798 ; generic spec on end interface statement
+797 SE generic spec not allowed on the END INTERFACE statement.
+798 PE %p does not allow generic specs on the END INTERFACE statement.
+
+
+unused:
+reserved: 246,247,269,270
+
+

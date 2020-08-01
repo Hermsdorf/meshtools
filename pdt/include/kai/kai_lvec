@@ -1,0 +1,120 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+#ifndef __KAI_LVEC
+#define __KAI_LVEC
+
+#include <mcompile.h>
+#include <new>		/* For placement new */
+
+namespace __kai {
+
+template<class T>
+class lw_vector {	
+    // Implementation rewritten on 98/2/17 to be exception-safe.
+public:
+    typedef ::size_t size_type;
+
+    lw_vector() : array(0), length(0) { }
+	// Construct empty vector
+
+    lw_vector( size_type n, const T &v ) : array(0), length(0) {if( n ) resize(n,v);}
+	// Construct vector with n elements initialized to v.
+
+    lw_vector( const lw_vector& rhs ) : array(0), length(0) {assign( rhs, rhs.length );}
+	// Copy constructor	
+
+    ~lw_vector() {if( array ) resize(0);}
+	// Destroy the vector
+
+    void operator=( const lw_vector& rhs ) {assign( rhs, rhs.length );}
+	// Assignment
+
+    size_type size() const {return length;}
+	// Return size of vector
+
+    T& operator[]( size_type i ) {return array[i];}
+    const T& operator[]( size_type i ) const {return array[i];}
+	// Return reference to ith element.
+
+    void resize( size_type n, const T& v = T());
+    
+private:
+    T *array;
+	// non-NULL iff memory is allocated for vector.
+	
+    size_type	length;
+	// number of elements that have been completely constructed in array.
+
+    void assign( const lw_vector& rhs, size_type array_size );
+};
+
+template<class T>
+void lw_vector<T>::resize( size_type n, const T& v ) {
+    if( length<n ) {
+	// Grow the array
+	if( array ) {
+	    // The array is allocated and we must copy it.	
+	    // Following is a bit complicated for sake of exception safety
+	    // without introducing expensive try blocks.
+	    // The idea is to build a copy, and then slide the copy into *this.
+	    lw_vector temp;
+	    temp.assign( *this, n ); 
+	    while( length>0 ) {
+		array[--length].~T();
+	    } 
+	    operator delete( array ); 
+	    array = temp.array; 
+	    length = temp.length;
+	    temp.array = 0; 
+	    temp.length = 0; 
+	} else {
+	    // There is nothing to copy, so grow the simple way.
+	    length = 0;
+	    array = (T*)operator new( n*sizeof(T) );
+	}
+	do {
+	    new( &array[length] ) T(v);
+	} while( ++length<n );
+    } else if( length>n ) {
+	// Shrink the array.	
+	do {
+	    array[--length].~T();
+	} while( length>n );
+	if( n==0 ) {
+	    operator delete(array);
+	    array = 0;
+	}
+    } 
+}
+
+template<class T>
+void lw_vector<T>::assign( const lw_vector& rhs, size_type array_size ) {
+    // Assign copy of rhs to *this, using at least array_size elements
+    // for the array.
+    size_type n = rhs.length;
+    size_type m = array_size <= length ? n : 0;
+    // Destroy old elements that will not be reused.	
+    while( length>m ) {
+	array[--length].~T();
+    }
+    if( m==0 ) {
+	operator delete( array );
+	array = 0;
+    }
+    if( array_size>0 ) {
+	if( !array ) 
+	    array = (T*)operator new( array_size*sizeof(T) );
+	for( size_t i=0; i<length; ++i ) 
+	    array[i] = rhs[i]; 
+	for( ; length<rhs.length; ++length ) 
+	    new( &array[length] ) T(rhs.array[length]);	
+    }
+}
+
+} // namespace __kai
+
+#endif /* __KAI_LVEC */

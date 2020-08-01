@@ -1,0 +1,188 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1997-2001 Intel Corp. All rights reserved.
+ **/
+/**
+ **  Lib++  : The Modena C++ Standard Library,
+ **           Version 2.4, October 1997
+ **
+ **  Copyright (c) 1995-1997 Modena Software Inc.
+ **/
+#ifndef __KAI_EXTFUNC
+#define __KAI_EXTFUNC
+
+#include <mcompile.h>
+#include <cmath>
+
+namespace __kai {
+
+//
+// Extended functors provided for
+// class valarray implementation 
+//
+using namespace std;
+
+template <class T>
+struct unary_plus: unary_function<T, T> {	// Added by KAI
+    T operator()(const T& x) const { return +x; }
+};
+
+template <class T>
+struct unary_not : std::unary_function<T, T> {
+    T operator()(const T& x) const { return !x; }
+};
+
+template <class T>
+struct complement : unary_function<T, T> {
+    T operator()(const T& x) const { return ~x; }
+};
+
+template <class T>
+struct bitwise_and : binary_function<T, T, T> {
+    T operator()(const T& x, const T& y) const { return x & y; }
+};
+
+template <class T>
+struct bitwise_or : binary_function<T, T, T> {
+    T operator()(const T& x, const T& y) const { return x | y; }
+};
+
+template <class T>
+struct logical_and : binary_function<T, T, T> {
+    T operator()(const T& x, const T& y) const { return x && y; }
+};
+
+template <class T>
+struct logical_or : binary_function<T, T, T> {
+    T operator()(const T& x, const T& y) const { return x || y; }
+};
+
+template <class T>
+struct caret : binary_function<T, T, T> {
+    T operator()(const T& x, const T& y) const { return x ^ y; }
+};
+
+template <class T>
+struct shiftl: binary_function<T, T, T> {
+    T operator()(const T& x, const T& y) const { return x << y; }
+};
+
+template <class T>
+struct shiftr: binary_function<T, T, T> {
+    T operator()(const T& x, const T& y) const { return x >> y; }
+};
+
+template <class T>
+struct absolute: unary_function<T, T> {
+    T operator()(const T& x) const { return std::abs(x); }
+};
+
+template <class T>
+struct sine: unary_function<T, T> {
+    T operator()(const T& x) const { return std::sin(x); }
+};
+
+template <class T>
+struct cosine: unary_function<T, T> {
+    T operator()(const T& x) const { return std::cos(x); }
+};
+
+template <class T>
+struct tangent: unary_function<T, T> {
+    T operator()(const T& x) const { return std::tan(x); }
+};
+
+template <class T>
+struct arcsin: unary_function<T, T> {
+    T operator()(const T& x) const { return std::asin(x); }
+};
+
+template <class T>
+struct arccos: unary_function<T, T> {
+    T operator()(const T& x) const { return std::acos(x); }
+};
+
+template <class T>
+struct arctan: unary_function<T, T> {
+    T operator()(const T& x) const { return std::atan(x); }
+};
+
+template <class T>
+struct logarithm: unary_function<T, T> {
+    T operator()(const T& x) const { return std::log(x); }
+};
+
+template <class T>
+struct logarithm10: unary_function<T, T> {
+    T operator()(const T& x) const { return std::log10(x); }
+};
+
+template <class T>
+struct sqroot: unary_function<T, T> {
+    T operator()(const T& x) const { return std::sqrt((double)x); }
+};
+
+template<>
+struct sqroot<float> : unary_function<float, float> {
+    float operator()(const float& x) const { return std::sqrt(x); }
+};
+
+template<>
+struct sqroot<long double> : unary_function<long double, long double> {
+    long double operator()(const long double& x) const { return std::sqrt(x); }
+};
+
+template <class T>
+struct exponential: unary_function<T, T> {
+    T operator()(const T& x) const { return std::exp(x); }
+};
+
+template <class T>
+struct arctan2: binary_function<T, T, T> {
+    T operator()(const T& x, const T& y) const { return std::atan2(x, y); }
+};
+
+template <class T>
+struct power: binary_function<T, T, T> {
+    T operator()(const T& x, const T& y) const { return std::pow((double)x, (double)y); }
+};
+
+template<>
+struct power<int> : binary_function<int, int, int> {
+    int operator()(const int& x, const int& y) const { 
+	float f = std::pow((float)x, (float)y);
+	int i = f;
+	return i;
+    }
+};
+
+template<>
+struct power<float> : binary_function<float, float, float> {
+    float operator()(const float& x, const float& y) const { return std::pow(x,y); }
+};
+
+template<>
+struct power<long double> : binary_function<long double, long double, long double> {
+    long double operator()(const long double& x, const long double& y) const { return std::pow(x,y); }
+};
+
+template <class T>
+struct sineh: unary_function<T, T> {
+    T operator()(const T& x) const { return std::sinh (x); }
+};
+
+template <class T>
+struct cosineh: unary_function<T, T> {
+    T operator()(const T& x) const { return std::cosh (x); }
+};
+
+template <class T>
+struct tangenth: unary_function<T, T> {
+    T operator()(const T& x) const { return std::tanh (x); }
+};
+
+} // namespace std
+
+#endif /* __KAI_EXTFUNC */

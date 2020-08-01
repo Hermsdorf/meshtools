@@ -1,0 +1,58 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+/* Edison Design Group, 1995. */
+/*
+typeinfo.h -- Include file for type information (18.5.1)
+*/
+#ifndef __KAI_TYPEINFO
+#define __KAI_TYPEINFO
+
+#include <stdexcept>
+
+namespace std {
+
+/* The following pragma is used so that the compiler knows that this definition
+ * of type_info is the one that corresponds to the type returned by typeid. */
+#pragma define_type_info
+class type_info {
+public:
+    virtual ~type_info();
+    bool operator==(const type_info&) const;
+    bool operator!=(const type_info&) const;
+    bool before(const type_info&) const;
+    const char* name() const;
+private:
+    type_info& operator=(const type_info&);  // Not actually defined
+protected:
+    // Protected instead of private to suppress the "no accessible
+    // constructor" warning
+    type_info(const type_info&);  // Not actually defined
+};
+
+class bad_cast : public exception {
+public :
+    bad_cast() MSIPL_THROW { }
+    bad_cast(const bad_cast&) MSIPL_THROW { }
+    bad_cast& operator=(const bad_cast&) MSIPL_THROW { return *this; }
+    virtual ~bad_cast() MSIPL_THROW;
+    virtual const char *what() const MSIPL_THROW;
+
+    static void __throw( const char * what_arg );
+  };
+
+class bad_typeid : public exception {
+public :
+    bad_typeid () MSIPL_THROW { }
+    bad_typeid(const bad_typeid&) MSIPL_THROW { }
+    bad_typeid& operator=(const bad_typeid&) MSIPL_THROW { return *this; }
+    virtual ~bad_typeid () MSIPL_THROW;
+    virtual const char *what() const MSIPL_THROW;
+};
+
+}  /* namespace std */
+
+#endif /* __KAI_TYPEINFO */

@@ -1,0 +1,18 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+#ifndef __KAI_CSTDDEF
+#define __KAI_CSTDDEF
+
+#include <stddef.h>
+#undef offsetof
+#define offsetof(t, memb) ((size_t)__INTADDR__(&(((t *)0)->memb)))
+
+namespace std {
+using ::size_t;
+using ::ptrdiff_t;
+}
+#endif /* __KAI_CSTDDEF */

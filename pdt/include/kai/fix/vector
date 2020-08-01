@@ -1,0 +1,1041 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1997-2001, Intel Corp. All rights reserved.
+ **/
+/**
+ **  Lib++  : The Modena C++ Standard Library,
+ **           Version 2.4, October 1997
+ **
+ **  Copyright (c) 1995-1997 Modena Software Inc.
+ **/
+#ifndef __PDT_VECTOR
+#define __PDT_VECTOR
+
+#include <mcompile.h>
+#include <memory>
+#include <cassert>
+#include <algobase>
+#include <stdexcept>
+#include <kai_bitvector>
+#include <kai_allocator>
+#include <limits>
+#include <iterator>
+#ifdef __KAI_NONSTD_VECTOR
+#include <iosfwd>	// to get basic_istream<>
+#endif /* __KAI_NONSTD_VECTOR */
+
+namespace std {
+
+// Subclause 23.2.8 -- class vector
+
+template <class T, class Allocator = allocator<T> >
+class vector: public __kai::allocator_base<Allocator> {
+
+public:
+    typedef typename Allocator::reference	reference;
+    typedef typename Allocator::const_reference	const_reference;
+    typedef typename Allocator::pointer		iterator;
+    typedef typename Allocator::const_pointer	const_iterator;
+    typedef typename Allocator::size_type	size_type;
+    typedef typename Allocator::difference_type difference_type;
+    typedef T					value_type;
+    typedef Allocator				allocator_type;
+    typedef typename Allocator::pointer		pointer;
+    typedef typename Allocator::const_pointer	const_pointer;
+    typedef std::reverse_iterator<iterator>	reverse_iterator;
+    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+
+private:
+    typedef __kai::allocator_base<Allocator> value_allocator_type;
+    pointer start;
+    pointer finish;
+    pointer end_of_storage;
+
+    void insert_aux(pointer position, const T& x);
+    void _initialize_storage(size_type n, const T& value);
+
+    template<bool b> class _Helper { };
+
+    template<class InputIterator>
+    void _initialize(InputIterator first, InputIterator last, _Helper<true> *) {
+	size_type n = static_cast<size_type>(first);
+	//const T value = static_cast<T>(last);
+	const last::value_type value = static_cast<last::value_type>(last);
+	_initialize_storage(n,value);
+    }
+    template<class InputIterator>
+    void _initialize(InputIterator first, InputIterator last, _Helper<false> *) {
+	_initialize_iterator(first,last, (iterator_traits<InputIterator>::iterator_category *)0);
+    }
+
+    template<class InputIterator>
+    void _initialize_iterator(InputIterator first, InputIterator last, forward_iterator_tag *) {
+	size_type n = distance(first, last);
+	start =  _get_allocator().allocate(n);
+	MSIPL_TRY {
+	    finish = uninitialized_copy(first, last, start);
+	    end_of_storage = finish;
+	}
+	MSIPL_CATCH {
+	    _get_allocator().deallocate(start, n);
+	    start = NULL;
+	    finish = NULL;
+	    end_of_storage = NULL;
+	    MSIPL_RETHROW;
+	}
+    }
+    template<class InputIterator>
+    void _initialize_iterator(InputIterator first, InputIterator last, input_iterator_tag *) {
+	while (first!=last) {
+	    push_back(*first);
+	    ++first;
+	}
+    }
+
+    template<class InputIterator>
+    inline void _insert(iterator position, InputIterator first, InputIterator last, _Helper<true> *) {
+	size_type n = static_cast<size_type>(first);
+	//const T value = static_cast<T>(last);
+	const last::value_type value = static_cast<last::value_type>(last);
+	insert(position, n, value);
+    }
+    template<class InputIterator>
+    inline void _insert(iterator position, InputIterator first, InputIterator last, _Helper<false> *) {
+	_insert_iterator(position, first, last, (iterator_traits<InputIterator>::iterator_category *)0);
+    }
+
+    template<class InputIterator>
+    __noinline
+    void _insert_iterator(iterator position, InputIterator first, InputIterator last, input_iterator_tag *) {
+	// We cannot compute the distance without destructivily stepping through the iterator.
+	// So we create a new vector of the values and then insert that range(which we can compute the size)
+	vector tmp(first,last);
+	insert(position, tmp.begin(), tmp.end());
+    }
+    template<class InputIterator>
+    void _insert_iterator(iterator position, InputIterator first, InputIterator last, random_access_iterator_tag *);
+
+public:
+    // 23.2.4.1 construct/copy/destroy
+    explicit vector(const Allocator& a=Allocator()) : value_allocator_type(a), start(0), finish(0), end_of_storage(0) { }
+
+    explicit vector(size_type n, const T& value=T(), const Allocator& a=Allocator())
+	: value_allocator_type(a), start(0), finish(0), end_of_storage(0) { _initialize_storage(n,value); }
+
+    template<class InputIterator>
+    vector(InputIterator first, InputIterator last, const Allocator& a=Allocator())
+	: value_allocator_type(a), start(0), finish(0), end_of_storage(0) {
+	_initialize(first, last, (_Helper<numeric_limits<InputIterator>::is_integer> *)0);
+    }
+
+    vector(const vector<T, Allocator>& x);
+    ~vector();
+    
+    vector<T, Allocator>& operator=(const vector<T, Allocator>& x);
+
+    template<class InputIterator>
+    void assign(InputIterator first, InputIterator last) {
+	erase(begin(), end());
+	_insert(begin(), first, last, (_Helper<numeric_limits<InputIterator>::is_integer> *)0);
+    }
+
+    void assign(size_type n, const T &val) {
+	erase(begin(), end());
+	insert(begin(), n, val);
+    }
+
+    // iterators:
+    iterator               begin()       { return iterator(start); }
+    const_iterator         begin() const { return const_iterator(iterator(start)); }
+    iterator               end()       { return iterator(finish); }
+    const_iterator         end() const { return const_iterator(iterator(finish)); }
+    reverse_iterator       rbegin()       { return reverse_iterator(end()); }
+    const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
+    reverse_iterator       rend()       { return reverse_iterator(begin()); }
+    const_reverse_iterator rend() const { return const_reverse_iterator(begin()); }
+
+    // 23.2.4.2 capacity:
+    size_type size() const { return size_type(finish - start);  }
+
+    void resize(size_type new_size) { resize(new_size, T() ); }
+    void resize(size_type new_size, T c) {
+	const size_type len = size();
+	if (new_size > len)
+	    insert(end(), new_size - len, c);
+	else if (new_size < len)
+	    erase(begin() + new_size, end());
+    }
+
+    size_type capacity() const { return size_type(end_of_storage - start); }
+    bool empty() const { return finish == start; }
+
+    void reserve(size_type n);
+
+    // element access:
+    reference operator[] (size_type n) { return *(start+n); }
+    const_reference operator[] (size_type n) const { return *(start+n); }
+
+    const_reference at(size_type n) const {
+        if ( n >= (finish - start))
+            out_of_range::__throw("Out of range exception\n");
+	return *(start + n);
+    }
+    reference at(size_type n) {
+        if ( n >= (finish - start) )
+            out_of_range::__throw("Out of range exception\n");
+	return *(start + n);
+    }
+
+    reference         front()        { return *start;     }
+    const_reference   front() const  { return *start;     }
+    reference         back()         { return *(finish - 1); }
+    const_reference   back()  const  { return *(finish - 1); }
+
+    // 23.2.4.3 modifiers:
+    void push_back(const T& x) {
+	if (finish != end_of_storage) {
+	    _get_allocator().construct(finish, x);
+	    ++finish;
+	} else
+	    insert_aux(finish, x);
+    }
+    void pop_back() {
+	// Failure of following assertion indicates that vector is empty. 
+	assert( !(finish == start) );
+	--finish;
+	_get_allocator().destroy(finish); 
+    }
+
+    iterator insert(iterator position) { return insert(position,T()); }
+    iterator insert(iterator position, const T& x) {
+	size_type n = position - start;
+	if (n > finish - start)
+            out_of_range::__throw("Out of range exception\n");
+	if (finish != end_of_storage && position == finish) {
+	    _get_allocator().construct(finish, x);
+	    ++finish;
+	} else
+            insert_aux(position, x);
+        return begin() + n;
+    }
+    void insert(iterator position, size_type n, const T& x);
+
+    template <class InputIterator>
+    void insert(iterator position, InputIterator first, InputIterator last) {
+	_insert(position, first, last, (_Helper<numeric_limits<InputIterator>::is_integer> *)0);
+    }
+
+    iterator erase(iterator position);
+    iterator erase(iterator first, iterator last);
+    
+    void swap(vector<T, Allocator>& x) {
+	std::swap( *(value_allocator_type*)this, *(value_allocator_type*)&x );
+	std::swap(start, x.start);
+	std::swap(finish, x.finish);
+	std::swap(end_of_storage, x.end_of_storage);
+    }
+
+    void clear() {
+	pointer i = start;
+	while (i != finish)
+	    _get_allocator().destroy(i++);
+	finish = start;
+    }
+};
+
+template <class T, class Allocator>
+inline bool operator==(const vector<T, Allocator>& x, const vector<T, Allocator>& y)
+{
+    return x.size() == y.size() && equal(x.begin(), x.end(), y.begin());
+}
+template <class T, class Allocator>
+inline bool operator<(const vector<T, Allocator>& x, const vector<T, Allocator>& y)
+{
+    return lexicographical_compare(x.begin(), x.end(), y.begin(), y.end());
+}
+template <class T, class Allocator>
+inline bool operator!=(const vector<T, Allocator>& x, const vector<T, Allocator>& y) { return ! (x == y); }
+template <class T, class Allocator>
+inline bool operator>(const vector<T, Allocator>& x, const vector<T, Allocator>& y) { return (y < x); }
+ template <class T, class Allocator>
+inline bool operator>=(const vector<T, Allocator>& x, const vector<T, Allocator>& y) { return ! (x < y); }
+template <class T, class Allocator>
+inline bool operator<=(const vector<T, Allocator>& x, const vector<T, Allocator>& y) { return ! (y < x); }
+
+template <class T, class Allocator>
+void vector<T, Allocator>::_initialize_storage(size_type n, const T& value) {
+    start = _get_allocator().allocate(n);
+    MSIPL_TRY {
+	uninitialized_fill_n(start, n, value);
+	finish = start + n;
+	end_of_storage = finish;
+    }
+    MSIPL_CATCH {
+	_get_allocator().deallocate(start, n);
+	MSIPL_RETHROW;
+    }
+}
+
+template <class T, class Allocator>
+vector<T, Allocator>::vector(const vector<T, Allocator>& x) : value_allocator_type(x), start(0), finish(0), end_of_storage(0) {
+    size_type n = x.finish - x.start;
+    if (n) {
+	start = _get_allocator().allocate(n);
+	MSIPL_TRY {
+	    finish = uninitialized_copy(x.start, x.finish, start);
+	    end_of_storage = start + n;
+	}
+	MSIPL_CATCH {
+	    _get_allocator().deallocate(start, n);
+	    start = 0;
+	    MSIPL_RETHROW;
+	}
+    }
+}
+
+template <class T, class Allocator>
+vector<T, Allocator>::~vector() {
+    for( pointer i = start; i != finish; i++ )
+	_get_allocator().destroy(i);
+    if (start) 
+	_get_allocator().deallocate(start, end_of_storage - start);
+}
+
+template <class T, class Allocator>
+vector<T, Allocator>& vector<T, Allocator>::operator=(const vector<T, Allocator>& x)
+{
+    if (&x == this)
+	return *this;
+    if ((x.finish - x.start) > (end_of_storage - start)) {
+	pointer tmp = _get_allocator().allocate(x.finish - x.start);
+	MSIPL_TRY {
+	    uninitialized_copy(x.start, x.finish, tmp);
+	}
+	MSIPL_CATCH {
+	    _get_allocator().deallocate(tmp, x.finish - x.start);
+	    MSIPL_RETHROW;
+	} 
+	pointer i = start;
+	while (i != finish)
+	    _get_allocator().destroy(i++);
+	if (start)
+	    _get_allocator().deallocate(start, end_of_storage - start);
+	start = tmp;
+	end_of_storage = start + (x.finish - x.start);
+    } else if ((finish - start) >= (x.finish - x.start)) {
+	pointer i = copy(x.start, x.finish, start);
+	while (i != finish)
+	    _get_allocator().destroy(i++); 
+    } else {
+	copy(x.start, x.start + (finish - start), start);
+	uninitialized_copy(x.start + (finish - start), x.finish, finish);
+    }
+    finish = start + (x.finish - x.start);
+    return *this;
+}
+
+template <class T, class Allocator>
+void vector<T, Allocator>::reserve(size_type n)
+{
+    if ((end_of_storage - start) < n) {
+	size_type old_size = finish - start;
+	pointer tmp = _get_allocator().allocate(n);
+	MSIPL_TRY {
+	    uninitialized_copy(start, finish, tmp);
+	}
+	MSIPL_CATCH {
+	    _get_allocator().deallocate(tmp, n);
+	    MSIPL_RETHROW;
+	}
+	pointer i = start;
+	while (i != finish)
+	    _get_allocator().destroy(i++);
+	if (start)
+	    _get_allocator().deallocate(start, end_of_storage - start);
+	start = tmp;
+	finish = start + old_size;
+	end_of_storage = start + n;
+    }
+}
+
+template <class T, class Allocator>
+void vector<T, Allocator>::insert_aux(pointer position, const T& x) {
+    if (finish != end_of_storage) {
+	_get_allocator().construct(finish, *(finish - 1));
+	++finish;
+	copy_backward(position, finish-2, finish-1);
+	*position = x;
+    } else {
+	size_type len = 2 * (finish - start);
+	size_type min_size = (4*sizeof(void*)/sizeof(T)) > 0 ? 4*sizeof(void*)/sizeof(T) : 1;
+	if( len<min_size ) {
+	    len = min_size;
+	}
+	pointer tmp = _get_allocator().allocate(len);
+	pointer tmp_end = tmp;
+	MSIPL_TRY {
+	    tmp_end = uninitialized_copy(start, position, tmp);
+	    _get_allocator().construct(tmp_end, x);
+	    ++tmp_end;
+	    tmp_end = uninitialized_copy(position, finish, tmp_end);
+	} 
+	MSIPL_CATCH {
+	    for (pointer i = tmp; i != tmp_end; ++i)
+		_get_allocator().destroy(i);
+	    _get_allocator().deallocate(tmp, len);
+	    MSIPL_RETHROW;
+	}
+	for (pointer i = start; i != finish; ++i)
+	    _get_allocator().destroy(i);
+	if (start)
+	    _get_allocator().deallocate(start, end_of_storage - start);
+	start = tmp;
+	finish = tmp_end;
+	end_of_storage = tmp + len;
+    }
+}
+
+template <class T, class Allocator>
+void vector<T, Allocator>::insert(iterator position, size_type n, const T& x)
+{
+    if (n == 0)
+	return;
+    size_type n1 = position - start;
+    if (n1 > finish - start)
+        out_of_range::__throw("Out of range exception\n");
+    if (end_of_storage - finish >= n) {
+	pointer old_finish = finish;
+	if (finish - (position) > n) {
+	    uninitialized_copy(finish - n, finish , finish);
+	    finish += n;
+	    copy_backward(position, old_finish - n, old_finish);
+	    fill(position, position + n, x);
+	} else {
+	    size_t n_uninit = position + n - old_finish;
+	    uninitialized_fill_n(finish, n_uninit, x);
+	    finish += n_uninit;
+	    uninitialized_copy(position, old_finish, finish);
+	    finish = old_finish + n;
+	    fill(position, old_finish, x);
+	}
+    } else {
+	size_type len = (finish - start) + max(size_type(finish - start), n);
+	pointer tmp = _get_allocator().allocate(len);
+	pointer tmp_end = tmp;
+	MSIPL_TRY {
+	    tmp_end = uninitialized_copy(start, start + n1, tmp);
+	    uninitialized_fill_n(tmp_end, n, x);
+	    tmp_end += n;
+	    tmp_end = uninitialized_copy(start + n1, finish, tmp_end);
+	} 
+	MSIPL_CATCH {
+	    for (pointer i = tmp; i != tmp_end; ++i)
+		_get_allocator().destroy(i);
+	    _get_allocator().deallocate(tmp, len);
+	    MSIPL_RETHROW;
+	}
+	for (pointer i = start; i != finish; ++i)
+	    _get_allocator().destroy(i);
+	if (start)
+	    _get_allocator().deallocate(start, end_of_storage - start);
+	start = tmp;
+	finish = tmp_end;
+	end_of_storage = tmp + len;
+    }
+}
+
+template <class T, class Allocator>
+template <class InputIterator>
+void vector<T, Allocator>::_insert_iterator(iterator position,
+					    InputIterator first, InputIterator last, random_access_iterator_tag *)
+{
+    if (first == last)
+	return;
+    size_type n = distance(first, last);
+    size_type n1 = distance(begin(), position);
+    if (n1 > finish - start)
+        out_of_range::__throw("Out of range exception\n");
+    if (end_of_storage - finish >= n) {
+	if (finish - (start + n1) > n) {
+	    uninitialized_copy(finish - n, finish, finish);
+	    copy_backward(start + n1, finish - n, finish);
+	    copy(first, last, position);
+	} else {
+            uninitialized_copy(position, end(), position + n);
+            copy(first, first + (end() - position), position);
+            uninitialized_copy(first + (end() - position), last, end());
+	}
+	finish += n;
+    } else {
+	size_type len = (finish - start) + max(size_type(finish - start), n);
+	pointer tmp = _get_allocator().allocate(len);
+	pointer tmp_end = tmp;
+	MSIPL_TRY {
+	    tmp_end = uninitialized_copy(start, start + n1, tmp);
+	    tmp_end = uninitialized_copy(first, last, tmp_end);
+	    tmp_end = uninitialized_copy(start + n1, finish, tmp_end);
+	} 
+	MSIPL_CATCH {
+	    for (pointer i=tmp; i!=tmp_end; ++i)
+		_get_allocator().destroy(i);
+	    _get_allocator().deallocate(tmp, len);
+	    MSIPL_RETHROW;
+	}
+	for (pointer i=start; i!=finish; ++i)
+	    _get_allocator().destroy(i);
+	if (start)
+	    _get_allocator().deallocate(start, end_of_storage - start);
+	start = tmp;
+	finish = tmp_end;
+	end_of_storage = tmp + len;
+    }
+}
+
+template <class T, class Allocator>
+vector<T, Allocator>::iterator vector<T, Allocator>::erase(iterator position) {
+    assert( start<=position || position < finish );
+    if (position + 1 != finish)
+	copy(position + 1, finish, position);
+    --finish;
+    _get_allocator().destroy(finish);
+    return position;
+}
+
+template <class T, class Allocator>
+vector<T, Allocator>::iterator vector<T, Allocator>::erase( iterator first, iterator last ) {
+    assert( start<=first && first<=last && last<=finish );
+    pointer i = copy(last, finish, first);
+    while (i != finish)
+	_get_allocator().destroy(--finish); 
+    return first;
+}
+
+// Subclause 23.2.5 -- class vector<bool>
+
+template <class Allocator>
+class vector<bool, Allocator>: public __kai::allocator_base<Allocator> {
+
+    typedef __kai::chunk_t word_t;
+    typedef unsigned int offset_t;		// Offset of bit in word
+    static const offset_t n_bit_per_word = __kai::chunk_bits;
+    typedef typename Allocator::template rebind<word_t>::other word_alloc_type;
+    typedef __kai::allocator_base<Allocator> value_allocator_type;
+     
+public:
+    // types:
+    typedef bool				const_reference;
+    class					iterator;
+    class 					const_iterator;
+    typedef typename Allocator::size_type	size_type;
+    typedef typename Allocator::difference_type difference_type; 
+    typedef bool				value_type;
+    typedef Allocator				allocator_type;
+    typedef typename Allocator::pointer		pointer; 
+    typedef typename Allocator::const_pointer	const_pointer; 
+    typedef std::reverse_iterator<iterator>	reverse_iterator;
+    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+    friend class iterator;
+    friend class const_iterator;
+
+    friend iterator operator+(difference_type n, iterator iter) { vector::iterator tmp = iter; return tmp += n; }
+
+    // bit reference:
+    class reference;
+    friend class reference;
+    class reference {
+	friend class vector;
+	friend class iterator;
+	friend class const_iterator;
+	reference(); // deny access.
+	reference(word_t* x, word_t msk) : p(x), mask(msk) {}
+	word_t * p;
+	word_t mask;
+    public:
+	inline operator bool() const { return (*p & mask)!=0; }
+	reference& operator=(const bool x) {
+	    if (x)
+		*p |= mask;
+	    else
+		*p &=~mask;
+	    return *this;
+	}
+	inline reference& operator=(const reference& x) { return *this = bool(x); }
+	void flip() { *p ^= mask; }
+    };
+
+private:
+    template<bool b> class _Helper { };
+
+    template<class InputIterator>
+    void _initialize(InputIterator first, InputIterator last, _Helper<true> *) {
+	size_type n = static_cast<size_type>(first);
+	const bool value = static_cast<bool>(last);
+	initialize(n);
+	fill_n(start.cp, get_size(n), (word_t)0-value );
+    }
+    template<class InputIterator>
+    void _initialize(InputIterator first, InputIterator last, _Helper<false> *) {
+	_initialize_iterator(first,last, (iterator_traits<InputIterator>::iterator_category *)0);
+    }
+
+    template<class InputIterator>
+    void _initialize_iterator(InputIterator first, InputIterator last, forward_iterator_tag *);
+    
+    template<class InputIterator>
+    void _initialize_iterator(InputIterator first, InputIterator last, input_iterator_tag *);
+    
+public:
+    // construct/copy/destroy:
+    explicit vector(const allocator_type &a = allocator_type()) : value_allocator_type(a), start(0), finish(0,0), end_of_storage(0) {}
+
+    explicit vector(size_type n, const bool& value=bool(), const allocator_type &a = allocator_type() )
+	: value_allocator_type(a), start(0), finish(0,0), end_of_storage(0) {
+	initialize(n);
+	fill_n(start.cp, get_size(n), (word_t)0-value );
+    }
+
+    template<class InputIterator>
+    vector(InputIterator first, InputIterator last, const allocator_type& a = allocator_type()) 
+	: value_allocator_type(a), start(0), finish(0,0), end_of_storage(0) {
+	_initialize(first, last, (_Helper<numeric_limits<InputIterator>::is_integer> *)0);
+    }
+
+    vector(const vector& x);
+
+    ~vector();
+
+    vector& operator=(const vector& x);
+    
+    template<class InputIterator>
+    void assign(InputIterator first, InputIterator last) {
+	finish = start;
+	insert(start, first, last);
+    }
+    template <class Size>
+    void assign(Size n, const bool& t = bool()) {
+	finish = start + n;
+	fill_n(start.cp, get_size(n), (word_t)0-t );
+    }
+
+    // iterators:
+    iterator	   begin()	 { return start;  }
+    const_iterator begin() const { return const_iterator(start); }
+    iterator	   end()	 { return finish; }
+    const_iterator end()   const { return const_iterator(finish); }
+
+    reverse_iterator	   rbegin()	  { return reverse_iterator(end()); }
+    const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
+    reverse_iterator	   rend()	{ return reverse_iterator(begin()); }
+    const_reverse_iterator rend() const { return const_reverse_iterator(begin()); }
+
+    // capacity:
+    size_type size() const { return size_type(finish - start);  }
+    void resize(size_type new_size, bool c = false) {
+	const size_type len = finish - start;
+	if (new_size > len)
+	    insert(finish, new_size - len, c);
+	else if (new_size < len)
+	    finish = start + new_size;
+    }
+    size_type capacity() const { return (size_type)(end_of_storage - start); }
+    bool empty() const { return begin() == end(); }
+    void reserve(size_type n) {
+	if (capacity() < n) {
+            word_t* q = (word_t*)bit_alloc(n);
+	    finish = copy(iterator(start), finish, iterator(q, 0));
+            bit_dealloc();
+	    start = q;
+            end_of_storage = q + get_size(n);
+	}
+    }
+
+    // element access:
+    reference       operator[] (size_type n)       { return *(start+n); }
+    const_reference operator[] (size_type n) const { return *(start+n); }
+
+    const_reference at(size_type n) const {
+        if ( n >= (finish - start) )
+            out_of_range::__throw("Out of range exception\n");
+	return *(start + n);
+    }
+    reference at(size_type n) {
+	if ( n >= (finish - start) )
+	    out_of_range::__throw("Out of range exception\n");
+	return *(start + n);
+    }
+    reference       front()       { return *begin();      }
+    const_reference front() const { return *begin();      }
+    reference       back()        { return *(end() - 1); }
+    const_reference back()  const { return *(end() - 1); }
+
+    // modifiers:
+    void push_back(const bool& x) {
+	if ( end_of_storage==finish )
+	    insert_aux(finish, x);
+	else
+	    *finish++ = x;
+    }
+    void pop_back() { 
+	// Failure of following assertion indicates that vector is empty. 
+	assert( !(start==finish) );
+	--finish; 
+    }
+
+    iterator insert(iterator position, const bool& x) {
+	size_type n = position - start;
+	if( end_of_storage>finish && position == finish)
+	    *finish++ = x;
+	else
+	    insert_aux(position, x);
+	return start + n;
+    }
+    void insert(iterator position, size_type n, const bool& x);
+    template<class InputIterator>
+    void insert(iterator position, InputIterator first, InputIterator last);
+
+    iterator erase(iterator position) {
+	if (finish != position + 1)
+	    copy(position + 1, finish, position);
+	--finish;
+	return position;
+    }
+    iterator erase(iterator first, iterator last) {
+	finish = copy(last, finish, first);
+	return first;
+    }
+    void swap(vector & x) {
+	std::swap( *(value_allocator_type*)this, *(value_allocator_type*)&x );
+	std::swap(start, x.start);
+	std::swap(finish, x.finish);
+	std::swap(end_of_storage, x.end_of_storage); 
+    }
+    static void swap(reference x, reference y) { bool tmp = x; x = y; y = tmp; }
+
+    void flip() {
+	word_t * q = end_of_storage.cp;
+	for( word_t * p = start.cp; p<end_of_storage.cp; ++p )
+	    *p ^= ~(word_t)0;
+    }
+    void clear() {finish=start;}
+
+private:
+    class word_iterator;
+    friend class word_iterator;
+    class bool_iterator_base;
+    friend class bool_iterator_base;
+
+    class word_iterator {	// Like an iterator, but always word-aligned.
+	word_t* cp;
+	friend class vector;
+	friend class iterator;
+	friend class const_iterator;
+	word_iterator( word_t* base ) : cp(base) {}
+	// Define only the relational operators that execute quickly.
+	bool operator==( const bool_iterator_base& x ) const {return cp==x.cp && 0==x.offset;} 
+	bool operator>( const bool_iterator_base& x ) const {return cp>x.cp;}
+	difference_type operator-(const word_iterator& x) const {
+	    return n_bit_per_word * (cp - x.cp);
+	}
+	iterator operator+( size_type n ) const {
+	    return iterator( cp + n / n_bit_per_word, n % n_bit_per_word );
+	} 
+    };
+
+    class bool_iterator_base {
+	friend class vector;
+	friend class word_iterator;
+    protected:
+	word_t* cp;
+	offset_t offset;
+
+	bool_iterator_base() {}
+	bool_iterator_base(word_t* base, offset_t off) : cp(base), offset(off) {}
+	void bump_up() { 
+	    if( (offset = (offset+1)%n_bit_per_word) == 0 ) {
+	        ++cp;
+	    }
+	}
+	void bump_down() {      
+	    if( (offset = (offset-1)%n_bit_per_word) == n_bit_per_word-1 ) {
+		--cp;
+	    }
+	}
+	void adjust( const difference_type i ) {
+	    difference_type n = i + (difference_type)offset;
+	    difference_type m = n / (difference_type)n_bit_per_word;
+	    n -= m*n_bit_per_word;
+	    if( n < 0 ) {
+		n += n_bit_per_word;
+		--m;
+	    }
+	    cp += m;
+	    offset = n;
+	}
+    public:
+	bool_iterator_base(const bool_iterator_base & x) : cp(x.cp), offset(x.offset) {}
+	bool operator==(const bool_iterator_base& x) const { return cp == x.cp && offset == x.offset; }
+	bool operator<(const bool_iterator_base& x) const { return cp < x.cp || (cp == x.cp && offset < x.offset); }
+	bool operator!=(const bool_iterator_base& y) const { return ! (*this == y); }
+	bool operator>(const bool_iterator_base& y) const { return y < *this; }
+	bool operator>=(const bool_iterator_base& y) const { return  ! (*this < y); }
+	bool operator<=(const bool_iterator_base& y) const { return  ! (y < *this); }
+    };
+
+public:
+    class iterator : public bool_iterator_base,
+		     public std::iterator<random_access_iterator_tag, value_type, difference_type, pointer, reference>
+    {
+	friend class vector<bool, Allocator>;
+	friend class word_iterator;
+	iterator(word_t* base, offset_t offset) : bool_iterator_base(base, offset) { }
+	iterator(const word_iterator& x) : bool_iterator_base(x.cp,0) {}
+    public:
+	iterator() {}
+	iterator(const iterator &i) : bool_iterator_base(i) { }
+
+	reference operator*() const { return reference(cp, (word_t)1 << offset); }
+	reference operator[](const difference_type i) { return *(*this + i); }
+
+	iterator& operator++() { bump_up(); return *this; }
+	iterator operator++(int) { iterator tmp = *this; bump_up(); return tmp; }
+	iterator& operator--() { bump_down(); return *this; }
+	iterator operator--(int) { iterator tmp = *this; bump_down(); return tmp; }
+
+	iterator& operator+=(const difference_type i) { adjust(i); return *this; }
+	iterator& operator-=(const difference_type i) { adjust(-i); return *this; }
+	iterator operator+(const difference_type i) const { iterator tmp = *this; return tmp += i; }
+	iterator operator-(const difference_type i) const { iterator tmp = *this; return tmp -= i; }
+	difference_type operator-(const iterator& x) const {
+	    return n_bit_per_word * (cp - x.cp) + offset - x.offset;
+	}
+    };
+
+    class const_iterator : public bool_iterator_base,
+			   public std::iterator<random_access_iterator_tag, value_type,
+			   difference_type , const_pointer, reference>
+    {
+        friend class vector<bool, Allocator>;
+        const_iterator(word_t* base, difference_type offset) : bool_iterator_base(base,offset) { }
+	const_iterator(const word_iterator& x) : bool_iterator_base(x.cp,0) {}
+     public:
+	const_iterator() {}
+	const_iterator(const vector::iterator& x) : bool_iterator_base(x) { }
+
+	const reference operator*() const { return reference(cp, (word_t)1 << offset); }
+	const reference operator[](const difference_type i) const { return *(*this + i); }
+
+	const_iterator& operator++() { bump_up(); return *this; }
+	const_iterator operator++(int) { const_iterator tmp = *this; bump_up(); return tmp; }
+	const_iterator& operator--() { bump_down(); return *this; }
+	const_iterator operator--(int) { const_iterator tmp = *this; bump_down(); return tmp; }
+	const_iterator& operator+=(const difference_type i) { adjust(i); return *this;	}
+	const_iterator& operator-= (const difference_type i) { adjust(-i); return *this; }
+	const_iterator operator+(const difference_type i) const { const_iterator tmp = *this; return tmp += i; }
+	const_iterator operator-(const difference_type i) const { const_iterator tmp = *this; return tmp -= i; }
+	difference_type operator-(const const_iterator& x) const {
+	    return n_bit_per_word * (cp - x.cp) + offset - x.offset;
+	}
+    };
+
+private:
+
+    word_iterator start;
+    iterator finish;
+    word_iterator end_of_storage;
+    
+    size_type get_size(size_type n) { return (n + n_bit_per_word - 1) / n_bit_per_word; }
+
+    word_t* bit_alloc(size_type n) { 
+	return _get_rebound_allocator<word_alloc_type>().allocate(get_size(n)); 
+    }
+
+    void bit_dealloc() {
+	if (start.cp) 
+	    _get_rebound_allocator<word_alloc_type>().deallocate(start.cp, (end_of_storage.cp-start.cp) );
+    }
+    word_t * initialize(size_type n) {
+        word_t* p      = bit_alloc(n);
+	start.cp       = p;
+	finish         = start + n;
+        end_of_storage.cp = p + get_size(n);
+	return p;
+    }
+
+    void insert_aux(iterator position, bool x);
+
+};
+
+template<class Allocator>
+const vector<bool, Allocator>::offset_t vector<bool, Allocator>::n_bit_per_word;
+
+template <class Allocator>
+inline bool operator==(const vector<bool, Allocator>& x, const vector<bool, Allocator>& y)
+{
+    return x.size() == y.size() && equal(x.begin(), x.end(), y.begin());
+}
+template <class Allocator>
+inline bool operator<(const vector<bool, Allocator>& x, const vector<bool, Allocator>& y)
+{
+     return lexicographical_compare(x.begin(), x.end(), y.begin(), y.end());
+}
+template <class Allocator>
+inline bool operator!=(const vector<bool, Allocator>& x, const vector<bool, Allocator>& y) { return ! (x == y); }
+template <class Allocator>
+inline bool operator>(const vector<bool, Allocator>& x, const vector<bool, Allocator>& y) { return  (y < x); } 
+template <class Allocator>
+inline bool operator>=(const vector<bool, Allocator>& x, const vector<bool, Allocator>& y) { return ! (x < y); }
+template <class Allocator>
+inline bool operator<=(const vector<bool, Allocator>& x, const vector<bool, Allocator>& y) { return ! (y < x); } 
+
+// specialized algorithms:
+template <class Allocator>
+inline void swap(vector<bool, Allocator>& x,  vector<bool, Allocator>& y) { x.swap(y); } 
+
+template <class Allocator>
+vector<bool, Allocator>::vector(const vector& x) : 
+    value_allocator_type(x), start(0), finish(0,0), end_of_storage(0) 
+{
+    if (x.size()) {
+	initialize(x.size());
+	copy( x.start.cp, x.start.cp+(end_of_storage.cp-start.cp), start.cp );
+    }
+}
+
+template <class Allocator>
+vector<bool, Allocator>::~vector() { 
+    bit_dealloc();
+}
+
+template <class Allocator>
+vector<bool, Allocator>& vector<bool, Allocator>::operator=(const vector& x) {
+    if (&x == this) {
+    } else {
+	if (x.size() > (end_of_storage - start)) {
+	    bit_dealloc();
+	    initialize(x.size());
+	}
+	copy( x.start.cp, x.start.cp+(end_of_storage.cp-start.cp), start.cp );
+	finish = begin() + x.size();
+    }
+    return *this;
+}
+
+template <class Allocator>
+template<class InputIterator>
+void vector<bool, Allocator>::_initialize_iterator(InputIterator first, InputIterator last, forward_iterator_tag *) {
+    size_type n = distance(first, last);
+    word_t * p = initialize(n);
+    word_t w = 0;
+    unsigned int offset = 0;
+    for( ; first!=last; ++first ) {
+	if( *first ) 
+	    w |= (word_t)1<<offset;
+	if( ++offset==n_bit_per_word ) {
+	    *p++ = w;
+	    offset = 0;
+	    w = 0;
+	} 
+    }
+    if( offset!=0 ) {
+	*p = w;
+    }
+    finish.cp = p;
+    finish.offset = offset;
+}
+
+template <class Allocator>
+template<class InputIterator>
+void vector<bool, Allocator>::_initialize_iterator(InputIterator first, InputIterator last, input_iterator_tag *) {
+    for( ; first!=last; ++first ) {
+	push_back(*first);
+    }
+}
+
+template <class Allocator>
+template<class InputIterator>
+void vector<bool, Allocator>::insert(iterator position, InputIterator first, InputIterator last)
+{
+    if (first == last)
+	return;
+    size_type n = 0;
+    n = distance(first, last);
+    if ((end_of_storage-start) - size() >= n) {
+        copy_backward(position, end(), finish + n);
+        copy(first, last, position);
+        finish += n;
+    } else {
+        size_type len = size() + max(size(), n);
+        word_t* q = bit_alloc(len);
+        iterator i = copy(begin(), position, iterator(q, 0));
+        i = copy(first, last, i);
+        finish = copy(position, end(), i);
+        bit_dealloc();
+        end_of_storage = q + get_size(len);
+        start = q;
+    }
+}
+
+template <class Allocator>
+void vector<bool, Allocator>::insert_aux(iterator position, bool x)
+{
+    if( end_of_storage==finish ) {
+        size_type len = size() ? 2 * size() : n_bit_per_word;
+        word_t* q = bit_alloc(len);
+        iterator i = copy(begin(), position, iterator(q, 0));
+        *i = x;
+        ++i;
+        finish = copy(position, end(), i);
+        bit_dealloc();	
+        end_of_storage = q + get_size(len);
+        start = q;
+    } else {
+        copy_backward(position, finish, finish+1);
+        ++finish;
+        *position = x;
+    }
+}
+
+template <class Allocator>
+void vector<bool, Allocator>::insert(iterator position, size_type n, const bool& x)
+{
+    if (n == 0)
+	return;
+    if ((end_of_storage-start) - size() >= n) {
+        copy_backward(position, end(), finish + n);
+        fill(position, position + n, x);
+        finish += n;
+    } else {
+        size_type len = size() + max(size(), n);
+        word_t* q = bit_alloc(len);
+        iterator i = copy(begin(), position, iterator(q, 0));
+        fill_n(i, n, x);
+        finish = copy(position, end(), i + n);
+        bit_dealloc();
+        end_of_storage = q + get_size(len);	
+        start = q;
+    }
+}
+
+#ifdef __KAI_NONSTD_VECTOR
+// The C++ standard has a hole in the definition of vector<bool>.
+// It does not seem to allow:
+//     vector<bool> a(1);
+//     cin >> a[0];
+// The only way to fix it is to add an operator>> that takes a 
+// vector<bool>::reference. There might be an include loop / ordering 
+// problem to overcome but this seems like a good thing to "fix".
+template<class charT,class traits>
+basic_istream<charT, traits> &operator>>(basic_istream<charT, traits> &is, typename vector<bool>::reference r)
+{
+    bool foo;
+    basic_istream<charT, traits> &rv = is>>foo;
+    r = foo;
+    return rv;
+} 
+#endif /* __KAI_NONSTD_VECTOR */
+
+} /* namespace std */
+
+#endif /* __PDT_VECTOR */

@@ -1,0 +1,73 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+#ifndef __KAI_CLIMITS
+#define __KAI_CLIMITS
+
+#include <limits.h>
+
+#if defined(_AIX) 
+
+#if _AIX < 43
+  #undef LDBL_MIN_EXP
+  #undef LDBL_MAX_EXP
+  #undef LDBL_MIN_10_EXP
+  #undef LDBL_MAX_10_EXP
+  #define LDBL_MIN_EXP       DBL_MIN_EXP
+  #define LDBL_MAX_EXP       DBL_MAX_EXP
+  #define LDBL_MIN_10_EXP    DBL_MIN_10_EXP
+  #define LDBL_MAX_10_EXP    DBL_MAX_10_EXP
+#endif
+#undef UINT_MAX
+#undef LONG_MAX
+#undef LONG_MIN
+#undef ULONG_MAX
+#define UINT_MAX  (4294967295U)
+#ifdef __64BIT__
+#define LONG_MAX 0x7FFFFFFFFFFFFFFFL
+#define LONG_MIN (-1L-0x7FFFFFFFFFFFFFFFL)
+#define ULONG_MAX (0xFFFFFFFFFFFFFFFFUL)
+#else
+#define LONG_MAX 0x7FFFFFFFL
+#define LONG_MIN (-1L-0x7FFFFFFFL)
+#define ULONG_MAX 0xFFFFFFFFUL
+#endif /* __64BIT__ */
+
+#elif defined(_ABIO32) || defined(_ABIN32) || defined(__WIN32) || defined(__SR8000)
+/* Fix up vendor's header file */
+#undef LONG_MAX
+#undef LONG_MIN
+#undef ULONG_MAX
+#define LONG_MAX 0x7FFFFFFFL
+#define LONG_MIN (-1L-0x7FFFFFFFL)
+#define ULONG_MAX 0xFFFFFFFFUL
+
+#elif defined(cray)
+#ifndef _crayx1
+#undef USHRT_MAX
+#undef UINT_MAX
+#undef LONG_MAX
+#undef LONG_MIN
+#undef ULONG_MAX
+#define USHRT_MAX 4294967295U
+#define UINT_MAX 18446744073709551615U
+#define LONG_MAX 9223372036854775807L
+#define LONG_MIN (-_INT_MAX_64-1L)
+#define ULONG_MAX 18446744073709551615UL
+#endif /* _crayx1 */
+#endif
+
+#ifndef LLONG_MIN
+#define LLONG_MIN       (-9223372036854775807LL-1LL)
+#endif
+#ifndef LLONG_MAX
+#define LLONG_MAX       9223372036854775807LL
+#endif
+#ifndef ULLONG_MAX
+#define ULLONG_MAX      18446744073709551615ULL
+#endif
+
+#endif /* __KAI_CLIMITS */

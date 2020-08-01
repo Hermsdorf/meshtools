@@ -1,0 +1,154 @@
+#!/bin/bash 
+COMPILER_OPTS=" -D_GNU_SOURCE "
+
+BINDIR=/home/guilherme/pdt/x86_64//bin
+PDTDIR=/home/guilherme/pdt
+STDINC=
+VERBOSE=off
+
+if [ "x$TMPDIR" = "x" ]; then
+  TMP="/tmp"
+else
+  TMP=${TMPDIR}
+fi
+
+# if -t is specified, template text strings are not included in pdb files
+PDTOPT=""
+
+# default compiler options
+
+# EDG options
+# can add --remove_unneeded_entities
+EDGOPT=" "
+# You may replace this with --c
+
+# Architecture specific options for KAI headers
+# ---------------------------------------------
+#SOL2#ARCHOPT=" " #EOC#
+
+#SUN386I#ARCHOPT=" " #EOC#
+
+#IRIXO32#ARCHOPT=" -I${PDTDIR}/include/kai/fix " #EOC#
+
+#IRIXN32#ARCHOPT=" -I${PDTDIR}/include/kai/fix " #EOC#
+
+#IRIX64#ARCHOPT="  -I${PDTDIR}/include/kai/fix " #EOC#
+
+#LINUX#ARCHOPT=" -I${PDTDIR}/include/kai/fix " #EOC#
+
+#PPCLINUX#ARCHOPT=" -I${PDTDIR}/include/kai/fix " #EOC#
+
+#IBM64LINUX#ARCHOPT=" -I${PDTDIR}/include/kai/fix " #EOC#
+
+#HPUX#ARCHOPT=" " #EOC#
+
+#HPUX#COMPOPT=" " #EOC#
+
+#CRAY#ARCHOPT=" " #EOC#
+
+#OSF1#ARCHOPT=" -I${PDTDIR}/include/kai/fix " #EOC#
+
+#AIX#ARCHOPT=" -I${PDTDIR}/include/kai/fix " #EOC#
+
+#IBM64#ARCHOPT=" -I${PDTDIR}/include/kai/fix " #EOC#
+
+#DARWIN#ARCHOPT=" -I${PDTDIR}/include/kai/fix " #EOC#
+
+#INTELMACOSX#ARCHOPT=" -I${PDTDIR}/include/kai/fix " #EOC#
+
+#HITACHI#ARCHOPT=" -I${PDTDIR}/include/kai/fix " #EOC#
+
+# local options, if any
+LOCOPT="-M . " 
+
+# Remove all options other than -I and -D from the command line.
+INF=$1
+SPAWNARGS=
+shift
+for arg in "$@"
+do
+  if [ "y$arg" = "y-v" ]
+  then
+    VERBOSE=on
+  fi
+# Allow -I -D arguments to be passed to edgcpfe
+  for t in -I -D -M -F -R -r -U -u -A -L
+  do
+    testarg=${arg#$t}
+    if [ "y$testarg" != "y$arg" ]
+    then
+      SPAWNARGS="$SPAWNARGS $arg"
+    fi
+  done
+# Processed an individual argument
+
+done
+#echo "SPAWNARGS=$SPAWNARGS"
+
+
+ILF=${TMP}/$$.il
+case ${INF} in
+*.f)	PDB=`basename ${INF} .f`.pdb
+	;;
+*.F)	PDB=`basename ${INF} .F`.pdb
+	;;
+*.F90)	PDB=`basename ${INF} .F90`.pdb
+	;;
+*.f90)	PDB=`basename ${INF} .f90`.pdb
+	;;
+*.f95)	PDB=`basename ${INF} .f95`.pdb
+	;;
+*)	PDB=${INF}.pdb
+	;;
+esac
+
+#
+# run the EDG parser
+#
+if [ $VERBOSE = on ] 
+then
+  echo "	f90fe ${INF} --> ${ILF}"
+fi
+#echo "Executing ${BINDIR}/f90fe ${SPAWNARGS} ${LOCOPT} ${EDGOPT} ${ARCHOPT} -o ${ILF} ${INF}"
+eval ${BINDIR}/f90fe ${ARCHOPT} ${SPAWNARGS} ${LOCOPT} ${EDGOPT} -o ${ILF} ${INF}
+if [ $? != 0 ]
+   then
+   echo "PDT: Modifying real*8, kind parameters etc. in the source code..."
+   cat ${INF} | sed -e 's/integer[ \t]*([a-zA-Z0-9= \t]*)/integer/' \
+     -e 's/INTEGER[ \t]*([a-zA-Z0-9= \t]*)/INTEGER/' \
+     -e 's/real[ \t]*([a-zA-Z0-9= \t]*)/real/' \
+     -e 's/REAL[ \t]*([a-zA-Z0-9= \t]*)/REAL/' \
+     -e 's/integer[ \t]*\*[ \t]*[0-9][0-9]*/integer/' \
+     -e 's/INTEGER[ \t]*\*[ \t]*[0-9][0-9]*/INTEGER/' \
+     -e 's/real[ \t]*\*[ \t]*[0-9][0-9]*/real/' \
+     -e 's/REAL[ \t]*\*[ \t]*[0-9][0-9]*/REAL/' > ${INF}.pdt_new
+   mv ${INF} ${INF}.pdt_orig
+   mv ${INF}.pdt_new ${INF} 
+   eval ${BINDIR}/f90fe ${ARCHOPT} ${SPAWNARGS} ${LOCOPT} ${EDGOPT} -o ${ILF} ${INF}
+   if [ $? != 0 ]
+   then
+     mv ${INF}.pdt_orig ${INF}
+     if [ -f ${BINDIR}/pdtflint ]
+     then
+       echo "PDT: Trying to parse with f95parse (it uses the Cleanscape Inc. Flint parser)"
+       ${BINDIR}/f95parse ${SPAWNARGS} ${INF} -v  
+       exit $?
+     else
+       echo "PDT: Compilation unsuccessful. Try modifying the source ${INF} by hand..."
+       exit 1
+     fi
+   else
+     echo "PDT: Successfully parsed ${INF}!"
+     mv ${INF}.pdt_orig ${INF}
+   fi
+fi
+
+#
+# convert output of parser to pdb file
+#
+if [ $VERBOSE = on ] 
+then
+  echo "	pdtf90disp ${PDTOPT} ${ILF} --> ${PDB}"
+fi
+${BINDIR}/pdtf90disp ${PDTOPT} ${ILF} > ${PDB}
+rm ${ILF}

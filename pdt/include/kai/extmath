@@ -1,0 +1,48 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+/**
+ **  Lib++  : The Modena C++ Standard Library,
+ **           Version 2.4, October 1997
+ **
+ **  Copyright (c) 1995-1997 Modena Software Inc.
+ **/
+
+#ifndef MSIPL_EXTMATH_H
+#define MSIPL_EXTMATH_H
+
+#include <mcompile.h>
+
+#include <cmath>
+
+namespace std {
+ 
+//
+// For reporting errors
+//
+void  __msipl_report_error (const char* s);
+
+#define  __msipl_pow    std::pow
+#define  __msipl_sin    std::sin
+#define  __msipl_cos    std::cos
+#define  __msipl_tan    std::tan
+#define  __msipl_exp    std::exp
+#define  __msipl_log    std::log
+#define  __msipl_sqrt   std::sqrt
+#define  __msipl_asin   std::asin
+#define  __msipl_acos   std::acos
+#define  __msipl_sinh   std::sinh
+#define  __msipl_cosh   std::cosh
+#define  __msipl_tanh   std::tanh
+#define  __msipl_atan   std::atan
+#define  __msipl_cotan  std::cotan
+#define  __msipl_log10  std::log10
+#define  __msipl_atan2  std::atan2
+
+} // namespace std
+
+#endif /* MSIPL_EXTMATH_H */
+

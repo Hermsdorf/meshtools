@@ -1,0 +1,30 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+#ifndef __KAI_CCTYPE
+#define __KAI_CCTYPE
+
+#include <ctype.h>
+
+#ifndef __APPLE__
+namespace std {
+using ::isalnum;
+using ::isalpha;
+using ::iscntrl;
+using ::isdigit;
+using ::isgraph;
+using ::islower;
+using ::isprint;
+using ::ispunct;
+using ::isspace;
+using ::isupper;
+using ::isxdigit;
+using ::tolower;
+using ::toupper;
+}  /* namespace std */
+#endif /* __APPLE__ */
+
+#endif /* __KAI_CCTYPE */

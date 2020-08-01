@@ -1,0 +1,654 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+/**
+ **  Lib++  : The Modena C++ Standard Library,
+ **           Version 2.4, October 1997
+ **
+ **  Copyright (c) 1995-1997 Modena Software Inc.
+ **/
+#ifndef __KAI_OSTREAM
+#define __KAI_OSTREAM
+
+#include <mcompile.h>
+
+#include <iosfwd>
+#include <streambuf>
+#include <locale>
+
+namespace std {
+
+template<class charT, class traits>
+class basic_ostream : virtual public basic_ios<charT, traits>
+{
+    typedef basic_streambuf<charT, traits> streambuf_type;
+    typedef ostreambuf_iterator<charT, traits> iter_type;
+    typedef num_put<charT, ostreambuf_iterator<charT, traits> > facet_type;
+
+public:
+    typedef charT                     char_type;
+    typedef typename traits::int_type int_type;
+    typedef typename traits::pos_type pos_type;
+    typedef typename traits::off_type off_type;
+    typedef traits                    traits_type;
+
+    // 27.6.2.2 Constructor/destructor:
+    explicit basic_ostream(streambuf_type* sb);
+    virtual ~basic_ostream();
+
+    // 27.6.2.3 Prefix/suffix:
+    class sentry {
+	bool ok_;
+	basic_ostream<charT, traits>* pos;
+    public:
+	explicit sentry(basic_ostream<charT, traits>& os);
+	~sentry();
+	operator bool(){return ok_;}
+    private:
+	sentry(const sentry&); // not to be defined
+	sentry& operator=(const sentry&); // not to be defined 
+    };
+    friend class sentry;
+
+    // 27.6.2.5 Formatted output:
+    inline basic_ostream& operator<<(basic_ostream& (*pf)(basic_ostream&));
+    inline basic_ostream& operator<<(basic_ios<charT, traits>& (*pf)(basic_ios<charT, traits>&));
+    inline basic_ostream& operator<<(ios_base& (*pf)(ios_base&));
+
+#if KAI_NONSTD_OSTREAM
+    // Following two methods added by KAI for backwards compatibility with Cfront.
+    bool opfx();
+    inline void osfx();
+#endif /* KAI_NONSTD_OSTREAM */
+
+    basic_ostream& operator<<(bool n);
+    inline basic_ostream& operator<<(short n);
+    inline basic_ostream& operator<<(unsigned short n);
+    inline basic_ostream& operator<<(int n);
+    inline basic_ostream& operator<<(unsigned int n);
+    basic_ostream& operator<<(long n);
+    basic_ostream& operator<<(unsigned long n);
+#if __KAI_LONG_LONG
+    basic_ostream& operator<<(__long_long n);
+    basic_ostream& operator<<(unsigned __long_long n);
+#endif /* __KAI_LONG_LONG */
+    basic_ostream& operator<<(float f);
+    basic_ostream& operator<<(double f);
+    basic_ostream& operator<<(long double f);
+    basic_ostream& operator<<(const void* p);
+    basic_ostream& operator<<(streambuf_type* sb);
+
+    // 27.6.2.6 Unformatted output:
+    basic_ostream& put(char_type c);
+    basic_ostream& write(const char_type* s,streamsize n);
+
+    basic_ostream& flush();
+
+    //27.6.2.4 seeks:
+    inline pos_type tellp();
+    inline basic_ostream& seekp(pos_type);
+    inline basic_ostream& seekp(off_type, ios_base::seekdir);
+
+    template<class charT2, class traits2>
+    friend inline basic_ostream<charT2, traits2>&
+    __kai_insert_char(basic_ostream<charT2, traits2>&out, charT2 c);
+
+    template<class charT2, class traits2>
+    friend inline basic_ostream<charT2, traits2>&
+    __kai_insert_c_string(basic_ostream<charT2, traits2>& out, const charT2* s, __kai::streamsize_t length);
+
+    template<class charT2, class traits2>
+    friend bool __kai_add_padding(basic_ostream<charT2, traits2>& out, int n_padding);
+};
+
+template<class charT,class traits>
+bool __kai_add_padding(basic_ostream<charT, traits>& out, int n_padding)
+{
+    charT fill_char = traits::to_char_type(out.fill());
+    basic_ostream<charT, traits>::streambuf_type *sbuf = out.rdbuf();
+    static const traits::int_type eof_val = traits::eof();
+    do {
+	if (traits::eq_int_type(sbuf->sputc(fill_char), eof_val))
+	    return false;
+    } while(--n_padding > 0);
+    return true;
+}
+
+template<class charT,class traits>
+inline basic_ostream<charT, traits>&
+__kai_insert_char(basic_ostream<charT, traits>&out, charT c)
+{
+    __KAI_LOCK_STREAM(out);
+    ios_base::iostate flg = ios_base::goodbit;
+    MSIPL_TRY {
+	basic_ostream<charT, traits>::sentry s_(out);
+	if (s_) {
+	    streamsize fillcount = out.width()>1 ? out.width()-1 : 0;
+	    basic_ostream<charT, traits>::streambuf_type *sbuf = out.rdbuf();
+	    if ((out.flags() & ios_base::adjustfield)==ios_base::left) {
+		if (traits::eq_int_type( sbuf->sputc(c), traits::eof() )
+		    ||(fillcount > 0 && !__kai_add_padding(out, fillcount)))
+		    flg |= ios_base::failbit;
+	    } else {
+		if ((fillcount > 0 && !__kai_add_padding(out, fillcount))
+		    || traits::eq_int_type( sbuf->sputc(c), traits::eof() ) )
+		    flg |= ios_base::failbit;
+	    }
+	}
+    } MSIPL_CATCH { flg |= ios_base::badbit; }
+    out.width(0);
+    if (flg!=ios_base::goodbit)
+	out.setstate(flg);
+    return out;
+}
+    
+template<class charT,class traits>
+inline  basic_ostream<charT, traits>&
+__kai_insert_c_string(basic_ostream<charT, traits>& out, const charT* s, streamsize length)
+{
+    __KAI_LOCK_STREAM(out);
+    ios_base::iostate flg = ios_base::goodbit;
+    MSIPL_TRY {
+	basic_ostream<charT, traits>::sentry s_(out);
+	if (s==NULL) {
+	    flg |= ios_base::failbit;
+	} else if (s_) {
+	    streamsize prcount = length ? length : traits::length(s);
+	    streamsize fillcount = out.width()> prcount ? out.width()-prcount : 0;
+	    if ((out.flags() & ios_base::adjustfield)==ios_base::right) {
+		if (fillcount > 0 && !__kai_add_padding(out, fillcount))
+		    flg |= ios_base::failbit;
+		if (out.rdbuf()->sputn(s, prcount)!= prcount) 
+		    flg |= ios_base::failbit;
+	    } else {
+		if (out.rdbuf()->sputn(s, prcount) != prcount) 
+		    flg |= ios_base::failbit;
+		if (fillcount > 0 && !__kai_add_padding(out, fillcount))
+		    flg |= ios_base::failbit;
+	    }
+	}
+    } MSIPL_CATCH { flg |= ios_base::badbit; }
+    out.width(0);
+    if (flg!=ios_base::goodbit)
+	out.setstate(flg);
+    return out;
+}
+
+template<class charT, class traits> 
+inline basic_ostream<charT, traits>::basic_ostream(streambuf_type* sb) 
+{
+    init(sb);
+}
+
+template<class charT, class traits> 	// Do not inline, this is the decider function
+basic_ostream<charT, traits>::~basic_ostream() { }
+
+template<class charT, class traits> 
+inline basic_ostream<charT, traits>::sentry::sentry(basic_ostream<charT, traits>& os):ok_(false), pos(&os)
+{
+    if (!os.state && os.tiestr) 
+	os.tiestr->flush();
+    if (!os.state) 
+	ok_ = true;
+    else 
+	os.setstate(ios_base::failbit);
+}
+
+template<class charT, class traits> 
+inline basic_ostream<charT, traits>::sentry::~sentry()
+{
+    if (pos->fmtfl & unitbuf && pos->sb && pos->sb->pubsync() == -1) {
+	pos->state |= badbit;
+	if (pos->state & pos->except_flags)
+	    ios_base::throwfailure();
+    }
+}
+
+template<class charT, class traits> 
+inline basic_ostream<charT, traits>::pos_type basic_ostream<charT, traits>::tellp()
+{
+    __KAI_LOCK_STREAM(*this);
+    return (state & badbit || state & failbit) ? pos_type(-1) :
+	sb->pubseekoff(0, ios_base::cur, ios_base::out);
+}
+
+template<class charT, class traits> 
+inline basic_ostream<charT, traits>& basic_ostream<charT, traits>::seekp(pos_type pos)
+{
+    __KAI_LOCK_STREAM(*this);
+    if (!(state & badbit || state & failbit))
+	// KAI added ios_base::out - see Issue 136 of WG21's Library Issues list
+	sb->pubseekpos(pos, ios_base::out);	
+    return *this;
+}
+
+template<class charT, class traits> 
+inline basic_ostream<charT, traits>& basic_ostream<charT, traits>::seekp(off_type off, ios_base::seekdir dir)
+{
+    __KAI_LOCK_STREAM(*this);
+    if (!(state & badbit || state & failbit))
+	// KAI added ios_base::out - see Issue 136 of WG21's Library Issues list
+	sb->pubseekoff(off, dir, ios_base::out);	
+    return *this;
+}
+
+template<class charT, class traits> 
+basic_ostream<charT, traits>& basic_ostream<charT, traits>::operator<<(bool n)
+{
+    iostate flg = goodbit;
+    __KAI_LOCK_STREAM(*this);
+
+    MSIPL_TRY {
+	sentry s_(*this);
+	if (s_) {
+	    if (num_put_facet().put(*this, *this, fillch, n).failed())
+		flg |= failbit;
+	}
+    } MSIPL_CATCH { flg |= badbit; }
+    if (flg)
+	setstate(flg);
+    return *this;
+}
+
+// KAI change - replace Modena's pathetically code-bloating
+// definitions for operator<< for signed/unsigned short/int 
+// to definitions that call operator<< for signed/unsigned long.
+template<class charT, class traits> 
+inline basic_ostream<charT, traits>& basic_ostream<charT, traits>::operator<<(short n)
+{
+    return operator<<((long)n);
+}
+
+template<class charT, class traits> 
+inline basic_ostream<charT, traits>& basic_ostream<charT, traits>::operator<<(unsigned short n)
+{
+    return operator<<((unsigned long)n);
+}
+
+template<class charT, class traits> 
+inline basic_ostream<charT, traits>& basic_ostream<charT, traits>::operator<<(int n)
+{
+    return operator<<((long)n);
+}
+
+template<class charT, class traits> 
+inline basic_ostream<charT, traits>& basic_ostream<charT, traits>::operator<<(unsigned int n)
+{
+    return operator<<((unsigned long)n);
+}
+
+template<class charT, class traits> 
+basic_ostream<charT,traits>& basic_ostream<charT, traits>::operator<<(long n)
+{
+    iostate flg = goodbit;
+    __KAI_LOCK_STREAM(*this);
+
+    MSIPL_TRY {
+	sentry s_(*this);
+	if (s_) {
+	    if (num_put_facet().put(*this, *this, fillch, n).failed())
+		flg |= failbit;
+	}
+    } MSIPL_CATCH { flg |= badbit; }
+    if (flg)
+	setstate(flg);
+    return *this;
+}
+
+template<class charT, class traits> 
+basic_ostream<charT,traits>& basic_ostream<charT, traits>::operator<<(unsigned long n)
+{
+    iostate flg = goodbit;
+    __KAI_LOCK_STREAM(*this);
+
+    MSIPL_TRY {
+	sentry s_(*this);
+	if (s_) {
+	    if (num_put_facet().put(*this, *this, fillch, n).failed())
+		flg |= failbit;
+	}
+    } MSIPL_CATCH { flg |= badbit; }
+    if (flg)
+	setstate(flg);
+    return *this;
+}
+
+#if __KAI_LONG_LONG
+template<class charT, class traits> 
+basic_ostream<charT,traits>& basic_ostream<charT, traits>::operator<<(__long_long n)
+{
+    iostate flg = goodbit;
+    __KAI_LOCK_STREAM(*this);
+
+    MSIPL_TRY {
+	sentry s_(*this);
+	if (s_) {
+	    if (num_put_facet().put(*this, *this, fillch, n).failed())
+		flg |= failbit;
+	}
+    } MSIPL_CATCH { flg |= badbit; }
+    if (flg)
+	setstate(flg);
+    return *this;
+}
+
+template<class charT, class traits> 
+basic_ostream<charT,traits>& basic_ostream<charT, traits>::operator<<(unsigned __long_long n)
+{
+    iostate flg = goodbit;
+    __KAI_LOCK_STREAM(*this);
+
+    MSIPL_TRY {
+	sentry s_(*this);
+	if (s_) {
+	    if (num_put_facet().put(*this, *this, fillch, n).failed())
+		flg |= failbit;
+	}
+    } MSIPL_CATCH { flg |= badbit; }
+    if (flg)
+	setstate(flg);
+    return *this;
+}
+#endif /* __KAI_LONG_LONG */
+
+template<class charT, class traits> 
+basic_ostream<charT,traits>& basic_ostream<charT, traits>::operator<<(float n)
+{
+    iostate flg = goodbit;
+    __KAI_LOCK_STREAM(*this);
+
+    MSIPL_TRY {
+	sentry s_(*this);
+	if (s_) {
+	    if (num_put_facet().put(*this, *this, fillch, n).failed())
+		flg |= failbit;
+	}
+    } MSIPL_CATCH { flg |= badbit; }
+    if (flg)
+	setstate(flg);
+    return *this;
+}
+
+template<class charT, class traits> 
+basic_ostream<charT,traits>& basic_ostream<charT, traits>::operator<<(double n)
+{
+    iostate flg = goodbit;
+    __KAI_LOCK_STREAM(*this);
+
+    MSIPL_TRY {
+	sentry s_(*this);
+	if (s_) {
+	    if (num_put_facet().put(*this, *this, fillch, n).failed())
+		flg |= failbit;
+	}
+    } MSIPL_CATCH { flg |= badbit; }
+    if (flg)
+	setstate(flg);
+    return *this;
+}
+
+template<class charT, class traits> 
+basic_ostream<charT,traits>& basic_ostream<charT, traits>::operator<<(long double n)
+{
+    iostate flg = goodbit;
+    __KAI_LOCK_STREAM(*this);
+
+    MSIPL_TRY {
+	sentry s_(*this);
+	if (s_) {
+	    if (num_put_facet().put(*this, *this, fillch, n).failed())
+		flg |= failbit;
+	}
+    } MSIPL_CATCH { flg |= badbit; }
+    if (flg)
+	setstate(flg);
+    return *this;
+}
+
+template<class charT, class traits> 
+basic_ostream<charT, traits>& basic_ostream<charT, traits>::operator<<(const void* n)
+{
+    iostate flg = goodbit;
+    __KAI_LOCK_STREAM(*this);
+
+    MSIPL_TRY {
+	sentry s_(*this);
+	if (s_) {
+	    if (num_put_facet().put(*this, *this, fillch,(void*)n).failed())
+		flg |= failbit;
+	}
+    } MSIPL_CATCH { flg |= badbit; }
+    if (flg)
+	setstate(flg);
+    return *this;
+}
+
+template<class charT, class traits> 
+inline basic_ostream<charT, traits>& basic_ostream<charT, traits>::operator<<(basic_ostream&(*pf)(basic_ostream&))
+{
+    return (*pf)(*this); 
+}
+ 
+template<class charT, class traits> 
+inline basic_ostream<charT, traits>&
+basic_ostream<charT, traits>::operator<<(basic_ios<charT, traits>&(*pf)(basic_ios<charT, traits>&))
+{
+    (*pf)(*this); 
+    return *this;
+}
+
+template<class charT, class traits> 
+inline basic_ostream<charT, traits>& basic_ostream<charT, traits>::operator<<(ios_base&(*pf)(ios_base&))
+{
+    (*pf)(*this); 
+    return *this;
+}
+
+template<class charT, class traits> 
+basic_ostream<charT,traits>& basic_ostream<charT, traits>::operator<<(streambuf_type* buf)
+{
+    int_type ch;
+    streamsize count = 0;
+    iostate flg = goodbit;
+    __KAI_LOCK_STREAM(*this);
+    MSIPL_TRY {
+	sentry s_(*this);
+	if (s_ && buf)
+	    while (!traits::eq_int_type(ch = buf->sbumpc(), traits::eof())) {
+		if (traits::eq_int_type(sb->sputc(ch), traits::eof())) {
+		    buf->sputbackc(ch); 
+		    break;
+		}
+		count++;
+	    }
+	else
+	    flg |= badbit;
+	if (!count)
+	    flg |= failbit;
+    } MSIPL_CATCH { flg |= badbit; }
+    if (flg)
+	setstate(flg);
+    return *this;
+}
+
+template<class charT,class traits> basic_ostream<charT,traits>&
+basic_ostream<charT, traits>::put(char_type c)
+{
+    iostate flg = goodbit;
+    __KAI_LOCK_STREAM(*this);
+    streambuf_type* sbuf = sb;
+    // Tests ordered to reject quickly in common rejection cases.
+    if( sbuf && sbuf->pnext && sbuf->pnext<sbuf->pend && (fmtfl&unitbuf)==0 && !state && !tiestr ) {
+	// Fast case.
+	*sbuf->pnext++ = c;
+    } else {
+	MSIPL_TRY {
+	    sentry s_(*this);
+	    if (!s_ || traits::eq_int_type(sb->sputc(c), traits::eof()))
+		flg |= badbit;
+	} MSIPL_CATCH { flg |= badbit; }
+	if (flg)
+	    setstate(flg);
+    }
+    return *this;
+}
+
+template<class charT, class traits> 
+basic_ostream<charT, traits>&
+basic_ostream<charT, traits>::write(const char_type* s, streamsize n)
+{
+    __KAI_LOCK_STREAM(*this);
+    streambuf_type* sbuf = sb;
+    // Tests ordered to reject quickly in common rejection cases.
+    if( sbuf && sbuf->pnext && n<=sbuf->pend-sbuf->pnext && (fmtfl&unitbuf)==0 && 
+	!state && !tiestr && sbuf->pnext<=sbuf->pend ) 
+    {
+	// Fast case.
+	traits::copy( sbuf->pnext, s, n );
+	sbuf->pnext +=n;
+    } else {
+	iostate flg = goodbit;
+	MSIPL_TRY {
+	    sentry s_(*this);
+	    if (s_ &&(n != sb->sputn(s, n)))
+		flg |= badbit;
+	} MSIPL_CATCH { flg |= badbit; }
+	if (flg)
+	    setstate(flg);
+    }
+    return *this;
+}
+
+template<class charT, class traits> 
+basic_ostream<charT,traits>&
+basic_ostream<charT, traits>::flush()
+{
+    iostate flg = goodbit;
+    __KAI_LOCK_STREAM(*this);
+    MSIPL_TRY {
+	sentry s_(*this);
+	if (s_ && sb && sb->pubsync() == -1) 
+	    flg |= badbit;
+    } MSIPL_CATCH { flg |= badbit; }
+    if (flg)
+	setstate(flg);
+    return *this;
+}
+
+// Manipulators -- Standard basic_ostream
+template<class charT, class traits> 
+basic_ostream<charT, traits>& endl(basic_ostream<charT, traits>& os)
+{
+    os.put(os.widen('\n'));
+    os.flush();
+    return os;
+}
+ 
+template<class charT, class traits> 
+basic_ostream<charT, traits>& ends(basic_ostream<charT, traits>& os)
+{
+    os.put(charT());
+    return os;
+}
+ 
+template<class charT, class traits> 
+basic_ostream<charT, traits>& flush(basic_ostream<charT, traits>& os)
+{
+    os.flush();
+    return os;
+}
+
+// 27.6.2.5.4 character inserters.
+template<class charT,class traits>
+basic_ostream<charT,traits>& operator<<(basic_ostream<charT,traits>&out, charT c) {
+    return __kai_insert_char(out,c);
+}
+
+template<class charT,class traits>
+basic_ostream<charT,traits>& operator<<(basic_ostream<charT,traits>&out, char c){
+    return __kai_insert_char(out, out.widen(c));
+}
+
+// partial specializations
+template<class traits>
+basic_ostream<char,traits>& operator<<(basic_ostream<char,traits>&out, char c){
+    return __kai_insert_char(out, c);
+}
+// signed and unsigned
+template<class traits>
+basic_ostream<char,traits>& operator<<(basic_ostream<char,traits>&out, signed char c){
+    return __kai_insert_char(out, (char)c);
+}
+template<class traits>
+basic_ostream<char,traits>& operator<<(basic_ostream<char,traits>&out, unsigned char c){
+    return __kai_insert_char(out, (char)c);
+}
+
+template<class charT,class traits>
+basic_ostream<charT,traits>& operator<<(basic_ostream<charT,traits>& out,const charT* s){
+    return __kai_insert_c_string(out,s);
+}
+
+template<class charT,class traits>
+basic_ostream<charT,traits>& operator<<(basic_ostream<charT,traits>&out, const char* s){
+    return __kai_insert_c_string(out,(charT*)(s));
+}
+
+// partial specializations
+template<class traits>
+basic_ostream<char,traits>& operator<<(basic_ostream<char,traits>&out, const char* s){
+    return __kai_insert_c_string(out,(char*)(s));
+}
+// signed and unsigned
+template<class traits>
+basic_ostream<char,traits>& operator<<(basic_ostream<char,traits>&out, const signed char* s){
+    return __kai_insert_c_string(out,(char*)(s));
+}
+template<class traits>
+basic_ostream<char,traits>& operator<<(basic_ostream<char,traits>&out, const unsigned char* s){
+    return __kai_insert_c_string(out,(char*)(s));
+}
+
+template<class charT,class traits>
+void __kai_do_flush(basic_ostream<charT,traits>* os)
+{
+    os->flush();
+}
+
+#if KAI_NONSTD_OSTREAM
+// opfx and osfx are not part of December 1996 ANSI draft,
+// but are widely used by existing C++ codes.
+template <class charT, class traits>
+bool basic_ostream<charT, traits>::opfx()
+{
+    __KAI_LOCK_STREAM(*this);
+    if (good()) {
+	if (tie()) {
+	    tie()->flush();
+	}
+    }
+    return good();
+}
+
+template <class charT, class traits>
+void basic_ostream<charT, traits>::osfx()
+{
+    __KAI_LOCK_STREAM(*this);
+    if (flags() & unitbuf)
+        flush();
+    // Is it the right place to reset width ?
+    width(0);
+}
+#endif /* KAI_NONSTD_OSTREAM */
+
+typedef basic_ostream<char, char_traits<char> > ostream;
+#ifdef KAI_WCHAR_T
+typedef basic_ostream<wchar_t, char_traits<wchar_t> > wostream;
+#endif
+
+} // namespace std
+
+#endif /* __KAI_OSTREAM */

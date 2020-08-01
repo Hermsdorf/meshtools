@@ -1,0 +1,830 @@
+#ifndef _PDT_HASH_MAP_
+#define _PDT_HASH_MAP_
+
+
+#include <map>
+#include <vector>
+
+using std::vector;
+
+namespace std 
+{
+   
+  template <class _Pair>
+    struct _Select1st : public unary_function<_Pair,
+                                              typename _Pair::first_type>
+    {
+      typename _Pair::first_type&
+      operator()(_Pair& __x) const
+      { return __x.first; }
+
+      const typename _Pair::first_type&
+      operator()(const _Pair& __x) const
+      { return __x.first; }
+    };
+}
+
+namespace __gnu_cxx
+{
+  using std::equal_to;
+  using std::allocator;
+  using std::pair;
+  using std::_Select1st;
+
+template <class _Val, class _Key, class _HashFcn,
+          class _ExtractKey, class _EqualKey, class _Alloc>
+struct _Hashtable_iterator; 
+
+template <class _Val>
+struct _Hashtable_node
+{
+  _Hashtable_node* _M_next;
+  _Val _M_val;
+};
+
+template <class _Val, class _Key, class _HashFcn,
+          class _ExtractKey, class _EqualKey, class _Alloc>
+struct _Hashtable_const_iterator;
+
+  struct input_iterator_tag {};
+
+  struct forward_iterator_tag : public input_iterator_tag {};
+
+template <class _Val, class _Key, class _HashFcn,
+          class _ExtractKey, class _EqualKey, class _Alloc>
+class hashtable {
+public:
+  typedef _Key key_type;
+  typedef _Val value_type;
+  typedef _HashFcn hasher;
+  typedef _EqualKey key_equal;
+
+  typedef size_t            size_type;
+  typedef ptrdiff_t         difference_type;
+  typedef value_type*       pointer;
+  typedef const value_type* const_pointer;
+  typedef value_type&       reference;
+  typedef const value_type& const_reference;
+
+  hasher hash_funct() const { return _M_hash; }
+  key_equal key_eq() const { return _M_equals; }
+
+private:
+  typedef _Hashtable_node<_Val> _Node;
+
+public:
+  typedef typename _Alloc::template rebind<value_type>::other allocator_type;
+  allocator_type get_allocator() const { return _M_node_allocator; }
+private:
+  typedef typename _Alloc::template rebind<_Node>::other _Node_Alloc;
+  typedef typename _Alloc::template rebind<_Node*>::other _Nodeptr_Alloc;
+
+  _Node_Alloc _M_node_allocator;
+  _Node* _M_get_node() { return _M_node_allocator.allocate(1); }
+  void _M_put_node(_Node* __p) { _M_node_allocator.deallocate(__p, 1); }
+
+private:
+  hasher                _M_hash;
+  key_equal             _M_equals;
+  _ExtractKey           _M_get_key;
+  vector<int>           _M_buckets;
+  size_type             _M_num_elements;
+
+public:
+  typedef _Hashtable_iterator<_Val,_Key,_HashFcn,_ExtractKey,_EqualKey,_Alloc>
+          iterator;
+  typedef _Hashtable_const_iterator<_Val,_Key,_HashFcn,_ExtractKey,_EqualKey,
+                                    _Alloc>
+          const_iterator;
+
+  friend struct
+  _Hashtable_iterator<_Val,_Key,_HashFcn,_ExtractKey,_EqualKey,_Alloc>;
+  friend struct
+  _Hashtable_const_iterator<_Val,_Key,_HashFcn,_ExtractKey,_EqualKey,_Alloc>;
+
+public:
+  hashtable(size_type __n,
+            const _HashFcn&    __hf,
+            const _EqualKey&   __eql,
+            const _ExtractKey& __ext,
+            const allocator_type& __a = allocator_type())
+    : _M_node_allocator(__a),
+      _M_hash(__hf),
+      _M_equals(__eql),
+      _M_get_key(__ext),
+      _M_buckets(__a),
+      _M_num_elements(0)
+  {
+    _M_initialize_buckets(__n);
+  }
+
+  hashtable(size_type __n,
+            const _HashFcn&    __hf,
+            const _EqualKey&   __eql,
+            const allocator_type& __a = allocator_type())
+    : _M_node_allocator(__a),
+      _M_hash(__hf),
+      _M_equals(__eql),
+      _M_get_key(_ExtractKey()),
+      _M_buckets(__a),
+      _M_num_elements(0)
+  {
+    _M_initialize_buckets(__n);
+  }
+
+  hashtable(const hashtable& __ht)
+    : _M_node_allocator(__ht.get_allocator()),
+      _M_hash(__ht._M_hash),
+      _M_equals(__ht._M_equals),
+      _M_get_key(__ht._M_get_key),
+      _M_buckets(__ht.get_allocator()),
+      _M_num_elements(0)
+  {
+    _M_copy_from(__ht);
+  }
+
+  hashtable& operator= (const hashtable& __ht)
+  {
+    if (&__ht != this) {
+      clear();
+      _M_hash = __ht._M_hash;
+      _M_equals = __ht._M_equals;
+      _M_get_key = __ht._M_get_key;
+      _M_copy_from(__ht);
+    }
+    return *this;
+  }
+
+  ~hashtable() { clear(); }
+
+  size_type size() const { return _M_num_elements; }
+  size_type max_size() const { return size_type(-1); }
+  bool empty() const { return size() == 0; }
+
+  void swap(hashtable& __ht)
+  {
+    std::swap(_M_hash, __ht._M_hash);
+    std::swap(_M_equals, __ht._M_equals);
+    std::swap(_M_get_key, __ht._M_get_key);
+    _M_buckets.swap(__ht._M_buckets);
+    std::swap(_M_num_elements, __ht._M_num_elements);
+  }
+
+  iterator begin()
+  {
+    return iterator(0, this);
+  }
+
+  iterator end() { return iterator(0, this); }
+
+  const_iterator begin() const
+  {
+    return const_iterator(0, this);
+  }
+
+  const_iterator end() const { return const_iterator(0, this); }
+
+  template <class _Vl, class _Ky, class _HF, class _Ex, class _Eq, class _Al>
+  friend bool operator== (const hashtable<_Vl, _Ky, _HF, _Ex, _Eq, _Al>&,
+                          const hashtable<_Vl, _Ky, _HF, _Ex, _Eq, _Al>&);
+public:
+
+  size_type bucket_count() const { return _M_buckets.size(); }
+
+  size_type max_bucket_count() const
+    { return (int)_S_num_primes - 1; }
+
+  size_type elems_in_bucket(size_type __bucket) const
+  {
+    size_type __result = 0;
+    for (_Node* __cur = _M_buckets[__bucket]; __cur; __cur = __cur->_M_next)
+      __result += 1;
+    return __result;
+  }
+
+  pair<iterator, bool> insert_unique(const value_type& __obj)
+  {
+    resize(_M_num_elements + 1);
+    return insert_unique_noresize(__obj);
+  }
+
+  iterator insert_equal(const value_type& __obj)
+  {
+    resize(_M_num_elements + 1);
+    return insert_equal_noresize(__obj);
+  }
+
+  pair<iterator, bool> insert_unique_noresize(const value_type& __obj);
+  iterator insert_equal_noresize(const value_type& __obj);
+
+  template <class _InputIterator>
+  void insert_unique(_InputIterator __f, _InputIterator __l)
+  {
+    insert_unique(__f, __l, __iterator_category(__f));
+  }
+
+  template <class _InputIterator>
+  void insert_equal(_InputIterator __f, _InputIterator __l)
+  {
+    insert_equal(__f, __l, __iterator_category(__f));
+  }
+
+  template <class _InputIterator>
+  void insert_unique(_InputIterator __f, _InputIterator __l,
+                     input_iterator_tag)
+  {
+    for ( ; __f != __l; ++__f)
+      insert_unique(*__f);
+  }
+
+  template <class _InputIterator>
+  void insert_equal(_InputIterator __f, _InputIterator __l,
+                    input_iterator_tag)
+  {
+    for ( ; __f != __l; ++__f)
+      insert_equal(*__f);
+  }
+
+  template <class _ForwardIterator>
+  void insert_unique(_ForwardIterator __f, _ForwardIterator __l,
+                     forward_iterator_tag)
+  {
+    size_type __n = distance(__f, __l);
+    resize(_M_num_elements + __n);
+    for ( ; __n > 0; --__n, ++__f)
+      insert_unique_noresize(*__f);
+  }
+
+  template <class _ForwardIterator>
+  void insert_equal(_ForwardIterator __f, _ForwardIterator __l,
+                    forward_iterator_tag)
+  {
+    size_type __n = distance(__f, __l);
+    resize(_M_num_elements + __n);
+    for ( ; __n > 0; --__n, ++__f)
+      insert_equal_noresize(*__f);
+  }
+
+  reference find_or_insert(const value_type& __obj);
+
+  iterator find(const key_type& __key)
+  {
+    size_type __n = _M_bkt_num_key(__key);
+    _Node* __first;
+    for ( __first = _M_buckets[__n];
+          __first && !_M_equals(_M_get_key(__first->_M_val), __key);
+          __first = __first->_M_next)
+      {}
+    return iterator(__first, this);
+  }
+
+  const_iterator find(const key_type& __key) const
+  {
+    size_type __n = _M_bkt_num_key(__key);
+    const _Node* __first;
+    for ( __first = _M_buckets[__n];
+          __first && !_M_equals(_M_get_key(__first->_M_val), __key);
+          __first = __first->_M_next)
+      {}
+    return const_iterator(__first, this);
+  }
+
+  size_type count(const key_type& __key) const
+  {
+    const size_type __n = _M_bkt_num_key(__key);
+    size_type __result = 0;
+
+    for (const _Node* __cur = _M_buckets[__n]; __cur; __cur = __cur->_M_next)
+      if (_M_equals(_M_get_key(__cur->_M_val), __key))
+        ++__result;
+    return __result;
+  }
+
+  pair<iterator, iterator>
+  equal_range(const key_type& __key);
+
+  pair<const_iterator, const_iterator>
+  equal_range(const key_type& __key) const;
+
+  size_type erase(const key_type& __key);
+  void erase(const iterator& __it);
+  void erase(iterator __first, iterator __last);
+
+  void erase(const const_iterator& __it);
+  void erase(const_iterator __first, const_iterator __last);
+
+  void resize(size_type __num_elements_hint);
+  void clear();
+
+private:
+  size_type _M_next_size(size_type __n) const
+    { return (__n); }
+
+  void _M_initialize_buckets(size_type __n)
+  {
+    const size_type __n_buckets = _M_next_size(__n);
+    _M_buckets.reserve(__n_buckets);
+    
+    _M_num_elements = 0;
+  }
+
+  size_type _M_bkt_num_key(const key_type& __key) const
+  {
+    return _M_bkt_num_key(__key, _M_buckets.size());
+  }
+
+  size_type _M_bkt_num(const value_type& __obj) const
+  {
+    return _M_bkt_num_key(_M_get_key(__obj));
+  }
+
+  size_type _M_bkt_num_key(const key_type& __key, size_t __n) const
+  {
+    return _M_hash(__key) % __n;
+  }
+
+  size_type _M_bkt_num(const value_type& __obj, size_t __n) const
+  {
+    return _M_bkt_num_key(_M_get_key(__obj), __n);
+  }
+
+  _Node* _M_new_node(const value_type& __obj)
+  {
+    _Node* __n = _M_get_node();
+    __n->_M_next = 0;
+    try {
+      _Construct(&__n->_M_val, __obj);
+      return __n;
+    }
+    catch(...)
+      {
+	_M_put_node(__n);
+	throw;
+      }
+  }
+
+  void _M_delete_node(_Node* __n)
+  {
+    _Destroy(&__n->_M_val);
+    _M_put_node(__n);
+  }
+
+  void _M_erase_bucket(const size_type __n, _Node* __first, _Node* __last);
+  void _M_erase_bucket(const size_type __n, _Node* __last);
+
+  void _M_copy_from(const hashtable& __ht);
+
+};
+
+
+
+
+template <class _Val, class _Key, class _HashFcn,
+          class _ExtractKey, class _EqualKey, class _Alloc>
+struct _Hashtable_iterator {
+  typedef hashtable<_Val,_Key,_HashFcn,_ExtractKey,_EqualKey,_Alloc>
+          _Hashtable;
+  typedef _Hashtable_iterator<_Val, _Key, _HashFcn,
+                              _ExtractKey, _EqualKey, _Alloc>
+          iterator;
+  typedef _Hashtable_const_iterator<_Val, _Key, _HashFcn,
+                                    _ExtractKey, _EqualKey, _Alloc>
+          const_iterator;
+  typedef _Hashtable_node<_Val> _Node;
+
+  typedef forward_iterator_tag iterator_category;
+  typedef _Val value_type;
+  typedef ptrdiff_t difference_type;
+  typedef size_t size_type;
+  typedef _Val& reference;
+  typedef _Val* pointer;
+
+  _Node* _M_cur;
+  _Hashtable* _M_ht;
+
+  _Hashtable_iterator(_Node* __n, _Hashtable* __tab)
+    : _M_cur(__n), _M_ht(__tab) {}
+  _Hashtable_iterator() {}
+  reference operator*() const { return _M_cur->_M_val; }
+  pointer operator->() const { return &(operator*()); }
+  iterator& operator++();
+  iterator operator++(int);
+  bool operator==(const iterator& __it) const
+    { return _M_cur == __it._M_cur; }
+  bool operator!=(const iterator& __it) const
+    { return _M_cur != __it._M_cur; }
+};
+
+
+  
+template <class _Val, class _Key, class _HashFcn,
+          class _ExtractKey, class _EqualKey, class _Alloc>
+struct _Hashtable_const_iterator {
+  typedef hashtable<_Val,_Key,_HashFcn,_ExtractKey,_EqualKey,_Alloc>
+          _Hashtable;
+  typedef _Hashtable_iterator<_Val,_Key,_HashFcn,
+                              _ExtractKey,_EqualKey,_Alloc>
+          iterator;
+  typedef _Hashtable_const_iterator<_Val, _Key, _HashFcn,
+                                    _ExtractKey, _EqualKey, _Alloc>
+          const_iterator;
+  typedef _Hashtable_node<_Val> _Node;
+
+  typedef forward_iterator_tag iterator_category;
+  typedef _Val value_type;
+  typedef ptrdiff_t difference_type;
+  typedef size_t size_type;
+  typedef const _Val& reference;
+  typedef const _Val* pointer;
+
+  const _Node* _M_cur;
+  const _Hashtable* _M_ht;
+
+  _Hashtable_const_iterator(const _Node* __n, const _Hashtable* __tab)
+    : _M_cur(__n), _M_ht(__tab) {}
+  _Hashtable_const_iterator() {}
+  _Hashtable_const_iterator(const iterator& __it)
+    : _M_cur(__it._M_cur), _M_ht(__it._M_ht) {}
+  reference operator*() const { return _M_cur->_M_val; }
+  pointer operator->() const { return &(operator*()); }
+  const_iterator& operator++();
+  const_iterator operator++(int);
+  bool operator==(const const_iterator& __it) const
+    { return _M_cur == __it._M_cur; }
+  bool operator!=(const const_iterator& __it) const
+    { return _M_cur != __it._M_cur; }
+};
+
+
+template <class _Val, class _Key, class _HF, class _ExK, class _EqK,
+          class _All>
+_Hashtable_const_iterator<_Val,_Key,_HF,_ExK,_EqK,_All>&
+_Hashtable_const_iterator<_Val,_Key,_HF,_ExK,_EqK,_All>::operator++()
+{
+  const _Node* __old = _M_cur;
+  _M_cur = _M_cur->_M_next;
+  if (!_M_cur) {
+    size_type __bucket = _M_ht->_M_bkt_num(__old->_M_val);
+    while (!_M_cur && ++__bucket < _M_ht->_M_buckets.size())
+      _M_cur = _M_ht->_M_buckets[__bucket];
+  }
+  return *this;
+}
+
+template <class _Val, class _Key, class _HF, class _ExK, class _EqK,
+          class _All>
+inline _Hashtable_const_iterator<_Val,_Key,_HF,_ExK,_EqK,_All>
+_Hashtable_const_iterator<_Val,_Key,_HF,_ExK,_EqK,_All>::operator++(int)
+{
+  const_iterator __tmp = *this;
+  ++*this;
+  return __tmp;
+}
+
+template <class _Val, class _Key, class _HF, class _ExK, class _EqK,
+          class _All>
+_Hashtable_iterator<_Val,_Key,_HF,_ExK,_EqK,_All>&
+_Hashtable_iterator<_Val,_Key,_HF,_ExK,_EqK,_All>::operator++()
+{
+  const _Node* __old = _M_cur;
+  _M_cur = _M_cur->_M_next;
+  if (!_M_cur) {
+    size_type __bucket = _M_ht->_M_bkt_num(__old->_M_val);
+    while (!_M_cur && ++__bucket < _M_ht->_M_buckets.size())
+      _M_cur = _M_ht->_M_buckets[__bucket];
+  }
+  return *this;
+}
+
+template <class _Val, class _Key, class _HF, class _ExK, class _EqK,
+          class _All>
+inline _Hashtable_iterator<_Val,_Key,_HF,_ExK,_EqK,_All>
+_Hashtable_iterator<_Val,_Key,_HF,_ExK,_EqK,_All>::operator++(int)
+{
+  iterator __tmp = *this;
+  ++*this;
+  return __tmp;
+}
+
+
+
+
+
+  template<class C> struct hash
+  {
+    size_t operator()(const C* __s) const
+    { return sizeof(__s); }
+  };
+
+  
+  template<class _Key, class _Tp, class _HashFcn  = hash<_Key>,
+	    class _EqualKey = equal_to<_Key>, class _Alloc =  allocator<_Tp> >
+    class hash_map;
+
+  template<class _Key, class _Tp, class _HashFn, class _EqKey, class _Alloc>
+  inline bool operator==(const hash_map<_Key, _Tp, _HashFn, _EqKey, _Alloc>&,
+			 const hash_map<_Key, _Tp, _HashFn, _EqKey, _Alloc>&);
+
+
+
+
+ 
+template <class _Key, class _Tp, class _HashFcn, class _EqualKey,
+          class _Alloc>
+class hash_map
+{
+private:
+  typedef hashtable<pair<const _Key,_Tp>,_Key,_HashFcn,
+                    _Select1st<pair<const _Key,_Tp> >,_EqualKey,_Alloc> _Ht;
+  _Ht _M_ht;
+
+public:
+  typedef typename _Ht::key_type key_type;
+  typedef _Tp data_type;
+  typedef _Tp mapped_type;
+  typedef typename _Ht::value_type value_type;
+  typedef typename _Ht::hasher hasher;
+  typedef typename _Ht::key_equal key_equal;
+
+  typedef typename _Ht::size_type size_type;
+  typedef typename _Ht::difference_type difference_type;
+  typedef typename _Ht::pointer pointer;
+  typedef typename _Ht::const_pointer const_pointer;
+  typedef typename _Ht::reference reference;
+  typedef typename _Ht::const_reference const_reference;
+
+  typedef typename _Ht::iterator iterator;
+  typedef typename _Ht::const_iterator const_iterator;
+
+  typedef typename _Ht::allocator_type allocator_type;
+
+  hasher hash_funct() const { return _M_ht.hash_funct(); }
+  key_equal key_eq() const { return _M_ht.key_eq(); }
+  allocator_type get_allocator() const { return _M_ht.get_allocator(); }
+
+public:
+  hash_map() : _M_ht(100, hasher(), key_equal(), allocator_type()) {}
+  explicit hash_map(size_type __n)
+    : _M_ht(__n, hasher(), key_equal(), allocator_type()) {}
+  hash_map(size_type __n, const hasher& __hf)
+    : _M_ht(__n, __hf, key_equal(), allocator_type()) {}
+  hash_map(size_type __n, const hasher& __hf, const key_equal& __eql,
+           const allocator_type& __a = allocator_type())
+    : _M_ht(__n, __hf, __eql, __a) {}
+
+  template <class _InputIterator>
+  hash_map(_InputIterator __f, _InputIterator __l)
+    : _M_ht(100, hasher(), key_equal(), allocator_type())
+    { _M_ht.insert_unique(__f, __l); }
+  template <class _InputIterator>
+  hash_map(_InputIterator __f, _InputIterator __l, size_type __n)
+    : _M_ht(__n, hasher(), key_equal(), allocator_type())
+    { _M_ht.insert_unique(__f, __l); }
+  template <class _InputIterator>
+  hash_map(_InputIterator __f, _InputIterator __l, size_type __n,
+           const hasher& __hf)
+    : _M_ht(__n, __hf, key_equal(), allocator_type())
+    { _M_ht.insert_unique(__f, __l); }
+  template <class _InputIterator>
+  hash_map(_InputIterator __f, _InputIterator __l, size_type __n,
+           const hasher& __hf, const key_equal& __eql,
+           const allocator_type& __a = allocator_type())
+    : _M_ht(__n, __hf, __eql, __a)
+    { _M_ht.insert_unique(__f, __l); }
+
+public:
+  size_type size() const { return _M_ht.size(); }
+  size_type max_size() const { return _M_ht.max_size(); }
+  bool empty() const { return _M_ht.empty(); }
+  void swap(hash_map& __hs) { _M_ht.swap(__hs._M_ht); }
+
+  template <class _K1, class _T1, class _HF, class _EqK, class _Al>
+  friend bool operator== (const hash_map<_K1, _T1, _HF, _EqK, _Al>&,
+                          const hash_map<_K1, _T1, _HF, _EqK, _Al>&);
+
+  iterator begin() { return _M_ht.begin(); }
+  iterator end() { return _M_ht.end(); }
+  const_iterator begin() const { return _M_ht.begin(); }
+  const_iterator end() const { return _M_ht.end(); }
+
+public:
+  pair<iterator,bool> insert(const value_type& __obj)
+    { return _M_ht.insert_unique(__obj); }
+  template <class _InputIterator>
+  void insert(_InputIterator __f, _InputIterator __l)
+    { _M_ht.insert_unique(__f,__l); }
+  pair<iterator,bool> insert_noresize(const value_type& __obj)
+    { return _M_ht.insert_unique_noresize(__obj); }
+
+  iterator find(const key_type& __key) { return _M_ht.find(__key); }
+  const_iterator find(const key_type& __key) const
+    { return _M_ht.find(__key); }
+
+  _Tp& operator[](const key_type& __key) {
+    return _M_ht.find_or_insert(value_type(__key, _Tp())).second;
+  }
+
+  size_type count(const key_type& __key) const { return _M_ht.count(__key); }
+
+  pair<iterator, iterator> equal_range(const key_type& __key)
+    { return _M_ht.equal_range(__key); }
+  pair<const_iterator, const_iterator>
+  equal_range(const key_type& __key) const
+    { return _M_ht.equal_range(__key); }
+
+  size_type erase(const key_type& __key) {return _M_ht.erase(__key); }
+  void erase(iterator __it) { _M_ht.erase(__it); }
+  void erase(iterator __f, iterator __l) { _M_ht.erase(__f, __l); }
+  void clear() { _M_ht.clear(); }
+
+  void resize(size_type __hint) { _M_ht.resize(__hint); }
+  size_type bucket_count() const { return _M_ht.bucket_count(); }
+  size_type max_bucket_count() const { return _M_ht.max_bucket_count(); }
+  size_type elems_in_bucket(size_type __n) const
+    { return _M_ht.elems_in_bucket(__n); }
+};
+
+template <class _Key, class _Tp, class _HashFcn, class _EqlKey, class _Alloc>
+inline bool
+operator==(const hash_map<_Key,_Tp,_HashFcn,_EqlKey,_Alloc>& __hm1,
+           const hash_map<_Key,_Tp,_HashFcn,_EqlKey,_Alloc>& __hm2)
+{
+  return __hm1._M_ht == __hm2._M_ht;
+}
+
+template <class _Key, class _Tp, class _HashFcn, class _EqlKey, class _Alloc>
+inline bool
+operator!=(const hash_map<_Key,_Tp,_HashFcn,_EqlKey,_Alloc>& __hm1,
+           const hash_map<_Key,_Tp,_HashFcn,_EqlKey,_Alloc>& __hm2) {
+  return !(__hm1 == __hm2);
+}
+
+template <class _Key, class _Tp, class _HashFcn, class _EqlKey, class _Alloc>
+inline void
+swap(hash_map<_Key,_Tp,_HashFcn,_EqlKey,_Alloc>& __hm1,
+     hash_map<_Key,_Tp,_HashFcn,_EqlKey,_Alloc>& __hm2)
+{
+  __hm1.swap(__hm2);
+}
+
+
+
+template <class _Key, class _Tp,
+          class _HashFcn  = hash<_Key>,
+          class _EqualKey = equal_to<_Key>,
+          class _Alloc =  allocator<_Tp> >
+class hash_multimap;
+
+template <class _Key, class _Tp, class _HF, class _EqKey, class _Alloc>
+inline bool
+operator==(const hash_multimap<_Key,_Tp,_HF,_EqKey,_Alloc>& __hm1,
+           const hash_multimap<_Key,_Tp,_HF,_EqKey,_Alloc>& __hm2);
+
+
+
+
+
+ 
+template <class _Key, class _Tp, class _HashFcn, class _EqualKey, class _Alloc>
+class hash_multimap
+{
+  
+  
+  
+  
+  
+
+private:
+  typedef hashtable<pair<const _Key, _Tp>, _Key, _HashFcn,
+                    _Select1st<pair<const _Key, _Tp> >, _EqualKey, _Alloc>
+          _Ht;
+  _Ht _M_ht;
+
+public:
+  typedef typename _Ht::key_type key_type;
+  typedef _Tp data_type;
+  typedef _Tp mapped_type;
+  typedef typename _Ht::value_type value_type;
+  typedef typename _Ht::hasher hasher;
+  typedef typename _Ht::key_equal key_equal;
+
+  typedef typename _Ht::size_type size_type;
+  typedef typename _Ht::difference_type difference_type;
+  typedef typename _Ht::pointer pointer;
+  typedef typename _Ht::const_pointer const_pointer;
+  typedef typename _Ht::reference reference;
+  typedef typename _Ht::const_reference const_reference;
+
+  typedef typename _Ht::iterator iterator;
+  typedef typename _Ht::const_iterator const_iterator;
+
+  typedef typename _Ht::allocator_type allocator_type;
+
+  hasher hash_funct() const { return _M_ht.hash_funct(); }
+  key_equal key_eq() const { return _M_ht.key_eq(); }
+  allocator_type get_allocator() const { return _M_ht.get_allocator(); }
+
+public:
+  hash_multimap() : _M_ht(100, hasher(), key_equal(), allocator_type()) {}
+  explicit hash_multimap(size_type __n)
+    : _M_ht(__n, hasher(), key_equal(), allocator_type()) {}
+  hash_multimap(size_type __n, const hasher& __hf)
+    : _M_ht(__n, __hf, key_equal(), allocator_type()) {}
+  hash_multimap(size_type __n, const hasher& __hf, const key_equal& __eql,
+                const allocator_type& __a = allocator_type())
+    : _M_ht(__n, __hf, __eql, __a) {}
+
+  template <class _InputIterator>
+  hash_multimap(_InputIterator __f, _InputIterator __l)
+    : _M_ht(100, hasher(), key_equal(), allocator_type())
+    { _M_ht.insert_equal(__f, __l); }
+  template <class _InputIterator>
+  hash_multimap(_InputIterator __f, _InputIterator __l, size_type __n)
+    : _M_ht(__n, hasher(), key_equal(), allocator_type())
+    { _M_ht.insert_equal(__f, __l); }
+  template <class _InputIterator>
+  hash_multimap(_InputIterator __f, _InputIterator __l, size_type __n,
+                const hasher& __hf)
+    : _M_ht(__n, __hf, key_equal(), allocator_type())
+    { _M_ht.insert_equal(__f, __l); }
+  template <class _InputIterator>
+  hash_multimap(_InputIterator __f, _InputIterator __l, size_type __n,
+                const hasher& __hf, const key_equal& __eql,
+                const allocator_type& __a = allocator_type())
+    : _M_ht(__n, __hf, __eql, __a)
+    { _M_ht.insert_equal(__f, __l); }
+
+public:
+  size_type size() const { return _M_ht.size(); }
+  size_type max_size() const { return _M_ht.max_size(); }
+  bool empty() const { return _M_ht.empty(); }
+  void swap(hash_multimap& __hs) { _M_ht.swap(__hs._M_ht); }
+
+  template <class _K1, class _T1, class _HF, class _EqK, class _Al>
+  friend bool operator== (const hash_multimap<_K1, _T1, _HF, _EqK, _Al>&,
+                          const hash_multimap<_K1, _T1, _HF, _EqK, _Al>&);
+
+  iterator begin() { return _M_ht.begin(); }
+  iterator end() { return _M_ht.end(); }
+  const_iterator begin() const { return _M_ht.begin(); }
+  const_iterator end() const { return _M_ht.end(); }
+
+public:
+  iterator insert(const value_type& __obj)
+    { return _M_ht.insert_equal(__obj); }
+  template <class _InputIterator>
+  void insert(_InputIterator __f, _InputIterator __l)
+    { _M_ht.insert_equal(__f,__l); }
+  iterator insert_noresize(const value_type& __obj)
+    { return _M_ht.insert_equal_noresize(__obj); }
+
+  iterator find(const key_type& __key) { return _M_ht.find(__key); }
+  const_iterator find(const key_type& __key) const
+    { return _M_ht.find(__key); }
+
+  size_type count(const key_type& __key) const { return _M_ht.count(__key); }
+
+  pair<iterator, iterator> equal_range(const key_type& __key)
+    { return _M_ht.equal_range(__key); }
+  pair<const_iterator, const_iterator>
+  equal_range(const key_type& __key) const
+    { return _M_ht.equal_range(__key); }
+
+  size_type erase(const key_type& __key) {return _M_ht.erase(__key); }
+  void erase(iterator __it) { _M_ht.erase(__it); }
+  void erase(iterator __f, iterator __l) { _M_ht.erase(__f, __l); }
+  void clear() { _M_ht.clear(); }
+
+public:
+  void resize(size_type __hint) { _M_ht.resize(__hint); }
+  size_type bucket_count() const { return _M_ht.bucket_count(); }
+  size_type max_bucket_count() const { return _M_ht.max_bucket_count(); }
+  size_type elems_in_bucket(size_type __n) const
+    { return _M_ht.elems_in_bucket(__n); }
+};
+
+template <class _Key, class _Tp, class _HF, class _EqKey, class _Alloc>
+inline bool
+operator==(const hash_multimap<_Key,_Tp,_HF,_EqKey,_Alloc>& __hm1,
+           const hash_multimap<_Key,_Tp,_HF,_EqKey,_Alloc>& __hm2)
+{
+  return __hm1._M_ht == __hm2._M_ht;
+}
+
+template <class _Key, class _Tp, class _HF, class _EqKey, class _Alloc>
+inline bool
+operator!=(const hash_multimap<_Key,_Tp,_HF,_EqKey,_Alloc>& __hm1,
+           const hash_multimap<_Key,_Tp,_HF,_EqKey,_Alloc>& __hm2) {
+  return !(__hm1 == __hm2);
+}
+
+template <class _Key, class _Tp, class _HashFcn, class _EqlKey, class _Alloc>
+inline void
+swap(hash_multimap<_Key,_Tp,_HashFcn,_EqlKey,_Alloc>& __hm1,
+     hash_multimap<_Key,_Tp,_HashFcn,_EqlKey,_Alloc>& __hm2)
+{
+  __hm1.swap(__hm2);
+}
+
+} 
+#endif /* _PDT_HASH_MAP_ */

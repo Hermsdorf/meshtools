@@ -1,0 +1,6 @@
+#define hash_map map
+
+#include <map>
+namespace __gnu_cxx {
+
+}

@@ -1,0 +1,132 @@
+************ FORTRAN-lint help screens, Rev 4.30 ************
+
+>>1
+Usage:  flint [switches] [file1 [file2...]] [file.lbt] [file.fdb] 
+
+ Source configuration options:          Diagnostic options:
+  /DLINES  -- process debug lines        /ANSI     -- ANSI compatability
+  /EXTEND  -- 132 column source lines    /FYI      -- report FYIs
+  /FORM=s  -- source form                /GLOBAL   -- global processing 
+  /LANG=c  -- select language            /IMPLICIT -- flag implicit types
+  /NOI4    -- two byte ints & logicals   /PORT=sys -- portability issues 
+  /PATH=path -- include file search path /NOUSAGE  -- suppress usage checking
+  /SYS=sys -- target compiler/system     /NOWARN   -- suppress warnings
+                                         /SUPP=n   -- suppress message #n 
+ Output control options:                 
+  /LIST     -- source listing           Miscellaneous options:     
+  /INCLUDE  -- show include files        /FILES=f -- filename/options file 
+  /STAT     -- statistics                /MISC=op -- miscellaneous options
+  /WIDTH=n  -- set page width                      (/MISC=help for more info)
+  /LPP=n    -- set page length           /LIB=f   -- library generation mode 
+  /OUT=f    -- redirect output to file   /UNIXHELP-- unix-style switch help  
+  /SPLIT=f  -- split output to files     -?       -- unix-style switch help 
+  /DATA=f   -- create database (.FDB)   
+  /SUMMARY  -- summary mode (implies /SPLIT)
+  /XREF(=c) -- cross reference  (/XREF=help for more info)
+  /TREE(=c) -- call tree        (/TREE=help for more info)
+>>2
+Usage:  flint [switches] [file1 [file2...]] [file.lbt] [file.fdb]
+
+ Source configuration options:          Diagnostic options:
+  -d       process debug lines            -a      ANSI compatability
+  -e       132 column source lines        -f      report FYIs
+  -I path  include file search path       -g      global processing
+  -p       preprocess sources (cpp)       -m      flag implicit types
+  -R form  source form                    -O num  omit selected messages
+  -V sys   select Fortran dialect         -P sys  portability issues
+  -2       two byte ints & logicals       -u      data usage checking (dflt)
+  -7       set language to FORTRAN 77     -w      report warning      (dflt)
+  -9       set language to Fortran 90
+                                          
+ Output control options:                Miscellaneous options:       
+  -l       source listing                 -C opts  generate Cadre data files
+  -i       show include files             -D defs  #defines for preprocessor
+  -s       statistics                     -E file  expand file on cmmd line 
+  -W num   set page width                 -M opts  miscellaneous options
+  -Y num   set page length                         (-Mhelp for more info)
+  -S file  split output to files          -L file  library generation mode
+  -+       summary mode (implies -S)      -q       do not wait for license
+  -B file  create database (.fdb)         
+  -x       cross reference
+  -X opts  cross reference format/content  (-Xhelp for more info)
+  -t       call tree
+  -T opts  call tree format/content        (-Thelp for more info)
+
+Lowercase options may be combined, use double dash to disable (--w).
+Uppercase options take parameters (w/ or w/o space) and do not combine.
+>>3
+ Xref content selection switch: -X{conj}{_usage}{_scope}{_class}{_named_xxx}
+
+  CONJUNCTIONS  USAGE (ADJECTIVE)      SCOPE (ADJECTIVE)      CLASS (NOUN)
+  ------------  -----------------  ------------------------  -------------
+    only (D)    used/unused        local                     routines
+    and           ref/unref          dummy/nondummy            programs
+    no            set/unset          statement/nonstatement    subroutines
+                  called/uncalled    intrinsic/nonintrinsic    functions
+                  indeterm/determ  global                      blockdata
+                actual/notactual     common/noncommon          modules
+                init/uninit          external/nonexternal    extern
+                decl/undecl        internal/noninternal      blocks
+                equiv/unequiv                                structures
+                                                             variables
+                                                               scalars
+ Examples:  -Xlocal_variables                                  arrays
+            -Xno_unused_common_variables                       records
+            -Xvariables_named_foobar                         parameters
+
+ Format selection: -X{no}tabular -Xfreeform -X{no}linenumbers -X{no}legend
+
+ Other selections: -Xnoeqv       Do not show the usage via equivalences 
+
+ All words may be abbreviated as long as they remain unambiguous.
+
+ Symbol names may contain wildcards: * or + matches zero or more characters
+                                     ? or . matches one character
+>>4
+ The following commands may be given on the -T switch:
+
+   head:symbol     Suppresses the full call tree and shows a call
+                     tree with the specified top node.
+   trim            Trims the tree by suppressing repeated subtrees.
+   condensed       Condenses multiple calls to the same routine.
+   alphabetical    Sorts call tree alphabetically.
+   nolibrary       Omits library routines (routines from .lbt files)
+   noundefined     Omits undefined routines
+   squish          Shrinks the tree vertically by removing excess graphics.
+   graphics=xxx    Changes the tree graphics characters. The values
+                     given are the hex codes for the following shapes:
+                                    |           |     |
+                            -----   |   --+--   +--   +--
+                                    |     |     |
+                   The values should be five two-digit hex codes separated
+                     by colons. An example is graphics=C4:B3:C2:C3:C0 for
+                     the IBM extended character set.
+>>5
+ The following commands may be given on the -M (/MISC=) switch:
+
+   ansi_maxloc  Checks the argument lists of maxloc() and minloc()
+                  against the ANSI X3.198-1992 standard.
+   cpp:"..."    Additional CPP options to be passed to the preprocessor.
+   depend       Sorts input source file list via USE association. 
+                  Additional pass required.  Use -Mdepend:file to
+                  output the sorted file list and file dependencies
+                  via USE association to the specified file. (F90 only)
+   hpf          Enables the checking on the HPF directives. (F90 only)
+   noexit       FORTRAN-lint returns 0 unless errors were detected. (UNIX only)
+   uselbt       Procedure definitions in the LBT files take precedence
+                  over the intrinsic table when used on global runs.
+>>0
+-Z options:
+
+    title                title page
+    curdir=path          run as if flint was started from this directory
+    lowercase_includes   convert include file names to lowercase
+    ignore_logicals      ignore logical names in include file names
+    dump_xref            dump xref table
+    nosmashing           disable compression of temporary files
+    tables               show high-mark on static tables
+    memory               debug memory allocation
+
+
+
+

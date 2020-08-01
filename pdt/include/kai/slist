@@ -1,0 +1,408 @@
+/* This file implements a singly linked list using the specification from 
+   http://www.sgi.com/Technology/STL/Slist.html
+   It uses an internal doubly linked list and acts as a wrapper for slist 
+   member functions, invoking the corresponding list member functions. It
+   is intended to be used for portability purposes and not for efficiency. 
+   The standard does not contain definition for slist, and consequently
+   KAI and other standard conforming compilers may not support slist. However,
+   code written for STL prior to the ratification of the standard may need this.
+   Credits: Program Database Toolkit team at University of Oregon.
+   see http://www.acl.lanl.gov/pdtoolkit for more information. 
+   Contact: pdtoolkit@acl.lanl.gov
+*/
+
+#ifndef __PDT_SLIST
+#define __PDT_SLIST
+
+#include <list>
+
+namespace std {
+
+template <class T, class Allocator = allocator<T> >
+class slist { 
+public:
+    list<T, Allocator> local; 
+    // types:
+    typedef typename Allocator::reference       reference;
+    typedef typename Allocator::const_reference const_reference;
+    typedef typename list<T, Allocator>::iterator iterator;
+    //class const_iterator;
+    typedef typename list<T, Allocator>::const_iterator const_iterator;
+    typedef unsigned long                       size_type;
+    typedef long                                difference_type;
+    typedef          T                          value_type;
+    typedef          Allocator                  allocator_type;
+    typedef typename Allocator::pointer         pointer;
+    typedef typename Allocator::const_pointer   const_pointer;
+    typedef std::reverse_iterator<iterator>     reverse_iterator;
+    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+
+
+    // wrapper routines (same as list)
+    // slist constructors 
+    /* Creates an empty slist. */
+    slist() :local() { } 
+
+    /* Creates an slist with a copy of a range */
+    template <class InputIterator>
+    slist(InputIterator first, InputIterator last, const Allocator& a=Allocator() ) : local(first, last, a) { } 	
+
+    /* The copy constructor. */
+    slist(const slist<T, Allocator>& x) : local(x.local) { } 
+
+    /* Creates an slist with n elements, each of which is a copy of T(). */
+    slist(size_type n) : local(n) { } 
+
+    /* Creates an slist with n copies of t. */
+    slist(size_type n, const T& t) : local(n, t) { } 
+
+    /* The destructor. */
+    ~slist() { }
+    
+    /* Returns an iterator pointing to the beginning of the slist. */
+    iterator begin(void) { return iterator(local.begin()); } 
+
+    /* Returns an iterator pointing to the end of the slist. */
+    iterator end(void) { return iterator(local.end()); } 
+
+    /* Returns a const_iterator pointing to the beginning of the slist. */
+    const_iterator begin(void) const { return const_iterator(local.begin()); } 
+
+    /* Returns a const_iterator pointing to the end of the slist. */
+    const_iterator end(void) const { return const_iterator(local.end()); }
+
+    /* Returns the size of the slist. Note: you should not assume that this 
+       function is constant time. It is permitted to be O(N), where N is the 
+       number of elements in the slist. If you wish to test whether an slist 
+       is empty, you should write L.empty() rather than L.size() == 0. */
+    size_type size(void) const { return local.size(); } 
+
+    /* Returns the largest possible size of the slist. */
+    size_type max_size(void) const { return local.max_size(); } 
+
+    /* true if the slist's size is 0. */
+    bool empty(void) const { return local.empty(); } 
+
+    
+    slist<T, Allocator>& operator= (const slist<T, Allocator>& x)  { 
+      local = x.local; 
+      return *this; 
+    }
+
+    void swap(slist<T, Allocator> &x) { 
+	local.swap(x.local); 
+    }
+
+    /* Returns the first element. */
+    reference front(void) { return local.front(); } 
+
+    /* Returns the first element. */
+    const_reference front(void) const { return local.front(); } 
+
+    /* Inserts a new element at the beginning. */
+    void push_front(const T& x) { 
+      local.push_front(x); 
+    }
+  
+    /* Removes the first element. */
+    void pop_front(void) { 
+      local.pop_front();
+    }
+
+
+    // New members in slist (as compared to list).
+    /* pos must be a valid iterator in *this. The return value is an iterator
+    prev such that ++prev == pos. Complexity: linear in the number of
+    iterators in the range [begin(), pos).  */
+
+    iterator previous(iterator pos) 
+    { 
+      list<T, Allocator>::iterator it, prev;
+      prev = local.end(); /* null to start with */ 
+      for(it = local.begin(); it != local.end(); it++)
+      { 
+        if (it == pos) /* found the position */ 
+	  return prev; 
+        prev = it; 
+      }
+      /* pos was not found in the slist */
+      return local.end(); 
+    }
+
+
+    /* pos must be a valid iterator in *this. The return value is an iterator
+    prev such that ++prev == pos. Complexity: linear in the number of
+    iterators in the range [begin(), pos). */
+
+    const_iterator previous (const_iterator pos) const { 
+      list<T, Allocator>::const_iterator it, prev;
+      prev = local.end(); /* null to start with */
+      for(it = local.begin(); it != local.end(); it++) 
+      { 
+        if (it == pos) /* found it */
+          return prev;
+        prev = it; 
+      }
+      /* pos not found in the slist */
+      return local.end(); 
+    } 
+    /* Inserts x before pos. */
+    iterator insert(iterator pos, const T& x) 
+    {
+      return local.insert(pos, x); 
+    }
+
+    /* pos must be a dereferenceable iterator in *this. (That is, pos may not
+    be end().) Inserts a copy of T() immediately following pos. The return
+    value is an iterator that points to the new element. 
+    Complexity: constant time. */
+    iterator insert_after(iterator pos) { 
+      return local.insert(++pos, T()); 
+    } 
+
+    /* pos must be a dereferenceable iterator in *this. (That is, pos may not
+    be end().) Inserts a copy of x immediately following pos. The return
+    value is an iterator that points to the new element. Complexity: constant
+    time.  */
+    iterator insert_after(iterator pos, const value_type& x) { 
+      return local.insert(++pos, x); /* assuming pos is not end() */
+    }
+
+    /* Inserts elements from the range [f, l) immediately following pos.
+       Complexity: linear in last - first.  */
+
+    template <class InputIterator>
+    void insert_after(iterator pos, InputIterator f, InputIterator l) { 
+      local.insert(++pos, f, l);
+    } 
+     
+
+    /*  Inserts n copies of x immediately following pos. Complexity: linear in 
+        n. */
+    void insert_after(iterator pos, size_type n, const value_type& x) { 
+      local.insert(++pos, n, x); 
+    } 
+
+    /* Erases the element at position pos. */
+    iterator erase(iterator pos) {
+      return local.erase(pos); 
+    }
+
+    /* Erases the range [first, last) */
+    iterator erase(iterator first, iterator last) {
+      local.erase(first, last); 
+    }
+
+    /* Erases all of the elements. */
+    void clear(void) {
+      local.clear();
+    }
+
+    /*  Erases the element pointed to by the iterator following pos. Complexity:
+        constant time. */
+    iterator erase_after(iterator pos) { 
+      return local.erase(++pos); 
+    }
+
+    /* Erases all elements in the range [before_first + 1, last).
+       Complexity: linear in last - (before_first + 1). */
+    iterator erase_after(iterator before_first, iterator last) { 
+      local.erase(++before_first, last); 
+      return before_first; 
+    }
+    
+    /* position must be a valid iterator in *this, and x must be an slist that
+       is distinct from *this. (That is, it is required that &x != this.) All of
+       the elements of x are inserted before position and removed from x. All
+       iterators remain valid, including iterators that point to elements of x. 
+       Complexity: proportional to c1 (position - begin()) +
+       c2(x.size()), where c1 and c2 are unknown constants. */
+    void splice(iterator position, slist<T, Allocator>& x) { 
+      if (&x != this) { /* required */
+        local.splice(position, x.local); 
+      }
+    } 
+
+    /* position must be a valid iterator in *this, and i must be a
+       dereferenceable iterator in x. Splice moves the element pointed to by i
+       from x to *this, inserting it before position. All iterators remain
+       valid, including iterators that point to elements of x. If position ==
+       i or position == ++i, this function is a null operation. Complexity:
+       proportional to c1 (position - begin()) + c2 (i -
+       x.begin()), where c1 and c2 are unknown constants. */
+    void splice(iterator position, slist<T, Allocator>& x, iterator i)
+    { 
+      local.splice(position, x.local, i);
+    }
+   
+    /* position must be a valid iterator in *this, and [first, last)
+       must be a valid range in x. position may not be an iterator in the range
+       [first, last). Splice moves the elements in [first, last)
+       from x to *this, inserting them before position. All iterators remain
+       valid, including iterators that point to elements of x. Complexity:
+       proportional to c1 (position - begin()) + c2 (f -
+       x.begin()) + c3 (l - f), where c1, c2, and c3 are unknown
+       constants. */
+    void splice(iterator position, slist<T, Allocator>& L, iterator f, 
+	iterator l) 
+    { 
+      local.splice(position, L.local, f, l); 
+    }
+    
+    /*Removes all elements that compare equal to val. The relative order of
+      elements that are not removed is unchanged, and iterators to elements that
+      are not removed remain valid. This function is linear time: it performs
+      exactly size() comparisons for equality. */
+    void remove(const T& value)
+    { 
+      local.remove(value); 
+    }
+  
+    /* pos must be a dereferenceable iterator in *this, and prev must be a
+       dereferenceable iterator either in *this or in some other slist. (Note:
+       "dereferenceable iterator" implies that neither pos nor prev may be an
+       off-the-end iterator.) Moves the element following prev to *this,
+       inserting it immediately after pos. Complexity: constant time. */
+    void splice_after(iterator pos, iterator prev)
+    { 
+      local.splice(++pos, ++prev); 
+    }
+    /* pos must be a dereferenceable iterator in *this, and before_first
+       and before_last must be dereferenceable iterators either in *this or
+       in some other slist. (Note: "dereferenceable iterator" implies that none
+       of these iterators may be off-the-end iterators.) Moves the elements in 
+       the range [before_first + 1, before_last + 1) to *this,
+       inserting them immediately after pos. Complexity: constant time. */
+    void splice_after(iterator pos, iterator before_first, iterator before_last)
+    { 
+      local.splice(++pos, ++before_first, ++before_last); 
+    }
+    
+    /*Removes all elements *i such that p(*i) is true. The relative order of
+      elements that are not removed is unchanged, and iterators to elements that
+      are not removed remain valid. This function is linear time: it performs
+      exactly size() applications of p. */
+    template<class Predicate> 
+    void remove_if(Predicate p)
+    { 
+      local.remove_if(p);
+    }
+
+    /*Removes all elements *i such that p(*i) is true. The relative order of
+      elements that are not removed is unchanged, and iterators to elements that
+      are not removed remain valid. This function is linear time: it performs
+      exactly size() applications of p. */
+    void unique(void)
+    { 
+      local.unique();
+    }
+
+    /*Removes all but the first element in every consecutive group of equivalent
+      elements, where two elements *i and *j are considered equivalent if
+      p(*i, *j) is true. The relative order of elements that are not removed is
+      unchanged, and iterators to elements that are not removed remain valid.
+      This function is linear time: it performs exactly size() - 1
+      comparisons for equality. */
+    template<class BinaryPredicate>
+    void unique(BinaryPredicate p) 
+    { 
+      local.unique(p);
+    }
+
+    /* Reverses the order of elements in the slist. All iterators remain valid 
+       and continue to point to the same elements. This function is linear time.       */
+    void reverse(void)
+    { 
+      local.reverse();
+    }
+
+    /* Both *this and x must be sorted according to operator<, and they
+       must be distinct. (That is, it is required that &x != this.) This 
+       function
+       removes all of x's elements and inserts them in order into *this. The
+       merge is stable; that is, if an element from *this is equivalent to one
+       from x, then the element from *this will precede the one from x. All
+       iterators to elements in *this and x remain valid. This function is 
+       linear time: it performs at most size() + x.size() - 1 comparisons. */
+    void merge(slist<T, Allocator> & x) 
+    { 
+      local.merge(x.local); 
+    }
+
+    /*Comp must be a comparison function that induces a strict weak ordering
+      (as defined in the LessThan Comparable requirements) on objects of type
+      T, and both *this and x must be sorted according to that ordering. The
+      slists x and *this must be distinct. (That is, it is required that &x !=
+      this.) This function removes all of x's elements and inserts them in order
+      into *this. The merge is stable; that is, if an element from *this is
+      equivalent to one from x, then the element from *this will precede the
+      one from x. All iterators to elements in *this and x remain valid. This
+      function is linear time: it performs at most size() + x.size() - 1
+      applications of Comp. */
+
+    template<class BinaryPredicate>
+    void merge(slist<T, Allocator>& x, BinaryPredicate Comp)
+    { 
+      local.merge(x, Comp); 
+    }
+
+    /* Sorts *this according to operator<. The sort is stable, that is, the
+       relative order of equivalent elements is preserved. All iterators remain
+       valid and continue to point to the same elements. [7] The number of
+       comparisons is approximately N log N, where N is the slist's size. */
+
+    void sort() {
+      local.sort();
+    } 
+
+    /* Comp must be a comparison function that induces a strict weak ordering
+       (as defined in the LessThan Comparable requirements) on objects of type
+       T. This function sorts the slist *this according to Comp. The sort is
+       stable, that is, the relative order of equivalent elements is preserved. 
+       All iterators remain valid and continue to point to the same elements. 
+       The number of comparisons is approximately N log N, where N is the
+       slist's size. */
+
+    template <class BinaryPredicate>
+    void sort(BinaryPredicate comp)
+    { 
+      local.sort(comp); 
+    }
+   
+}; 
+
+template<class T, class Allocator >
+bool operator==(slist<T, Allocator>& lhs, slist<T, Allocator>& rhs)
+{
+  return lhs.local == rhs.local; 
+}
+
+template<class T, class Allocator >
+bool operator<(const slist<T, Allocator>& lhs, const slist<T, Allocator>& rhs)
+{
+  return lhs.local < rhs.local; 
+}
+
+template <class T, class Allocator>
+inline bool operator!=(const slist<T, Allocator>& x, const slist<T, Allocator>& y) { return ! (x == y); }
+
+template <class T, class Allocator>
+inline bool operator>(const slist<T, Allocator>& x, const slist<T, Allocator>& y)
+{ return(y < x); }
+
+template <class T, class Allocator>
+inline bool operator>=(const slist<T, Allocator>& x, const slist<T, Allocator>& y) { return ! (x < y); }
+
+template <class T, class Allocator>
+inline bool operator<=(const slist<T, Allocator>& x, const slist<T, Allocator>& y) { return ! (y < x); }
+
+
+template <class T, class Allocator>
+void swap(slist<T, Allocator>& x, slist<T, Allocator>& y)
+{
+    x.swap(y);
+}
+
+}; /* namespace */
+
+#endif /* __PDT_SLIST */

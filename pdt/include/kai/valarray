@@ -1,0 +1,1708 @@
+/**  -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **  Heavily revised by ADR for speed.  Modena's code is almost completely demolished.
+ **  Template metaprogramming is *not* used in order to keep compile-times reasonable.
+ **  Much of the code exploits the "value-return-slot" optimization in the front-end.
+ **
+ **  Section 26.1p2 of ISO C++ standard says results are undefined if any operation on
+ **  type T is undefined.  Thus, in the interest of speed, this implementation is expected 
+ **  to be exception safe if operator new  or operator delete, but not if any operation 
+ **  on type T fails.
+ **/
+/**
+ **  Lib++  : The Modena C++ Standard Library,
+ **           Version 2.4, October 1997
+ **
+ **  Copyright (c) 1995-1997 Modena Software Inc.
+ **/
+
+#ifndef MSIPL_VALARRAY_H
+#define MSIPL_VALARRAY_H
+
+#include <mcompile.h>
+
+#include <cassert>
+#include <algobase>
+#include <algorithm>
+#include <functional>
+#include <extfunc>
+#include <numeric>
+
+// ISO standard requires that the copy constructor for slice_array (and similar classes)
+// be private.  Unfortunately, this appears to make slice_array nearly useless.
+// The problem is that the designers of <valarray> forgot that even if a compiler
+// can optimize away a copy constructor, the access permissions for the eliminated
+// copy constructor must still be checked.  Define KAI_NONSTD_VALARRAY to a nonzero
+// value if you want public access (and some older draft features not in the standard).
+#if KAI_NONSTD_VALARRAY
+#define __KAI_SLICE_ACCESS public
+#else
+#define __KAI_SLICE_ACCESS private
+#endif
+
+namespace __kai {
+
+class gslice_generator;
+
+} // namespace __kai
+
+namespace std {
+
+// Section 26.3 -- Numeric Arrays
+
+template <class T> class valarray;       // an array of type T
+class slice;
+template <class T> class slice_array;    // a BLAS-like slice out of array
+class gslice;
+template <class T> class gslice_array;   // a generalized slice out of array
+template <class T> class mask_array;     // a masked array
+template <class T> class indirect_array; // an indirect array
+
+template <class T> class valarray {
+public:
+    typedef T  value_type;
+
+    valarray() : _len(0), _ptr(0) {}
+    explicit valarray(size_t n) {allocate_and_construct(n);}
+
+    valarray(const T& t, size_t n) {uninitialized_fill_n(allocate(n), n, t); }
+    valarray(const T* t, size_t n) {uninitialized_copy( t, t+n, allocate(n));}
+
+    valarray(const valarray& v) {
+	size_t n = v._len;
+	uninitialized_copy( v._ptr, v._ptr+n, allocate(n) );
+    }
+
+    valarray(const slice_array<T>& s);
+
+    valarray(const gslice_array<T>& g );
+
+    valarray(const mask_array<T>& m) {construct( m.rep );}
+
+    valarray(const indirect_array<T>& i) {construct( i );}
+
+    ~valarray () { 
+	destroy_and_deallocate(); 
+    }
+
+    // 26.3.2.2 assignment:
+    valarray& operator=(const valarray&);
+    valarray& operator=(const T&);
+    valarray& operator=(const slice_array<T>&);
+    valarray& operator=(const gslice_array<T>& x);
+    valarray& operator=(const mask_array<T>&);
+    valarray& operator=(const indirect_array<T>&);
+
+    // 26.3.2.3 element access:
+    T  operator[](size_t pos) const { return *(_ptr+pos); }
+    T& operator[](size_t pos) { return *(_ptr+pos); }
+
+    // 26.3.2.4 subset operations:
+    valarray operator[](slice s) const;
+    slice_array<T> operator[](slice s);
+
+    valarray operator[](const gslice& g) const;
+    gslice_array<T> operator[](const gslice& g);
+
+    valarray operator[](const valarray<bool>& vb) const;
+    mask_array<T> operator[](const valarray<bool>& vb);
+
+    valarray operator[](const valarray<size_t>&  vi) const;
+    indirect_array<T> operator[](const valarray<size_t>&  vi);
+
+
+    // 26.3.2.5 unary operators:
+    valarray operator+() const { return valarray<T>(*this, __kai::unary_plus<T>()); }
+    valarray operator-() const { return valarray<T>(*this, negate<T>()); }
+    valarray operator~() const { return valarray<T>(*this, __kai::complement<T>()); }
+    valarray operator!() const { return valarray<T>(*this, __kai::unary_not<T>()); }
+
+
+    // 26.3.2.6 computed assignment:
+    valarray& operator*=(const T& t) {return binary_assign_op< multiplies<T> >(t);}
+    valarray& operator/=(const T& t) {return binary_assign_op< divides<T> >(t);}
+    valarray& operator%=(const T& t) {return binary_assign_op< modulus<T> >(t);}
+    valarray& operator+=(const T& t) {return binary_assign_op< plus<T> >(t);}
+    valarray& operator-=(const T& t) {return binary_assign_op< minus<T> >(t);}
+    valarray& operator^=(const T& t) {return binary_assign_op< __kai::caret<T> >(t);}
+    valarray& operator&=(const T& t) {return binary_assign_op< __kai::bitwise_and<T> >(t);}
+    valarray& operator|=(const T& t) {return binary_assign_op< __kai::bitwise_or<T> >(t);}
+    valarray& operator<<=(const T& t) {return binary_assign_op< __kai::shiftl<T> >(t);}
+    valarray& operator>>=(const T& t) {return binary_assign_op< __kai::shiftr<T> >(t);}
+
+    valarray& operator*=(const valarray& v) {return binary_assign_op< multiplies<T> >(v);}
+    valarray& operator/=(const valarray& v) {return binary_assign_op< divides<T> >(v);}
+    valarray& operator%=(const valarray& v) {return binary_assign_op< modulus<T> >(v);}
+    valarray& operator+=(const valarray& v) {return binary_assign_op< plus<T> >(v);}
+    valarray& operator-=(const valarray& v) {return binary_assign_op< minus<T> >(v);}
+    valarray& operator^=(const valarray& v) {return binary_assign_op< __kai::caret<T> >(v);}
+    valarray& operator&=(const valarray& v) {return binary_assign_op< __kai::bitwise_and<T> >(v);}
+    valarray& operator|=(const valarray& v) {return binary_assign_op< __kai::bitwise_or<T> >(v);}
+    valarray& operator<<=(const valarray& v) {return binary_assign_op< __kai::shiftl<T> >(v);}
+    valarray& operator>>=(const valarray& v) {return binary_assign_op< __kai::shiftr<T> >(v);}
+#if KAI_NONSTD_VALARRAY
+    // Method length() removed by KAI.  It's been gone from the draft standard
+    // since September 1996.  Use size instead. It is expected that length() 
+    // will be removed in some future release.
+    size_t length() const { return _len; }
+#endif /* KAI_NONSTD_VALARRAY */
+
+    size_t size() const { return _len; }
+
+    T sum() const {
+	T  total;
+	if (size())
+	    total = *_ptr;
+	else
+	    total = T();
+	return std::accumulate(_ptr+1, _ptr+size(), total);
+    }
+    T min() const;
+    T max() const;
+
+    valarray shift(int) const;
+    valarray cshift(int) const;
+    valarray apply(T func(T)) const;
+    valarray apply(T func(const T&)) const;
+
+    void resize(size_t sz) { resize(sz,T()); }
+    void resize(size_t sz, T c);
+
+#if KAI_NONSTD_VALARRAY
+    T mult(size_t) const;
+    void  fill(const T& t) { fill_n(_ptr, size(), t); }
+    void  free() { destroy_and_deallocate() ; }
+#endif /* KAI_NONSTD_VALARRAY */
+
+private :
+    size_t   _len;	// Number of elements that have been initialized.
+    T*       _ptr;	// Pointer to array of elements
+
+    template<class X> friend class valarray;	// Added by KAI	
+    friend class slice_array<T>;	
+    friend class gslice_array<T>;	
+    friend class mask_array<T>;    	
+    friend class indirect_array<T>;
+
+private:
+    // These are useful constructors for the various operators that must construct a new valarray.
+    template<class X,class F> valarray( const valarray<X>& v, const F );
+    template<class X,class F> valarray( const valarray<X>& u, const valarray<X>& v, const F );
+    template<class X,class F> valarray( const valarray<X>& v, const X& x, const F );
+    template<class X,class F> valarray( const X& x, const valarray<X>& v, const F );
+    
+    enum grab_t {_grab};
+
+    // Constructor used for certain assignment operations.
+    // If new_len differs from the current size, then the constructor grabs v's current
+    // array and allocates a fresh one of the new size. 
+    valarray( valarray& v, size_t new_len, grab_t ) {
+	if( v._len!=new_len ) {
+	    _ptr = v._ptr;
+	    _len = v._len;
+	    v.allocate_and_construct( new_len );
+	} else {
+	    _ptr = 0;
+	    _len = 0;
+	}
+    }
+    
+    template<class F>
+    inline valarray& binary_assign_op( const T& t ) {
+        size_t n = _len;
+        T * p = _ptr;
+	for( size_t k=0; k<n; ++k ) {
+	    *p = F()(*p,t);
+	    ++p;
+	}
+        return *this;
+    }
+
+    template<class F>
+    inline valarray& binary_assign_op( const valarray& v ) {
+        size_t n = std::min(_len, v._len);
+        T * p = _ptr;
+	T * q = v._ptr;
+	for( size_t k=0; k<n; ++k ) {
+	    *p = F()(*p,*q++);
+	    ++p;
+        }
+        return *this;
+    }
+
+    T * allocate( size_t n ) {
+	_len = n;
+	// Clear _ptr in case operator new throws an exception.
+	_ptr = 0;
+	return _ptr = (T*)(n ? operator new( sizeof(T)*n ) : 0);
+    }
+
+    void allocate_and_construct( size_t n ) {
+        T * ptr = allocate(n); 
+	for( size_t k=0; k<n; ++k ) {
+	    new( ptr+k ) T();
+	}
+    }
+
+    void destroy_and_deallocate() {
+	if( T* ptr = _ptr ) {
+	    for( size_t k=_len; k>0; )
+		ptr[--k].T::~T();
+	    _ptr = 0;
+	    operator delete( ptr );
+	}
+    }
+
+    void trivial_resize( size_t n );
+    void construct( const indirect_array<T>& i );
+    void construct( const T * start, const __kai::gslice_generator& g );
+    
+    template <class TT>
+    friend valarray<TT> operator*(const valarray<TT>&, const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> operator*(const valarray<TT>&, const TT&);
+    template <class TT>
+    friend valarray<TT> operator*(const TT&, const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<TT> operator/(const valarray<TT>&, const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> operator/(const valarray<TT>&, const TT&);
+    template <class TT>
+    friend valarray<TT> operator/(const TT&, const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<TT> operator%(const valarray<TT>&, const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> operator%(const valarray<TT>&, const TT&);
+    template <class TT>
+    friend valarray<TT> operator%(const TT&, const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<TT> operator+(const valarray<TT>&, const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> operator+(const valarray<TT>&, const TT&);
+    template <class TT>
+    friend valarray<TT> operator+(const TT&, const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<TT> operator-(const valarray<TT>&, const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> operator-(const valarray<TT>&, const TT&);
+    template <class TT>
+    friend valarray<TT> operator-(const TT&, const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<TT> operator^(const valarray<TT>&, const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> operator^(const valarray<TT>&, const TT&);
+    template <class TT>
+    friend valarray<TT> operator^(const TT&, const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<TT> operator&(const valarray<TT>&, const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> operator&(const valarray<TT>&, const TT&);
+    template <class TT>
+    friend valarray<TT> operator&(const TT&, const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<TT> operator|(const valarray<TT>&, const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> operator|(const valarray<TT>&, const TT&);
+    template <class TT>
+    friend valarray<TT> operator|(const TT&, const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<TT> operator<<(const valarray<TT>&, const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> operator<<(const valarray<TT>&, const TT&);
+    template <class TT>
+    friend valarray<TT> operator<<(const TT&, const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<TT> operator>>(const valarray<TT>&, const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> operator>>(const valarray<TT>&, const TT&);
+    template <class TT>
+    friend valarray<TT> operator>>(const TT&, const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<bool> operator&&(const valarray<TT>&, const valarray<TT>&);
+    template <class TT>
+    friend valarray<bool> operator&&(const valarray<TT>&, const TT&);
+    template <class TT>
+    friend valarray<bool> operator&&(const TT&, const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<bool> operator||(const valarray<TT>&, const valarray<TT>&);
+    template <class TT>
+    friend valarray<bool> operator||(const valarray<TT>&, const TT&);
+    template <class TT>
+    friend valarray<bool> operator||(const TT&, const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<bool> operator==(const valarray<TT>&, const valarray<TT>&);
+    template <class TT>
+    friend valarray<bool> operator==(const valarray<TT>&, const TT&);
+    template <class TT>
+    friend valarray<bool> operator==(const TT&, const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<bool> operator!=(const valarray<TT>&, const valarray<TT>&);
+    template <class TT>
+    friend valarray<bool> operator!=(const valarray<TT>&, const TT&);
+    template <class TT>
+    friend valarray<bool> operator!=(const TT&, const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<bool> operator<(const valarray<TT>&, const valarray<TT>&);
+    template <class TT>
+    friend valarray<bool> operator<(const valarray<TT>&, const TT&);
+    template <class TT>
+    friend valarray<bool> operator<(const TT&, const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<bool> operator>(const valarray<TT>&, const valarray<TT>&);
+    template <class TT>
+    friend valarray<bool> operator>(const valarray<TT>&, const TT&);
+    template <class TT>
+    friend valarray<bool> operator>(const TT&, const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<bool> operator<=(const valarray<TT>&, const valarray<TT>&);
+    template <class TT>
+    friend valarray<bool> operator<=(const valarray<TT>&, const TT&);
+    template <class TT>
+    friend valarray<bool> operator<=(const TT&, const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<bool> operator>=(const valarray<TT>&, const valarray<TT>&);
+    template <class TT>
+    friend valarray<bool> operator>=(const valarray<TT>&, const TT&);
+    template <class TT>
+    friend valarray<bool> operator>=(const TT&, const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<TT> abs(const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> acos(const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> asin(const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> atan(const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<TT> cos(const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> cosh(const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> exp(const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> log(const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> log10(const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<TT> sin(const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> sinh(const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> sqrt(const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> tan(const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> tanh(const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<TT> atan2(const valarray<TT>&, const TT&);
+    template <class TT>
+    friend valarray<TT> atan2(const TT&, const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> atan2(const valarray<TT>&, const valarray<TT>&);
+
+    template <class TT>
+    friend valarray<TT> pow(const valarray<TT>&, const TT&);
+    template <class TT>
+    friend valarray<TT> pow(const TT&, const valarray<TT>&);
+    template <class TT>
+    friend valarray<TT> pow(const valarray<TT>&, const valarray<TT>&);
+
+    template <class TT>
+    friend TT        min(const valarray<TT>&);
+    template <class TT>
+    friend TT        max(const valarray<TT>&);
+    friend class __kai::gslice_generator;
+};
+
+template<class T>
+template<class X,class F>
+valarray<T>::valarray( const valarray<X>& v, const F f ) {
+    size_t n = v._len;
+    T * p = allocate(n);
+    T * q = v._ptr;
+    for( size_t k=0; k<n; ++k ) 
+	new(p++) T(f( *q++ ));
+}
+
+template<class T>
+template<class X,class F>
+valarray<T>::valarray( const valarray<X>& u, const valarray<X>& v, const F f ) {
+    size_t n = std::min(u._len, v._len);
+    T * p = allocate(n);
+    X * q = u._ptr;
+    X * r = v._ptr;
+    for( size_t k=0; k<n; ++k ) 
+	new(p++) T(f( *q++, *r++ ));
+}
+
+template<class T>
+template<class X,class F>
+valarray<T>::valarray(const valarray<X>& v, const X& t, const F f ) {
+    size_t n = v._len;
+    T * p = allocate(n);
+    X * q = v._ptr;
+    for( size_t k=0; k<n; ++k ) 
+	new(p++) T(f( *q++, t ));
+}
+
+template<class T>
+template<class X,class F>
+valarray<T>::valarray(const X& t, const valarray<X>& v, const F f ) {
+    size_t n = v._len;
+    T * p = allocate(n);
+    X * q = v._ptr;
+    for( size_t k=0; k<n; ++k ) 
+	new(p++) T(f( t, *q++ ));
+}
+
+template <class T>
+valarray<T>& valarray<T>::operator=( const valarray& v ) {
+    if( this!=&v ) {
+        if( _len != v._len ) trivial_resize( v._len );
+        std::copy(v._ptr, v._ptr+_len, _ptr);
+    }
+    return *this;
+}
+
+template <class T>
+valarray<T>& valarray<T>::operator=(const T& t) {
+    std::fill_n(_ptr, _len, t);
+    return *this;
+}
+
+template<class T>
+void valarray<T>::trivial_resize( size_t n ) {
+    destroy_and_deallocate(); 
+    allocate_and_construct( n );
+}
+
+#if KAI_NONSTD_VALARRAY
+template <class T>
+inline T valarray<T>::mult(size_t len) const
+{
+    T  prod = 1;
+    size_t rlen = std::min(len, size());
+    for (size_t count = 0; count < rlen; ++count)
+        prod *= (*(_ptr+count));
+    return prod;
+}
+#endif /* KAI_NONSTD_VALARRAY */
+
+template <class T>
+inline T valarray<T>::min() const
+{
+    T   min_val = T();
+    if (size()) min_val = *_ptr;
+    for (size_t count = 1; count < size(); ++count)
+    {
+        if (min_val > (*(_ptr+count)))
+            min_val = (*(_ptr+count));
+    }
+    return min_val;
+}
+
+template <class T>
+inline T valarray<T>::max() const
+{
+    T   max_val = T();
+    if (size()) max_val = *_ptr;
+    for (size_t count = 1; count < size(); ++count)
+    {
+        if (max_val < (*(_ptr+count)))
+            max_val = (*(_ptr+count));
+    }
+    return max_val;
+}
+
+template <class T>
+valarray<T> valarray<T>::shift(int i) const {
+    // Take the absolute value of i in j.
+    int j = i>0 ? i : -i;
+
+    size_t n = size();
+    valarray<T> result;
+    T * p = result.allocate( n );
+    const T * q = _ptr;
+    T * r; 
+    const T * q_end = q+n-j;
+    if( i<0 ) {
+	r = p;
+	p += j;
+    } else {
+	r = p+(n-j);
+	q += j;
+	q_end += j;
+    }
+    std::uninitialized_copy( q, q+n-j, p );
+    std::uninitialized_fill_n( r, j, T() );
+    return result;
+}
+
+template <class T>
+valarray<T> valarray<T>::cshift(int i) const {
+    size_t n = _len;
+    valarray<T> result;
+    T * p = result.allocate( n );
+    if ( n>0 ) {
+        const T * q = _ptr;
+	i %= (long)n;
+	T * r = std::uninitialized_copy( q+(n+i)%n, q+n, p );
+	std::uninitialized_copy( q, q+(n+i)%n, r );
+    }
+    return result;
+}
+
+template <class T>
+valarray<T> valarray<T>::apply(T func(T)) const {
+    valarray<T> result;
+    size_t n = _len; 
+    T * p = result.allocate( n );
+    T * q = _ptr;
+    for( size_t k=0; k<n; ++k ) {
+	new( p++ ) T( func(*q++) ); 
+    }
+    return result;
+}
+
+template <class T>
+valarray<T> valarray<T>::apply(T func(const T&)) const {
+    valarray<T> result;
+    size_t n = _len; 
+    T * p = result.allocate( n );
+    T * q = _ptr;
+    for( size_t k=0; k<n; ++k ) {
+	new( p++ ) T( func(*q++) ); 
+    }
+    return result;
+}
+
+template <class T>
+void valarray<T>::resize(size_t new_len, T c) {
+    size_t n = _len;
+    if( n!=new_len ) {
+	// Save old array in "old" to guarentee its destruction, even if an exception is thrown.
+        valarray<T> old;
+        T * q = _ptr;
+        old._ptr = q;
+        old._len = n;
+	T * r = allocate( new_len );
+	if( n>new_len ) {
+	    n = new_len;
+	}
+        std::uninitialized_copy( q, q+n, r );
+	if( new_len!=n ) { 
+            std::uninitialized_fill_n( r+n, new_len-n, T() );
+	}
+    }
+}
+
+//--------------------------------------------------------------------------------
+// 26.3.3.1 valarray binary operators
+//--------------------------------------------------------------------------------
+template <class T>
+inline valarray<T> operator*(const valarray<T>& v, const T& t) { return valarray<T>(v, t, multiplies<T>()); }
+template <class T>
+inline valarray<T> operator*(const T& t, const valarray<T>& v) { return valarray<T>(t, v, multiplies<T>()); }
+template <class T>
+inline valarray<T> operator*(const valarray<T>& v1, const valarray<T>& v2) { return valarray<T>(v1,v2, multiplies<T>()); }
+
+template <class T>
+inline valarray<T> operator/(const valarray<T>& v, const T& t) { return valarray<T>(v, t, divides<T>()); }
+template <class T>
+inline valarray<T> operator/(const T& t, const valarray<T>& v) { return valarray<T>(t, v, divides<T>()); }
+template <class T>
+inline valarray<T> operator/(const valarray<T>& v1, const valarray<T>& v2) { return valarray<T>(v1, v2, divides<T>()); }
+
+template <class T>
+inline valarray<T> operator%(const valarray<T>& v, const T& t) { return valarray<T>(v, t, modulus<T>()); }
+template <class T>
+inline valarray<T> operator%(const T& t, const valarray<T>& v) { return valarray<T>(t, v, modulus<T>()); }
+template <class T>
+inline valarray<T> operator%(const valarray<T>& v1, const valarray<T>& v2) { return valarray<T>(v1, v2, modulus<T>()); }
+
+template <class T>
+inline valarray<T> operator+(const valarray<T>& v, const T& t) { return valarray<T>(v, t, plus<T>()); }
+template <class T>
+inline valarray<T> operator+(const T& t, const valarray<T>& v) { return valarray<T>(t, v, plus<T>()); }
+template <class T>
+inline valarray<T> operator+(const valarray<T>& v1, const valarray<T>& v2) { return valarray<T>(v1, v2, plus<T>()); }
+
+template <class T>
+inline valarray<T> operator-(const valarray<T>& v, const T& t) { return valarray<T>(v, t, minus<T>()); }
+template <class T>
+inline valarray<T> operator-(const T& t, const valarray<T>& v) { return valarray<T>(t, v, minus<T>()); }
+template <class T>
+inline valarray<T> operator-(const valarray<T>& v1, const valarray<T>& v2) { return valarray<T>(v1, v2, minus<T>()); }
+
+template <class T>
+inline valarray<T> operator^(const valarray<T>& v, const T& t) { return valarray<T>(v, t, __kai::caret<T>()); }
+template <class T>
+inline valarray<T> operator^(const T& t, const valarray<T>& v) { return valarray<T>(t, v, __kai::caret<T>()); }
+template <class T>
+inline valarray<T> operator^(const valarray<T>& v1, const valarray<T>& v2){ return valarray<T>(v1,v2,__kai::caret<T>());}
+
+template <class T>
+inline valarray<T> operator&(const valarray<T>& v, const T& t) { return valarray<T>(v, t, __kai::bitwise_and<T>()); }
+
+template <class T>
+inline valarray<T> operator&(const T& t, const valarray<T>& v) { return valarray<T>(t, v, __kai::bitwise_and<T>()); }
+
+template <class T>
+inline valarray<T> operator&(const valarray<T>& v1, const valarray<T>& v2) { return valarray<T>(v1, v2, __kai::bitwise_and<T>()); }
+
+template <class T>
+inline valarray<T> operator|(const valarray<T>& v, const T& t) {
+    return valarray<T>(v, t, __kai::bitwise_or<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+operator|(const T& t, const valarray<T>& v)
+{
+    return valarray<T>(t, v, __kai::bitwise_or<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+operator|(const valarray<T>& v1, const valarray<T>& v2)
+{
+    return valarray<T>(v1, v2, __kai::bitwise_or<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+operator<<(const valarray<T>& v, const T& t)
+{
+    return valarray<T>(v, t, __kai::shiftl<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+operator<<(const T& t, const valarray<T>& v)
+{
+    return valarray<T>(t, v, __kai::shiftl<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+operator<<(const valarray<T>& v1, const valarray<T>& v2)
+{
+    return valarray<T>(v1, v2, __kai::shiftl<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+operator>>(const valarray<T>& v, const T& t)
+{
+    return valarray<T>(v, t, __kai::shiftr<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+operator>>(const T& t, const valarray<T>& v)
+{
+    return valarray<T>(t, v, __kai::shiftr<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+operator>>(const valarray<T>& v1, const valarray<T>& v2)
+{
+    return valarray<T>(v1, v2, __kai::shiftr<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator&&(const valarray<T>& v, const T& t)
+{
+    return valarray<bool>(v, t, __kai::logical_and<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator&&(const T& t, const valarray<T>& v)
+{
+    return valarray<bool>(t, v, __kai::logical_and<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator&&(const valarray<T>& v1, const valarray<T>& v2)
+{
+    return valarray<bool>(v1, v2, __kai::logical_and<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator||(const valarray<T>& v, const T& t)
+{
+    return valarray<bool>(v, t, __kai::logical_or<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator||(const T& t, const valarray<T>& v)
+{
+    return valarray<bool>(t, v, __kai::logical_or<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator||(const valarray<T>& v1, const valarray<T>& v2)
+{
+    return valarray<bool>(v1, v2, __kai::logical_or<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator==(const valarray<T>& v, const T& t)
+{
+    return valarray<bool>(v, t, equal_to<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator==(const T& t, const valarray<T>& v)
+{
+    return valarray<bool>(t, v, equal_to<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator==(const valarray<T>& v1, const valarray<T>& v2)
+{
+    return valarray<bool>(v1, v2, equal_to<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator!=(const valarray<T>& v, const T& t)
+{
+    return valarray<bool>(v, t, not_equal_to<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator!=(const T& t, const valarray<T>& v)
+{
+    return valarray<bool>(t, v, not_equal_to<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator!=(const valarray<T>& v1, const valarray<T>& v2)
+{
+    return valarray<bool>(v1, v2, not_equal_to<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator<(const valarray<T>& v, const T& t)
+{
+    return valarray<bool>(v, t, less<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator<(const T& t, const valarray<T>& v)
+{
+    return valarray<bool>(t, v, less<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator<(const valarray<T>& v1, const valarray<T>& v2)
+{
+    return valarray<bool>(v1, v2, less<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator>(const valarray<T>& v, const T& t)
+{
+    return valarray<bool>(v, t, greater<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator>(const T& t, const valarray<T>& v)
+{
+    return valarray<bool>(t, v, greater<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator>(const valarray<T>& v1, const valarray<T>& v2)
+{
+    return valarray<bool>(v1, v2, greater<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator<=(const valarray<T>& v, const T& t)
+{
+    return valarray<bool>(v, t, less_equal<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator<=(const T& t, const valarray<T>& v)
+{
+    return valarray<bool>(t, v, less_equal<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator<=(const valarray<T>& v1, const valarray<T>& v2)
+{
+    return valarray<bool>(v1, v2, less_equal<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator>=(const valarray<T>& v, const T& t)
+{
+    return valarray<bool>(v, t, greater_equal<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator>=(const T& t, const valarray<T>& v)
+{
+    return valarray<bool>(t, v, greater_equal<T>());
+}
+
+template <class T>
+inline
+valarray<bool>
+operator>=(const valarray<T>& v1, const valarray<T>& v2)
+{
+    return valarray<bool>(v1, v2, greater_equal<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+abs(const valarray<T>& v)
+{
+    return valarray<T>(v, __kai::absolute<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+acos(const valarray<T>& v)
+{
+    return valarray<T>(v, __kai::arccos<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+asin(const valarray<T>& v)
+{
+    return valarray<T>(v, __kai::arcsin<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+atan(const valarray<T>& v)
+{
+    return valarray<T>(v, __kai::arctan<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+cos(const valarray<T>& v)
+{
+    return valarray<T>(v, __kai::cosine<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+cosh(const valarray<T>& v)
+{
+    return valarray<T>(v, __kai::cosineh<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+exp(const valarray<T>& v)
+{
+    return valarray<T>(v, __kai::exponential<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+log(const valarray<T>& v)
+{
+    return valarray<T>(v,__kai::logarithm<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+log10(const valarray<T>& v)
+{
+    return valarray<T>(v,__kai::logarithm10<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+sin(const valarray<T>& v)
+{
+    return valarray<T>(v, __kai::sine<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+sinh(const valarray<T>& v)
+{
+    return valarray<T>(v, __kai::sineh<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+sqrt(const valarray<T>& v)
+{
+    return valarray<T>(v, __kai::sqroot<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+tan(const valarray<T>& v)
+{
+    return valarray<T>(v, __kai::tangent<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+tanh(const valarray<T>& v)
+{
+    return valarray<T>(v, __kai::tangenth<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+atan2(const valarray<T>& v, const T& t)
+{
+    return valarray<T>(v, t, __kai::arctan2<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+atan2(const T& t, const valarray<T>& v)
+{
+    return valarray<T>(t, v, __kai::arctan2<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+atan2(const valarray<T>& v1, const valarray<T>& v2)
+{
+    return valarray<T>(v1, v2, __kai::arctan2<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+pow(const valarray<T>& v, const T& t)
+{
+    return valarray<T>(v, t, __kai::power<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+pow(const T& t, const valarray<T>& v)
+{
+    return valarray<T>(t, v, __kai::power<T>());
+}
+
+template <class T>
+inline
+valarray<T>
+pow(const valarray<T>& v1, const valarray<T>& v2)
+{
+    return valarray<T>(v1, v2, __kai::power<T>());
+}
+
+template <class T>
+T min(const valarray<T>& v)
+{
+    T   min_val = T();
+    if (v.size()) min_val = *v._ptr;
+    for (size_t count = 1; count < v.size(); ++count)
+    {
+        if (min_val > (*(v._ptr+count)))
+            min_val = (*(v._ptr+count));
+    }
+    return min_val;
+}
+
+template <class T>
+T max(const valarray<T>& v)
+{
+    T max_val = T();
+    if (v.size()) max_val = *v._ptr;
+    for (size_t count = 1; count < v.size(); ++count)
+    {
+        if (max_val < (*(v._ptr+count)))
+            max_val = (*(v._ptr+count));
+    }
+    return max_val;
+}
+
+//------------------------------------------------------------------------
+// slice
+//------------------------------------------------------------------------
+
+class slice {
+public :
+    slice() : _start(0), _len(0), _step(0) {}
+    slice(size_t start, size_t len, size_t step) : _len(len), _step(step), _start(start) {}
+    slice(const slice& s) : _start(s._start), _len(s._len), _step(s._step) {}
+
+    size_t start() const { return _start; }
+    size_t size() const { return _len; }
+    size_t stride() const { return _step; }
+
+#if KAI_NONSTD_VALARRAY
+    // See comments about valarray::length
+    size_t length() const { return _len; }
+#endif /* KAI_NONSTD_VALARRAY */
+
+private :
+    size_t _start;
+    size_t _len;
+    size_t _step;
+    template<class T> friend class valarray;
+};
+
+//------------------------------------------------------------------------
+// slice_array and other methods related to slice_array 
+//------------------------------------------------------------------------
+
+template <class T> class slice_array {
+public :
+    typedef T  value_type;
+
+    void operator=(const valarray<T>&) const;
+    void operator*=(const valarray<T>& v) const {assign_binary_op<multiplies<T> >(v);};
+    void operator/=(const valarray<T>& v) const {assign_binary_op<divides<T> >(v);}
+    void operator%=(const valarray<T>& v) const {assign_binary_op<modulus<T> >(v);}
+    void operator+=(const valarray<T>& v) const {assign_binary_op<plus<T> >(v);}
+    void operator-=(const valarray<T>& v) const {assign_binary_op<minus<T> >(v);}
+    void operator^=(const valarray<T>& v) const {assign_binary_op< __kai::caret<T> >(v);}
+    void operator&=(const valarray<T>& v) const {assign_binary_op< __kai::bitwise_and<T> >(v);}
+    void operator|=(const valarray<T>& v) const {assign_binary_op< __kai::bitwise_or<T> >(v);}
+    void operator<<=(const valarray<T>& v) const {assign_binary_op< __kai::shiftl<T> >(v);}
+    void operator>>=(const valarray<T>& v) const {assign_binary_op< __kai::shiftr<T> >(v);}
+
+    void operator=(const T&);
+
+    ~slice_array() {}
+
+__KAI_SLICE_ACCESS:
+    inline slice_array(const slice_array& s) : _start(s._start), _len(s._len), _step(s._step) {}
+
+private:
+    slice_array() {}
+
+    slice_array& operator =(const slice_array&);
+
+    slice_array(const valarray<T>&, slice);
+
+    T * _start;
+    size_t _len;
+    size_t _step;
+
+    template<class F> void assign_binary_op( const valarray<T>& v ) const;
+    friend class valarray<T>;
+};
+
+template<class T> 
+inline valarray<T> valarray<T>::operator[](slice s) const {
+    valarray result;
+    T * r = result.allocate( s._len );
+    T * p = _ptr+s._start;
+    size_t step = s._step;
+    size_t n = s._len;
+    for( size_t k=0; k<n; ++k ) {
+	new(r++) T(*p);
+	p += step;
+    }
+    return result;
+}
+
+template<class T> 
+inline slice_array<T> valarray<T>::operator[](slice s) {
+    slice_array<T> result;
+    result._start = _ptr+s._start;
+    result._len = s._len;
+    result._step = s._step;
+    return result;
+}
+
+template<class T>
+inline void slice_array<T>::operator=(const T& x) {
+    T * p = _start;
+    size_t step = _step;
+    size_t n = _len;
+    for( size_t k=0; k<n; ++k ) {
+	*p = x;
+	p += step;
+    }
+}
+
+template <class T> 
+inline void slice_array<T>::operator=(const valarray<T>& v) const {
+    size_t n = std::min(_len, v.size());
+    T * p = _start;
+    size_t step = _step;
+    T * q = v._ptr; 
+    for( size_t k=0; k<n; ++k ) {
+	*p = *q++;
+	p += step;
+    }
+}
+
+template <class T>
+valarray<T>& valarray<T>::operator=(const slice_array<T>& s) {
+    size_t n = s._len;
+    valarray<T> old(*this,n,_grab);
+    T * q = s._start;
+    T * p = _ptr;
+    size_t step = s._step;
+    for( size_t k=0; k<n; ++k ) {
+	*p++ = *q;
+	q += step;
+    }
+    return *this;
+}
+
+template<class T> 
+valarray<T>::valarray(const slice_array<T>& s) {
+    size_t len = s._len;
+    T * p = allocate( len );
+    T * q = s._start;
+    size_t n = len;
+    size_t step = s._step;
+    for( size_t k=0; k<n; ++k ) {
+	new( p++ ) T( *q );
+	q += step;
+    }
+}
+
+template<class T>
+template<class F> 
+inline void slice_array<T>::assign_binary_op( const valarray<T>& v ) const {
+    size_t n = std::min(_len, v.size());
+    T * p = _start;
+    size_t step = _step;
+    T * q = v._ptr; 
+    for( size_t k=0; k<n; ++k ) {
+	*p = F()(*p,*q++);
+	p += step;
+    }
+}
+
+//------------------------------------------------------------------------
+// indirect_array and other methods related to indirect_array 
+//------------------------------------------------------------------------
+template <class T> class indirect_array {
+public :
+    typedef T  value_type;
+    void operator=(const valarray<T>&) const;
+    void operator*=(const valarray<T>& v) const {assign_binary_op<multiplies<T> >(v);};
+    void operator/=(const valarray<T>& v) const {assign_binary_op<divides<T> >(v);}
+    void operator%=(const valarray<T>& v) const {assign_binary_op<modulus<T> >(v);}
+    void operator+=(const valarray<T>& v) const {assign_binary_op<plus<T> >(v);}
+    void operator-=(const valarray<T>& v) const {assign_binary_op<minus<T> >(v);}
+    void operator^=(const valarray<T>& v) const {assign_binary_op< __kai::caret<T> >(v);}
+    void operator&=(const valarray<T>& v) const {assign_binary_op< __kai::bitwise_and<T> >(v);}
+    void operator|=(const valarray<T>& v) const {assign_binary_op< __kai::bitwise_or<T> >(v);}
+    void operator<<=(const valarray<T>& v) const {assign_binary_op< __kai::shiftl<T> >(v);}
+    void operator>>=(const valarray<T>& v) const {assign_binary_op< __kai::shiftr<T> >(v);}
+
+    void operator=(const T&);
+    ~indirect_array() {if(_ptr_ptr) delete[] _ptr_ptr;}
+
+__KAI_SLICE_ACCESS:
+    indirect_array(const indirect_array&);
+
+private:
+    indirect_array() {}
+    indirect_array& operator=( const indirect_array& );
+
+    size_t   _len;
+    T**      _ptr_ptr;
+
+    friend class valarray<T>;
+
+    T ** allocate( size_t len ) {
+	_len = len;
+	// Clear _ptr_ptr in case "new" throws an exception.
+	_ptr_ptr = 0;
+	return _ptr_ptr = new T*[len];
+    }
+
+    template<class F> void assign_binary_op( const valarray<T>& v ) const;
+    friend class gslice_array<T>;
+    friend class mask_array<T>;
+};
+
+template<class T>
+valarray<T> valarray<T>::operator[](const valarray<size_t>&  v) const {
+    size_t n = v.size();
+    T * p = _ptr;
+    valarray<T> result;
+    T * r = result.allocate(n);
+    const size_t * q = v._ptr;
+    for( size_t k=0; k<n; ++k ) 
+	new(r++) T(p[*q++]);
+    return result;
+}
+
+template<class T>
+indirect_array<T> valarray<T>::operator[]( const valarray<size_t>& v ) {
+    size_t n = v.size();
+    T * p = _ptr;
+    indirect_array<T> result;
+    T** r = result.allocate(n);
+    const size_t * q = v._ptr;
+    for( size_t k=0; k<n; ++k ) 
+        *r++ = p + *q++;
+    return result;
+}
+
+template <class T>
+inline
+indirect_array<T>::indirect_array(const indirect_array& i) {
+    size_t n = i._len;
+    std::memcpy( allocate(n), i._ptr_ptr, n*sizeof(T*) );
+}
+
+template <class T>
+inline void indirect_array<T>::operator=(const valarray<T>& v) const
+{
+    size_t n = std::min(_len, v.size());
+    T * const * p = _ptr_ptr;
+    const T * q = v._ptr; 
+    for( size_t k=0; k<n; ++k ) {
+	**p = *q++;
+	++p;
+    }
+}
+
+template<class T>
+template<class F> 
+inline void indirect_array<T>::assign_binary_op( const valarray<T>& v ) const {
+    size_t n = std::min(_len, v.size());
+    T ** p = _ptr_ptr;
+    T * q = v._ptr; 
+    for( size_t k=0; k<n; ++k ) {
+	**p = F()(**p,*q++);
+	++p;
+    }
+}
+
+template <class T>
+inline void indirect_array<T>::operator=(const T& t) {
+    size_t n = _len;
+    T ** p = _ptr_ptr;
+    for( size_t k=0; k<n; ++k ) 
+	**p++ = t;
+}
+
+template<class T>
+void valarray<T>::construct( const indirect_array<T>& i) {
+    size_t n = i._len;
+    T * p = allocate(n);
+    T * const * q = i._ptr_ptr; 
+    for( size_t k=0; k<n; ++k ) {
+	new( p++ ) T( **q );
+	++q;
+    }
+}
+
+template <class T>
+inline valarray<T>& valarray<T>::operator=(const indirect_array<T>& i) {
+    size_t len = i._len;
+    valarray old( *this, len, _grab );
+    T ** q = i._ptr_ptr;
+    size_t n = _len;
+    T * p = _ptr;
+    for( size_t k=0; k<n; ++k ) {
+	*p++ = **q;
+	++q;
+    }
+    return *this;
+}
+
+//------------------------------------------------------------------------
+// mask_array and other methods related to mask_array 
+//------------------------------------------------------------------------
+template <class T> class mask_array {
+public:
+    typedef T  value_type;
+
+    void operator=(const valarray<T>& y) const {rep=y;}
+    void operator*=(const valarray<T>& y) const {rep*=y;}
+    void operator/=(const valarray<T>& y) const {rep/=y;}
+    void operator%=(const valarray<T>& y) const {rep%=y;}
+    void operator+=(const valarray<T>& y) const {rep+=y;}
+    void operator-=(const valarray<T>& y) const {rep-=y;}
+    void operator^=(const valarray<T>& y) const {rep^=y;}
+    void operator&=(const valarray<T>& y) const {rep&=y;}
+    void operator|=(const valarray<T>& y) const {rep|=y;}
+    void operator<<=(const valarray<T>& y) const {rep<<=y;}
+    void operator>>=(const valarray<T>& y) const {rep>>=y;}
+
+    void operator=(const T& y) {rep=y;}
+    ~mask_array() {}
+
+__KAI_SLICE_ACCESS:
+    mask_array(const mask_array& m) : rep(m.rep) {}
+
+private:
+    mask_array() {}
+    mask_array& operator=(const mask_array&);
+
+    indirect_array<T> rep;
+  
+    friend class valarray<T>;
+};
+
+template <class T>
+valarray<T> valarray<T>::operator[](const valarray<bool>& v) const {
+    size_t rlen = std::min(_len, v._len);
+    const bool * q = v._ptr;
+    size_t n = 0;
+    for( size_t i=0; i<rlen; ++i ) {
+	if( q[i] ) ++n;
+    }
+    valarray<T> result;
+    T * p = result.allocate(n);
+    T * r = _ptr;
+    for( size_t k=0; k<rlen; ++k ) {
+	if( q[k] ) new(p++) T(*r);
+	++r;
+    }
+    return result;
+}
+
+template <class T>
+mask_array<T> valarray<T>::operator[]( const valarray<bool>& v ) {
+    size_t rlen = std::min(_len, v._len);
+    const bool * q = v._ptr;
+    size_t n = 0;
+    for( size_t i=0; i<rlen; ++i ) {
+	if( q[i] ) ++n;
+    }
+    mask_array<T> result;
+    T ** p = result.rep.allocate(n);
+    T * r = _ptr;
+    for( size_t k=0; k<rlen; ++k ) {
+	if( q[k] ) *p++ = r;
+	++r;
+    }
+    return result;
+}
+
+template <class T>
+inline valarray<T>&
+valarray<T>::operator=(const mask_array<T>& m)
+{
+    return operator=( m.rep );
+}
+
+//------------------------------------------------------------------------
+// gslice 
+//------------------------------------------------------------------------
+class gslice {
+public :
+    gslice() : _offset(0) {}
+
+    gslice(size_t offset, const valarray<size_t>& len, const valarray<size_t>& step)
+	:_offset(offset), _len(len), _step(step) {}
+    gslice(const gslice& g) :_offset(g._offset), _len(g._len), _step(g._step) {}
+
+    size_t   start() const { return _offset; }
+    valarray<size_t> size() const { return _len; }
+    valarray<size_t> stride() const { return _step; }
+#if !KAI_NONSTD_VALARRAY
+    // See comments about valarray::length
+    valarray<size_t> length() const { return _len; }
+#endif /* KAI_NONSTD_VALARRAY */
+
+private :
+    size_t            _offset;
+    valarray<size_t>  _len; 
+	// min value for any element in _len is 1, otherwise behaviour is undefined.
+    valarray<size_t>  _step;
+
+    template<class T> friend class gslice_array;
+    template<class T> friend class valarray;
+    friend class __kai::gslice_generator;
+};
+
+} // namespace std
+
+namespace __kai {
+
+class gslice_generator {
+public:
+    gslice_generator( const std::gslice& g, size_t element_size );
+    size_t size() const {return length;}
+    void init( std::size_t& m, std::size_t& step ) const {
+	digit_t * d = digits;
+	m = d->modulus;
+	step = d->step;
+	for( size_t r=rank; r>0; --r ) {
+	    ++d;
+	    d->count = d->modulus;
+	}
+    }
+    static void * inner( const void * p, size_t step ) {
+	return (char*)p + step;
+    }	
+    void * outer( const void * p ) const {
+	// Handling of zeroth digit is "unrolled" by client, and not done here.
+	for( digit_t * d = digits; ; ) {
+	    ++d;
+	    p = inner( p, d->step );
+	    if( --d->count ) break;
+	    d->count = d->modulus;
+	}
+	return (void*)p;
+    };
+    ~gslice_generator() {if( digits!=buffer ) delete[] digits;}
+    gslice_generator( const gslice_generator& g );
+private:
+    struct digit_t {
+	size_t step;	// Measured in bytes
+	size_t count;	// 0 unless actively in use.
+	size_t modulus;
+    };
+    digit_t* digits;	// Points to rank+1 entries.  Last entry is dummy to make Purify happy.
+    size_t length;
+    size_t rank;
+    digit_t buffer[5];	
+    void operator=( const gslice_generator& );	// Deny access
+};
+
+} // namespace __kai
+
+namespace std {
+
+//------------------------------------------------------------------------
+// gslice_array and other methods related to indirect_array 
+//------------------------------------------------------------------------
+template <class T> class gslice_array {
+public:
+    typedef T  value_type;
+    void operator=(const valarray<T>& y) const;
+    void operator*=(const valarray<T>& v) const {assign_binary_op<multiplies<T> >(v);};
+    void operator/=(const valarray<T>& v) const {assign_binary_op<divides<T> >(v);}
+    void operator%=(const valarray<T>& v) const {assign_binary_op<modulus<T> >(v);}
+    void operator+=(const valarray<T>& v) const {assign_binary_op<plus<T> >(v);}
+    void operator-=(const valarray<T>& v) const {assign_binary_op<minus<T> >(v);}
+    void operator^=(const valarray<T>& v) const {assign_binary_op< __kai::caret<T> >(v);}
+    void operator&=(const valarray<T>& v) const {assign_binary_op< __kai::bitwise_and<T> >(v);}
+    void operator|=(const valarray<T>& v) const {assign_binary_op< __kai::bitwise_or<T> >(v);}
+    void operator<<=(const valarray<T>& v) const {assign_binary_op< __kai::shiftl<T> >(v);}
+    void operator>>=(const valarray<T>& v) const {assign_binary_op< __kai::shiftr<T> >(v);}
+
+    void operator=(const T&);
+    ~gslice_array() {}
+
+__KAI_SLICE_ACCESS:
+    gslice_array(const gslice_array& g) : _start(g._start), _generator(g._generator) {}
+    
+private:
+    gslice_array() {}
+    gslice_array& operator=(const gslice&);
+    gslice_array( T * ptr, const gslice& g ) : _start(ptr+g._offset), _generator(g,sizeof(T)) {}
+
+    T * _start;
+    __kai::gslice_generator _generator;
+
+    friend class valarray<T>;
+    template<class F> void assign_binary_op( const valarray<T>& v ) const;
+};
+
+template<class T> inline gslice_array<T> valarray<T>::operator[](const gslice& g) {
+    return gslice_array<T>( _ptr, g );
+}
+
+template<class T> inline valarray<T> valarray<T>::operator[](const gslice& g) const {
+    __kai::gslice_generator gg(g,sizeof(T));
+    valarray result;
+    result.construct( _ptr + g._offset, gg );
+    return result;
+}
+
+template<class T>
+inline valarray<T>::valarray( const gslice_array<T>& g ) {
+    construct( g._start, g._generator );
+}
+
+template<class T>
+void valarray<T>::construct( const T * q, const __kai::gslice_generator& gg ) {
+    size_t n = gg.size();
+    T * p = allocate(n);
+    size_t m, stride;
+    gg.init( m, stride ); 
+    for(; n>0; n-=m ) {
+	for( int j=m; j>0; --j ) {
+	    new( p++ ) T( *q );
+	    q = (const T*)gg.inner(q,stride);
+	}
+	q = (const T*)gg.outer(q);
+    }
+}
+
+template<class T>
+template<class F> 
+void gslice_array<T>::assign_binary_op( const valarray<T>& v ) const {
+    size_t n = _generator.size();
+    // Failure of following assertion indicates that caller is trying to assign arrays of
+    // different sizes.
+    assert( n==v._len );
+    T * p = _start;
+    T * q = v._ptr;
+    size_t m, stride;
+    _generator.init( m, stride ); 
+    for(; n>0; n-=m ) {
+	for( int j=m; j>0; --j ) {
+	    *p = F()(*p,*q++);
+	    p = (T*)_generator.inner(p,stride);
+	}
+	p = (T*)_generator.outer(p);
+    }
+}
+
+template <class T>
+valarray<T>& valarray<T>::operator=(const gslice_array<T>& g) {
+    valarray<T> old(*this,_len,_grab);
+    size_t n = g._generator.size();
+    T * p = _ptr;
+    const T * q = g._start;
+    size_t m, stride;
+    g._generator.init( m, stride ); 
+    for(; n>0; n-=m ) {
+	for( int j=m; j>0; --j ) {
+	    *p++ = *q;
+	    q = (const T*)g._generator.inner(q,stride);
+	}
+	q = (const T*)g._generator.outer(q);
+    }
+    return *this;
+}
+
+template <class T>
+void gslice_array<T>::operator=(const T& t) {
+    size_t n = _generator.size();
+    T * p = _start;
+    size_t m, stride;
+    _generator.init( m, stride ); 
+    for(; n>0; n-=m ) {
+	for( int j=m; j>0; --j ) {
+	    *p = t;
+	    p = (T*)_generator.inner(p,stride);
+	}
+	p = (T*)_generator.outer(p);
+    }
+}
+
+template <class T>
+void gslice_array<T>::operator=(const valarray<T>& v) const {
+    size_t n = _generator.size();
+    // Failure of following assertion indicates that caller is trying to assign arrays of
+    // different sizes.
+    assert( n==v._len );
+    T * p = _start;
+    T * q = v._ptr;
+    size_t m, stride;
+    _generator.init( m, stride ); 
+    for(; n>0; n-=m ) {
+	for( int j=m; j>0; --j ) {
+	    *p = *q++;
+	    p = (T*)_generator.inner(p,stride);
+	}
+	p = (T*)_generator.outer(p);
+    }
+}
+
+} // namespace std
+
+#endif /* MSIPL_VALARRAY_H */

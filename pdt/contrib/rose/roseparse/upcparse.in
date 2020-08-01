@@ -1,0 +1,11 @@
+#!/bin/sh
+
+if [ ! -r /usr/include/sys/types.h ]; then
+  PDT_MULTI_ARCH_OPTS="-DPDT_MULTI_ARCH=1 -DPDT_MULTI_ARCH_`uname -m`=1"
+else
+  PDT_MULTI_ARCH_OPTS=
+fi
+
+ROSEPARSE_DIR="@ROSEPARSE_DIR@"
+
+exec $ROSEPARSE_DIR/roseparse -rose:UPC -rose:upc_threads 4 $PDT_MULTI_ARCH_OPTS "$@" 

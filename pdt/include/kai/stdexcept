@@ -1,0 +1,115 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+/**
+ ** Lib++     : The Modena C++ Standard Library,
+ **             Version 1.9, May 1996
+ **
+ ** Copyright (c) 1994-1996 Modena Software Inc.
+ **/
+#ifndef __KAI_STDEXCEPT
+#define __KAI_STDEXCEPT
+
+#include <mcompile.h>
+#include <exception>
+
+namespace __kai {
+    //
+    // Class __refcounted_ntbs represents a referenced-counted null-terminated byte string
+    // used by exception classes.  See ISO C++ library issues list #254 for why a ref-counted 
+    // byte string is desirable.
+    //
+    // We don't use std::string simply because that would incur big header bloat.
+    // Notice that the layout of the object is the same as a (char*),
+    // which makes it layout compatible with 4.0[a-e]. The extra ref-count
+    // field that is introduced in the string is not an issue because the only
+    // methods that deal with it are all non-templates in the same .o file in the library.
+    //
+    struct __refcounted_ntbs {
+	char * str; 	// Pointer to null-terminated string preceded by one-word refcount.
+	__refcounted_ntbs( const char * );
+	__refcounted_ntbs( const __refcounted_ntbs& );
+	void operator=( const __refcounted_ntbs& );
+	~__refcounted_ntbs() MSIPL_THROW;
+    };
+} // namespace __kai
+
+namespace std {
+
+// 
+// Forward declaration for string types.
+//
+template <class T> class allocator; 
+template <class charT> class char_traits;
+template <class charT, class traits, class Allocator> class basic_string;
+typedef  basic_string<char, char_traits<char>, allocator<char> > string;
+
+
+class logic_error : public exception {
+    __kai::__refcounted_ntbs str;
+public :
+    logic_error(const string& what_arg);
+    logic_error(const char *what_arg);
+    virtual const char* what() const MSIPL_THROW;
+};
+
+class domain_error : public logic_error {
+public :
+    domain_error(const string& what_arg) : logic_error(what_arg) { }
+    domain_error(const char * what_arg) : logic_error(what_arg) { }
+    static void __throw( const char* what_arg );
+};
+
+class invalid_argument : public logic_error {
+public :
+    invalid_argument(const string& what_arg) : logic_error(what_arg) { }
+    invalid_argument(const char * what_arg) : logic_error(what_arg) { }
+    static void __throw( const char* what_arg );
+};
+
+class length_error : public logic_error {
+public :
+    length_error(const string& what_arg) : logic_error(what_arg) { }
+    length_error(const char * what_arg) : logic_error(what_arg) { }
+    static void __throw( const char* what_arg );
+};
+
+class out_of_range : public logic_error {
+public :
+    out_of_range(const string& what_arg) : logic_error(what_arg) { }
+    out_of_range(const char * what_arg) : logic_error(what_arg) { }
+    static void __throw( const char* what_arg );
+};
+
+class runtime_error : public exception {
+    __kai::__refcounted_ntbs str;
+public :
+    runtime_error(const char * what_arg);
+    runtime_error(const string& what_arg);
+    virtual const char* what() const MSIPL_THROW;
+    static void __throw(const char* what_arg);
+};
+
+class range_error : public runtime_error {
+public :
+    range_error (const string& what_arg) : runtime_error(what_arg) { }
+};
+
+class overflow_error : public runtime_error {
+public :
+    overflow_error(const char * what_arg) : runtime_error(what_arg) { }
+    overflow_error (const string& what_arg) : runtime_error(what_arg) { }
+    static void __throw( const char* what_arg );
+};
+
+class underflow_error : public runtime_error {
+public :
+    underflow_error (const string& what_arg) : runtime_error (what_arg) { }
+};
+
+} /* namespace std */
+
+#endif /* __KAI_STDEXCEPT */

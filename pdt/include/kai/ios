@@ -1,0 +1,559 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+/**
+ **  Lib++  : The Modena C++ Standard Library,
+ **           Version 2.4, October 1997
+ **
+ **  Copyright (c) 1995-1997 Modena Software Inc.
+ **/
+#ifndef __KAI_IOS
+#define __KAI_IOS
+
+#include <mcompile.h>
+#include <iosfwd>
+#include <localebase>
+#include <kai_lvec>
+
+namespace std { 
+
+typedef __kai::streamoff_t  streamoff;
+typedef __kai::streamsize_t  streamsize;
+
+template<class stateT>
+class fpos
+{
+public:
+    stateT state() const { return fst; }
+    void state(stateT s) { fst = s; }
+
+    fpos(streamoff off_arg) : off(off_arg), fst() { }
+    fpos() : off(0), fst() { }
+    fpos& operator=(const fpos& rhs) {
+	if (this != &rhs) {
+	    off=rhs.off;
+	    fst=rhs.fst;
+	}
+	return *this;
+    }
+    inline operator streamoff() const {return off;}	
+
+    bool operator==(const fpos& rhs) const {
+#if __KAI_MBSTATE_IS_INCOMPARABLE
+	return (off == rhs.off);
+#else
+	return (off == rhs.off) && ((off == -1) || (fst  == rhs.fst));
+#endif /* __KAI_MBSTATE_IS_INCOMPARABLE */
+    }
+    bool operator!=(const fpos& rhs) const { return (!(*this == rhs)); }
+
+    fpos operator+(streamoff off_arg) const { fpos tmp(*this); return (tmp += off_arg); }    
+    fpos& operator+=(streamoff off_arg) { off += off_arg; return *this; }
+    fpos operator-(streamoff off_arg) const { fpos tmp(*this); return (tmp -= off_arg); }
+    fpos& operator-=(streamoff off_arg) { off -= off_arg; return *this; }
+    streamoff operator-(const fpos& rhs) const { return ( (off == -1 || rhs.off == -1)  ?  -1 : off - rhs.off); }
+
+private:
+    streamoff off;
+    stateT fst;
+};
+
+#if KAI_NONSTD_CHAR_TRAITS
+// Definitions of non-standard methods that require complete type of fpos.
+inline char_traits<char>::state_type char_traits<char>::get_state( pos_type pos ) {
+    return pos.state();
+}
+
+inline char_traits<char>::pos_type char_traits<char>::get_pos (pos_type pos, state_type state) {
+    pos_type result(pos);
+    result.state( state );
+    return result;
+}
+
+#ifdef MSIPL_WCHART
+inline char_traits<wchar_t>::state_type char_traits<wchar_t>::get_state( pos_type pos ) {
+    return pos.state();
+}
+
+inline char_traits<wchar_t>::pos_type char_traits<wchar_t>::get_pos (pos_type pos, state_type state) {
+    pos_type result(pos);
+    result.state( state );
+    return result;
+}
+#endif /* MSIPL_WCHART */
+#endif /* KAI_NONSTD_CHAR_TRAITS */
+
+template <class charT, class InputIterator> class num_get;
+template <class charT, class OutputIterator> class num_put;
+
+class ios_base {
+
+public:
+    // Nested class for exception handling in failure conditions
+#ifdef _EXCEPTIONS
+    class failure : public exception 
+    {
+	string errmsg;
+    public:
+	explicit failure(const string& what_arg = "Failure reported");
+	virtual ~failure() MSIPL_THROW;
+	virtual const char* what() const MSIPL_THROW;
+    };
+#endif
+
+    enum fmt_flags {
+	no_flags     =  0, 
+	boolalpha    =  1<<0, 
+	dec          =  1<<1, 
+	hex          =  1<<2, 
+	oct          =  1<<3, 
+	internal     =  1<<4, 
+	left         =  1<<5, 
+	right        =  1<<6, 
+	fixed        =  1<<7, 
+	scientific   =  1<<8, 
+	showbase     =  1<<9, 
+	showpoint    =  1<<10, 
+	showpos      =  1<<11, 
+	skipws       =  1<<12, 
+	unitbuf      =  1<<13, 
+	uppercase    =  1<<14, 
+	adjustfield  =  left  | right | internal, 
+	basefield    =  dec   | hex   | oct, 
+	floatfield   =  fixed | scientific
+    };
+
+    enum io_state {
+	badbit   = 1<<0, 
+	eofbit   = 1<<1, 
+	failbit  = 1<<2, 
+	goodbit  = 0
+    };
+
+    enum open_mode {
+	app       = 1<<0, 
+	ate       = 1<<1, 
+	binary    = 1<<2, 
+	in        = 1<<3, 
+	out       = 1<<4, 
+	trunc     = 1<<5
+    };
+
+    enum seekdir {
+	// Modena used a bitmask here, which seems like just asking for trouble.
+	// The values here tolerate the mistake of passing in a raw "whence" value for fseek. - ADR
+	beg      = SEEK_SET, 
+	cur      = SEEK_CUR, 
+	end      = SEEK_END
+    };
+
+#if KAI_NONSTD_IOS_BASE || KAI_NONSTD_STREAMBUF || KAI_NONSTD_FILEBUF
+    // Type from Section D.6 of Standard
+    typedef seekdir seek_dir;
+#endif /* KAI_NONSTD_IOS_BASE || KAI_NONSTD_STREAMBUF || KAI_NONSTD_FILEBUF */
+
+    typedef int fmtflags;     
+    typedef short openmode;
+    typedef short iostate;
+
+    class Init 
+    {
+    public:
+	Init();
+	~Init();
+    private:
+	// dcn: This only needs to be a static counter.
+	// The implementation code needs to have its own mutex to lock.
+	static int init_cnt;
+    };
+
+    // 27.4.2.2 fmtflags state:
+
+    inline fmtflags flags() const { return fmtfl; }
+    fmtflags flags(fmtflags fmtfl_arg) {
+	fmtflags fmtfl_sav = fmtfl;
+	fmtfl = fmtfl_arg;
+	return fmtfl_sav;
+    }
+    fmtflags setf(fmtflags fmtfl_arg) {
+	fmtflags fmtfl_sav = fmtfl;
+	fmtfl |= fmtfl_arg;
+	return fmtfl_sav;
+    }
+    fmtflags setf(fmtflags fmtfl_arg, fmtflags mask) {
+	fmtflags fmtfl_sav = fmtfl;
+	fmtfl &= (~mask);
+	fmtfl |= (fmtfl_arg & mask);
+	return fmtfl_sav;
+    }
+    inline void unsetf(fmtflags mask) { fmtfl &= ~mask; }
+
+    inline streamsize precision() const { return prec; }
+    streamsize precision(streamsize prec_arg) {
+	streamsize prec_sav = prec;
+	prec = prec_arg;
+	return prec_sav;
+    }
+    inline streamsize width() const { return wide; }
+    streamsize width(streamsize wide_arg) {
+	streamsize wide_sav = wide;
+	wide = wide_arg;
+	return wide_sav;
+    }
+
+    // 27.4.2.3 locales:
+
+    locale imbue(const locale& loc_arg);
+    inline locale getloc() const { return loc; }
+
+    // 27.4.2.5 storage:
+
+    static int xalloc();
+    long& iword(int index_arg);
+    void*& pword(int index_arg);
+
+    // destructor
+    virtual ~ios_base();
+
+    // 27.4.2.6 callbacks:
+    enum event {
+	erase_event, 
+	imbue_event, 
+	copyfmt_event
+    };
+    typedef void(*event_callback)(event, ios_base&, int index);
+    void register_callback(event_callback fn, int index);
+
+    static bool sync_with_stdio( bool sync=true );
+
+private:
+    typedef pair<event_callback, int>	event_pair;
+    typedef __kai::lw_vector<event_pair> ev_vector_type;
+    typedef __kai::lw_vector<long>	l_vector_type;
+    typedef __kai::lw_vector<void*>	v_vector_type;
+protected:
+    ios_base();
+    static void throwfailure();
+
+    locale		loc;
+    ev_vector_type	rvec;
+    size_t		rvec_size;
+    streamsize		prec;
+    streamsize		wide;
+    iostate		state;
+    fmtflags		fmtfl;
+    iostate		except_flags;
+    l_vector_type	ivec;
+    v_vector_type	pvec;
+    static int		index;
+
+private:
+    // not to be defined
+    ios_base(const ios_base& base);
+    ios_base& operator=(const ios_base& base);
+};
+
+template<class charT, class traits>
+class basic_ios : public ios_base 
+{
+public:
+    // Types:
+    typedef charT			char_type;
+    typedef typename traits::int_type	int_type;
+    typedef typename traits::pos_type	pos_type;
+    typedef typename traits::off_type	off_type;
+    typedef traits			traits_type;
+
+    inline operator void*() const { return state & (failbit | badbit) ? 0 : sb; }
+    inline bool operator!() const { return state & (failbit | badbit); }
+
+    inline iostate rdstate() const { return state; }
+    inline void clear(iostate state_arg = goodbit);
+    inline void setstate(iostate state_arg);
+    inline bool good() const { return state==goodbit; }
+    inline bool eof() const { return state & eofbit; }
+    inline bool fail() const { return state & (failbit | badbit); }
+    inline bool bad() const { return state & badbit; }
+
+    inline iostate exceptions() const { return except_flags; }
+    inline void exceptions(iostate except_arg);
+
+    // 27.4.4.1 Constructor/destructor:
+    inline explicit basic_ios(basic_streambuf<char_type, traits>* sb_arg);
+    virtual ~basic_ios();
+
+    // 27.4.4.2 Members:
+    inline basic_ostream<char_type, traits>* tie() const { return tiestr; }
+    inline basic_ostream<char_type, traits>* tie(basic_ostream<char_type, traits>* tiestr_arg);
+
+    inline basic_streambuf<char_type, traits>* rdbuf() const { return sb; }
+    inline basic_streambuf<char_type, traits>* rdbuf(basic_streambuf<char_type, traits>* sb_arg);
+
+    basic_ios& copyfmt(const basic_ios& rhs);
+
+    inline char_type fill() const { return fillch; }
+    inline char_type fill(char_type ch);
+
+    // 27.4.2.3 Locales:
+    locale imbue(const locale& loc_arg);
+
+    inline char narrow(char_type c, char dfault) const { return ctype_facet().narrow(c, dfault); }
+    inline char_type widen(char c) const { return ctype_facet().widen(c); }
+
+#if MSIPL_MULTITHREAD
+    // This allows us to lock streams so I/O operations appear to be atomic.
+    __kai::recursive_mutex &__kai_get_mutex() { return *(sb ? &(sb->_mutex) : __kai::error_mutex); }
+#endif
+    
+protected:
+    inline basic_ios();
+    void init(basic_streambuf<char_type, traits>* sb_arg);
+
+    // Data members
+    basic_streambuf<char_type, traits>* sb;
+    basic_ostream<char_type, traits>* tiestr;
+    char_type fillch;
+
+    // Quick unchecked access to the proper facets speeds up I/O significantly.
+    typedef num_get<char_type, istreambuf_iterator<char_type, traits> > get_facet_type;
+    typedef num_put<char_type, ostreambuf_iterator<char_type, traits> > put_facet_type;
+
+    const ctype<char_type>& ctype_facet() const {
+	if( !__kai_ctype_facet ) load_ctype_facet();
+	return *__kai_ctype_facet;
+    }
+    const get_facet_type& num_get_facet() const {
+        if( !my_num_get_facet ) load_num_get_facet();
+	return *my_num_get_facet;
+    }
+
+    const put_facet_type& num_put_facet() const {
+        if( !my_num_put_facet ) load_num_put_facet();
+	return *my_num_put_facet;
+    }
+
+    mutable const ctype<char_type> *__kai_ctype_facet;
+private:
+    mutable const get_facet_type *my_num_get_facet;
+    mutable const put_facet_type *my_num_put_facet;
+
+    // Following are out-of-line to reduce code bloat. 
+    void load_ctype_facet() const;
+    void load_num_get_facet() const;
+    void load_num_put_facet() const;
+
+    // not to be defined
+    basic_ios(const basic_ios& rhs);  
+    basic_ios& operator=(const basic_ios& rhs);  
+};
+
+template<class charT, class traits> 
+void basic_ios<charT, traits>::load_ctype_facet() const {
+    __kai_ctype_facet = &use_facet<ctype <char_type> >(loc);
+}
+
+template<class charT, class traits> 
+void basic_ios<charT, traits>::load_num_get_facet() const {
+    my_num_get_facet = &use_facet<get_facet_type>(loc);
+}
+
+template<class charT, class traits> 
+void basic_ios<charT, traits>::load_num_put_facet() const {
+    my_num_put_facet = &use_facet<put_facet_type>(loc);
+}
+
+template<class charT, class traits> 
+inline basic_ios<charT, traits>::basic_ios(basic_streambuf<charT, traits>* sb_arg) : ios_base()
+{
+    init(sb_arg);
+}
+
+template<class charT, class traits>
+inline basic_ios<charT, traits>::basic_ios() : ios_base()
+{
+    // dcn - The standard says this constructor should leave the members uninitialized.
+}
+
+template<class charT, class traits>
+void basic_ios<charT, traits>::init(basic_streambuf<charT, traits>* sb_arg)
+{
+    __kai_ctype_facet = 0;
+    my_num_get_facet = 0;
+    my_num_put_facet = 0;
+    sb     = sb_arg;
+    tiestr = 0;
+    state  = sb_arg ? goodbit : badbit;
+    except_flags = goodbit;
+    fmtfl  = skipws | dec;
+    wide   = 0;
+    prec   = 6;
+    loc    = locale();
+    fillch = ctype_facet().widen(' ');
+}
+
+template<class charT, class traits>
+basic_ios<charT, traits>::~basic_ios()
+{
+}
+ 
+template<class charT, class traits>
+inline basic_ostream<charT, traits>* basic_ios<charT, traits>::tie(basic_ostream<charT, traits>* tiestr_arg)
+{
+    basic_ostream<charT, traits>* tiestr_sav = tiestr;
+    tiestr = tiestr_arg;
+    return tiestr_sav;
+}
+
+template<class charT, class traits> 
+inline basic_streambuf<charT, traits>* basic_ios<charT, traits>::rdbuf(basic_streambuf<charT, traits>* sb_arg)
+{
+    basic_streambuf<charT, traits>*  sb_sav = sb;
+
+    // Should there be a call to sb_sav->sync() ?
+    if (sb=sb_arg) 
+	state = goodbit;
+    else if ( (state=badbit) & except_flags) 
+	throwfailure(); 
+    return sb_sav;
+}
+
+template<class charT, class traits>
+locale basic_ios<charT, traits>::imbue(const locale& loc_arg)
+{
+    locale loc_save = loc;
+    int i = rvec_size;
+    loc = loc_arg;
+    for ( ; i > 0 ; --i)
+	(*(rvec[i-1].first))(imbue_event, *this, rvec[i-1].second);
+    if (sb)
+	sb->pubimbue(loc_arg);
+    __kai_ctype_facet = 0;
+    my_num_get_facet = 0;
+    my_num_put_facet = 0;
+    return loc_save;
+}
+
+template<class charT, class traits>
+inline basic_ios<charT, traits>::char_type basic_ios<charT, traits>::fill(char_type fillch_arg)
+{
+    char_type fillch_sav = fillch;
+    fillch               = fillch_arg;
+    return fillch_sav;
+}
+
+template<class charT, class traits> 
+inline basic_ios<charT, traits>& basic_ios<charT, traits>::copyfmt(const basic_ios<charT, traits>& rhs)
+{
+    if (this !=  &rhs) {
+        int i = rvec_size;
+        for ( ; i > 0 ; --i)
+	    (*(rvec[i-1].first))(erase_event, *this, rvec[i-1].second);
+
+	loc    = rhs.loc;
+	tiestr = rhs.tiestr;
+	fillch = rhs.fillch;
+	fmtfl  = rhs.fmtfl;
+	wide   = rhs.wide;
+	prec   = rhs.prec;
+	ivec   = rhs.ivec;
+	pvec   = rhs.pvec;
+	rvec   = rhs.rvec;
+	rvec_size = rhs.rvec_size;
+
+        //  CHECK Sequence of registered call back;
+	i = rvec_size;
+	for ( ; i > 0 ; --i)
+	    (*(rvec[i-1].first))(copyfmt_event, *this, rvec[i-1].second);
+	except_flags = rhs.except_flags;
+	if (!sb) 
+	    state|= badbit;
+	if (state & except_flags) 
+            throwfailure();
+    }
+    return *this;
+}
+
+template<class charT, class traits>
+inline void basic_ios<charT, traits>::clear(iostate state_arg)
+{
+    if (sb) 
+        state = state_arg; 
+    else 
+        state = state_arg | badbit;
+    if (state & except_flags) 
+        throwfailure();
+}
+
+template<class charT, class traits>
+inline void basic_ios<charT, traits>::setstate(iostate state_arg)
+{
+    if (sb) 
+        state |=  state_arg;
+    else 
+        state |=  state_arg | badbit;
+    if (state & except_flags) 
+        throwfailure();
+}
+
+
+template<class charT, class traits>
+inline void basic_ios<charT, traits>::exceptions(iostate except_arg)
+{
+    except_flags = except_arg;
+    if (!sb) 
+        state|= badbit;
+    if (except_flags&state) 
+        throwfailure();
+}
+
+// 27.4.6 ios_base manipulators
+
+// 27.4.6.1 fmtflags manipulators
+inline ios_base& boolalpha(ios_base& str)	{ str.setf(ios_base::boolalpha); return str; }
+inline ios_base& noboolalpha(ios_base&  str)	{ str.unsetf(ios_base::boolalpha); return str; }
+inline ios_base& showbase(ios_base&  str)	{ str.setf(ios_base::showbase); return str; }
+inline ios_base& noshowbase(ios_base&  str)	{ str.unsetf(ios_base::showbase); return str; }
+inline ios_base& showpoint(ios_base&  str)	{ str.setf(ios_base::showpoint); return str; }
+inline ios_base& noshowpoint(ios_base&  str)	{ str.unsetf(ios_base::showpoint); return str; }
+inline ios_base& showpos(ios_base&  str)	{ str.setf(ios_base::showpos); return str; }
+inline ios_base& noshowpos(ios_base&  str)	{ str.unsetf(ios_base::showpos); return str; }
+inline ios_base& skipws(ios_base&  str)		{ str.setf(ios_base::skipws); return str; }
+inline ios_base& noskipws(ios_base&  str)	{ str.unsetf(ios_base::skipws); return str; }
+inline ios_base& uppercase(ios_base&  str)	{ str.setf(ios_base::uppercase); return str; }
+inline ios_base& nouppercase(ios_base&  str)	{ str.unsetf(ios_base::uppercase); return str; }
+// These are not listed in the synopsis 27.4. (Seems to be an editing error.)
+inline ios_base& unitbuf(ios_base& str)		{ str.setf(ios_base::unitbuf); return str; }
+inline ios_base& nounitbuf(ios_base& str)	{ str.unsetf(ios_base::unitbuf); return str; }
+
+// 27.4.6.2 adjustfield manipulators
+inline ios_base&  internal(ios_base&  str)	{ str.setf(ios_base::internal, ios_base::adjustfield); return str; }
+inline ios_base&  left(ios_base&  str)		{ str.setf(ios_base::left, ios_base::adjustfield); return str; }
+inline ios_base&  right(ios_base&  str)		{ str.setf(ios_base::right, ios_base::adjustfield); return str; }
+
+// 27.4.6.3 basefield manipulators
+inline ios_base& dec(ios_base& str) { str.setf(ios_base::dec, ios_base::basefield); return str; }
+inline ios_base& hex(ios_base& str) { str.setf(ios_base::hex, ios_base::basefield); return str; }
+inline ios_base& oct(ios_base& str) { str.setf(ios_base::oct, ios_base::basefield); return str; }
+
+// 27.4.6.4 floatfield manipulators
+inline ios_base& fixed(ios_base& str)		{ str.setf(ios_base::fixed, ios_base::floatfield); return str; }
+inline ios_base& scientific(ios_base& str)	{ str.setf(ios_base::scientific, ios_base::floatfield); return str; }
+
+} // namespace std
+
+namespace __kai {
+// char_cast defines type as char if size==1, otherwise it leaves it undefined.
+// The intent is to detect cases where KAI has not yet implemented wide characters.
+// It is intended to work for char, signed char, and unsigned char.
+template<class charT, size_t size> struct char_cast {};
+
+template<class charT> struct char_cast<charT,1> {
+    typedef charT type;
+};
+
+} /* namespace __kai */
+
+#endif /* __KAI_IOS */

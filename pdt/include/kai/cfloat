@@ -1,0 +1,12 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+#ifndef __KAI_CFLOAT
+#define __KAI_CFLOAT
+
+#include <float.h>
+
+#endif /* __KAI_CFLOAT */

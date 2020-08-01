@@ -1,0 +1,3322 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+/**
+ **  Lib++  : The Modena C++ Standard Library,
+ **           Version 2.5, January 1998
+ **
+ **  Copyright (c) 1996-1998 Modena Software Inc.
+ **/
+#ifndef __KAI_LOCALE
+#define __KAI_LOCALE
+
+#include <mcompile.h>
+#include <localebase>
+#include <ios>
+//#include <mtools>
+#include <cerrno>
+#include <cwchar>	// for mbstate_t.
+#include <ctime>	// for struct tm.
+
+namespace std {
+
+// locale, facet, ctype are in localebase
+
+// ************* CODECVT FACET ***********************
+
+class codecvt_base 
+{
+public:
+    enum result { ok = 0, partial, error, noconv };
+};
+
+template <class internT, class externT, class stateT>
+class codecvt : public locale::facet, public codecvt_base 
+{
+public:
+    typedef internT intern_type;
+    typedef externT extern_type;
+    typedef stateT state_type;
+
+    explicit codecvt(size_t refs = 0) : locale::facet(refs) { }
+
+    result out(state_type& state, const internT* from, const internT* from_end, const internT*& from_next, 
+	       externT* to, externT* to_limit, externT*& to_next) const {
+	return do_out(state, from, from_end, from_next, to, to_limit, to_next); 
+    }
+
+    result unshift(stateT& state, externT* to, externT* to_limit, externT*& to_next) const { 
+	return do_unshift(state, to, to_limit, to_next); 
+    }
+
+    result in(state_type& state, const externT* from, const externT* from_end, const externT*& from_next,
+	      internT* to, internT* to_limit, internT*& to_next) const { 
+	return do_in(state, from, from_end, from_next, to, to_limit, to_next); 
+    }
+
+    int encoding() const MSIPL_THROW { return do_encoding(); }
+    bool always_noconv() const MSIPL_THROW { return do_always_noconv(); }
+    int length(const state_type& state, const externT* from, const externT* from_end, size_t max) const { 
+	return do_length(state, from, from_end, max); 
+    }
+
+    int max_length() const MSIPL_THROW {
+	return do_max_length(); 
+    }
+
+    static locale::id id;
+
+protected:
+    ~codecvt() { }	// virtual
+
+    virtual result do_out(state_type&, 
+			  const internT*, const internT*, const internT*&,
+			  externT*, externT*, externT*& ) const;
+
+    virtual result do_in(state_type&, 
+			 const externT*, const externT*, const externT*&,
+			 internT*, internT*, internT*&) const;
+
+    virtual result do_unshift(state_type&, externT*, externT*, externT*&) const;
+
+    virtual int do_encoding() const MSIPL_THROW { return sizeof(internT); }
+
+    virtual bool do_always_noconv() const MSIPL_THROW { return false; }
+
+    virtual int do_length(const state_type&, externT*, const externT*, size_t) const;
+
+    virtual int do_max_length() const MSIPL_THROW { return 1; }
+
+};
+
+template <class internT, class externT, class stateT>
+locale::id codecvt<internT, externT, stateT>::id;
+
+template <class internT, class externT, class stateT>
+int codecvt<internT, externT, stateT>::do_length(const state_type& s,
+						 externT* from, const externT* from_end, size_t max) const
+{
+    size_t flen = from_end-from;
+    return max < flen ? max : flen;
+}
+
+// This class does not do anything, but it should. -- dcn 28 Jan 1999.
+template <class fromT, class toT, class stateT>
+class codecvt_byname : public codecvt<fromT, toT, stateT> 
+{
+public:
+    explicit codecvt_byname(const char*, size_t refs = 0) : codecvt<fromT, toT, stateT>(refs) { }
+
+protected:
+    ~codecvt_byname();
+};
+
+template <class fromT, class toT, class stateT>
+codecvt_byname<fromT, toT, stateT>::~codecvt_byname() { }
+
+#if KAI_WCHAR_T
+template<>
+class codecvt<wchar_t, char, mbstate_t>
+    : public locale::facet, public codecvt_base 
+{
+ 
+    //    friend class locale::imp;
+
+public:
+    typedef wchar_t         from_type;
+    typedef char            to_type;
+    typedef mbstate_t       state_type;
+    typedef from_type intern_type;
+    typedef to_type   extern_type;
+
+protected:
+    virtual codecvt_base::result
+    do_out(state_type& state, const from_type* from, 
+	   const from_type* from_end, 
+	   const from_type*& from_next, to_type* to, 
+	   to_type* to_limit, to_type*& to_next) const;
+
+    virtual codecvt_base::result
+    do_unshift(state_type& state, to_type* to, 
+               to_type* to_limit, to_type*& to_next) const;
+
+    virtual codecvt_base::result
+    do_in(state_type& state, 
+	  const to_type* from, const to_type* from_end, const to_type*& from_next, 
+	  from_type* to, from_type* to_limit, from_type*& to_next) const;
+
+    virtual int do_encoding() const MSIPL_THROW { return sizeof(intern_type); }
+
+    virtual bool
+    do_always_noconv() const MSIPL_THROW { return false; }
+	// For wide characters, conversion is required w.r.t. external characters (bytes).
+
+    virtual int
+    do_length(const state_type& state, const from_type* from, 
+              const from_type* from_end, size_t max) const ;
+
+    virtual int
+    do_max_length() const MSIPL_THROW { return MB_CUR_MAX; }
+
+public:
+    codecvt_base::result
+    out(state_type& state, const from_type* from, 
+	const from_type* from_end, 
+	const from_type*& from_next, to_type* to, 
+	to_type* to_limit, to_type*& to_next) const { 
+	return do_out(state, from, from_end, from_next, to, to_limit, to_next); 
+    }
+
+    codecvt_base::result
+    unshift(state_type& state, to_type* to, 
+	    to_type* to_limit, to_type*& to_next) const { 
+	return do_unshift(state, to, to_limit, to_next); 
+    }
+
+    codecvt_base::result
+    in(state_type& state, const to_type* from, 
+       const to_type* from_end, 
+       const to_type*& from_next, from_type* to, 
+       from_type* to_limit, from_type*& to_next) const { 
+	return do_in(state, from, from_end, from_next, to, to_limit, to_next); 
+    }
+
+    int encoding() const MSIPL_THROW { return do_encoding(); }
+
+    bool always_noconv() const MSIPL_THROW { return do_always_noconv (); }
+
+    int length(const state_type& state, const from_type* from, 
+	       const from_type* from_end, size_t max) const { 
+	return do_length(state, from, from_end, max); 
+    }
+
+    int max_length() const MSIPL_THROW {  
+	return do_max_length(); 
+    }
+
+    static locale::id id;
+
+    explicit codecvt(size_t refs = 0) : locale::facet(refs) { }
+
+protected:
+    ~codecvt () { }
+};
+#endif /* KAI_WCHAR_T */
+
+template<>
+class codecvt<char, char, mbstate_t> : public locale::facet, public codecvt_base 
+{
+public:
+    typedef mbstate_t	state_type;
+    typedef char	intern_type;
+    typedef char	extern_type;
+
+    explicit codecvt(size_t refs = 0) : locale::facet(refs) { }
+
+    result out(state_type& state, const intern_type* from, const intern_type* from_end, const intern_type*& from_next,
+	       extern_type* to, extern_type* to_limit, extern_type*& to_next) const { 
+	return do_out(state, from, from_end, from_next, to, to_limit, to_next); 
+    }
+
+    result unshift(state_type& state, extern_type* to, extern_type* to_limit, extern_type*& to_next) const { 
+	return do_unshift(state, to, to_limit, to_next); 
+    }
+
+    result in(state_type& state, const extern_type* from, const extern_type* from_end, const extern_type*& from_next,
+	      intern_type* to, intern_type* to_limit, intern_type*& to_next) const { 
+	return do_in(state, from, from_end, from_next, to, to_limit, to_next); 
+    }
+
+    int encoding() const MSIPL_THROW { return do_encoding(); }
+
+    bool always_noconv() const MSIPL_THROW { return do_always_noconv (); }
+
+    int length(const state_type& state, const intern_type* from, const intern_type* from_end, size_t max) const { 
+	return do_length(state, from, from_end, max); 
+    }
+
+    int max_length() const MSIPL_THROW { return do_max_length(); }
+
+    static locale::id id;
+
+protected:
+    ~codecvt () { }
+
+    virtual result do_out(state_type& state,
+			  const intern_type* from, const intern_type* from_end, const intern_type*& from_next,
+			  extern_type* to, extern_type* to_limit, extern_type*& to_next) const;
+
+    virtual result do_unshift(state_type& state, extern_type* to, extern_type* to_limit, extern_type*& to_next) const;
+
+    virtual result do_in(state_type& state,
+			 const extern_type* from, const extern_type* from_end, const extern_type*& from_next,
+			 intern_type* to, intern_type* to_limit, intern_type*& to_next) const;
+
+    virtual int do_encoding() const MSIPL_THROW { return sizeof(intern_type); }
+
+    virtual bool do_always_noconv() const MSIPL_THROW { return true; }
+
+    virtual int do_length(const state_type& state, const intern_type* from, const intern_type* from_end, size_t max)const;
+
+    virtual int do_max_length() const MSIPL_THROW { return 1; }  
+
+};
+
+} // namespace std
+
+namespace __kai {
+
+// 
+// Function convert_locale_string is used to convert strings returned by localelconv 
+// to a basic_string<charT>.  The current implementation presumes that the strings
+// are part of the basic character set (not multibyte).
+//
+template<class charT> std::basic_string<charT> convert_locale_string( const char * src ) {
+    std::basic_string<charT> result;
+    size_t _n = std::strlen(src);
+    result.resize( _n );
+    for( size_t _k=0; _k<_n; ++_k ) {
+	result[_k] = src[_k];
+    }
+    return result;
+}
+
+// Specialization for sake of speed.
+template<> inline std::basic_string<char> convert_locale_string( const char * src ) {
+    return std::basic_string<char>(src);
+} 
+
+template<class charT> std::basic_string<charT> convert_locale_string( const std::basic_string<char>& src ) {
+    return convert_locale_string<charT>(src.c_str());
+}
+
+// Specialization for sake of speed.
+template<> inline std::basic_string<char> convert_locale_string( const std::basic_string<char>& src ) {
+    return src;
+}
+// 
+// Function convert_numeric_string is used to convert a string containing the numeric part
+// of money into a C string.  The current implementation presumes that all characters
+// in a number are part of the basic character set (not multibyte).
+//
+template<class charT> void convert_numeric_string( char * dst, const std::basic_string<charT>& src ) {
+    size_t _n = src.size();
+    for( size_t _k=0; _k<_n; ++_k ) {
+	dst[_k] = src[_k];
+    }
+}
+
+// Specialization for sake of speed.
+template<> inline void convert_numeric_string( char * dst, const std::basic_string<char>& src ) {
+    std::memcpy( dst, src.c_str(), src.size()+1 );
+}
+
+} // namespace __kai
+
+namespace std {
+
+// ************ NUMERIC FACETS *************************
+
+template <class charT, class InputIterator = istreambuf_iterator<charT> >
+class num_get : public locale::facet 
+{
+    typedef  ios_base::iostate iostate;
+
+public:
+    typedef  charT                                            char_type;
+    typedef  InputIterator                                    iter_type;
+
+    explicit num_get(size_t refs = 0) : locale::facet(refs) { }
+
+    iter_type get(iter_type from, iter_type end, ios_base& f, iostate& state,  bool& v) const { 
+	return do_get(from, end, f, state, v); 
+    }
+    iter_type get(iter_type from, iter_type end, ios_base& f, iostate& state, long& v) const { 
+	return do_get(from, end, f, state, v); 
+    }
+    iter_type get(iter_type from, iter_type end, ios_base& f, iostate& state, unsigned short& v) const { 
+	return do_get(from, end, f, state, v); 
+    }
+    iter_type get(iter_type from, iter_type end, ios_base& f, iostate& state, unsigned int& v) const {    
+	return do_get(from, end, f, state, v); 
+    }
+    iter_type get(iter_type from, iter_type end, ios_base& f, iostate& state, unsigned long& v) const { 
+	return do_get(from, end, f, state, v); 
+    }
+    iter_type get(iter_type from, iter_type end, ios_base& f, iostate& state, long long& v) const { 
+	return do_get(from, end, f, state, v); 
+    }
+    iter_type get(iter_type from, iter_type end, ios_base& f, iostate& state, unsigned long long& v) const { 
+	return do_get(from, end, f, state, v); 
+    }
+    iter_type get(iter_type from, iter_type end, ios_base& f, iostate& state, float& v) const { 
+	return do_get(from, end, f, state, v); 
+    }
+    iter_type get(iter_type from, iter_type end, ios_base& f, iostate& state, double& v) const { 
+	return do_get(from, end, f, state, v); 
+    }
+    iter_type get(iter_type from, iter_type end, ios_base& f, iostate& state, long double& v) const { 
+	return do_get(from, end, f, state, v); 
+    }
+    iter_type get(iter_type from, iter_type end, ios_base& f, iostate& state, void*& v) const { 
+	return do_get(from, end, f, state, v); 
+    }
+
+    static locale::id id;
+
+protected:
+    ~num_get() { }
+
+    virtual iter_type do_get(iter_type, iter_type, ios_base&, iostate& state, bool& v) const;
+    virtual iter_type do_get(iter_type, iter_type, ios_base&, iostate& state, long& v) const;
+    virtual iter_type do_get(iter_type, iter_type, ios_base&, iostate& state, unsigned short& v) const;
+    virtual iter_type do_get(iter_type, iter_type, ios_base&, iostate& state, unsigned int& v) const;
+    virtual iter_type do_get(iter_type, iter_type, ios_base&, iostate& state, unsigned long& v) const;
+    virtual iter_type do_get(iter_type, iter_type, ios_base&, iostate& state, float& v) const;
+    virtual iter_type do_get(iter_type, iter_type, ios_base&, iostate& state, double& v) const;
+    virtual iter_type do_get(iter_type, iter_type, ios_base&, iostate& state, long double& v) const;
+    virtual iter_type do_get(iter_type, iter_type, ios_base&, iostate& state, void*& v) const;
+    virtual iter_type do_get(iter_type, iter_type, ios_base&, iostate& state, long long& v) const;
+    virtual iter_type do_get(iter_type, iter_type, ios_base&, iostate& state, unsigned long long& v) const;
+
+private:
+    static unsigned long kai_scan_integral_type(iter_type&, iter_type&, ios_base&, int& radix, bool signed_value, unsigned long);
+    static bool scan_float_type(iter_type&, iter_type&, ios_base&, char*) ;
+    static unsigned long long kai_scan_long_long_type(iter_type&, iter_type&, ios_base&, int &, int,
+							unsigned long long);
+};
+
+template <class charT, class InputIterator>
+locale::id num_get<charT, InputIterator>::id;
+
+template <class charT, class OutputIterator = ostreambuf_iterator<charT> >
+class num_put : public locale::facet 
+{
+    typedef ios_base::iostate iostate;
+    //typedef size_t	size_type;
+public:
+    typedef charT	char_type;
+    typedef OutputIterator iter_type;
+
+public:
+    explicit num_put(size_t refs = 0) : locale::facet (refs) { }
+
+    iter_type put(iter_type s, ios_base& f, char_type fill, bool v) const { return do_put(s, f, fill, v); }
+    iter_type put(iter_type s, ios_base& f, char_type fill, long v) const { return do_put(s, f, fill, v); }
+    iter_type put(iter_type s, ios_base& f, char_type fill, unsigned long v) const { return do_put(s, f, fill, v); }
+    iter_type put(iter_type s, ios_base& f, char_type fill, long long v) const { return do_put(s, f, fill, v); }
+    iter_type put(iter_type s, ios_base& f, char_type fill, unsigned long long v) const {return do_put(s, f, fill, v);}
+    iter_type put(iter_type s, ios_base& f, char_type fill, double v)const { return do_put(s, f, fill, v); }
+    iter_type put(iter_type s, ios_base& f, char_type fill, long double v) const { return do_put(s, f, fill, v); }
+    iter_type put(iter_type s, ios_base& f, char_type fill, void* v) const { return do_put(s, f, fill, v); }
+
+    static locale::id id;
+
+protected:
+
+    ~num_put() { }
+
+    virtual iter_type
+    do_put(iter_type, ios_base&, char_type fill, bool v) const;
+
+    virtual iter_type do_put(iter_type begin, ios_base& io, char_type fill, long v) const {
+	char buff[200] = "", fmt[7] = "";
+	int_fmt(fmt, 'd', io.flags());
+	return print_integral_type(begin, io, fill, buff, sprintf(buff, fmt, v));
+    }
+    virtual iter_type do_put(iter_type begin, ios_base& io, char_type fill, unsigned long v) const {
+	char buff[200] = "", fmt[7] = "";
+	int_fmt(fmt, 'u', io.flags());
+	return print_integral_type(begin, io, fill, buff, sprintf(buff, fmt, v));
+    }
+    virtual iter_type do_put(iter_type begin, ios_base& io, char_type fill, double v) const {
+	char buff[200] = "", fmt[8] = "";
+	size_t prec = io.precision() <= 0 && ! (io.flags() & ios_base::fixed) ? 6 : io.precision();
+	int MAX_CHAR = numeric_limits<char>::max();
+	int pre = MAX_CHAR < prec ? MAX_CHAR : prec;
+	float_fmt(fmt, '\0', io);
+	return print_float_type(begin, io, fill, buff, prec - pre, sprintf(buff, fmt, pre, v));
+    }
+
+    virtual iter_type do_put(iter_type begin, ios_base& io, char_type fill, long double v) const {
+	char buff[200] = "", fmt[9] = "";
+	size_t prec = io.precision () <= 0 && ! (io.flags () & ios_base::fixed)
+	    ? 6 : io.precision ();
+	int MAX_CHAR = numeric_limits<char>::max ();
+	int pre = MAX_CHAR < prec ? MAX_CHAR : prec;
+	float_fmt (fmt, 'L', io);
+	return (print_float_type(begin, io, fill, buff, prec - pre, sprintf(buff, fmt, pre, v)));
+    }
+
+    virtual iter_type do_put(iter_type begin, ios_base& io, char_type fill, void* v) const;
+
+    virtual iter_type do_put(iter_type begin, ios_base& io, char_type fill, long long v) const {
+	char buff[200] = "", fmt[7] = "";
+	int_fmt(fmt, 'd', io.flags(), true);
+	return print_integral_type(begin, io, fill, buff, sprintf(buff, fmt, v));
+    }
+    virtual iter_type do_put(iter_type begin, ios_base& io, char_type fill, unsigned long long v) const {
+	char buff[200] = "", fmt[7] = "";
+	int_fmt(fmt, 'u', io.flags(), true);
+	return print_integral_type(begin, io, fill, buff, sprintf(buff, fmt, v));
+    }
+
+private: 
+    static iter_type print_integral_type(iter_type beg, ios_base& io, char_type fill, char* buf, size_t n);
+    static iter_type print_float_type(iter_type beg, ios_base& io, char_type fill, char* buf, size_t nz, size_t n);
+
+    static void int_fmt(char* fmt, char type, ios_base::fmtflags flag, bool is_long_long=false);
+    static void float_fmt(char* fmt, char type, ios_base& io);
+ 
+};
+
+template <class charT, class InputIterator>
+locale::id num_put<charT, InputIterator>::id;
+
+
+template <class charT>
+class numpunct : public locale::facet 
+{
+public:
+    typedef charT char_type;
+    typedef basic_string<charT> string_type;
+
+    explicit numpunct(size_t refs = 0) : locale::facet(refs) { init("C"); }
+
+    char_type decimal_point() const { return do_decimal_point(); }
+    char_type thousands_sep() const { return do_thousands_sep(); }
+    string grouping() const { return do_grouping (); }
+    string_type truename() const { return do_truename(); }
+    string_type falsename() const { return do_falsename(); }
+
+    static locale::id id;
+
+protected:
+    ~numpunct() { }
+
+    friend class __kai::localeimp;
+    explicit numpunct(const char* name, size_t refs = 0) : locale::facet (refs) { init(name); }
+
+    virtual char_type do_decimal_point() const { return dec_pt; }
+    virtual char_type do_thousands_sep() const { return thou_sep; }
+    virtual string do_grouping() const { return grp; }
+    virtual string_type do_truename() const { return name_true; }
+    virtual string_type do_falsename() const { return name_false; }
+
+private:
+    void init (const char* name) {
+	const char* old_name = setlocale(LC_ALL, 0);
+	if (setlocale(LC_NUMERIC, name) != 0) {
+	    struct lconv* lptr = localeconv();
+	    dec_pt     = lptr->decimal_point[0];
+	    thou_sep   = lptr->thousands_sep[0];
+	    name_true  = __kai::convert_locale_string<charT>( "true" );
+	    name_false = __kai::convert_locale_string<charT>( "false" );
+	    grp        = lptr->grouping; 
+	} else {
+	    runtime_error::__throw("Invalid locale name\n");
+	}
+	setlocale(LC_ALL, old_name);
+   }
+
+    char_type         dec_pt;
+    char_type         thou_sep;
+    string            grp;
+    string_type       name_true;
+    string_type       name_false;
+};
+
+template <class charT>
+locale::id numpunct<charT>::id;
+
+template <class charT>
+class numpunct_byname : public numpunct<charT> 
+{
+public:
+    explicit numpunct_byname(const char* name, size_t refs = 0) : numpunct<charT>(name, refs) { } 
+
+protected:
+    ~numpunct_byname() { }
+};
+
+template <class charT, class OutputIterator>
+num_put<charT, OutputIterator>::iter_type
+num_put<charT, OutputIterator>::do_put(iter_type begin, ios_base& io, char_type fill, void* v) const {
+    char buff[200] = "", fmt[7] = "";
+    int_fmt (fmt, 'p', io.flags());
+    size_t n = sprintf(buff, fmt, v);
+
+    char *cur =  buff;
+    size_t pad = io.width () > n ? io.width () - n : 0;
+    ios_base::fmtflags flag = io.flags() & ios_base::adjustfield;
+
+    if (flag != ios_base::left)
+	for ( ; pad > 0; --pad, ++begin)
+	    *begin = fill;     
+    for ( ; n > 0; n--, ++begin, ++cur)
+	*begin = *cur;
+    for ( ; pad > 0; --pad, ++begin)
+	*begin = fill;     
+    io.width(0);
+    return begin;
+}
+
+template <class charT, class OutputIterator>
+num_put<charT, OutputIterator>::iter_type
+num_put<charT, OutputIterator>::do_put(iter_type iter, ios_base& io, char_type fill, bool v) const
+{
+    const locale& loc = io.getloc();
+    const numpunct<charT>& punct = use_facet<numpunct<charT> >(loc);
+
+    if (io.flags () & ios_base::boolalpha) {
+	const basic_string<charT> str(v ? punct.truename() : punct.falsename());
+	size_t cnt = 0;
+	while (cnt < str.size()) { 
+	    *iter++ = str[cnt]; 
+	    cnt ++; 
+	}
+    } else {
+	*iter++ = (v ? '1' : '0');
+    }
+   return iter;
+}
+
+#ifdef MSIPL_WCHAR
+#define __W(str) ct.widen(str)
+#else
+#define __W(str) (str)
+#endif
+
+template <class charT, class OutputIterator>
+num_put<charT, OutputIterator>::iter_type 
+num_put<charT, OutputIterator>::
+print_integral_type(iter_type begin, ios_base& io, char_type fill, char *buff, size_t n)
+{
+    size_t p = (*buff == '+' || *buff == '-') ? 1 : *buff == '0' &&
+	(buff[1] == 'x' || buff[1] == 'X')? 2 
+	: *buff != '0' ? 0 : * (buff+1) != '\0'? 1:0;
+
+    const numpunct<charT>& punct = use_facet<numpunct<charT> >(io.getloc());
+    const char_type        thou_sep  = punct.thousands_sep();
+    string _mslstrg = punct.grouping();
+    const char* G = _mslstrg.c_str();
+    size_t index = n;
+    const int MAX_CHAR = numeric_limits<char>::max();
+
+    for (; *G !=MAX_CHAR && *G < (index - p) && *G > '\0'; ) {
+        index -= *G;
+        char_traits<char>::move(&buff[index+1] , &buff[index] , n + 1 - index);
+        buff[index] = ',';
+	++n;
+        if ('\0' < G[1])
+            ++G;
+    }
+    size_t pad = io.width() > n ? io.width() - n : 0;
+    ios_base::fmtflags flag = io.flags() & ios_base::adjustfield;
+    if (flag == ios_base::internal)
+	for ( ; p > 0; --p, --n, ++begin, ++buff)
+            *begin = __W(*buff);
+    if (flag != ios_base::left)
+	for ( ; pad > 0; --pad, ++begin)
+            *begin = fill;     
+    for ( ; n > 0; ++begin, ++buff, --n)
+	if (*buff == ',')
+	    *begin = thou_sep;
+	else
+	    *begin = __W(*buff);
+    io.width(0);
+    for ( ; pad > 0; --pad, ++begin)
+        *begin = fill;     
+    return begin;
+}
+
+
+template <class charT, class OutputIterator>
+void num_put<charT, OutputIterator>::int_fmt(char* fmt, char type, ios_base::fmtflags flag, bool is_long_long)
+{
+    char *fmt1 = fmt;
+    *fmt1++ = '%';
+    if (type == 'p')
+        *fmt1++ = 'p';
+    else {
+        if (flag & ios_base::showpos)
+            *fmt1++ = '+';
+        if (flag & ios_base::showbase)
+            *fmt1++ = '#';
+#if !(defined(__alpha) && defined(__osf__))
+	if (is_long_long)
+	    *fmt1++ = 'l';
+#endif
+	*fmt1++ = 'l';
+        ios_base::fmtflags Bflag = flag & ios_base::basefield;
+        *fmt1++ = Bflag == ios_base::oct ? 'o' :
+	    (Bflag != ios_base::hex ? type : (flag & ios_base::uppercase ? 'X' : 'x'));
+    }
+    *fmt1++ = '\0';
+}
+
+template <class charT, class OutputIterator>
+num_put<charT, OutputIterator>::iter_type 
+num_put<charT, OutputIterator>::print_float_type (iter_type begin, 
+						  ios_base& io, char_type fill, 
+						  char *buff, size_t nz, size_t n)
+{
+    size_t s = *buff == '+' || *buff == '-' ? 1 : 0;
+
+    const numpunct<charT>& punct = use_facet<numpunct <charT> >(io.getloc());
+
+    const char_type  thou_sep  = punct.thousands_sep();
+    string _mslstrg = punct.grouping();
+    const char* G = _mslstrg.c_str();
+    char * p = (char*)memchr (buff, localeconv()->decimal_point[0], n);
+    size_t index; 
+    if (!p)
+	index = n;
+    else
+	index = p - buff; 
+
+    char * p1 = buff;
+    for (int k = index; k > 0; k--)
+	++p1;
+    const int MAX_CHAR = numeric_limits<char>::max();
+
+    const ctype<charT>& ct = use_facet<ctype <charT> >(io.getloc());
+
+    for (; *G !=MAX_CHAR && *G < (index - s) && *G > '\0'; ) {
+        index -= *G;
+        char_traits<char>::move(&buff[index+1] , &buff[index] , n + 1 - index);
+        buff[index] = ',';
+	++n;
+	++p1;
+        if (p)
+	    ++p;
+        if ('\0' < G[1])
+            ++G;
+    }
+
+    int pad = io.width() > n + nz ? io.width() - n - nz: 0;
+    ios_base::fmtflags flag = io.flags() & ios_base::adjustfield;
+
+    if ((*buff == '+' || *buff == '-') && (io.flags() & ios_base::internal)) {   
+	*begin = __W(*buff);
+	++begin;
+	--n;
+	++buff;
+    }
+    if (flag != ios_base::left)
+	for ( ; pad > 0; --pad, ++begin)
+            *begin = fill;     
+
+    for ( ; buff != p1; ++begin, ++buff, --n)
+	if (*buff == ',')
+	    *begin = thou_sep;
+	else
+	    *begin = __W(*buff);
+    if (p) {     
+	*begin = use_facet<numpunct<charT> >(io.getloc()).decimal_point();
+	++begin;
+	++buff;
+	--n;
+    }
+    if (p = (char*)memchr(buff, 'e', n)) {
+	for (;buff != p; begin++, --n) {
+	    *begin = __W(*buff);
+	    buff++;
+	}
+	for (; nz > 0; --nz)
+	    *begin = __W('0');
+	*begin = io.flags() & ios_base::uppercase ? 'E' : 'e';
+	++begin;
+	++buff;
+	--n;
+    }
+    for ( ;n > 0; --n, ++begin) {
+	*begin = __W(*buff); 
+	++buff;
+    }
+    for ( ;nz > 0; --nz, ++begin)
+	*begin = __W('0');
+    io.width (0);
+    for ( ; pad > 0; --pad, ++begin)
+	*begin = fill;     
+    return begin;
+}
+
+#undef __W
+
+template <class charT, class OutputIterator>
+void num_put<charT, OutputIterator>::float_fmt(char* fmt, char type, ios_base& io) {
+    char *fmt1 = fmt;
+    ios_base::fmtflags flag = io.flags();
+   
+    *fmt1++ = '%';
+    if (flag & ios_base::showpos)
+        *fmt1++ = '+';
+    if (flag & ios_base::showpoint)
+        *fmt1++ = '#';
+    *fmt1++ = '.';
+    *fmt1++ = '*' ;
+    if (type != '\0')
+        *fmt1++ = type;
+    ios_base::fmtflags Fflag = flag & ios_base::floatfield; 
+    *fmt1++ = Fflag == ios_base::fixed ? 'f'
+           : Fflag == ios_base::scientific ? 'e' : 'g';   
+    *fmt1++ = '\0';
+}
+
+#ifdef MSIPL_WCHAR
+#define __N(str) ct.narrow(str, 0)
+#else
+#define __N(str) (str)
+#endif
+
+template <class charT, class InputIterator>
+unsigned long
+num_get<charT, InputIterator>::
+kai_scan_integral_type (iter_type &begin, iter_type &end,
+			ios_base& io, int& radix, bool signed_value, unsigned long effective_bits) 
+{
+    typedef char_traits<charT> straits_type;
+    const locale& loc            = io.getloc ();
+    const numpunct<charT>& punct = use_facet<numpunct<charT> >(loc);
+    const string grp( punct.grouping() );
+    const char thou_sep( punct.thousands_sep() );
+    unsigned long error_value = effective_bits >> signed_value;
+
+    int     seps [30];
+    int     num_seps    = 0;
+    int     digits_seen = 0;
+    const int Size = grp.size();
+    bool negative = false;
+    int leading_zero = 0;
+
+    // Don't use memchr() to see if the character is a + or -. -- dcn
+    if(begin != end) {
+	char c = __N(*begin);
+	if (c=='-') {
+	    ++begin;
+	    negative = true;
+	    error_value += signed_value;
+	} else if (c=='+') {
+	    ++begin;
+	}
+    }
+
+    // Code to remove whitespace removed as non-standard conforming.
+
+    const ios_base::fmtflags radflag = io.flags() & ios_base::basefield;
+    if (radflag == ios_base::dec)
+	radix = 10;
+    else if (radflag == ios_base::hex)
+	radix = 16;
+    else if (radflag == ios_base::oct)
+	radix = 8;
+    else 
+	radix = 0;
+
+    if (begin != end && straits_type::eq (__N(*begin), '0')) {
+	++begin;
+	char c = __N(*begin);
+	if (begin != end && (radix == 16|| radix==0) && 
+	    ( straits_type::eq(c, 'x') 
+	      || straits_type::eq(c, 'X'))) {
+	    ++begin;
+	    radix = 16;
+	} else { 
+	    // Fixed by ADR. Modena's original routine cannot scan a plain
+	    // "0" string correctly because it reads the 0, figures out the 
+	    // radix, and then forgets to put the '0' in the buffer!
+	    leading_zero = 1;
+	    if(radix == 0) radix = 8;
+	}
+    }
+
+    register unsigned long value = 0;
+    if (radix==10) {
+	static char buffer[200];
+	buffer[0] = 0;
+	for (;begin != end; ++begin) {
+	    char c = __N(*begin);
+	    if ('0' <= c && c <= '9') {
+		register int digit = c - '0';
+		buffer[digits_seen] = digit;
+		++digits_seen;
+		value = value * 10 + digit;
+	    } else if (Size && c==thou_sep)
+		seps[num_seps++] = digits_seen;
+	    else
+		break;
+	}
+	if (digits_seen > 9) {
+	    unsigned long new_value = 0;
+	    unsigned long old_value = 0;
+	    int i = 0;
+	    for (; i<digits_seen && new_value >= old_value; ++i) {
+		old_value = new_value;
+		new_value = new_value * 10 + buffer[i];
+	    }
+	    if (i!=digits_seen || new_value < old_value) {
+		radix = -1;
+		// errno = ERANGE;
+		return error_value;
+	    }
+	}
+    } else if (radix == 8) {
+	unsigned long mask = ~(~0UL >> 3);
+	for (;begin != end; ++begin) {
+	    char c = __N(*begin);
+	    if ('0' <= c && c <= '7') {
+		if ((value & mask) != 0) {
+		    radix = -1;
+		    // errno = ERANGE;
+		    return error_value;
+		}
+		unsigned long digit = c - '0';
+		value = (value << 3) | digit;
+		++digits_seen;
+	    } else if (Size && c==thou_sep)
+              seps[num_seps++] = digits_seen;
+          else
+              break;
+	}
+    } else if (radix == 16) {
+	unsigned long mask = ~(~0UL >> 4);
+	for (;begin != end; ++begin) {
+	    char c = __N(*begin);
+	    unsigned long digit;
+	    switch (c) {
+	    case '0': case '1': case '2': case '3': case '4':
+	    case '5': case '6': case '7': case '8': case '9':
+		digit = c - '0';
+		break;
+	    case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
+		digit = c - 'a' + 10;
+		break;
+	    case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+		digit = c - 'A' + 10;
+		break;
+	    default:
+		if (Size && c==thou_sep) {
+		    seps[num_seps++] = digits_seen;
+		    continue;
+		} else
+		    goto seen_all;
+	    }
+	    if ((value & mask) != 0) {	// Catch overflow of local storage.
+		radix = -1;
+		// errno = ERANGE;
+		return error_value;
+	    }
+	    value = (value << 4) | digit;
+	    ++digits_seen;
+	}
+    }
+
+ seen_all:
+    if (value & ~effective_bits) {	// Catch overflow based on output size.
+	radix = -1;
+	// errno = ERANGE;
+	value = error_value;
+    } else {
+	unsigned long sign_mask = (effective_bits>>1) + 1;
+	if (value & sign_mask) {
+	    if (negative && value == sign_mask)
+		; // that's ok.
+	    else if (negative || signed_value) {
+		radix = -1;
+		// errno = ERANGE;
+		value = error_value;
+	    }
+	} else if (negative)
+	    value = (-value) & effective_bits;	// Negate and trucate to the effective width.
+    }
+    if (!(digits_seen+leading_zero))
+	radix = -1;
+    if (num_seps) {
+	size_t count = 0;
+	const int MAX_CHAR = numeric_limits<char>::max ();
+	do {
+	    if (grp[count] == MAX_CHAR) 
+		radix = -1;
+	    else {
+		digits_seen -= (grp[count] & 0xF);
+		if (digits_seen != seps[--num_seps]) 
+		    radix = -1;
+		else if ((count+1) < Size)
+		    ++count;
+	    } 
+	} while (num_seps && radix != -1);
+	if (grp[count] != MAX_CHAR && digits_seen > (grp[count] & 0xF))
+	    radix = -1;
+    }
+
+    return value;
+}
+
+template <class charT, class InputIterator>
+unsigned long long
+num_get<charT, InputIterator>::
+kai_scan_long_long_type(iter_type &begin, iter_type &end,
+			ios_base& io, int &radix, int signed_value, unsigned long long effective_bits) 
+{
+    typedef char_traits<charT> straits_type;
+    const locale& loc            = io.getloc ();
+    const numpunct<charT>& punct = use_facet<numpunct<charT> >(loc);
+    const string grp(punct.grouping());
+    const char thou_sep(punct.thousands_sep());
+    unsigned long error_value = signed_value ? (effective_bits>>1) : effective_bits;
+
+    int     seps [40];
+    int     num_seps    = 0;
+    int     digits_seen = 0;
+    const int Size = grp.size();
+    bool negative = false;
+    int leading_zero = 0;
+
+    // Don't use memchr() to see if the character is a + or -. -- dcn
+    if(begin != end) {
+	char c = __N(*begin);
+	if (c=='-') {
+	    ++begin;
+	    negative = true;
+	    error_value += signed_value ? 1:0;
+	} else if (c=='+') {
+	    ++begin;
+	}
+    }
+
+    // Code to skip whitespace removed as non-standard conforming.
+    
+    const ios_base::fmtflags radflag = io.flags() & ios_base::basefield;
+    if (radflag == ios_base::dec)
+	radix = 10;
+    else if (radflag == ios_base::hex)
+	radix = 16;
+    else if (radflag == ios_base::oct)
+	radix = 8;
+    else 
+	radix = 0;
+
+    if (begin != end && straits_type::eq (__N(*begin), '0')) {
+	++begin;
+	char c = __N(*begin);
+	if (begin != end && (radix == 16|| radix==0) && 
+	    ( straits_type::eq(c, 'x') 
+	      || straits_type::eq(c, 'X'))) {
+	    ++begin;
+	    radix = 16;
+	} else { 
+	    // Fixed by ADR. Modena's original routine cannot scan a plain
+	    // "0" string correctly because it reads the 0, figures out the 
+	    // radix, and then forgets to put the '0' in the buffer!
+	    leading_zero = 1;
+	    if(radix == 0) radix = 8;
+	}
+    }
+
+    register unsigned long long value = 0;
+    if (radix==10) {
+	static char buffer[200];
+	buffer[0] = 0;
+	for (;begin != end; ++begin) {
+	    char c = __N(*begin);
+	    if ('0' <= c && c <= '9') {
+		register int digit = c - '0';
+		buffer[digits_seen] = digit;
+		++digits_seen;
+		value = value * 10 + digit;
+	    } else if (Size && c==thou_sep)
+		seps[num_seps++] = digits_seen;
+	    else
+		break;
+	}
+	if (digits_seen > 9) {
+	    unsigned long long new_value = 0;
+	    unsigned long long old_value = 0;
+	    int i = 0;
+	    for (; i<digits_seen && new_value >= old_value; ++i) {
+		old_value = new_value;
+		new_value = new_value * 10 + buffer[i];
+	    }
+	    if (i!=digits_seen || new_value < old_value) {
+		radix = -1;
+		// errno = ERANGE;
+		return error_value;
+	    }
+	}
+    } else if (radix == 8) {
+	unsigned long long mask = ~(~0UL >> 3);
+	for (;begin != end; ++begin) {
+	    char c = __N(*begin);
+	    if ('0' <= c && c <= '7') {
+		if ((value & mask) != 0) {
+		    radix = -1;
+		    // errno = ERANGE;
+		    return error_value;
+		}
+		unsigned long digit = c - '0';
+		value = (value << 3) | digit;
+		++digits_seen;
+	    } else if (Size && c==thou_sep)
+              seps[num_seps++] = digits_seen;
+          else
+              break;
+	}
+    } else if (radix == 16) {
+	unsigned long long mask = ~(~0UL >> 4);
+	for (;begin != end; ++begin) {
+	    char c = __N(*begin);
+	    unsigned long digit;
+	    switch (c) {
+	    case '0': case '1': case '2': case '3': case '4':
+	    case '5': case '6': case '7': case '8': case '9':
+		digit = c - '0';
+		break;
+	    case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
+		digit = c - 'a' + 10;
+		break;
+	    case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+		digit = c - 'A' + 10;
+		break;
+	    default:
+		if (Size && c==thou_sep) {
+		    seps[num_seps++] = digits_seen;
+		    continue;
+		} else
+		    goto seen_all;
+	    }
+	    if ((value & mask) != 0) {	// Catch overflow of local storage.
+		radix = -1;
+		// errno = ERANGE;
+		return error_value;
+	    }
+	    value = (value << 4) | digit;
+	    ++digits_seen;
+	}
+    }
+
+ seen_all:
+    if (value & ~effective_bits) {	// Catch overflow based on output size.
+	radix = -1;
+	// errno = ERANGE;
+	value = error_value;
+    } else {
+	unsigned long long sign_mask = (effective_bits>>1) + 1;
+	if (value & sign_mask) {
+	    if (negative && value == sign_mask)
+		; // that's ok.
+	    else if (negative || signed_value) {
+		radix = -1;
+		// errno = ERANGE;
+		value = error_value;
+	    }
+	} else if (negative)
+	    value = (-value) & effective_bits;	// Negate and trucate to the effective width.
+    }
+    if (!(digits_seen+leading_zero))
+	radix = -1;
+    if (num_seps) {
+	size_t count = 0;
+	const int MAX_CHAR = numeric_limits<char>::max ();
+	do {
+	    if (grp[count] == MAX_CHAR) 
+		radix = -1;
+	    else {
+		digits_seen -= (grp[count] & 0xF);
+		if (digits_seen != seps[--num_seps]) 
+		    radix = -1;
+		else if ((count+1) < Size)
+		    ++count;
+	    } 
+	} while (num_seps && radix != -1);
+	if (grp[count] != MAX_CHAR && digits_seen > (grp[count] & 0xF))
+	    radix = -1;
+    }
+
+    return value;
+}
+
+template <class charT, class InputIterator>
+bool num_get<charT, InputIterator>::scan_float_type (iter_type& begin, iter_type& end, ios_base& io, char* buf)
+{
+    typedef char_traits<charT> straits_type;
+    const locale&                 loc        = io.getloc ();
+    const numpunct<charT>& punct = use_facet<numpunct<charT> >(loc);
+    const string                  grp        = punct.grouping();
+    const char thou_sep                      = punct.thousands_sep();
+    bool                          flag       = false;
+    int     seps [20];
+    int     num_seps    = 0;
+    int     digits_seen = 0;
+    const int Size = grp.size();
+    char*  cur  = buf;
+ 
+    if (begin != end && memchr ("-+", *cur = __N(*begin), 2))
+	++cur, ++begin;
+    // Modena 2.4 had here that skipped whitespace, which contradicts standard.
+    // They took it out in 2.6.
+    char ch = __N(*begin);
+    while (begin != end) {
+        if ('0' <= ch && ch <= '9') {
+            flag = false;
+	    *cur = ch;
+	    ++cur;
+	    ++digits_seen;
+	    ch = __N(*++begin);
+	} else if (Size && ch == thou_sep) {
+	    flag = true;
+	    seps[num_seps++] = digits_seen;
+	    ch = __N(*++begin);
+	} else {
+	    break;
+	}
+    }
+    if (flag)
+	return false;
+    flag = true;
+    if (begin != end && straits_type::eq(*begin, punct.decimal_point())) {
+	*cur = localeconv()->decimal_point[0];
+	++cur;
+	ch = __N(*++begin);
+	while (begin != end && '0' <= ch && ch <= '9') {
+	    *cur = ch;
+            ++cur;
+	    ch = __N(*++begin);
+	    flag = false;
+	}
+    }
+    if (!digits_seen && flag)
+	return false;
+    flag = false;
+    if (begin != end && (ch=='e' || ch=='E')) {
+	flag = true;
+	*cur = ch;
+	++cur;
+	ch = __N(*++begin);
+	if (begin != end && (ch=='-' || ch=='+')) {
+	    *cur = ch;
+	    ++cur;
+	    ch = __N(*++begin);
+	}
+
+	// Code to remove whitespace removed as non-standard conforming.
+
+	while (begin != end && '0' <= ch && ch <= '9') {
+	    *cur = ch;
+	    ++cur;
+	    ch = __N(*++begin);
+	    flag = false;
+	}
+    }
+    if (flag)
+	return false;
+    size_t count = 0;
+    const int MAX_CHAR = numeric_limits<char>::max();
+    if (num_seps) { 
+	do {
+	    if (grp[count] == MAX_CHAR)
+		return false;
+	    else if ((digits_seen -= (grp[count] & 0xF)) != seps[--num_seps])
+		return false;
+	    else if ((count+1) < Size) 
+		++count;
+	} while (num_seps);
+	if (digits_seen > (grp[count] & 0xF))
+	    return false;
+    }
+    *cur = '\0';
+    return true;
+}
+
+template <class charT, class InputIterator>
+num_get<charT, InputIterator>::iter_type
+num_get<charT, InputIterator>::
+do_get(iter_type begin, iter_type end, ios_base& io, iostate& state, float& units) const
+{
+    char    buf [200] = "";
+    float    result = 0.0F;
+    int scanned = 0;
+
+    if (scan_float_type(begin, end, io, buf))
+	scanned = sscanf(buf, "%f", &result);
+    if (begin == end)
+	state |= ios_base::eofbit;
+    if (scanned != 1)
+        state |= ios_base::failbit;
+    else
+        units = result;
+    return begin;
+}
+
+template <class charT, class InputIterator>
+num_get<charT, InputIterator>::iter_type
+num_get<charT, InputIterator>::
+do_get(iter_type begin, iter_type end, ios_base& io, iostate& state, double& units) const
+{
+    char    buf [200] = "";
+    double    result = 0.0F;
+    int scanned = 0;
+    if (scan_float_type(begin, end, io, buf))
+        scanned = sscanf(buf, "%lf", &result);
+    if (begin == end)
+        state |= ios_base::eofbit;
+    if (scanned != 1)
+        state |= ios_base::failbit;
+    else
+        units = result;
+    return begin;
+}
+
+template <class charT, class InputIterator>
+num_get<charT, InputIterator>::iter_type
+num_get<charT, InputIterator>::
+do_get(iter_type begin, iter_type end, ios_base& io, iostate& state, long double& units) const
+{
+    char    buf [200] = "";
+    long double    result = 0.0F;
+    int scanned = 0;
+    char    fmt[4] = "%Lf";
+    
+    if (scan_float_type(begin, end, io, buf))
+       scanned = sscanf(buf, fmt, &result);
+    if (begin == end)
+       state |= ios_base::eofbit;
+    if (scanned != 1)
+        state |= ios_base::failbit;
+    else
+       units = result;
+    return begin;
+}
+
+template <class charT, class InputIterator>
+num_get<charT, InputIterator>::iter_type
+num_get<charT, InputIterator>::
+do_get(iter_type begin, iter_type end, ios_base& io, iostate& state, void*& units) const
+{
+    char   buf [200] = "";
+    int OldErr = errno;
+    void* result = 0;
+    char *cur = buf;
+    for (; (begin != end) && (memchr("0123456789abcdefABCDEFxX", __N(*begin), 24)); ++begin, ++cur)
+	*cur = __N(*begin);
+    *cur = charT (0);
+    if (begin == end)
+	state |= ios_base::eofbit;
+    if (!sscanf(buf, "%p", &result) || (errno == ERANGE))
+	state |= ios_base::failbit;
+    else 
+	units = result;
+    errno = OldErr;
+    return begin;
+}
+ 
+template <class charT, class InputIterator>
+inline num_get<charT, InputIterator>::iter_type
+num_get<charT, InputIterator>::
+do_get(iter_type begin, iter_type end, ios_base& io, iostate& state, long long& units) const
+{
+    int radix;
+    long long result = kai_scan_long_long_type(begin, end, io, radix, 1, (unsigned long long)-1);
+    if (begin == end)
+        state |= ios_base::eofbit;
+    if (radix == -1)
+        state |= ios_base::failbit;
+    units = result;
+    return begin;
+}
+
+template <class charT, class InputIterator>
+inline num_get<charT, InputIterator>::iter_type
+num_get<charT, InputIterator>::
+do_get(iter_type begin, iter_type end, ios_base& io, iostate& state, unsigned long long& units) const
+{
+    int radix;
+    unsigned long long result = kai_scan_long_long_type(begin, end, io, radix, 0, (unsigned long long)-1);
+
+    if (begin == end)
+        state |= ios_base::eofbit;
+    if (radix == -1)
+        state |= ios_base::failbit;
+    units = result;
+    return begin;
+}
+
+template <class charT, class InputIterator>
+inline num_get<charT, InputIterator>::iter_type
+num_get<charT, InputIterator>::
+do_get(iter_type begin, iter_type end, ios_base& io, iostate& state, long& units) const
+{
+    // Simplified by KAI.
+    int radix;
+    long result = kai_scan_integral_type(begin, end, io, radix, 1, ULONG_MAX);
+    if (begin == end)
+        state |= ios_base::eofbit;
+    if (radix == -1)
+        state |= ios_base::failbit;
+    units = result;
+    return begin;
+}
+
+template <class charT, class InputIterator>
+inline num_get<charT, InputIterator>::iter_type
+num_get<charT, InputIterator>::
+do_get(iter_type begin, iter_type end, ios_base& io, iostate& state, unsigned long& units) const
+{
+    // Simplified by KAI.
+    int radix;
+    unsigned long result = kai_scan_integral_type(begin, end, io, radix, 0, ULONG_MAX);
+
+    if (begin == end)
+        state |= ios_base::eofbit;
+    if (radix == -1)
+        state |= ios_base::failbit;
+    units = result;
+    return begin;
+}
+
+template <class charT, class InputIterator>
+inline num_get<charT, InputIterator>::iter_type
+num_get<charT, InputIterator>::
+do_get(iter_type begin, iter_type end, ios_base& io, iostate& state, unsigned short& units) const
+{
+    // Simplified by KAI.
+    int radix;
+    unsigned long result = kai_scan_integral_type(begin, end, io, radix, 0, USHRT_MAX);
+ 
+    if (begin == end)
+        state |= ios_base::eofbit;
+    if (radix == -1)
+        state |= ios_base::failbit;
+
+    units = (unsigned short)result;
+    return begin;
+}
+
+template <class charT, class InputIterator>
+inline num_get<charT, InputIterator>::iter_type
+num_get<charT, InputIterator>::
+do_get(iter_type begin, iter_type end, ios_base& io, iostate& state, unsigned int& units) const
+{
+    // Simplified by KAI.
+    int radix;
+    unsigned long result = kai_scan_integral_type(begin, end, io, radix, 0, UINT_MAX);
+ 
+    if (begin == end)
+        state |= ios_base::eofbit;
+    if (radix == -1)
+        state |= ios_base::failbit;
+    units = (unsigned int)result;
+    return begin;
+}
+
+
+template <class charT, class InputIterator>
+num_get<charT, InputIterator>::iter_type
+num_get<charT, InputIterator>::do_get(iter_type begin, iter_type end, ios_base& io, iostate& state, bool& units) const
+{
+    // Major changes by KAI to make it work correctly.
+    if (io.flags() & ios_base::boolalpha) {
+
+	typedef basic_string<charT> string_type;
+	const locale& loc            = io.getloc ();
+
+	// Modena code to remove whitespace removed as non-standard conforming.
+
+	if (begin==end) {
+	    state |= ios_base::eofbit;
+	    return begin;
+	}
+
+	// Assume that true_name & false_name are non-empty
+	const numpunct<charT>& punct = use_facet<numpunct<charT> >(loc);
+	string_type tname = punct.truename();
+	string_type fname = punct.falsename();
+	int lengths[2];
+	lengths[0] = fname.size();
+	lengths[1] = tname.size();
+	const charT * names[2];
+	names[0] = fname.data();
+	names[1] = tname.data();
+	int  bool_pos = 0;
+	while (begin != end) {
+	    for (int i=0; i<2; ++i) {
+		if (bool_pos < lengths[i] && !char_traits<charT>::eq(*begin, names[i][bool_pos])) {
+		    lengths[i] = 0;
+		    if( lengths[1-i]==0 ) goto fail;
+		} else if (bool_pos+1 == lengths[i]) {
+		    units = i;
+#if 0
+		    // Section 22.2.2.1.2p16 is annoyingly ambiguous about whether the following
+		    // action is incorrect.  ADR took it out based on a strict interpretation.
+		    if( begin+1 == end ) 
+			state |= ios_base::eofbit;
+#endif /* 0 */
+		    return begin;
+		}
+	    }
+	    ++bool_pos;
+	    ++begin;
+	}
+	state |= ios_base::eofbit;
+    } else {
+	// Section 22.2.2.1.2p14
+	long tmp;
+	begin = do_get( begin, end, io, state, tmp );
+	if( state&ios_base::failbit ) return begin;
+	if( (unsigned long)tmp>=2UL ) goto fail;
+	units = tmp;
+    }
+    return begin;
+fail:
+    state |= ios_base::failbit;
+    return begin;
+}
+
+#undef __N
+
+//  ************** COLLATE FACETS ***********************
+
+template <class charT>
+class collate : public locale::facet 
+{
+public:
+    typedef charT char_type;
+    typedef basic_string<charT> string_type;
+
+    explicit collate(size_t refs = 0) : locale::facet(refs) { }
+
+    int compare(const char_type* low1, const char_type* high1, 
+		const char_type* low2, const char_type* high2) const { 
+	return do_compare(low1, high1, low2, high2); 
+    }
+
+    string_type transform(const char_type* low, const char_type* high) const { return do_transform(low, high); }
+
+    long hash(const char_type* low, const char_type* high) const { return do_hash(low, high); }
+
+    static locale::id id;
+
+
+protected:
+    ~collate () { }
+
+    virtual int do_compare(const char_type* low1, const char_type* high1, 
+			   const char_type* low2, const char_type* high2) const;
+
+    virtual string_type do_transform(const char_type* low, const char_type* high) const;
+
+    virtual long do_hash(const char_type* low, const char_type* high) const;
+
+};
+
+template<class charT>
+locale::id collate<charT>::id;
+
+template <class charT>
+class collate_byname : public collate<charT> 
+{
+public:
+    explicit collate_byname(const char * name_, size_t refs = 0) : collate<charT>(refs), name(name_) { }
+
+protected:
+    ~collate_byname() { }
+
+    string name;
+};
+
+// Specialization for char
+
+template<>
+class collate<char> : public locale::facet 
+{
+ 
+    //    friend class locale::imp;
+
+public:
+    typedef char         char_type;
+    typedef string       string_type;
+
+protected:
+    virtual int do_compare(const char* low1, const char* high1, 
+			   const char* low2, const char* high2) const;
+
+    virtual string_type do_transform(const char* low, const char* high) const;
+
+    virtual long do_hash(const char* low, const char* high) const;
+
+public:
+    int compare(const char* low1, const char* high1, 
+                const char* low2, const char* high2) const { 
+	return do_compare(low1, high1, low2, high2); 
+    }
+
+    string_type transform(const char* low, const char* high) const { 
+	return do_transform(low, high); 
+    }
+
+    long hash(const char* low, const char* high) const {
+	return do_hash(low, high);
+    }
+
+    static locale::id id;
+
+    explicit collate(size_t refs = 0) : locale::facet(refs) { }
+
+protected:
+    ~collate() { }
+};
+
+#if KAI_WCHAR_T
+template<>
+class collate<wchar_t> : public locale::facet 
+{
+ 
+    //    friend class locale::imp;
+
+public:
+    typedef wchar_t                                              char_type;
+    typedef basic_string<wchar_t, char_traits<wchar_t>, 
+                         allocator<wchar_t> >                    string_type;
+
+protected:
+    virtual int do_compare(const char_type* low1, const char_type* high1, 
+			   const char_type* low2, const char_type* high2) const;
+      
+    virtual string_type
+    do_transform(const char_type* low, const char_type* high) const;
+
+    virtual long do_hash(const char_type* low, const char_type* high) const;
+
+public:
+    int compare(const char_type* low1, const char_type* high1, 
+		const char_type* low2, const char_type* high2) const { 
+	return do_compare(low1, high1, low2, high2); 
+    }
+
+    string_type transform(const char_type* low, const char_type* high) const { 
+	return do_transform(low, high); 
+    }
+
+    long hash(const char_type* low, const char_type* high) const { 
+	return do_hash(low, high); 
+    }
+
+    static locale::id id;
+
+    explicit collate(size_t refs = 0) : locale::facet(refs) { }
+
+protected:
+    ~collate () { }
+};
+#endif /* KAI_WCHAR_T */
+
+
+//************** Time Category ***********************
+
+class time_base {
+public:
+    enum dateorder { no_order, dmy, mdy, ymd, ydm };
+
+    enum t_conv_spec { a, A, b, B, c, d, H, I, j, m, M, p, 
+                       S, U, w, W, x, X, y, Y, __END };
+};
+
+} // namespace std
+
+namespace __kai {
+// this class is not specified in the draft : written for
+// implementation purposes only
+// need to write specialization for wchar_t
+
+using namespace std;
+
+template <class charT>
+class timepunct : public time_base {
+
+public:
+    static const int t_conv_spec_width[time_base::__END+1];
+    typedef charT                                           char_type;
+    typedef basic_string<charT, char_traits<charT>, 
+                         allocator<charT> >                 string_type;
+    explicit timepunct(const char* loc_name = "");
+
+    virtual string_type
+    get_week_day(const locale& loc, charT fmt, int wday) const { 
+	return (isupper(fmt, loc) ? week_days[wday+7] : week_days[wday]); 
+    }
+
+    //virtual string_type
+    const string_type&
+    get_month_name(const locale& loc, char fmt, int mnth) const { 
+	return (isupper(fmt, loc) ? mnth_name[mnth+12] : mnth_name[mnth]); 
+    }
+
+    virtual string_type get_ampm_string (int hrs) const { 
+	return (12 - hrs > 0) ? am_string : pm_string; 
+    }
+    
+    // strftime like function
+    virtual string_type
+    print_format(const locale& loc, char fmt, const tm* tm_) const;
+
+    virtual string_type* get_week_day_list() const { return (string_type*)week_days; }
+    virtual string_type* get_month_name_list() const { return (string_type*)mnth_name; }
+
+    virtual int get_spec_conv_width(charT spec) {
+	switch (spec)
+	    {
+	    case 'a':  return t_conv_spec_width[time_base::a];
+	    case 'A':  return t_conv_spec_width[time_base::A];
+	    case 'b':  return t_conv_spec_width[time_base::b];
+	    case 'B':  return t_conv_spec_width[time_base::B];
+	    case 'c':  return t_conv_spec_width[time_base::c];
+	    case 'd':  return t_conv_spec_width[time_base::d];
+	    case 'H':  return t_conv_spec_width[time_base::H];
+	    case 'I':  return t_conv_spec_width[time_base::I];
+	    case 'j':  return t_conv_spec_width[time_base::j];
+	    case 'm':  return t_conv_spec_width[time_base::m];
+	    case 'M':  return t_conv_spec_width[time_base::M];
+	    case 'p':  return t_conv_spec_width[time_base::p];
+	    case 'S':  return t_conv_spec_width[time_base::S];
+	    case 'U':  return t_conv_spec_width[time_base::U];
+	    case 'w':  return t_conv_spec_width[time_base::w];
+	    case 'W':  return t_conv_spec_width[time_base::W];
+	    case 'x':  return t_conv_spec_width[time_base::x];
+	    case 'X':  return t_conv_spec_width[time_base::X];
+	    case 'y':  return t_conv_spec_width[time_base::y];
+	    case 'Y':  return t_conv_spec_width[time_base::Y];
+	    default:  return t_conv_spec_width[time_base::__END];
+	    }
+    }
+
+    // eqvt to "%c" strftime
+    virtual string_type get_date_time_format() const { 
+	return __kai::convert_locale_string<charT>( "%a %b %d %H:%M:%S %Y" );  
+    }
+
+    // eqvt to "%x" strftime
+    virtual string_type get_date_format() const { 
+	return __kai::convert_locale_string<charT>( "%m/%d/%y" );  
+    }
+
+    // eqvt to "%X" strftime
+    virtual string_type get_time_format() const { 
+	return __kai::convert_locale_string<charT>( "%H:%M:%S" ); 
+    }
+
+protected:
+    string      loc_name;
+    string_type week_days[14];     // week days names
+    string_type mnth_name[24];     // month names
+    string_type am_string;         // am_string
+    string_type pm_string;         // pm_string
+};
+
+template <class charT>
+const int
+timepunct<charT>::t_conv_spec_width[time_base::__END+1] = { 3, -1, 3, -1, -1, 2, 2, 2, 3, 2, 2,
+							  -1, 2, 2, 1, 2, -1, -1, 2, 4, 0 };
+// Z='Z' ; Time Zones not supported yet
+
+
+template <class charT>
+timepunct<charT>::timepunct (const char* loc_name_) : loc_name (loc_name_)
+{
+    const char* old_loc_name = setlocale(LC_ALL, 0);
+    if (setlocale(LC_TIME, loc_name_) != 0) {
+	tm tmb;
+	tmb.tm_sec    = 30;   tmb.tm_min    = 30;   tmb.tm_hour   = 10;
+	tmb.tm_mday   =  1;   tmb.tm_mon    =  8;   tmb.tm_year   = 96;
+	tmb.tm_wday   =  0;   tmb.tm_yday   = -1;   tmb.tm_isdst  = -1;
+#if (defined(__linux)&&!defined(__ICC))
+	// KAI change - need to clear extra fields added by Linux, otherwise strftime crashes.
+#ifdef  __USE_BSD
+	tmb.tm_gmtoff = 0; 
+	tmb.tm_zone = 0;   
+#else
+	tmb.__tm_gmtoff = 0;
+	tmb.__tm_zone = 0;
+#endif
+#endif /* __linux */
+ 
+	char fmt[3];
+	static const int MAXBUFF = 512;
+	char buff[MAXBUFF];
+	unsigned int MB = MAXBUFF;
+	fmt[0] = '%';
+	fmt[1] = 'c' ;
+	fmt[2] = 0;
+   
+	// get the week days names
+	for (int days = 0; days < 7; ++days) {
+	    tmb.tm_mday = days+1;
+	    tmb.tm_wday = days; // just to be sure
+	    fmt[1] = 'a';
+	    strftime(buff, MB, fmt, &tmb);
+	    week_days[days] = __kai::convert_locale_string<charT>(buff);
+	    fmt[1] = 'A';
+	    strftime(buff, MB, fmt, &tmb);
+	    week_days[days+7] = __kai::convert_locale_string<charT>(buff);
+	}
+   
+	// get the month names
+	for (int mths = 0; mths < 12; ++mths)
+	    {
+		tmb.tm_mon = mths;
+		fmt[1] = 'b';
+		strftime(buff, MB, fmt, &tmb);
+		mnth_name[mths] = __kai::convert_locale_string<charT>(buff);
+		fmt[1] = 'B';
+		strftime(buff, MB, fmt, &tmb);
+		mnth_name[mths+12] = __kai::convert_locale_string<charT>(buff);
+	    }
+   
+	// get the am / pm strings
+	fmt[1] = 'p';
+	strftime(buff, MB, fmt, &tmb);
+	am_string = __kai::convert_locale_string<charT>(buff);
+   
+	tmb.tm_hour = 22;
+	fmt[1] = 'p';
+	strftime(buff, MB, fmt, &tmb);
+	pm_string = __kai::convert_locale_string<charT>(buff);
+    } else
+	runtime_error::__throw("Invalid locale name\n");
+    setlocale(LC_ALL, old_loc_name);
+}
+
+
+template <class charT>
+timepunct<charT>::string_type
+timepunct<charT>::print_format(const locale& loc, char fmt, const tm* tm_) const
+{
+     char fmt_str[10];
+     fmt_str[0] = '%';
+     static const int MAXBUFF = 512;
+     char buff[MAXBUFF];
+     // Initialize buff[0] to zero.  If a non-trivial sprintf is done to it, then buff[0] 
+     // will be non-zero, and we'll known to append it after the switch statement.
+     buff[0] = 0;
+     //     unsigned int MB = MAXBUFF;
+
+     fmt_str[1] = '.'; fmt_str[2] = '2';
+     fmt_str[3] = 'd'; fmt_str[4] = 0;
+     string_type ret;
+     switch (fmt) {
+     case 'a': 
+	 if (tm_->tm_wday >= 0 && tm_->tm_wday < 7)
+	     ret.append(week_days[tm_->tm_wday]);
+	 break;
+     case 'A': 
+	 if (tm_->tm_wday >= 0 && tm_->tm_wday < 7)
+	     ret.append(week_days[tm_->tm_wday + 7]);
+	 break;
+     case 'b':
+	 if (tm_->tm_mon >= 0 && tm_->tm_mon < 12)
+	     ret.append(mnth_name[tm_->tm_mon]);
+	 break;
+     case 'B':
+	 if (tm_->tm_mon >= 0 && tm_->tm_mon < 12)
+	     ret.append(mnth_name[tm_->tm_mon + 12]);
+	 break;
+     case 'p':
+	 if (tm_->tm_hour >= 0 && tm_->tm_hour < 24)
+	     ret.append((tm_->tm_hour < 12)? am_string : pm_string);
+	 break;
+     case 'd':
+	 if (tm_->tm_mday > 0 && tm_->tm_mday <= 31) { 
+	     sprintf(buff, fmt_str, tm_->tm_mday); 
+	 }
+	 break; 
+     case 'H':
+	 if (tm_->tm_hour >= 0 && tm_->tm_hour < 24) { 
+	     sprintf(buff, fmt_str, tm_->tm_hour);
+	 }
+	 break; 
+     case 'I':
+         {
+	     int hr;    // [00, 23] to [01, 12]
+	     if (tm_->tm_hour >= 0 && tm_->tm_hour < 24) {
+		 if (tm_->tm_hour == 0) 
+		     hr = 12;
+		 else if (tm_->tm_hour > 12) 
+		     hr = tm_->tm_hour - 12;
+		 sprintf(buff, fmt_str, hr);
+	     }
+	     break; 
+         }
+     case 'm':
+	 if (tm_->tm_mon >= 0 && tm_->tm_mon < 12) {
+	     sprintf(buff, fmt_str, tm_->tm_mon+1); 
+	 }
+	 break; 
+     case 'M':
+	 if (tm_->tm_min >= 0 && tm_->tm_min < 60) {
+	     sprintf(buff, fmt_str, tm_->tm_min); 
+	 }
+	 break; 
+     case 'S':
+	 if (tm_->tm_sec >= 0 && tm_->tm_sec < 60) {
+	     sprintf(buff, fmt_str, tm_->tm_sec); 
+	 }
+	 break; 
+     case 'U': 
+         {
+	     if (tm_->tm_wday >= 0 && tm_->tm_wday < 7)
+		 if (tm_->tm_yday >= 0 && tm_->tm_yday <= 365) {
+		     int U_dat = (tm_->tm_yday - tm_->tm_wday + 7)/7;
+		     sprintf(buff, fmt_str, U_dat);
+		 }
+	     break; 
+         }
+     case 'W':
+         {
+	     if (tm_->tm_wday >= 0 && tm_->tm_wday < 7)
+		 if (tm_->tm_yday >= 0 && tm_->tm_yday <= 365) {
+		     int to_arr [7] = { 6, 0, 1, 2, 3, 4, 5 };
+		     int W_dat = (tm_->tm_yday - to_arr[tm_->tm_wday] + 7)/7;
+		     sprintf(buff, fmt_str, W_dat);
+		 } 
+	     break; 
+         }
+     case 'y':
+	 sprintf(buff, fmt_str, tm_->tm_year); 
+	 break; 
+     case 'w':
+	 if (tm_->tm_wday >= 0 && tm_->tm_wday < 7) {
+	     fmt_str[2] = '1';
+	     sprintf(buff, fmt_str, tm_->tm_wday); 
+	 }
+	 break; 
+     case 'Y':
+	 fmt_str[2] = '4';
+	 sprintf(buff, fmt_str, 1900+tm_->tm_year); 
+	 break; 
+     case 'j':
+	 if (tm_->tm_yday >= 0 && tm_->tm_yday <= 365) {
+	     fmt_str[2] = '3';
+	     sprintf(buff, fmt_str, tm_->tm_yday+1); 
+	 } 
+	 break; 
+     default: 
+	 if (fmt == '%')
+	     ret.append(1, fmt);
+	break;
+     }
+     if( buff[0] ) {
+	 // sprintf wrote something to buff
+	 ret = __kai::convert_locale_string<charT>(buff); 
+     }
+     return ret;
+}
+
+inline char* build_fmt(const ios_base& io, char* buf, int idx)
+{
+    // Build format string suitable for printf/scanf.
+    //
+    // Size of buf is at least 16.
+    //  
+    // idx - 1 ==> long
+    // idx - 2 ==> unsigned long
+    // idx - 3 ==> double
+    // idx - 4 ==> long double
+    typedef basic_string<char> string_type;
+    ios_base::fmtflags flags = io.flags();
+
+    char* cur = buf;
+    *cur++ = '%';
+
+    if (flags & ios_base::showpos) {
+        *cur++ = '+';
+    }
+
+    int radix = 10;
+    radix = (flags & ios_base::oct) ? 8 : (flags & ios_base::hex) ? 16 : 10;
+
+    // handle showbase and showpoint
+    // for integral, # goes for showbase (only for oct and hex)
+    // for float   , # goes for showpoint
+    if (((idx < 3) && (radix != 10) && (flags & ios_base::showbase)) ||
+	((idx > 2) && (flags & ios_base::showpoint))) {
+        *cur++ = '#';
+    }
+
+    if (idx > 2) {  // for floating point types only
+        char tmp[4];
+        *cur++ = '.';
+
+        tmp[0] = '%';
+        tmp[1] = 'l';
+        tmp[2] = 'u';
+        tmp[3] = char();
+
+        sprintf(cur, tmp, io.precision());
+        cur += string_type::traits_type::length(cur);
+    }
+    if (idx < 3) {  // integral quantities
+        *cur++ = 'l';
+        switch (radix) {
+	case 8:
+	    *cur++ = 'o';
+	    break;
+	case 16:
+	    if (flags & ios_base::uppercase)
+		*cur++ = 'X';
+	    else
+		*cur++ = 'x';
+	    break;
+	case 10:
+	default:
+	    if (idx == 1)
+		*cur++ = 'd';
+	    else   // unsigned long
+		*cur++ = 'u';
+	    break;
+	}
+    } else {  // for floating point output.
+	// ADR corrected Modena's prolix (and wrong) logic for when
+	// to add the 'L'.
+	if( idx == 4 ) {	// long double
+	    *cur++ = 'L';
+	}
+	switch (flags & ios_base::floatfield) {
+	case ios_base::scientific:
+	    *cur++ = ((flags & ios_base::uppercase) ? 'E' : 'e');
+	    break;
+	case ios_base::fixed:
+	    *cur++ = 'f';
+	    break;
+	default:
+	    *cur++ = ((flags & ios_base::uppercase) ? 'G' : 'g');
+	    break;
+	}
+    }
+    *cur = char();
+    return cur;
+}
+ 
+
+template <class charT>
+inline basic_string<charT>
+insert_thsep(basic_string<charT> str, const string& grp, charT sep, charT pt)
+{
+    typedef  basic_string<charT> string_type;
+    typedef  string_type::traits_type traits_type;
+
+    // Search for localeconv()->decimal_pt
+    string_type _decimal_point = __kai::convert_locale_string<charT>( localeconv()->decimal_point );
+    size_t pos = str.rfind(_decimal_point);
+
+    if (pos != string_type::npos)
+       str.replace(pos, 1, 1, pt);
+    else
+       pos = str.size();
+    if (!str.empty()) {
+        int     shift;
+        int     limit = 0;
+        size_t  count = 0;
+
+        if (traits_type::eq(str[0], '0')) {
+            ++limit;
+            if ((str.size() >= 2) && (traits_type::eq(str[1], 'X') || traits_type::eq(str[1], 'x'))) {
+		++limit;
+            }
+        } else if ((traits_type::eq (str[0], '+') || traits_type::eq (str[0], '-'))) {
+	    ++limit;
+        }
+
+        while ((count < grp.size ()) && (grp[count] != numeric_limits<char>::max())) {
+            shift  = grp[count] & 0xf;
+            if (pos-limit <= shift)
+                break;
+            pos -= shift;
+            str.insert(pos, 1, sep);
+            count++;
+        }
+        if (count == grp.size() && count != 0) {
+	    while (pos-limit > shift) {
+		pos -= shift;
+		str.insert(pos, 1, sep);
+	    }
+        }
+    }
+    return str;
+}
+
+} // namespace __kai
+
+namespace std {
+
+template <class charT, class InputIterator = istreambuf_iterator<charT> >
+class time_get : public locale::facet, public time_base
+{
+    typedef basic_string<charT> string_type;
+    typedef ios_base::iostate iostate;
+public:
+    typedef charT                                            char_type;
+    typedef InputIterator                                    iter_type;
+
+    explicit time_get(size_t refs = 0) : locale::facet(refs) { }
+
+    dateorder date_order() const { return do_date_order(); }
+
+    iter_type get_time(iter_type s, iter_type end, ios_base& f, iostate& state, tm* t) const { 
+	return do_get_time(s, end, f, state, t); 
+    }
+    iter_type get_date(iter_type s, iter_type end, ios_base& f, iostate& state, tm* t) const { 
+	return do_get_date(s, end, f, state, t); 
+    }
+    iter_type get_weekday(iter_type s, iter_type end, ios_base& f, iostate& state, tm* t) const { 
+	return do_get_weekday(s, end, f, state, t); 
+    }
+    iter_type get_monthname(iter_type s, iter_type end, ios_base& f, iostate& state, tm* t) const { 
+	return do_get_monthname(s, end, f, state, t); 
+    }
+    iter_type get_year(iter_type s, iter_type end, ios_base& f, iostate& state, tm* t) const { 
+	return do_get_year(s, end, f, state, t); 
+    }
+    static locale::id id;
+
+protected:
+    ~time_get() { }
+
+    explicit time_get(const char* name, size_t refs = 0) : locale::facet (refs), name_ (name) { }
+
+    virtual dateorder do_date_order() const { return time_base::dmy; }
+    virtual iter_type do_get_time(iter_type s, iter_type end, ios_base& f, iostate& state, tm* t) const;
+    virtual iter_type do_get_date(iter_type s, iter_type end, ios_base& f, iostate& state, tm* t) const;
+    virtual iter_type do_get_weekday(iter_type s, iter_type end, ios_base& f, iostate& state, tm* t) const;
+    virtual iter_type do_get_monthname(iter_type s, iter_type end, ios_base& f, iostate& state, tm* t) const;
+    virtual iter_type do_get_year(iter_type s, iter_type end, ios_base& f, iostate& state, tm* t) const;
+
+    virtual iter_type which_matches(iter_type s, iter_type end, ios_base& f, iostate& state,
+				    const string_type*, int, int&) const;
+    virtual iter_type get_integral_data(iter_type s, iter_type end, ios_base& f, iostate& state, charT fmt, int&) const;
+    virtual iter_type do_time_scanf(iter_type s, iter_type end, ios_base& f, iostate& state, tm* t,
+				    const char* pattern, const char* pat_end) const;
+    string name_;	// Plain string of char, not charT 
+}; /* end class time_get */
+
+template <class charT, 
+          class InputIterator =  istreambuf_iterator<charT> >
+class time_get_byname : public time_get<charT, InputIterator> 
+{
+
+public:
+    explicit time_get_byname(const char* name, size_t refs = 0)
+	: time_get(name, refs) { }
+
+protected:
+    ~time_get_byname();
+};
+
+template <class charT, class InputIterator>
+locale::id time_get<charT, InputIterator>::id;
+
+template <class charT, class InputIterator>
+time_get<charT, InputIterator>::iter_type
+time_get<charT, InputIterator>::do_get_time(iter_type begin, iter_type end, ios_base& io, iostate& state, tm* t) const
+{
+    __kai::timepunct<char> tpunct;
+    string time_list = tpunct.get_time_format();
+    return do_time_scanf(begin, end, io, state, t, time_list.c_str(), time_list.c_str() + time_list.size());
+}
+
+template <class charT, class InputIterator>
+time_get<charT, InputIterator>::iter_type
+time_get<charT, InputIterator>::do_time_scanf (iter_type begin, iter_type end, ios_base& io, iostate& state, tm* t,
+					       const char* pattern, const char* pat_end) const
+{
+    __kai::timepunct<char> tpunct;
+    int val;
+
+    const locale& loc = io.getloc();
+    const ctype<charT>& ctype_ = use_facet<ctype<charT> >(loc);
+
+    while ((pattern != pat_end) && !state) {
+	if (!string_type::traits_type::eq (*pattern, '%')) { 
+	    if (!string_type::traits_type::eq (*begin, *pattern)) { 
+		state |= ios_base::failbit; 
+		return begin; 
+	    } else { 
+		begin++; 
+		pattern++; 
+	    }
+	} else {
+	    char_type c;
+	    switch (c = *++pattern) {
+		// Assuming the appropriate versions will be given
+		// No checking is done to check that!!
+	    case 'a': case 'A':
+		begin = get_weekday(begin, end, io, state, t); break;
+	    case 'b': case 'B':
+		begin = get_monthname(begin, end, io, state, t); break;
+	    case 'd':
+		begin = get_integral_data(begin, end, io, state, c, val);
+		if (val < 1 || val > 31)
+		    state |= ios_base::failbit;
+		else
+		    t->tm_mday = val;
+		break;
+	    case 'H':
+		begin = get_integral_data(begin, end, io, state, c, val);
+		if (val < 0 || val > 23)
+		    state |= ios_base::failbit;
+		else
+		    t->tm_hour = val; 
+		break;
+	    case 'I':
+		{
+		    begin = get_integral_data(begin, end, io, state, c, val);
+		    if (val < 1 || val > 12)
+			state |= ios_base::failbit;
+		    else 
+			t->tm_hour = val - 1;
+		    break;
+		}
+	    case 'j':
+		{
+		    begin = get_integral_data(begin, end, io, state, c, val);
+		    if (val < 0 || val > 365)
+			state |= ios_base::failbit;
+		    else
+			t->tm_yday = ++val;
+		    break;
+		}
+	    case 'm':
+		{
+		    begin = get_integral_data(begin, end, io, state, c, val);
+		    if (val <= 0 || val > 12)
+			state |= ios_base::failbit;
+		    else
+			t->tm_mon = --val;
+		    break;
+		}
+	    case 'M':
+		begin = get_integral_data(begin, end, io, state, c, val);
+		if (val < 0 || val > 59)
+		    state |= ios_base::failbit;
+		else
+		    t->tm_min = val;
+		break;
+	    case 'p': case 'U': case 'W': // TODO: YET TO BE DONE
+		break;
+	    case 'S':
+		begin = get_integral_data(begin, end, io, state, c, val);
+		if (val < 0 || val > 59)
+		    state |= ios_base::failbit;
+		else
+		    t->tm_sec = val;
+		break;
+	    case 'w':
+		begin = get_integral_data(begin, end, io, state, c, val);
+		if (val < 0 || val > 6)
+		    state |= ios_base::failbit;
+		else
+		    t->tm_wday = val;
+		break;
+	    case 'y': case 'Y':
+		{
+		    begin = get_integral_data(begin, end, io, state, c, t->tm_year);
+		    if (t->tm_year > 1900) 
+			t->tm_year -= 1900;
+		    else if (t->tm_year < 0)
+			state |= ios_base::failbit;
+		    break;
+		}
+	    default: state |= ios_base::failbit; 
+		break;
+	    } /* end switch */
+	    pattern++;
+	}
+    } /* end while */
+    return begin;
+}
+
+template <class charT, class InputIterator>
+inline time_get<charT, InputIterator>::iter_type
+time_get<charT, InputIterator>::do_get_date(iter_type begin, iter_type end, ios_base& io, iostate& state, tm* t) const
+{
+    __kai::timepunct<char> tpunct;
+    string date_list = tpunct.get_date_format();
+    const locale& loc = io.getloc();
+    return do_time_scanf(begin, end, io, state, t, date_list.c_str(), date_list.c_str() + date_list.size());
+}
+
+template <class charT, class InputIterator>
+inline time_get<charT, InputIterator>::iter_type
+time_get<charT, InputIterator>::do_get_weekday(iter_type begin, iter_type end, ios_base& io, iostate& state, tm* t) const
+{
+    __kai::timepunct<charT> tpunct;
+    int wday = 0;
+    iter_type ret = which_matches(begin, end, io, state, tpunct.get_week_day_list(), 14, wday);
+    if (wday != -1)
+        t->tm_wday = (wday  > 6) ? (wday - 7) : wday;
+    else
+        state |= ios_base::failbit;
+    return ret;
+}
+
+template <class charT, class InputIterator>
+time_get<charT, InputIterator>::iter_type
+time_get<charT, InputIterator>::do_get_monthname(iter_type begin, iter_type end, ios_base& io, iostate& state,
+						 tm* t) const
+{
+    __kai::timepunct<charT> tpunct;
+    int mnth = 0;
+    iter_type ret = which_matches(begin, end, io, state, tpunct.get_month_name_list(), 24, mnth);
+    if (mnth != -1)
+        t->tm_mon =(mnth > 11) ? mnth - 12 : mnth;
+    else
+        state |= ios_base::failbit;
+    return ret;
+}
+
+template <class charT, class InputIterator>
+time_get<charT, InputIterator>::iter_type
+time_get<charT, InputIterator>::get_integral_data(iter_type begin, iter_type end, ios_base& io, 
+						  iostate& state, charT fmt, int& data) const
+{
+    data = 0;
+    __kai::timepunct<char> tpunct;
+    int width = tpunct.get_spec_conv_width(fmt);
+    if (width < 0) 
+	return begin;
+    const locale& loc = io.getloc();
+    const ctype<charT>& ctype_ = use_facet<ctype<charT> >(loc);
+    if (io.flags() & ios_base::skipws) {
+	while ((begin != end) && isspace(*begin, loc))
+	    ++begin;
+    } else if (isspace(*begin, loc)) {
+	state |= ios_base::failbit;
+	return begin;
+    }
+    while (begin != end && isdigit(*begin, loc) && width--) {
+	data = data * 10 + (ctype_.narrow(*begin, 0) - '0');
+	begin++;
+    }
+    return begin;
+}
+
+template <class charT, class InputIterator>
+time_get<charT, InputIterator>::iter_type
+time_get<charT, InputIterator>::
+do_get_year(iter_type begin, iter_type end, ios_base& io, iostate& state, tm* t) const
+{
+    int year = 0;
+    const locale& loc = io.getloc();
+    const ctype<charT>& ctype_ = use_facet<ctype<charT> >(loc);
+    if (io.flags() & ios_base::skipws) {
+	while ((begin != end) && isspace(*begin, loc))
+	    ++begin;
+    } else if (isspace(*begin, loc)) {
+	state |= ios_base::failbit;
+	return begin;
+    }
+    while (begin != end && isdigit(*begin, loc)) {
+	year = year * 10 + (ctype_.narrow(*begin, 0) - '0');
+	begin++;
+    }
+    if (year && year < 100) 
+	t->tm_year = year;
+    else if (year > 1900) 
+	t->tm_year = year - 1900;
+    else 
+	state |= ios_base::failbit;
+    return begin;
+}
+
+template <class charT, class InputIterator>
+time_get<charT, InputIterator>::iter_type
+time_get<charT, InputIterator>::
+which_matches(iter_type begin, iter_type end, ios_base& io, iostate& state, const string_type* str_list,
+	      int list_size, int& matchPos) const
+{
+    int strPos    = 0;
+    int startFrom = 0;
+    string_type str;
+    str.reserve(100);
+    bool foundMatch = false;
+    const locale& loc = io.getloc();
+
+    if (io.flags() & ios_base::skipws) {
+	while ((begin != end) && isspace(*begin, loc))
+	    ++begin;
+    } else if (isspace(*begin, loc)) {
+	state |= ios_base::failbit;
+	return begin;
+    }
+    while (begin != end && !foundMatch && startFrom < list_size) {
+	if (strPos < str_list[startFrom].size() &&
+	    str_list[startFrom].compare(0, strPos, str, 0, strPos) == 0) {
+	    str.append(1, *begin);
+	    strPos++;
+	    begin++;
+	    if (str == str_list[startFrom] && ((startFrom < list_size/2 && begin == end)
+					       || (startFrom >=list_size/2) || isspace(*begin, loc)))
+		foundMatch = true;
+	} else
+	    startFrom++;
+    }
+         
+    matchPos = (foundMatch ?  startFrom : -1);
+    return begin;
+}
+
+template <class charT, class OutputIterator =  ostreambuf_iterator<charT> >
+class time_put : public locale::facet 
+{
+
+public:
+    typedef charT                                            char_type;
+    typedef OutputIterator                                   iter_type;
+    typedef basic_string<charT, char_traits<charT>, 
+			 allocator<charT> >                  string_type;
+
+    explicit time_put(size_t refs = 0) : locale::facet(refs) { }
+
+    iter_type put(iter_type s, ios_base&, char_type fill, 
+		  const tm* tmb, const char_type* pattern, 
+		  const char_type* pat_end) const;
+
+    iter_type put(iter_type s, ios_base& io, char_type fill, 
+		  const tm* tmb, char format, char modifier = 0) const { 
+	return do_put(s, io, fill, tmb, format, modifier); 
+    }
+
+    static locale::id id;
+
+protected:
+    virtual iter_type
+    do_put(iter_type s, ios_base&, char_type fill, const tm* tmb, char format, char modifier = 0) const;
+};
+   
+template <class charT, class OutputIterator =  ostreambuf_iterator<charT> >
+class time_put_byname : public time_put<charT, OutputIterator> 
+{
+
+public:
+    typedef charT                                            char_type;
+    typedef OutputIterator                                   iter_type;
+    typedef basic_string<charT, char_traits<charT>, 
+			 allocator<charT> >                  string_type;
+
+    explicit time_put_byname(const char* name, size_t refs = 0)
+	: time_put<charT, OutputIterator>(name, refs) { }
+
+protected:
+    ~time_put_byname() { }
+
+    virtual iter_type
+    do_put(iter_type s, ios_base& ss, tm* t, char format, char modifier) const { 
+	time_put<charT, OutputIterator>::do_put(s, ss, t, format, modifier); 
+    }
+};
+
+template <class charT, class OutputIterator>
+locale::id time_put<charT, OutputIterator>::id;
+
+template <class charT, class OutputIterator>
+time_put<charT, OutputIterator>::iter_type
+time_put<charT, OutputIterator>::put(iter_type iter, ios_base& io, char_type fill, const tm* t,
+				     const char_type* pattern, const char_type* pat_end) const
+{
+    const locale& loc = io.getloc();
+    const ctype<charT>& ctype_ = use_facet<ctype<charT> >(loc);
+    __kai::timepunct<charT> tpunct;
+    const char_type* cur = pattern;
+
+    while (cur != pat_end) { //  && *cur
+	if (ctype_.narrow(*cur, 0) != '%')
+	    *iter++ = *cur++;
+	else {
+	    char fmt = 0;
+	    if (pat_end != cur+1)
+		fmt = ctype_.narrow(*++cur, 0);
+	    else
+		return iter;
+	    if (fmt) {
+		switch (fmt) {
+		case 'c':
+		    {
+			string_type date_time_fmt = tpunct.get_date_time_format();
+			const char_type* c_fmt_lst = date_time_fmt.c_str();
+			iter = put(iter, io, fill, t, c_fmt_lst, 
+				   c_fmt_lst+string_type::traits_type::
+				   length(c_fmt_lst));
+			break;
+		    }
+		case 'x':
+		    {
+			string_type date_fmt = tpunct.get_date_format();
+			const char_type* x_fmt_lst = date_fmt.c_str();
+			iter = put(iter, io, fill, t, x_fmt_lst, 
+				   x_fmt_lst + string_type::traits_type::
+				   length(x_fmt_lst));
+			break;
+		    }
+		case 'X':
+		    {
+			string_type time_fmt = tpunct.get_time_format();
+			const char_type* X_fmt_lst = time_fmt.c_str();
+			iter = put(iter, io, fill, t, X_fmt_lst, 
+				   X_fmt_lst + string_type::traits_type::
+				   length(X_fmt_lst));
+			break;
+		    }
+		default: iter = do_put(iter, io, fill, t, fmt, 0); 
+		    break;
+		}
+		cur++;
+	    }
+	}
+    } /* end while */
+    return iter;
+}
+
+template <class charT, class OutputIterator>
+time_put<charT, OutputIterator>::iter_type
+time_put<charT, OutputIterator>::do_put(iter_type iter, ios_base& io, char_type fill, const tm* t,
+					char format, char modifier) const
+{
+    __kai::timepunct<charT> tpunct;
+
+    switch (format) {
+    case 'c':
+	{
+	    string_type date_time_fmt = tpunct.get_date_time_format();
+	    const char_type* c_fmt_lst = date_time_fmt.c_str();
+	    iter = put(iter, io, fill, t, c_fmt_lst, 
+		       c_fmt_lst + string_type::traits_type::
+		       length(c_fmt_lst));
+	    break;
+	}
+    case 'x':
+	{
+	    string_type date_fmt = tpunct.get_date_format();
+	    const char_type* x_fmt_lst = date_fmt.c_str();
+	    iter = put(iter, io, fill, t, x_fmt_lst, 
+		       x_fmt_lst + string_type::traits_type::
+		       length(x_fmt_lst));
+	    break;
+	}
+    case 'X':
+	{
+	    string_type time_fmt = tpunct.get_time_format();
+	    const char_type* X_fmt_lst = time_fmt.c_str();
+	    iter = put(iter, io, fill, t, X_fmt_lst, 
+		       X_fmt_lst + string_type::traits_type::
+		       length(X_fmt_lst));
+	    break;
+	}
+    default:
+	string_type str = tpunct.print_format(io.getloc(), format, t);
+	size_t cnt = 0;
+	while (cnt < str.size()) {
+	    *iter++ = str[cnt];
+	    cnt++;
+	}
+    }
+    return iter;
+}
+
+//************** MONETARY FACETS ***********************
+
+class money_base 
+{
+public:
+    enum part { none='0', space=' ', symbol='?', sign='-', value='v' };
+
+    struct pattern { 
+	char field[4]; 
+    };
+
+protected:
+    //    static pattern get_pat();
+    static pattern get_pat(int cs_precedes, int sep_by_space, int sign_posn, bool& paren);
+
+};  // end class money_base
+
+template <class charT, bool Intl = false>
+class moneypunct : public locale::facet, public money_base 
+{
+
+public:
+    typedef charT                                            char_type;
+    typedef basic_string<charT, char_traits<charT>, 
+			 allocator<charT> >                  string_type;
+
+    static const bool intl = Intl;
+
+protected:
+    virtual char_type do_decimal_point() const { return dec_pt; }
+    virtual char_type do_thousands_sep() const { return thou_sep; }
+    virtual string do_grouping() const { return grp; }
+    virtual string_type do_curr_symbol() const { return curr_sym; }
+    virtual string_type do_positive_sign() const { return pos_sign; }
+    virtual string_type do_negative_sign() const { return neg_sign; }
+    virtual int do_frac_digits() const { return frac_dig; }
+    virtual money_base::pattern do_pos_format() const { return pos_fmt; }
+    virtual money_base::pattern do_neg_format() const { return neg_fmt; }
+  
+    explicit moneypunct(const char* name, size_t refs = 0) : locale::facet (refs) { init (name); }
+
+    ~moneypunct() { }
+
+public:
+    char_type decimal_point() const { return do_decimal_point(); }
+    char_type thousands_sep() const { return do_thousands_sep(); }
+
+    string grouping() const { return do_grouping(); }
+
+    string_type curr_symbol() const { return do_curr_symbol(); }
+
+    string_type positive_sign() const { return do_positive_sign(); }
+    string_type negative_sign() const { return do_negative_sign(); }
+
+    int frac_digits() const { return do_frac_digits(); }
+
+    money_base::pattern pos_format() const { return do_pos_format(); }
+    money_base::pattern neg_format() const { return do_neg_format(); }
+
+    explicit moneypunct(size_t refs = 0) : locale::facet(refs) { init(""); }
+
+    static locale::id id;
+
+private:
+    void init(const char* name);
+    char_type             dec_pt;
+    char_type             thou_sep;
+    string_type           curr_sym;
+    string_type           pos_sign;
+    string_type           neg_sign;
+    string                grp;
+    int                   frac_dig;
+    money_base::pattern   pos_fmt;
+    money_base::pattern   neg_fmt;
+};
+
+template <class charT, bool Intl>
+void moneypunct<charT, Intl>::init(const char* name) {
+    const char* old_name = setlocale(LC_ALL, 0);
+    if (setlocale(LC_MONETARY, name) != 0) {
+	struct lconv* lptr = localeconv();
+	curr_sym = __kai::convert_locale_string<charT>( intl ? lptr->int_curr_symbol : lptr->currency_symbol );
+	frac_dig = intl ? lptr->int_frac_digits : lptr->frac_digits;
+
+	dec_pt   = lptr->mon_decimal_point[0];
+	thou_sep = lptr->mon_thousands_sep[0];
+	pos_sign = __kai::convert_locale_string<charT>( lptr->positive_sign );
+	neg_sign = __kai::convert_locale_string<charT>( lptr->negative_sign );
+	grp      = lptr->mon_grouping;
+
+	bool paren;
+	// Modena had some real silly code here. It masked off the high bits.
+	// But, in the case of the sign position, it did not mask off enough
+	// bits. The code also ignored the case where all the bits were set to
+	// Indicate that the value was not available. The code now picks a 
+	// default value in the case where too many bits are available. The 
+	// values I have picked should return the pattern { symbol, sign, none, value }
+	// as required by the C++ Standard (see 22.2.6.3.2 [lib.locale.moneypunct.virtuals])
+	// If intl, then the format is fixed. -- dcn
+	if (intl) {
+	    pos_fmt.field[0] = symbol;
+	    pos_fmt.field[1] = sign;
+	    pos_fmt.field[2] = none;
+	    pos_fmt.field[3] = value;
+	    neg_fmt = pos_fmt;
+	} else {
+	    int csymbol_preceeds = (lptr->p_cs_precedes & ~1) ? 1 : lptr->p_cs_precedes;
+	    int sep_by_space = (lptr->p_sep_by_space & ~1) ? 0 : lptr->p_sep_by_space;
+	    int sign_posn = (lptr->p_sign_posn & ~7) ? 4 : lptr->p_sign_posn;
+	    pos_fmt  = money_base::get_pat(csymbol_preceeds, sep_by_space, sign_posn, paren);
+	    if (paren) { 
+		pos_sign.append(1, (char_type)'(');
+		pos_sign.append(1, (char_type)')'); 
+	    }
+	    csymbol_preceeds = (lptr->n_cs_precedes & ~1) ? 1 : lptr->n_cs_precedes;
+	    sep_by_space = (lptr->n_sep_by_space & ~1) ? 0 : lptr->n_sep_by_space;
+	    sign_posn = (lptr->n_sign_posn & ~7) ? 4 : lptr->n_sign_posn;
+	    neg_fmt  = money_base::get_pat(csymbol_preceeds, sep_by_space, sign_posn, paren);
+	    if (paren) {
+		neg_sign.append(1,  (char_type)'(');
+		neg_sign.append(1,  (char_type)')'); 
+	    }
+	}
+    } else
+	runtime_error::__throw("Invalid locale name\n");
+    setlocale (LC_ALL, old_name);
+}
+
+template <class charT, bool Intl>
+const bool moneypunct<charT, Intl>::intl;
+
+template <class charT, bool Intl>
+locale::id moneypunct<charT, Intl>::id;
+
+template <class charT, bool Intl =  false >
+class moneypunct_byname : public moneypunct<charT, Intl> 
+{
+    //    friend class locale::imp;
+public:
+    typedef charT                                            char_type;
+    typedef basic_string<charT, char_traits<charT>, 
+			 allocator<charT> >                  string_type;
+ 
+    explicit moneypunct_byname (const char* name, size_t refs = 0) 
+	: moneypunct<charT, Intl> (name, refs) { }
+
+protected:
+    ~moneypunct_byname() { }
+};
+
+template <class charT, class OutputIterator = ostreambuf_iterator<charT> >
+class money_put : public locale::facet 
+{
+    //    friend class locale::imp;
+
+public:
+    typedef charT                                            char_type;
+    typedef OutputIterator                                   iter_type;
+    typedef basic_string<charT, char_traits<charT>, 
+			 allocator<charT> >                  string_type;
+protected:
+    virtual iter_type
+    do_put(iter_type, bool, ios_base&, char_type fill, long double units) const;
+
+    virtual iter_type
+    do_put(iter_type, bool, ios_base&, char_type fill, const string_type& digits) const;
+
+public:
+    iter_type
+    put(iter_type s, bool intl, ios_base& f, char_type fill, long double& units) const { 
+	return do_put(s, intl, f, fill, units); 
+    }
+
+    iter_type
+    put(iter_type s, bool intl, ios_base& f, char_type fill, string_type& digits) const { 
+	return do_put(s, intl, f, fill, digits); 
+    }
+
+    static locale::id id;
+
+    explicit money_put(size_t refs = 0) : locale::facet(refs) { }
+
+protected:
+    ~money_put() { }
+};
+
+template <class charT, class OutputIterator>
+locale::id money_put<charT, OutputIterator>::id;
+
+template <class charT, class InputIterator =  istreambuf_iterator<charT> >
+class money_get : public locale::facet 
+{
+    //    friend class locale::imp;
+
+public:
+    typedef charT                                           char_type;
+    typedef InputIterator                                   iter_type;
+    typedef basic_string<charT, char_traits<charT>, 
+			 allocator<charT> >                 string_type;
+    typedef ios_base::iostate                               iostate;
+
+protected:
+    virtual iter_type
+    do_get(iter_type, iter_type, bool, ios_base&, iostate& state, long double& units) const;
+
+    virtual iter_type
+    do_get(iter_type, iter_type, bool, ios_base&, iostate& state, string_type& digits) const;
+
+public:
+    iter_type
+    get(iter_type s, iter_type e, bool intl, ios_base& f, iostate& state, long double& units) const { 
+	return do_get(s, e, intl, f, state, units); 
+    }
+
+    iter_type
+    get(iter_type s, iter_type e, bool intl, ios_base& f, iostate& state, string_type& digits) const { 
+	return do_get(s, e, intl, f, state, digits); 
+    }
+
+    static locale::id id;
+
+    explicit money_get(size_t refs = 0) : locale::facet(refs) { }
+
+protected:
+    ~money_get() { }
+
+private:
+    static iter_type
+    extract_value (iter_type begin, iter_type end, bool, ios_base& io, charT * buf, int& charTread);
+};
+
+template <class charT, class InputIterator>
+locale::id money_get<charT, InputIterator>::id;
+
+template <class charT, class InputIterator>
+money_get<charT, InputIterator>::iter_type
+money_get<charT, InputIterator>::
+extract_value (iter_type begin, iter_type end, bool international, ios_base& io, charT * buf, int& charTread)
+{
+    typedef string_type::traits_type                        straits_type;
+
+    const locale& loc = io.getloc();
+
+    string               grp;
+    char_type            dec_pt;
+    char_type            thou_sep;
+    int                  frac_dig;
+
+    if (international) {
+        const moneypunct<charT, true>& punctT = use_facet<moneypunct<charT, true> >(loc);
+	grp      = punctT.grouping();
+	dec_pt   = punctT.decimal_point();
+	thou_sep = punctT.thousands_sep();
+	frac_dig = punctT.frac_digits();
+    } else {
+        const moneypunct<charT, false>& punctF = use_facet<moneypunct<charT, false> >(loc);
+	grp      = punctF.grouping();
+	dec_pt   = punctF.decimal_point();
+	thou_sep = punctF.thousands_sep();
+	frac_dig = punctF.frac_digits();
+    }
+
+    charT * cur = buf;
+    *cur = charT();
+
+    int Nfrac_dig = 0;
+    const char * pgrp = grp.c_str();
+
+    if( pgrp <= '\0' || grp.c_str()==pgrp==CHAR_MAX ) {
+	// 22.2.3.1.2 says unlimited size of group. 
+	while (begin != end && isdigit(*begin, loc))
+	    *cur++ = *begin++;
+    } else {
+	// Have grouping to check.
+	string seps;
+	char digits_in_group = 0;
+	for (; begin != end; ++begin) { 
+	    if (isdigit(*begin, loc)) {
+		*cur++ = *begin; 
+		if( digits_in_group<CHAR_MAX ) 
+		    ++digits_in_group;
+	    } else if( !digits_in_group || !straits_type::eq(*begin, thou_sep)) {
+		// Must be terminator.
+		break;
+	    } else {
+		// Standard is unclear on handling of ' ' separator, but following logic
+		// seems reasonable.  
+		if(straits_type::eq(thou_sep, ' ')) {
+		    iter_type tmp = begin;
+		    ++tmp;
+		    if( tmp==end || isdigit(*tmp, loc) == 0)
+			break;
+		}
+		seps.append( (size_t)1, digits_in_group );
+		digits_in_group = 0;
+	    }
+        } 
+	if( !digits_in_group )
+	    goto error;	// Encountered empty group of digits!  
+	if( seps.empty() ) {
+	    // No separators to check.  22.2.6.1.2p1 says they are optional.
+	} else {
+	    seps.append( (size_t)1, digits_in_group );
+
+	    // Check that separators are correctly placed.
+	    // Use const-cast for speed.
+	    const char * seps_begin = seps.c_str();
+	    const char * pseps = seps_begin+seps.size();
+	    const char * pgrp_end = pgrp + grp.size();
+	    while( pseps>seps_begin ) {
+		--pseps;
+		if( *pgrp<=0 || *pgrp==CHAR_MAX ) {
+		    // Group can be any size.
+		} else if( pseps==seps_begin ) {
+		    if( *pgrp<*pseps ) goto error;
+		} else {
+		    if( *pgrp!=*pseps ) goto error;
+		}
+		if( pgrp < pgrp_end )
+		    ++pgrp;
+	    }
+	}
+    }
+    if (begin != end && straits_type::eq(*begin, dec_pt)) {
+	while (++begin != end && isdigit(*begin, loc)) {
+	    if (Nfrac_dig >= frac_dig) 
+		goto error;
+	    *cur++ = *begin;
+	    ++Nfrac_dig;
+	}
+    }
+    if (cur == buf)
+	goto error;
+    for (; Nfrac_dig < frac_dig; ++Nfrac_dig)
+	*cur++ = '0';
+    *cur = charT();
+    charTread = cur - buf;
+    return begin;
+error:
+    charTread = 0;
+    return begin;
+}
+
+template <class charT, class InputIterator>
+money_get<charT, InputIterator>::iter_type
+money_get<charT, InputIterator>::
+do_get(iter_type begin, iter_type end, bool intl, ios_base& io, iostate& state, long double& units) const
+{
+    typedef  string_type::traits_type   straits_type;
+    string_type    str;
+    char           buffer[200];
+
+    begin = do_get(begin, end, intl, io, state, str);
+    __kai::convert_numeric_string( buffer, str );
+    long double result;
+    char fmt[4] = "%Lf";
+    int scanned = sscanf(buffer, fmt, &result);
+    if (scanned <= 0)
+        state |= ios_base::failbit;
+    else
+        units = result;
+    return begin;
+}
+
+template <class charT, class InputIterator>
+money_get<charT, InputIterator>::iter_type
+money_get<charT, InputIterator>::
+do_get(iter_type begin, iter_type end, bool international, ios_base& io, iostate& state, string_type& digits) const
+{
+    typedef string_type::traits_type straits_type;
+    const locale& loc = io.getloc();
+
+    string_type   curr_sym;
+    string_type   pos_sign;
+    string_type   neg_sign;
+    money_base::pattern  _pattern;
+
+    if (international) {
+        const moneypunct<charT, true>& punctT = use_facet<moneypunct<charT, true> >(loc);
+        curr_sym = punctT.curr_symbol();
+        neg_sign = punctT.negative_sign();
+        pos_sign = punctT.positive_sign();
+        _pattern = punctT.neg_format();
+    } else {
+        const moneypunct<charT, false>& punctF = use_facet<moneypunct<charT, false> >(loc);
+        curr_sym = punctF.curr_symbol();
+        neg_sign = punctF.negative_sign();
+        pos_sign = punctF.positive_sign();
+        _pattern = punctF.neg_format();
+    }
+
+    string_type sign;
+    charT       buffer[200];
+    bool	isNeg = false;
+    bool	paren = false;
+    bool	end_parsing = false;
+
+    // eat the leading white spaces
+    //
+    if (io.flags() & ios_base::skipws)
+	while ((begin != end) && isspace(*begin, loc))
+	    ++begin;
+
+    for (int index = 0; !end_parsing && index < 4; ++index) {
+	switch (_pattern.field[index]) {
+	    case money_base::symbol: {
+		if (io.flags() & ios_base::showbase)
+		    ;
+		else if((index == 3 && !paren)
+			|| begin == end || !straits_type::eq(*begin, curr_sym[0]))
+		    curr_sym.erase();
+		int sym_pos = 0;
+		int sym_sz = curr_sym.size();
+		for (; begin!=end && sym_pos<sym_sz && straits_type::eq(*begin, curr_sym[sym_pos]); ++sym_pos, ++begin)
+		    ;
+		if (sym_pos != sym_sz)
+		    if (io.flags() & ios_base::showbase)
+                        end_parsing = true;
+	        break;
+	    }
+	    case money_base::sign: {
+		if (pos_sign.size() > 0 && straits_type::eq(*begin, pos_sign[0])) {
+		    ++begin;
+		    sign = pos_sign; 
+		    isNeg = false;
+		    if (pos_sign.size() > 1)
+                        paren = true;
+		} else if (neg_sign.size() > 0 && straits_type::eq(*begin, neg_sign[0])) {
+		    ++begin; 
+		    sign = neg_sign;  
+		    isNeg = true;
+		    if (neg_sign.size() > 1)
+                        paren = true;
+		} else if (pos_sign.size() == 0 && neg_sign.size() == 0) {
+		    if (straits_type::eq(*begin, '+')
+			|| straits_type::eq(*begin, '-'))
+                        ++begin;
+		    isNeg = false;
+		} else if (pos_sign.size() == 0) {
+		    if (straits_type::eq(*begin, '+'))
+                        ++begin;
+		    isNeg = false;
+		} else if (neg_sign.size() == 0) {
+		    if (straits_type::eq(*begin, '-'))
+                        ++begin;
+		    isNeg = true;
+		} else 
+		    end_parsing = true;
+             
+		if (sign.size() == 1)
+		    sign.erase();
+	        break;
+	    }
+	    case money_base::value: {
+		int charTread = 0;
+		begin = extract_value(begin, end, international, io, buffer, charTread);
+		if (!charTread)
+		    end_parsing = true;
+	        break;
+	    }
+	    case money_base::space: {
+		if (straits_type::eq(*begin, ' ') == 0) {
+		    end_parsing = true;
+		    break;
+		}
+		while (begin != end && straits_type::eq(*begin, ' '))
+		    ++begin;
+	       break;
+	    }
+	    case money_base::none: {
+		if (index == 3)
+		    break;
+		while (begin != end && straits_type::eq(*begin, ' '))
+		    ++begin;
+		break;
+	    }
+	} //end switch 
+    }	// end for
+
+    if (!end_parsing && sign.size() > 0) {
+	int signPos = 1;
+	while (begin != end && signPos < sign.size() &&
+	       straits_type::eq(*begin, sign[signPos])) { 
+            ++signPos; 
+            ++begin; 
+	}
+	if (signPos != sign.size())
+            end_parsing = true;     
+    }
+
+    if (end_parsing) {
+	state |= ios_base::failbit;
+	return begin;
+    }
+    digits = buffer;
+    if (isNeg)
+	digits.insert((string_type::size_type)0, 1, '-');
+    return begin;
+}
+
+template <class charT, class OutputIterator>
+money_put<charT, OutputIterator>::iter_type
+money_put<charT, OutputIterator>::
+do_put(iter_type iter, bool intl, ios_base& io, char_type fill, long double units) const
+{
+    const locale& loc                    = io.getloc();
+    const moneypunct<charT, true>& punctT = use_facet<moneypunct<charT, true> >(loc);
+    const moneypunct<charT, false>& punctF = use_facet<moneypunct<charT, false> >(loc);
+    string_type          curr_sym;
+    string_type          pos_sign;
+    string_type          neg_sign;
+    money_base::pattern  neg_pat;
+    money_base::pattern  pos_pat;
+    char_type            dec_pt;
+    char_type            thou_sep;
+    size_t               frac_dig;
+    string               grp;		// Must be string, not string_type.
+
+    if (intl) {
+        curr_sym = punctT.curr_symbol();
+        neg_pat  = punctT.neg_format();
+        pos_pat  = punctT.pos_format();
+        neg_sign = punctT.negative_sign();
+        pos_sign = punctT.positive_sign();
+        dec_pt   = punctT.decimal_point();
+        thou_sep = punctT.thousands_sep();
+        frac_dig = punctT.frac_digits();
+        grp      = punctT.grouping();
+    } else {
+        curr_sym = punctF.curr_symbol();
+        neg_pat  = punctF.neg_format();
+        pos_pat  = punctF.pos_format();
+        neg_sign = punctF.negative_sign();
+        pos_sign = punctF.positive_sign();
+        dec_pt   = punctF.decimal_point();
+        thou_sep = punctF.thousands_sep();
+        frac_dig = punctF.frac_digits();
+        grp      = punctF.grouping();
+    }
+
+    string_type& sign = pos_sign;
+    money_base::pattern& pat  = pos_pat;
+    bool sign_ = false;
+    ios_base::fmtflags flags_sav;
+    int tmp, prec_sav, space_pos;
+    string_type str;
+ 
+    // read the format from moneypunct
+    if (units < 0) {
+	pat   =  neg_pat;
+	sign  =  neg_sign;
+	units = -units;
+    }
+    for (int i = 0; i < 4; ++i) {
+	switch (pat.field[i]) {
+	case money_base::symbol:
+	    if (io.flags() & ios_base::showbase)
+		str.append(curr_sym);
+	    break;
+	case money_base::sign:
+	    if (sign.size() <= 1)
+		str.append(sign); 
+	    else { 
+		str.append(1, sign[0]); 
+		sign_ = true; 
+	    }
+	    break;
+	case money_base::space:
+	    space_pos = str.size();
+	    str.append(1, fill);
+	    break;
+	case money_base::value: {
+	    tmp = frac_dig;
+	    while (tmp--)
+		units /= 10.0L;
+	    prec_sav  = io.precision(frac_dig);
+	    flags_sav = io.flags(ios_base::no_flags);
+            
+	    io.setf (ios_base::fixed | ios_base::dec);
+    	    char fmt[16];
+	    __kai::build_fmt(io, fmt, 4);
+    	    char buf[200];
+	    sprintf(buf, fmt, units);
+           
+	    io.precision(prec_sav);
+	    io.flags(flags_sav);
+	    string_type _units = __kai::convert_locale_string<charT>( buf );
+	    str.append(__kai::insert_thsep(_units, grp, thou_sep, dec_pt));
+	    break;
+	}
+	case money_base::none:
+	    space_pos = str.size();
+	    str.append(1, fill);
+	    break;
+	default:
+	    break;
+	}
+    }
+    if (sign_) 
+	str.append(sign.data()+1);
+    int count = 0;
+    count += str.size(); 
+    count = io.width() - count;
+
+    // padding to the specific width
+    if (count > 0) {
+	int pos;
+	switch (io.flags() & ios_base::adjustfield) {
+        case ios_base::left:
+	    pos = str.size();
+	    break;
+        case ios_base::right:
+	    pos = 0;
+	    break;
+        case ios_base::internal:
+	    pos = space_pos;
+	    break;
+	}
+	str.insert(pos, count, fill);
+    }
+ 
+    size_t cnt = 0;
+    while (cnt < str.size ()) {
+	*iter++ = str[cnt];
+	++cnt;
+    }
+    return iter;
+}
+
+template <class charT, class OutputIterator>
+money_put<charT, OutputIterator>::iter_type
+money_put<charT, OutputIterator>::
+do_put(iter_type iter, bool international, ios_base& io, char_type fill, const string_type& digits) const
+{
+    typedef string_type::traits_type straits_type;
+ 
+    const locale& loc = io.getloc();
+    const ctype<charT>& ct = use_facet<ctype <char_type> >(loc);
+ 
+    const charT * D = digits.c_str();
+    bool  isNeg =  false;
+    if (straits_type::eq(*D, '-')) {
+	isNeg = true;
+	++D;
+    } else if (straits_type::eq(*D, '+'))
+	++D;
+ 
+    long double value = 0.0L;
+    for (size_t pos = 0; isdigit(D[pos], loc); ++pos)
+	value = (value * 10) + (ct.narrow(D[pos],0)-'0');
+    if (isNeg)
+	value = -value;
+    return do_put(iter, international, io, fill, value);
+}
+
+// MESSAGES CATEGORY
+
+#ifdef MSIPL_NL_TYPES
+class messages_base 
+{
+public:
+    typedef nl_catd catalog;
+};
+
+template <class charT>
+class messages : public locale::facet, public messages_base 
+{
+
+public:
+    typedef charT                                           char_type;
+    typedef basic_string<charT, char_traits<charT>, 
+                         allocator<charT> >                 string_type;
+
+    explicit messages(size_t refs = 0) : locale::facet(refs) { }
+
+    catalog
+    open(const basic_string<char, char_traits<char>, allocator<char> >& fn, const locale& loc) const { 
+	return do_open (fn, loc); 
+    }
+
+    string_type
+    get(catalog c, int set, int msgid, const string_type& dfault) const { 
+	return do_get(c, set, msgid, dfault); 
+    }
+
+    void close(catalog c) const { 
+	return do_close(c); 
+    }
+
+    static locale::id id;
+
+protected:
+    ~messages();
+
+    virtual catalog
+    do_open (const basic_string<char, char_traits<char>, allocator<char> >& fn, const locale& loc) const;
+
+    virtual string_type
+    do_get(catalog c, int set, int msgid, const string_type& dfault) const;
+ 
+    virtual void do_close(catalog c) const;
+};
+
+template <class charT>
+class messages_byname : public messages<charT> 
+{
+
+public:
+    explicit messages_byname(const char*, size_t refs = 0);
+
+protected:
+    ~messages_byname();
+
+    virtual catalog
+    do_open(const basic_string<char, char_traits<char>, allocator<char> >& str, const locale& loc) const { 
+	return messages<charT>::do_open (str, loc);
+    }
+
+    virtual string_type
+    do_get(catalog cat, int set, int msgid, const string_type& dfault) const { 
+	return messages<charT>::do_get(cat, set, msgid, dfault); 
+    }
+
+    virtual void do_close(catalog cat) const {
+	return messages<charT>::do_close(cat);
+    }
+};
+
+template <class charT>
+inline messages<charT>::catalog
+messages<charT>::
+do_open (const basic_string<char, char_traits<char>, allocator<char> >& name, const locale& loc) const
+{
+    nl_catd cat = ::catopen (name.c_str(), 0);
+    assert(cat != (nl_catd) -1);
+    return cat;
+}
+
+template <class charT>
+inline messages<charT>::string_type
+messages<charT>::
+do_get(catalog cat, int set, int msgid, const string_type& dfault) const
+{
+    const charT* dflt = dfault.c_str();
+    const char* ret = ::catgets(cat, set, msgid, dflt);
+    return ret;
+}
+
+
+template <class charT>
+inline void messages<charT>::do_close(catalog cat) const
+{
+    int ret = ::catclose(cat);
+    assert(ret != -1);
+}
+#endif /* MSIPL_NL_TYPES */
+
+template <class charT, class traits, class Allocator>
+inline bool
+locale::operator()(const basic_string<charT, traits, Allocator>& s1, 
+                    const basic_string<charT, traits, Allocator>& s2) const
+{
+    const std::collate<charT>& col = use_facet<std::collate<charT> >(*this);
+    return (col.compare(s1.data(), s1.data()+ s1.size(), 
+			s2.data(), s2.data() + s2.size()) < 0);
+}
+
+template <class charT, class Traits>
+inline
+basic_ostream<charT, Traits>&
+operator<<(basic_ostream<charT, Traits>& os, const locale& loc)
+{
+    return os << loc.name() << endl;
+}
+ 
+template <class charT, class Traits>
+basic_istream<charT, Traits>&
+operator>>(basic_istream<charT, Traits>& is, locale& loc)
+{
+    typedef basic_string<charT, char_traits<charT>,
+                         allocator<charT> >          string_type;
+    string_type str;
+ 
+    is >> str;   // read the locale's name
+ 
+    if (setlocale(LC_ALL, str.c_str()) != 0)
+        loc = locale(str.c_str());  // try to construct the locale
+    else
+        is.setstate(ios_base::failbit);
+ 
+    return is;
+}
+ 
+
+} // namespace std
+
+#endif /* __KAI_LOCALE */

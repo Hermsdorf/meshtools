@@ -1,0 +1,40 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+#ifndef __KAI_CSTRING
+#define __KAI_CSTRING
+
+#include <string.h>
+
+#pragma kai_intrinsic "strlen" strlen
+
+namespace std {
+using ::size_t;
+using ::memchr;
+using ::memcmp;
+using ::memcpy;
+using ::memmove;
+using ::memset;
+using ::strchr;
+using ::strcat;
+using ::strcmp;
+using ::strcoll;
+using ::strcpy;
+using ::strcspn;
+using ::strerror;
+using ::strlen;
+using ::strncat;
+using ::strncmp;
+using ::strncpy;
+using ::strpbrk;
+using ::strrchr;
+using ::strspn;
+using ::strstr;
+using ::strtok;
+using ::strxfrm;
+} /*namespace std*/
+
+#endif /* __KAI_CSTRING */

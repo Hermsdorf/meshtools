@@ -1,0 +1,281 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **
+ **  Based on code from Modena Software Inc. with portions rewritten.
+ **/
+/**
+ **  Lib++  : The Modena C++ Standard Library,
+ **           Version 2.4, October 1997
+ **
+ **  Copyright (c) 1995-1997 Modena Software Inc.
+ **/
+#ifndef __KAI_MUTEX
+#define __KAI_MUTEX
+
+// This header defines several flavors of mutex:
+//	simple_mutex: possibly non-recursive mutex
+//	recursive_mutex: recursive mutex
+//	static_mutex: mutex that must be initialized quite early.
+
+#include <mcompile.h>
+#include <pthread.h>
+
+namespace __kai {
+
+class null_mutex {
+public:
+    inline int remove() const { return 0; }
+    inline int acquire(int = 0) const { return 0; }
+    inline int release() const { return 0; }
+};
+
+#define msipl_thread_self()	pthread_self()
+
+typedef pthread_t msipl_thread_t;
+extern "C" long msipl_thread_unique_id( msipl_thread_t thread = msipl_thread_self() );
+
+#if MSIPL_pthread_t_IS_CMA_struct || ( defined(__hpux) && !defined(__hpux_11) )
+#   define PTHREAD_ATTR_NULL cma_c_null
+#   define MSIPL_THREAD_T_NULL cma_c_null
+#   define __KAI_TID_T long
+#   define __KAI_TID_NIL  0
+#   define __KAI_THREAD_ID msipl_thread_unique_id()
+#else
+#   define PTHREAD_ATTR_NULL NULL
+#   define MSIPL_THREAD_T_NULL 0
+#   define __KAI_TID_T msipl_thread_t
+#   define __KAI_TID_NIL MSIPL_THREAD_T_NULL
+#   define __KAI_THREAD_ID msipl_thread_self()
+#endif
+
+typedef pthread_mutex_t msipl_mutex_t;
+#ifdef PTHREAD_MUTEX_INITIALIZER
+#   define msipl_mutex_init_val	PTHREAD_MUTEX_INITIALIZER
+#endif
+#define msipl_mutex_init(m)	pthread_mutex_init(m,PTHREAD_ATTR_NULL)
+#define msipl_mutex_destroy(m)	pthread_mutex_destroy(m)
+#define msipl_mutex_trylock(m)	pthread_mutex_trylock(m)
+#define msipl_mutex_lock(m)	pthread_mutex_lock(m)
+#define msipl_mutex_unlock(m)	pthread_mutex_unlock(m)
+enum lock_type { KAI_READ_LOCK, KAI_WRITE_LOCK };
+
+// A simple_mutex does not necessarily allow recursive locking.
+class simple_mutex {
+protected:
+    typedef msipl_mutex_t mutex_type;
+
+public:
+    simple_mutex()  {msipl_mutex_init(&_lock);}
+    ~simple_mutex() {msipl_mutex_destroy(&_lock);}
+
+    // These functions return 0 on success.
+    inline int try_lock(lock_type lt = KAI_WRITE_LOCK) { return msipl_mutex_trylock(&_lock); }
+    inline int acquire(lock_type lt = KAI_WRITE_LOCK) { return msipl_mutex_lock(&_lock); }
+    inline int release() { return msipl_mutex_unlock(&_lock); }
+
+private:
+    msipl_mutex_t _lock;
+};
+
+#ifdef PTHREAD_MUTEX_INITIALIZER
+// Class simple_mutex_as_aggregate *must have same layout as class simple_mutex
+class simple_mutex_as_aggregate {	
+public:
+    msipl_mutex_t _lock;
+};
+
+#define msipl_simple_mutex_init_val {PTHREAD_MUTEX_INITIALIZER}
+#endif /* PTHREAD_MUTEX_INITIALIZER */
+
+// Now a mutex that will (portably) allow recursive locking.
+// On some platforms this could be implemented directly using pthread mutex attributes.
+// Unfortunately the illusion of providing separate read and write locks is completely bogus.
+
+class recursive_mutex {
+public:
+    recursive_mutex() : count(0), tid(__KAI_TID_NIL) { }
+    ~recursive_mutex() {}
+
+    inline int try_lock(lock_type lt = KAI_WRITE_LOCK);
+    inline int acquire(lock_type lt = KAI_WRITE_LOCK);
+    inline int release() { 	// Can pre-emptively release locks held by other threads!
+        if( --count ) { 
+	    return 0; 
+	} else { 
+	    tid = __KAI_TID_NIL; 
+	    return _lock.release();
+	} 
+    }
+
+private:
+    simple_mutex _lock;
+    volatile __KAI_TID_T tid;
+    unsigned int count;
+};
+
+inline int recursive_mutex::try_lock(lock_type)
+{ 
+    int ret;
+    __KAI_TID_T tmpid = __KAI_THREAD_ID;
+    if( tid==tmpid ) {
+	++count;
+	ret = 0;
+    } else if( (ret = _lock.try_lock()) == 0) {
+	count = 1;
+	tid = tmpid;
+    }
+    return ret; 
+}
+
+inline int recursive_mutex::acquire(lock_type)
+{ 
+    int ret;
+    __KAI_TID_T tmpid = __KAI_THREAD_ID;
+    if ( tid == tmpid ) {
+	++count;
+	ret = 0;
+    } else if ((ret = _lock.acquire()) == 0) {
+	count = 1;
+	tid = tmpid;
+    }
+    return ret; 
+}
+
+// For shared static objects, we need a shared static mutex that
+// can be initialized early enough that other static object constructors
+// can use the shared objects it protects.
+// On older pthreads systems static_mutex<id>::initialize() has to be
+// explicitly invoked pthread_once() for each static_mutex.
+// The <id> parameter makes it possible to have several.
+// ... And we need these to be nestable.
+// Note that the illusion of separate READ and WRITE locks
+// is (once again) completely bogus...
+enum static_lock_id {
+    string_static_lock_id=1,
+    locale_static_lock_id=2,
+    iostream_static_lock_id=3    
+};
+
+template<static_lock_id id> class static_mutex {
+    static msipl_mutex_t _lock;
+
+public:
+#   ifndef PTHREAD_MUTEX_INITIALIZER
+       // Do not introduce a constructor or destructor (even empty ones) for this class.
+       // Otherwise compilation of kai_thread_lib.C (in libKCC-eh-ts) fails.
+       // Especially don't try to initialize _lock at runtime using a constructor.
+       // Static constructor ordering is non-standard.
+       // Use msipl_thread_once() to cause a single execution of
+       // static_mutex<id>::initialize() for each <id> _before_ the first acquistion.
+       inline void initialize() { count=0; tid=__KAI_TID_NIL; msipl_mutex_init(&_lock); }
+       inline void finalize()   {                          msipl_mutex_destroy(&_lock); }
+#   endif
+
+    // These functions will return 0 on success.
+    inline int try_lock(lock_type lt = KAI_WRITE_LOCK);
+    inline int acquire(lock_type lt = KAI_WRITE_LOCK);
+    inline int release() { return --count ? 0 : (tid=__KAI_TID_NIL, msipl_mutex_unlock(&_lock)); }
+    // Note that "release" can (preemptively) release locks held by other threads!
+
+private:
+    static volatile __KAI_TID_T tid;
+    static unsigned int count;
+};
+
+#ifdef msipl_mutex_init_val
+    template<static_lock_id id>     msipl_mutex_t  static_mutex<id>::_lock = msipl_mutex_init_val;
+#else
+    template<static_lock_id id>     msipl_mutex_t  static_mutex<id>::_lock;
+#endif
+
+template<static_lock_id id>  volatile __KAI_TID_T  static_mutex<id>::tid = __KAI_TID_NIL;
+template<static_lock_id id>  unsigned  int         static_mutex<id>::count = 0;
+
+template<static_lock_id id> inline int static_mutex<id>::try_lock(lock_type)
+{ 
+    int ret;
+    __KAI_TID_T tmpid = __KAI_THREAD_ID;
+    if ( tid == tmpid ) {
+	++count;
+	ret = 0;
+    } else if ((ret = msipl_mutex_trylock(&_lock)) == 0) {
+	count = 1;
+	tid = tmpid;
+    }
+    return ret; 
+}
+
+template<static_lock_id id> inline int static_mutex<id>::acquire(lock_type)
+{ 
+    int ret;
+    __KAI_TID_T tmpid = __KAI_THREAD_ID;
+    if ( tid == tmpid ) {
+	++count;
+	ret = 0;
+    } else if ((ret = msipl_mutex_lock(&_lock)) == 0) {
+	count = 1;
+	tid = tmpid;
+    }
+    return ret; 
+}
+
+template<class MUTEX> class mutex_block {
+    MUTEX& _lock;
+public:
+    // Implicit lock acquisition
+    inline mutex_block(MUTEX& m, lock_type type=KAI_WRITE_LOCK) : _lock(m) { _lock.acquire(type); }
+    inline mutex_block(const MUTEX& m, lock_type type=KAI_WRITE_LOCK) : _lock((MUTEX&)m) { _lock.acquire(type); }
+
+    // Implicit lock release
+    inline ~mutex_block() { _lock.release(); }
+
+    // Explicit lock release
+    inline int release() { return _lock.release(); }
+
+    // Explicit lock acquisition
+    inline int acquire(lock_type type=KAI_WRITE_LOCK) { return _lock.acquire(type); }
+};
+
+
+template <class TYPE,class MUTEX>
+class mutex_arith {
+    volatile TYPE  _count;
+    MUTEX _lock;
+public:
+    // Initialize _count to 0.
+    mutex_arith(){ _count=0; }
+
+    // Initialize _count to i.
+    mutex_arith(TYPE i){ _count = i; }
+
+    TYPE operator++(){ mutex_block<MUTEX> _mutex(_lock); return ++_count; }
+    TYPE operator++(int){ mutex_block<MUTEX> _mutex(_lock); return  _count++; }
+    TYPE operator+=(const TYPE i){ mutex_block<MUTEX> _mutex(_lock); return  _count += i; }
+
+    TYPE operator--(){ mutex_block<MUTEX> _mutex(_lock); return  --_count; }
+    TYPE operator--(int){ mutex_block<MUTEX> _mutex(_lock); return _count--; }
+    TYPE operator-=(const TYPE i){ mutex_block<MUTEX> _mutex(_lock); return  _count -= i; }
+
+    // Compare _count with i.
+    bool operator==(const TYPE i){ mutex_block<MUTEX> _mutex(_lock); return _count==i; }
+    bool operator!=(const TYPE i){ mutex_block<MUTEX> _mutex(_lock); return _count!=i; }
+    bool operator>=(const TYPE i){ mutex_block<MUTEX> _mutex(_lock); return _count>=i; }
+    bool operator<=(const TYPE i){ mutex_block<MUTEX> _mutex(_lock); return _count<=i; }
+    bool operator>(const TYPE i){ mutex_block<MUTEX> _mutex(_lock); return _count>i; }
+    bool operator<(const TYPE i){ mutex_block<MUTEX> _mutex(_lock); return _count<i; }
+
+    // Assign i to count_.
+    void operator= (const TYPE i){ mutex_block<MUTEX> _mutex(_lock); _count = i; }
+
+    // Return count_.
+    operator TYPE(){ mutex_block<MUTEX> _mutex(_lock); return _count; }
+};
+
+extern recursive_mutex *error_mutex;
+
+} /*namespace __kai*/
+
+#endif /* __KAI_MUTEX */

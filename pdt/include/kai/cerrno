@@ -1,0 +1,21 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+#ifndef __KAI_CERRNO
+#define __KAI_CERRNO
+
+#include <errno.h>
+
+namespace std {
+
+// For some implementations, errno is not a variable.
+#ifdef errno
+#else
+using ::errno;
+#endif
+
+} /* namespace std */
+#endif /* __KAI_CERRNO */

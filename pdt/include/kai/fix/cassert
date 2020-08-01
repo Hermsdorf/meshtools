@@ -1,0 +1,14 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+#ifndef __KAI_CASSERT
+#define __KAI_CASSERT
+
+// Because assert.h defines only macros, we need not wrap it in the std namespace.
+#include <assert.h>
+#include <string>
+
+#endif /* __KAI_CASSERT */

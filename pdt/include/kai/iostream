@@ -1,0 +1,86 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+/**  Split by KAI into <iostream> and <iostreambase> so that users of <fstream>
+ **  and <sstream> do not have to buy the overhead of __msipl_ios_init.
+ **/
+#ifndef __KAI_IOSTREAM
+#define __KAI_IOSTREAM
+
+#include <ios>	// for ios_base::Init
+#include <iostreambase>
+
+namespace __kai {
+static std::ios_base::Init ios_init;
+} 
+
+#if KAI_NONSTD_IOSTREAM
+namespace std {
+
+// N.B. The casts of NULL in the constructors are necessary for --cfront_3.0 
+// mode on machines that define NULL as 0L.  
+
+class istream_withassign : public istream {
+    typedef basic_streambuf<char,char_traits<char> > streambuf_type;
+public:
+    istream_withassign() : istream((streambuf_type*)NULL) { }
+    virtual ~istream_withassign() { }
+
+    istream_withassign&	operator=(istream & i) { init(i.rdbuf()); return *this; }
+    istream_withassign&	operator=(streambuf * s) { init(s); return *this; }
+};
+
+class ostream_withassign : public ostream {
+    typedef basic_streambuf<char,char_traits<char> > streambuf_type;
+public:
+    ostream_withassign() : ostream((streambuf_type*)NULL) { }
+    virtual ~ostream_withassign() { }
+
+    ostream_withassign&	operator=(ostream & i) { init(i.rdbuf()); return *this; }
+    ostream_withassign&	operator=(streambuf * s) { init(s); return *this; }
+};
+
+typedef basic_iostream<char,std::char_traits<char> > iostream;
+
+class iostream_withassign : public iostream {
+    typedef basic_streambuf<char,char_traits<char> > streambuf_type;
+public:
+    iostream_withassign() : iostream((streambuf_type*)NULL) { }
+    virtual ~iostream_withassign() { }
+    iostream_withassign & operator=(ios & i) { init(i.rdbuf()); return *this; }
+    iostream_withassign & operator=(streambuf * s) { init(s); return *this; }
+};
+
+extern istream_withassign cin;
+extern ostream_withassign cout;
+extern ostream_withassign cerr;
+extern ostream_withassign clog;
+
+}	/* namespace std */
+
+#else /* KAI_NONSTD_IOSTREAM */
+
+namespace std {
+
+extern istream cin;
+extern ostream cout;
+extern ostream cerr;
+extern ostream clog;
+
+} // namespace std
+
+#endif /* KAI_NONSTD_IOSTREAM */
+
+#if KAI_WCHAR_T
+namespace std {
+extern wistream wcin;
+extern wostream wcout;
+extern wostream wcerr;
+extern wostream wclog;
+} // namespace std
+#endif /* KAI_WCHAR_T */
+
+#endif /* __KAI_IOSTREAM */

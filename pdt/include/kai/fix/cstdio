@@ -1,0 +1,65 @@
+/**  -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+#ifndef __KAI_CSTDIO
+#define __KAI_CSTDIO
+
+#include <stdio.h>
+
+namespace std {
+using ::size_t;
+using ::FILE;
+using ::fpos_t;
+// using ::L_tmpnam;	The ISO C standard says this is a MACRO.
+
+using ::clearerr;
+using ::fclose;
+using ::feof;
+using ::ferror;
+using ::fflush;
+using ::fgetc;
+#ifndef __alpha
+using ::fgetpos;
+#endif /* __alpha */
+using ::fgets;
+using ::fopen;
+using ::fprintf;
+using ::fputc;
+using ::fputs;
+using ::fread;
+using ::freopen;
+using ::fscanf;
+using ::fseek;
+#ifndef __alpha
+using ::fsetpos;
+#endif /* __alpha */
+using ::ftell;
+using ::fwrite;
+using ::getc;
+using ::getchar;
+using ::gets;
+using ::perror;
+using ::printf;
+using ::putc;
+using ::putchar;
+using ::puts;
+using ::remove;
+using ::rename;
+using ::rewind;
+using ::scanf;
+using ::setbuf;
+using ::setvbuf;
+using ::sprintf;
+using ::sscanf;
+using ::tmpfile;
+using ::tmpnam;
+using ::ungetc;
+using ::vfprintf;
+using ::vprintf;
+using ::vsprintf;
+
+}
+#endif /* __KAI_CSTDIO */

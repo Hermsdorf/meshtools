@@ -1,0 +1,29 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+#ifndef __KAI_CTIME
+#define __KAI_CTIME
+
+#include <time.h>
+
+namespace std {
+using ::size_t;
+using ::clock_t;
+using ::time_t;
+using ::tm;
+using ::asctime;
+using ::clock;
+using ::difftime;
+using ::localtime;
+using ::strftime;
+using ::ctime;
+using ::gmtime;
+using ::mktime;
+using ::time;
+
+} /*namespace std*/
+
+#endif /* __KAI_CTIME */

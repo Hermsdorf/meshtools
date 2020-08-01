@@ -1,0 +1,560 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+/**  Base class for associative container classes.
+ **  Global names not in the standard library namespace are in __kai.
+ ** 
+ **  Below is a sketch of the class hierarchy.  The annotations indicate
+ **  the functionality added at that level.
+ **
+ **  __kai::rb_tree_base        (red-black tree)
+ **	 __kai::rb_tree		    (+ key comparison)
+ **	     __kai::map_base 	        (+ allocator)
+ **	         map		            (+ uniqueness)
+ **		 multimap        	    (+ nonuniqueness)
+ **	     __kai::set_base            (+ allocator
+ **              set		            (+ uniqueness)
+ **              multiset	            (+ nonuniqueness)
+ **/
+
+#ifndef __KAI_TREE
+#define __KAI_TREE
+
+#include <cstddef>
+#include <memory>
+#include <utility>
+
+#ifdef __KAI_DEBUG	/* For use by KAI */
+#include <cassert>
+#define __kai_assert(x) assert(x)
+#else
+#define __kai_assert(x) /**/
+#endif
+
+namespace __kai {
+
+//
+// A rb_tree_node_base is the base-class for a node in a red-black tree.
+// This class contains all functionality that is independent of the 
+// the tree's key type.
+//
+class rb_tree_node_base {
+public:
+    rb_tree_node_base * child_link[2];
+	// First field, so that constant offset is 0 for array subscripting.
+	// This might improve performance on architectures with (reg+reg) 
+	// but no (reg+reg+offset) addressing.  The subscript should be a 
+	// dir_t.
+
+    rb_tree_node_base * parent_link;
+	// Pointer to parent.
+    
+    bool red_bit; 
+	// Color of node: true==red, false==black.
+	
+    // --------------------------------------------------------------------
+    // Methods for inspecting and setting the color of a node.
+    // --------------------------------------------------------------------
+    bool is_red() const {__kai_assert(this!=NULL); return red_bit;}
+    bool is_black() const {__kai_assert(this!=NULL); return !red_bit;}
+    void set_red() {red_bit=1;}
+    void set_black() {red_bit=0;}
+	    
+    bool is_black_or_null() const {return this==NULL || !red_bit;}
+	// Return true iff this is black or NULL.  This method is useful 
+	// because literature on red-black trees considers leafs to be black 
+	// nodes.  When possible, however, you should use method is_black() 
+	// since it is faster.
+    
+    //---------------------------------------------------------------------
+    // Methods for determining kind of node.  Red-black trees have three 
+    // kinds of nodes: strictly internal, leaf, and single-child.
+    //---------------------------------------------------------------------
+    bool is_leaf() const {return !child_link[0] && !child_link[1];}
+       // Node is a leaf node.	
+
+    bool is_strict_internal() const {return child_link[0] && child_link[1];}
+       // Node is strictly an internal node.	
+};
+
+// 
+// Data for rb_tree_base - it's a separate struct to simplify writing
+// method swap.
+// 
+struct rb_tree_base_data {
+    // data members:
+    rb_tree_node_base * header;
+	// Pointer to header node.  The header is a special node that represents
+	// the end of the node sequence.  The right child of the header 
+	// is always NULL.  The left child of the header points to the rightmost
+	// child if there is one.
+
+    size_t node_count;
+	// Number of nodes in tree, excluding header node.
+
+    rb_tree_node_base * extrema[2];
+	// Pointers to leftmost and rightmost nodes.  Subscripted by dir_t.
+    rb_tree_base_data() : header(NULL) { }
+};
+
+//
+// A rb_tree_base is the base class for a red-black tree.  It contains all 
+// red-black-tree functionality that is independent of the type of data being 
+// stored in the nodes.
+// 
+class rb_tree_base: public rb_tree_base_data {
+protected:
+    // types:
+    enum dir_t {LEFT,RIGHT};
+	// Subscripts for left and right children of a node.
+
+    enum search_mode { // Controls the behavior of method __search.
+	FIND_ALWAYS,		
+	FIND_MAYBE,
+	LOWER_BOUND
+    };
+
+    enum modify_mode { // Controls the behavior of method __modify.
+	INSERT_ALWAYS,
+	INSERT_MAYBE,
+	ERASE
+    };
+
+private:
+    static inline rb_tree_node_base * neighbor( const rb_tree_node_base * node, dir_t backward, dir_t forward );
+	// Return neighbor of node in direction "forward" and away from 
+	// direction backward.
+
+    static inline void rotate( rb_tree_node_base * x, rb_tree_node_base * w, rb_tree_node_base * h, dir_t d1, dir_t d2 );
+	// Single-rotation operation.
+
+protected:
+    void __initialize();
+	// Finish initialization of tree.  The initialization must be done
+	// after *this is sufficiently constructed that virtual method
+	// make_node will do the right thing.
+
+    rb_tree_node_base * __finish_insert( rb_tree_node_base * z, rb_tree_node_base * y, rb_tree_node_base * w );
+	// Insert node z into tree as child of y and rebalance.
+	// Child is right child if w==y, left child otherwise.
+	// w is not used for any other purpose.
+
+    // Virtual functions to be overridden by layer that adds allocator:
+    virtual void destroy_node( rb_tree_node_base * node );
+	// Overridden by derived class to deallocate a node.
+
+    virtual rb_tree_node_base * make_node( const void * key ) = 0;
+	// Overridden by derived class to allocate node and initialize its value.
+
+public:
+    static rb_tree_node_base * __next( const rb_tree_node_base * node );
+	// Find next node in tree.
+
+    static rb_tree_node_base * __prev( const rb_tree_node_base * node );
+	// Find previous node in tree.
+
+#ifdef __KAI_DEBUG
+    bool assert_okay() const;
+	// Verify that internal structures are correct.
+#endif /*__KAI_DEBUG*/
+
+protected:
+    void __erase( rb_tree_node_base * node );
+	// Cut node from tree and destroy it.
+
+    size_t __erase( rb_tree_node_base * first, rb_tree_node_base * last );
+	// Cut nodes in range [first,last) from tree and destroy them.
+	// Return number of nodes removed.
+
+    size_t __count( rb_tree_node_base * first, rb_tree_node_base * last ) const;
+	// Return number of elements in range [first,last)
+
+protected:
+    void __destroy();
+	// Destroy all nodes in tree, including the header.
+
+    void __clear();
+	// Set tree to empty tree.  The header node is retained.
+
+    void __copy( const rb_tree_base& tree, size_t key_offset );
+	// Structural copy from tree to *this.
+	// The caller must provide the offset of the key within a node.
+
+private:
+    struct cleanup;
+    friend struct cleanup;
+    
+    class cleanup {
+	rb_tree_base *tree;
+        rb_tree_node_base* &ptr;
+    public:
+        cleanup( rb_tree_base *t, rb_tree_node_base* &x ) : tree(t), ptr(x) {}
+        void clear() {tree = NULL;}
+        ~cleanup() {if( tree && ptr ) tree->destroy_tree(ptr); };
+    };
+
+#ifdef __KAI_DEBUG
+    void assert_okay_aux( const rb_tree_node_base * x, size_t& count, int& height ) const;
+#endif /*__KAI_DEBUG*/
+
+    void destroy_tree( rb_tree_node_base * root );
+	// Recursively destroy subtree rooted at root.
+	
+    rb_tree_node_base * copy_tree( rb_tree_node_base * lhs_parent, const rb_tree_node_base * rhs_root, size_t key_offset );
+	// Structurally copy a subtree.
+};
+
+// 
+// Class rb_tree<Key,Compare,KeyOffset> contains all functionality that 
+// depends upon the Key and Comparison, but does not depend upon what data
+// is associated with the keys or how nodes are allocated.
+//
+template<class Key, class Compare, size_t KeyOffset>
+class rb_tree: public rb_tree_base {
+protected:
+    // data members:
+    Compare key_comparison;
+
+    // constructor:
+    rb_tree( const Compare& comp ) : key_comparison(comp) {}
+
+    // methods:
+    rb_tree_node_base * __modify( const Key& k, bool * missing, modify_mode mode ); 
+	// Insert or erase node in tree.
+	// Sets *missing==true if key was not present, false otherwise.
+	// If inserting, returns pointer new node, or if no insertion is done,
+	// pointer to existing node with same key k.
+	// If erasing, returns NULL if no key found, otherwise pointer to 
+	// deleted node.
+
+private:
+    rb_tree_node_base * __insert( rb_tree_node_base * position, const Key& k, rb_tree_node_base ** reposition, modify_mode mode );
+	// Cloned by __insert_unique and __insert_multi.
+	// Derived classes should always call the clones.
+
+protected:
+    rb_tree_node_base * __insert_unique( rb_tree_node_base * position, const Key& k, rb_tree_node_base ** reposition );
+	// Insert key k if it is not already present.
+	// This differs from method __modify because it takes a position hint.
+
+    rb_tree_node_base * __insert_multi( rb_tree_node_base * position, const Key& k, rb_tree_node_base ** reposition );
+	// Insert key k even if it is already present.
+	// This differs from method __modify because it takes a position hint.
+
+    rb_tree_node_base * __search( const Key& k, search_mode mode ) const; 
+	// Search for node with key k.
+	// The mode controls exactly what happens.
+
+    rb_tree_node_base * __upper_bound( const Key& k ) const;
+   	// Return pointer to upper bound.
+
+    int __compare( const rb_tree_base& y ) const;
+	// Lexicographical comparison of two trees.  
+	// Returns -1, 0, or 1 depending upon whether *this is less, equal, or greater than y.
+	
+    template<class T_Compare> 
+    int __compare_pair( const rb_tree_base& y, T_Compare t_comparison ) const;
+	// Like __compare, but uses t_comparison to break ties when keys are equal.
+	
+    std::pair<rb_tree_node_base *,rb_tree_node_base *> __equal_range_unique( const Key& k );
+
+    size_t __count( const Key& k ) const {
+	return rb_tree_base::__count( __search(k,LOWER_BOUND), __upper_bound(k) );
+    }
+	// Return number of items with given key.
+	
+    void __assign( const rb_tree& rhs ) {
+	if( this!=&rhs ) {
+	    __clear();
+	    __copy( rhs, KeyOffset );
+	} 
+    }
+
+public:
+    // iterators:
+
+    template<class value_type,class difference_type,class value_of_node>
+    class const_iterator;
+
+    template<class value_type,class difference_type,class value_of_node>
+    class iterator: public std::iterator<std::bidirectional_iterator_tag,
+					 value_type,
+					 difference_type,
+					 value_type*,
+					 value_type& > {
+    public:
+	rb_tree_node_base * __node;
+    public:
+	iterator() {}
+	iterator( rb_tree_node_base * n ) : __node(n) {}
+#ifdef KAI_QUIET_PURIFY
+	iterator( const iterator& i ) : __node(i.__node) {}
+#endif
+	value_type& operator*() const {return value_of_node()(__node);}
+	value_type * operator->() const {return &value_of_node()(__node);}
+	// Preincrement and predecrement return references.
+	iterator& operator++() {__node = __next(__node); return *this;}
+	iterator& operator--() {__node = __prev(__node); return *this;}
+	// Postincrement and postdecrement return values.
+	iterator operator++( int ) {rb_tree_node_base* n=__node; __node=__next(__node); return iterator(n);}
+	iterator operator--( int ) {rb_tree_node_base* n=__node; __node=__prev(__node); return iterator(n);}
+	friend bool operator==( const iterator& x, const iterator& y ) {
+	    return x.__node==y.__node;
+	}
+	friend bool operator!=( const iterator& x, const iterator& y ) {
+	    return x.__node!=y.__node;
+	}
+	friend class const_iterator<value_type,difference_type,value_of_node>;
+    };
+
+    template<class value_type,class difference_type,class value_of_node>
+    class const_iterator: public std::iterator<std::bidirectional_iterator_tag,
+					       value_type,
+					       difference_type,
+					       const value_type*,
+					       const value_type& > {
+    private:
+	const rb_tree_node_base * __node;
+    public:
+	const_iterator() {}
+	const_iterator( const rb_tree_node_base * n ) : __node(n) {}
+	const_iterator( const rb_tree::iterator<value_type,difference_type,value_of_node>& i ) : __node(i.__node) {}
+	    // Promote iterator to const iterator.	
+#ifdef KAI_QUIET_PURIFY
+	const_iterator( const const_iterator& i ) : __node(i.__node) {}
+#endif
+	const value_type& operator*() const {return value_of_node()(__node);}
+	const value_type * operator->() const {return &value_of_node()(__node);}
+	// Preincrement and predecrement return references.
+	const_iterator& operator++() {__node = __next(__node); return *this;}
+	const_iterator& operator--() {__node = __prev(__node); return *this;}
+	// Postincrement and postdecrement return values.
+	const_iterator operator++( int ) {const rb_tree_node_base* n=__node; __node=__next(__node); return const_iterator(n);}
+	const_iterator operator--( int ) {const rb_tree_node_base* n=__node; __node=__prev(__node); return const_iterator(n);}
+	friend bool operator==( const const_iterator& x, const const_iterator& y ) {
+	    return x.__node==y.__node;
+	}
+	friend bool operator!=( const const_iterator& x, const const_iterator& y ) {
+	    return x.__node!=y.__node;
+	}
+    };
+
+private:
+    static const Key& key( const rb_tree_node_base * node ) {
+	return *(const Key*)((const char*)(const void*)node + KeyOffset);
+    }
+
+};
+
+template<class Key, class Compare, size_t KeyOffset> 
+int rb_tree<Key,Compare,KeyOffset>::__compare( const rb_tree_base& y ) const {
+    rb_tree_node_base * xh = header;
+    rb_tree_node_base * xp = extrema[LEFT];
+    rb_tree_node_base * yh = y.header;
+    for( rb_tree_node_base * yp = y.extrema[LEFT]; yp!=yh; yp=__next(yp) ) {
+	if( xp==xh ) {
+	    // Sequence x is shorter.
+	    return -1;
+	}
+	if( key_comparison(key(xp),key(yp)) ) 
+	    return -1;
+	if( key_comparison(key(yp),key(xp)) )
+	    return 1;
+	xp=__next(xp);
+    }
+    return xp!=xh;
+}
+
+template<class Key, class Compare, size_t KeyOffset> 
+template<class T_Compare> 
+int rb_tree<Key,Compare,KeyOffset>::__compare_pair( const rb_tree_base& y, T_Compare t_comparison ) const {
+    rb_tree_node_base * xh = header;
+    rb_tree_node_base * xp = extrema[LEFT];
+    rb_tree_node_base * yh = y.header;
+    for( rb_tree_node_base * yp = y.extrema[LEFT]; yp!=yh; yp=__next(yp) ) {
+	if( xp==xh ) {
+	    // Sequence x is shorter.
+	    return -1;
+	}
+	if( key_comparison(key(xp),key(yp)) ) 
+	    return -1;
+	if( key_comparison(key(yp),key(xp)) )
+	    return 1;
+	if( t_comparison(xp,yp) )
+	    return -1;
+	if( t_comparison(yp,xp) )
+	    return 1;
+	xp=__next(xp);
+    }
+    return xp!=xh;
+}
+
+template<class Key, class Compare, size_t KeyOffset>
+rb_tree_node_base * rb_tree<Key,Compare,KeyOffset>::__modify( const Key& k, bool* missing, modify_mode mode ) {
+    __kai_assert( assert_okay() );
+    rb_tree_node_base * h = header;
+    rb_tree_node_base * y = h;
+    rb_tree_node_base * w = NULL;
+    // Get root.
+    rb_tree_node_base * x = h->parent_link;
+    if( x ) {
+	do {
+	    y = x;
+	    if( key_comparison(k, key(x) ) ) {
+		x = x->child_link[LEFT];
+	    } else {
+		x = x->child_link[RIGHT];
+		w = y;	// Hide in latency of load into x.
+	    }
+	} while(x); 
+	// w==NULL means that value goes to far left of tree. 
+	// key_comparison(key(w),k) means that key is not equal to key in tree.
+	if( mode!=INSERT_ALWAYS && w!=NULL && !key_comparison(key(w),k)) {
+	    // Key already exists in tree. 
+	    *missing = false;
+	    if( mode==ERASE )
+	        rb_tree_base::__erase(w);
+	    return w;
+	}
+    } 
+    // Body is arranged so that there is a single call to
+    // make_new_node, thus saving code space.
+    *missing = true;
+    if( mode==ERASE ) {
+	return NULL;
+    } else {
+	rb_tree_node_base * z = make_node(&k);
+	return __finish_insert( z, y, w );
+    }
+}
+
+template<class Key, class Compare, size_t KeyOffset>
+inline
+rb_tree_node_base * rb_tree<Key,Compare,KeyOffset>::__insert( rb_tree_node_base * position, const Key& k, rb_tree_node_base ** reposition, modify_mode mode ) {
+    if( node_count>0 ) {
+	rb_tree_node_base * y = NULL;
+	rb_tree_node_base * w = NULL;
+	if( position==header ) {
+	    if( mode==INSERT_MAYBE ? 
+		key_comparison( key(extrema[RIGHT]), k ) :
+		!key_comparison( k, key(extrema[RIGHT]) ) )
+	    {
+		// As if other form of insert always went to right.
+		w = extrema[RIGHT];
+		y = w;
+	    }
+	} else if( mode==INSERT_MAYBE ? 
+		   key_comparison( k, key(position) ) :
+		   !key_comparison( key(position), k ) ) 
+	{
+	    // New key goes somewhere to left of position.
+	    if( position==extrema[LEFT] ) { 
+		// As if other form of insert always went to left.
+		w = NULL;
+		y = position;
+	    } else {
+	        w = __prev(position);
+	        if( mode==INSERT_MAYBE ? 
+		    key_comparison( key(w), k ) : 
+		    !key_comparison( k, key(w) ) ) 
+		{
+		    // New key goes to right of w.
+		    if( w->child_link[RIGHT] ) {
+			__kai_assert( position->is_leaf() );
+			y = position;
+		    } else {
+			// As if search went right after comparing with position.
+			y = w;
+		    }
+		}
+	    }
+	}
+	if( y ) {
+	    // Found where to insert it.
+	    rb_tree_node_base * z = make_node(&k);
+	    return __finish_insert( z, y, w );
+	}
+    } 
+    // Punt
+    bool success;
+    rb_tree_node_base * result = __modify( k, &success, mode );
+    if( reposition )
+	*reposition = __next(result);
+    return result;
+}
+
+template<class Key, class Compare, size_t KeyOffset>
+rb_tree_node_base * rb_tree<Key,Compare,KeyOffset>::__insert_unique( rb_tree_node_base * position, const Key& k, rb_tree_node_base ** reposition ) {
+    return __insert( position, k, reposition, INSERT_MAYBE );
+}
+
+template<class Key, class Compare, size_t KeyOffset>
+rb_tree_node_base * rb_tree<Key,Compare,KeyOffset>::__insert_multi( rb_tree_node_base * position, const Key& k, rb_tree_node_base ** reposition ) {
+    return __insert( position, k, reposition, INSERT_ALWAYS );
+}
+
+template<class Key, class Compare, size_t KeyOffset>
+rb_tree_node_base * rb_tree<Key,Compare,KeyOffset>::__search( const Key& k, search_mode mode ) const {
+    rb_tree_node_base * y = NULL; 	// Last node which is not less than k. 
+    rb_tree_node_base * h = header;
+    for( rb_tree_node_base * x = h->parent_link; x; ) {
+        if( key_comparison( key(x), k) ) {
+	    x = x->child_link[RIGHT];
+        } else {
+	    y = x;
+	    x = x->child_link[LEFT];
+        } 
+    }
+
+    rb_tree_node_base * result;
+    if( y==NULL ) {
+	result = h;
+    } else if( mode==LOWER_BOUND ) {
+	result = y;
+    } else if( key_comparison(k, key(y) ) ) {
+	result = h;
+    } else {
+	result = y;	
+    }
+    return result;
+}
+
+template<class Key, class Compare, size_t KeyOffset>
+rb_tree_node_base * rb_tree<Key,Compare,KeyOffset>::__upper_bound( const Key& k ) const {
+    rb_tree_node_base * h = header;
+    rb_tree_node_base * y = h; 	
+    for( rb_tree_node_base * x = h->parent_link; x; ) {
+        if( key_comparison( k, key(x)) ) {
+	    y = x;
+	    x = x->child_link[LEFT];
+        } else {
+	    x = x->child_link[RIGHT];
+        } 
+    }
+    return y;
+}
+
+template<class Key, class Compare, size_t KeyOffset>
+std::pair<rb_tree_node_base*,rb_tree_node_base*>
+rb_tree<Key,Compare,KeyOffset>::__equal_range_unique( const Key& k ) {
+    rb_tree_node_base * node_lower = __search(k,rb_tree_base::LOWER_BOUND);
+    rb_tree_node_base * node_upper;
+    if( node_lower==header || key_comparison( k, key(node_lower) ) ) {
+	// Covers three cases:
+	//	   1.  Key is after end(), so upper_node==header.
+	//	   2.  Key is before begin(), so upper_node==begin().
+	//	   3.  Key should go in between existing elements.  
+	node_upper=node_lower;
+    } else { 
+	// __search found exact match.
+	node_upper = __next(node_lower);
+    }
+    return std::make_pair(node_lower,node_upper);
+}
+
+} /* namespace __kai */
+
+#endif /* __KAI_TREE */

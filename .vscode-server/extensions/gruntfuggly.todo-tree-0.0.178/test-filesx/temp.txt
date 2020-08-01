@@ -1,0 +1,16 @@
+      xxx // BUG Some (#23) comment
+      // TO\DO Some comment
+      // FIXME Some comment!
+      // TODO Something
+      // !TODO Some comment
+      // ? Should I reformat this?
+      // ^ Some comment
+      //+ Some comment
+// @TODO ish
+
+todo!("Implement this feature");
+
+      - [ ] Do Something No!!
+      - [ ] Do Something
+      - [ ] Do Something
+      - [ ] Something else

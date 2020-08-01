@@ -1,0 +1,395 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+#ifndef __KAI_BITSET
+#define __KAI_BITSET
+
+#include <mcompile.h>
+#include <cstddef>	/* for size_t */
+#include <string>
+#include <stdexcept>
+#include <iosfwd>
+#include <kai_bitvector>
+
+namespace __kai {
+
+void throw_invalid_value_in_string();
+void throw_bitset_overflow();
+void throw_range();
+
+template< class charT, class traits, class Allocator >
+void bitset_from_string( unsigned long chunk[],
+			 int N, 
+			 const std::basic_string<charT, traits, Allocator>& str, 
+			 typename std::basic_string<charT, traits, Allocator>::size_type pos, 
+			 typename std::basic_string<charT, traits, Allocator>::size_type n )
+{
+    if (pos > str.size ()) __kai::throw_range();
+
+    __kai::reset( chunk, (N+__kai::chunk_bits-1) / __kai::chunk_bits );
+    size_t M = str.size () - pos;
+    if( M>n ) M = n;
+    if( M>N ) M = n;
+    for ( size_t index = 0; index < M; ++index)
+    {
+        switch (str[pos+M-1-index])
+        {
+            case '0' : break;
+            case '1' : chunk[index/__kai::chunk_bits] |= (__kai::chunk_t)1<<(index%__kai::chunk_bits); break;
+            default  : __kai::throw_invalid_value_in_string(); 
+        }
+    }
+}
+
+
+template< class charT, class traits, class Allocator >
+std::basic_string< charT, traits, Allocator > bitset_to_string( const unsigned long chunk[], size_t N )
+{
+    std::basic_string<charT, traits, Allocator> convert;
+    //
+    // Allocate space for N chars
+    //
+    convert.reserve (N); 
+    for (size_t index = 0; index < N; index++) {
+	size_t j = N-1-index;
+        convert.append(1, ("01"[(chunk[j/__kai::chunk_bits] >> j%__kai::chunk_bits) & 1] ));
+    }
+    return convert;
+}
+
+template<class charT, class traits>
+std::basic_istream<charT, traits>& 
+read_bitset( std::basic_istream<charT, traits>& is, unsigned long chunk[], size_t N ) {
+    std::basic_string<charT, std::char_traits<char> >  store;
+    size_t index = 0;
+
+    store.reserve (N);
+    while (!is.eof () && (index < N))
+    {
+       charT ch;
+       is.get (ch);
+       if (!is) break;
+       if ((ch == '0') || (ch == '1')) {
+          store.append (1, ch);
+          ++index;
+       } else {
+          is.putback (ch);
+          break;
+       }
+    }
+    if (index == 0) is.setstate (std::ios_base::failbit);
+    if (index < N) store.resize (N, '0');
+    bitset_from_string( chunk, N, store, 0, (size_t)-1 );
+    return is;
+}
+
+template<class charT, class traits>
+std::basic_ostream<charT, traits>&
+write_bitset( std::basic_ostream<charT, traits>& os, const unsigned long chunk[], size_t N )
+{
+    return os << __kai::bitset_to_string<charT, traits, std::allocator<charT> >( chunk, N );
+}
+
+} /* namespace __kai */
+
+namespace std {
+
+// N.B. The implementation contains many conditional comparisons such
+// as N==1 to get faster performance in the case that there is a single 
+// chunk.  These are trivially optimized at compile time.
+template <size_t N>
+class bitset {
+private:
+    static const int n_chunk = (N+__kai::chunk_bits-1) / __kai::chunk_bits;
+	// n_chunk is the number of chunks in the representation.
+    static const __kai::chunk_t last_mask = N % __kai::chunk_bits ? 
+					    ((__kai::chunk_t)1 << (N % __kai::chunk_bits)) - 1 :
+					    ~(__kai::chunk_t)0; 
+	// last_mask is a mask that indicates the valid bits in chunk[n_chunk-1]
+	// The invalid bits are always 0.
+public:
+    typedef __kai::bit_reference reference;
+    //
+    // 23.2.1.1 constructors
+    //
+    bitset() {reset();}
+    bitset(unsigned long val) {
+	if( n_chunk>0 ) {
+	    if( n_chunk==1 ) {
+		chunk[0] = val & last_mask;
+	    } else {
+		chunk[0] = val;
+		__kai::reset( chunk+1, n_chunk-1 ); 
+	    }
+	}
+    }   
+
+
+    template <class charT, class traits, class Allocator>
+    explicit
+    bitset(const basic_string<charT, traits, Allocator>& str,
+	   typename basic_string<charT, traits, Allocator>::size_type pos = 0,
+	   typename basic_string<charT, traits, Allocator>::size_type n = 
+	   basic_string<charT, traits, Allocator>::npos) {
+	__kai::bitset_from_string( chunk, N, str, pos, n );
+    }
+#if KAI_NONSTD_BITSET
+    // For backwards compatibility with KCC 3.2 and April 1995 draft, we provide
+    // a non-templated constructor with the old behavior.  This is particularly
+    // handy in codes that depend on examples such as bitset("1010011"), which
+    // are no longer supported by the new behavior.
+    explicit
+    bitset(const string& str, size_t pos = 0, size_t n = size_t(-1)) {
+	__kai::bitset_from_string( chunk, N, str, pos, n );
+    }	    ;
+#endif /* KAI_NONSTD_BITSET */
+
+    //
+    // 23.2.1.2  bitset operations:
+    //
+    bitset<N>& operator&=(const bitset<N>& rhs) {
+	if( n_chunk==1 )
+	    chunk[0] &= rhs.chunk[0];
+	else
+	    __kai::vector_and( chunk, chunk, rhs.chunk, n_chunk );
+	return *this; 
+    };
+    
+    bitset<N>& operator|=(const bitset<N>& rhs) {
+	if( n_chunk==1 )
+	    chunk[0] |= rhs.chunk[0];
+	else
+	    __kai::vector_or( chunk, chunk, rhs.chunk, n_chunk );
+	return *this;
+    };
+
+    bitset<N>& operator^=(const bitset<N>& rhs) {
+	if( n_chunk==1 )
+	    chunk[0] ^= rhs.chunk[0];
+	else
+	    __kai::vector_xor( chunk, chunk, rhs.chunk, n_chunk );
+	return *this;
+    };
+
+    bitset<N>& operator<<=(size_t pos) {
+	if( n_chunk==1 ) 
+	    chunk[0] = pos>=N ? 0 : (chunk[0] << pos & last_mask);
+	else 
+	    __kai::shift_left(chunk, chunk, pos, n_chunk, last_mask);
+	return *this;
+    }
+
+    bitset<N>& operator>>=(size_t pos) {
+	if( n_chunk==1 ) 
+	    chunk[0] = pos>=N ? 0 : (chunk[0] >> pos);
+	else 
+	    __kai::shift_right(chunk, chunk, pos, n_chunk);
+	return *this;
+    }
+
+    bitset<N>& set() {
+	if( n_chunk==1 )
+	    chunk[0] = last_mask;
+	else 
+	    __kai::set( chunk, n_chunk, last_mask ); 
+	return *this;
+    }
+
+    bitset<N>& set(size_t pos, int val = true) {
+	(*this)[pos] = val;
+	return *this;
+    }
+
+    bitset<N>& reset() {
+	if( n_chunk==1 )
+	    chunk[0] = 0;
+	else
+	    __kai::reset( chunk, n_chunk ); 
+	return *this;
+    }
+
+    bitset<N>& reset(size_t pos) {return set(pos,false);}
+
+    bitset<N> operator~() const {
+	bitset<N> result;
+	if( n_chunk==1 )
+	    result.chunk[0] = ~chunk[0] & last_mask;
+	else
+	    __kai::vector_not( result.chunk, chunk, n_chunk, last_mask );
+	return result;
+    }
+
+    bitset<N>& flip() {
+	if( n_chunk==1 )
+	    chunk[0] = ~chunk[0] & last_mask;
+	else
+	    __kai::vector_not( chunk, chunk, n_chunk, last_mask );
+	return *this;
+    }
+
+    bitset<N>& flip(size_t pos) {
+	(*this)[pos].flip();
+	return *this;
+    }
+
+    //
+    // element access
+    //
+    reference operator[](size_t pos) {
+        if (pos >= N) __kai::throw_range();
+        return bitset<N>::reference( n_chunk, chunk, pos );
+    }
+
+    //
+    // conversions
+    //
+    unsigned long to_ulong() const;
+
+    template <class charT, class traits, class Allocator>
+    basic_string<charT, traits, Allocator> to_string() const {
+	return __kai::bitset_to_string<charT, traits, Allocator>( chunk, N );
+    }
+#if KAI_NONSTD_BITSET
+    // For backwards compatibility with KCC 3.2 and April 1995 draft, we provide
+    // a non-templated to_string() with the old behavior.  Since the new to_string
+    // must always have its template arguments explicitly specified, there's little
+    // chance of conflict here.
+    string to_string() const {
+	return __kai::bitset_to_string<char,std::char_traits<char>,std::allocator<char> >( chunk, N );
+    }
+#endif /* KAI_NONSTD_BITSET */    
+
+    //
+    // utilities
+    //
+    size_t count() const {return __kai::count( chunk, n_chunk );}
+    size_t size() const {return N;}
+
+    //
+    // comparisons
+    //
+    bool operator==(const bitset<N>& rhs) const {
+	return n_chunk==1 ?
+	       chunk[0]==rhs.chunk[0] :
+	       __kai::equal( chunk, rhs.chunk, n_chunk );
+    }
+
+    bool operator!=(const bitset<N>& rhs) const {return !(*this==rhs);}
+
+    bool test( size_t pos ) const {
+        if( pos >= N ) __kai::throw_range();
+        return 0 != ((n_chunk==1 ? chunk[0] : chunk[pos/__kai::chunk_bits]) & 
+                     (__kai::chunk_t)1<<(pos % __kai::chunk_bits));
+    }
+
+    bool any() const {return n_chunk==1 ? chunk[0]!=0 : __kai::any( chunk, n_chunk );}
+    bool none() const {return !__kai::any( chunk, n_chunk );}
+    bitset<N> operator<<(size_t pos) const;
+    bitset<N> operator>>(size_t pos) const;
+
+    template<size_t M> friend bitset<M> operator&(const bitset<M>& lhs, const bitset<M>& rhs);
+    template<size_t M> friend bitset<M> operator|(const bitset<M>& lhs, const bitset<M>& rhs);
+    template<size_t M> friend bitset<M> operator^(const bitset<M>& lhs, const bitset<M>& rhs);
+
+    template<class charT, class traits, size_t M>
+    friend basic_istream<charT, traits>& operator>>( basic_istream<charT, traits>& is, bitset<M>& x );
+    template<class charT, class traits, size_t M>
+    friend basic_ostream<charT, traits>& operator<<( basic_ostream<charT, traits>& os, const bitset<M>& x );
+
+private:
+
+    __kai::chunk_t chunk[n_chunk];
+
+    bitset( __kai::no_initialization_t ) {}
+};
+
+template <size_t N>
+inline 
+unsigned long bitset<N>::to_ulong() const
+{
+    if( n_chunk==0 ) {
+	return 0;
+    } else if( n_chunk==1 ) {
+	return chunk[0] & last_mask;
+    } else {
+	if( __kai::any( chunk+1, n_chunk-1 ) ) 
+            __kai::throw_bitset_overflow();
+	return chunk[0];
+    }
+} 
+
+template <size_t N>
+inline 
+bitset<N> bitset<N>::operator<<(size_t pos) const
+{
+    bitset<N> result( __kai::NO_INITIALIZATION );
+    if( n_chunk==1 ) 
+	result.chunk[0] = pos>=N ? 0 : (chunk[0] << pos & last_mask);
+    else 
+        __kai::shift_left( result.chunk, chunk, pos, n_chunk, last_mask );
+    return result;
+} 
+
+template <size_t N>
+inline 
+bitset<N> bitset<N>::operator>>(size_t pos) const
+{
+    bitset<N> result( __kai::NO_INITIALIZATION );
+    if( n_chunk==1 ) 
+	result.chunk[0] = pos>=N ? 0 : (chunk[0] >> pos);
+    else 
+        __kai::shift_right( result.chunk, chunk, pos, n_chunk );
+    return result;
+}
+
+// 23.3.5.3 bitset operations:
+template <size_t N>
+inline 
+bitset<N> operator&(const bitset<N>& lhs, const bitset<N>& rhs) {
+    auto bitset<N> result( __kai::NO_INITIALIZATION );
+    if( bitset<N>::n_chunk==1 )
+	result.chunk[0] = lhs.chunk[0] & rhs.chunk[0];
+    else 
+    __kai::vector_and( result.chunk, lhs.chunk, rhs.chunk, bitset<N>::n_chunk );
+    return result;
+}
+
+template <size_t N>
+inline 
+bitset<N> operator|(const bitset<N>& lhs, const bitset<N>& rhs) {
+    auto bitset<N> result( __kai::NO_INITIALIZATION );
+    if( bitset<N>::n_chunk==1 )
+	result.chunk[0] = lhs.chunk[0] | rhs.chunk[0];
+    else 
+	__kai::vector_or( result.chunk, lhs.chunk, rhs.chunk, bitset<N>::n_chunk );
+    return result;
+}
+
+template <size_t N>
+inline 
+bitset<N> operator^(const bitset<N>& lhs, const bitset<N>& rhs) {
+    auto bitset<N> result( __kai::NO_INITIALIZATION );
+    if( bitset<N>::n_chunk==1 )
+	result.chunk[0] = lhs.chunk[0] ^ rhs.chunk[0];
+    else 
+	__kai::vector_xor( result.chunk, lhs.chunk, rhs.chunk, bitset<N>::n_chunk );
+    return result;
+}
+
+template<class charT, class traits, size_t N>
+inline basic_istream<charT, traits>& operator>>(basic_istream<charT, traits>& is, bitset<N>& x) {
+    return __kai::read_bitset( is, x.chunk, N );
+}
+
+template<class charT, class traits, size_t N>
+inline basic_ostream<charT, traits>& operator<<(basic_ostream<charT, traits>& os, const bitset<N>& x) {
+    return __kai::write_bitset( os, x.chunk, N );
+}
+
+} /* namespace std */
+
+#endif /* __KAI_BITSET */
+

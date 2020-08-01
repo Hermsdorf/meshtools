@@ -1,0 +1,7 @@
+gcc_HEADERS
+gcc_HEADERS/hdrs
+gcc_HEADERS/hdrs2
+/usr/local/include
+/usr/local/packages/gcc-4.2.0/include
+/usr/local/packages/gcc-4.2.0/lib/gcc/x86_64-unknown-linux-gnu/4.2.0/include
+/usr/include

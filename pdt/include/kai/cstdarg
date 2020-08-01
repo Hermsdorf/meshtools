@@ -1,0 +1,12 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+#ifndef __KAI_CSTDARG
+#define __KAI_CSTDARG
+
+#include <stdarg.h>
+
+#endif /* __KAI_CSTDARG */

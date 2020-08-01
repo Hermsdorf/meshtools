@@ -1,0 +1,1290 @@
+Looking for git in: git
+Using git 2.17.1 from git
+> git rev-parse --show-toplevel
+> git rev-parse --git-dir
+Open repository: /home/guilherme/meshtools
+> git fetch
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git check-ignore -v -z --stdin
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+Missing or invalid credentials.
+Skip silent fetch commands
+Missing or invalid credentials.
+Skip silent fetch commands
+remote: HTTP Basic: Access denied
+fatal: Authentication failed for 'https://gitlab.com/camata/meshtools.git/'
+> git config --global user.email
+> git config --global user.name
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show -s --format=%an <%ae> [%ai] 9cf4c2169ab3fe0551a93f8f54a1321ed3c53320
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z 9cf4c2169ab3fe0551a93f8f54a1321ed3c53320
+> git show -s --format=%an <%ae> [%ai] 46e0b2d2a1e353243786b9dfddca8ac999a3af03
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z 46e0b2d2a1e353243786b9dfddca8ac999a3af03
+> git show -s --format=%an <%ae> [%ai] ecd1318f802f0ca56fe8ec86075c930846f08a83
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z ecd1318f802f0ca56fe8ec86075c930846f08a83
+> git show -s --format=%an <%ae> [%ai] 84c208c47f920997f747a3acf49363fc2fcca36a
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z 84c208c47f920997f747a3acf49363fc2fcca36a
+> git show -s --format=%an <%ae> [%ai] 2873b34fde658c7b6c386f3ac01888d9ded5552f
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z 2873b34fde658c7b6c386f3ac01888d9ded5552f
+> git show -s --format=%an <%ae> [%ai] 6dd3ef760d895b9d93eeebc7dbb213f3d72cb433
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z 6dd3ef760d895b9d93eeebc7dbb213f3d72cb433
+> git show -s --format=%an <%ae> [%ai] b45130a35a269cbd499f87ad88f5232b65364ade
+> git show -s --format=%an <%ae> [%ai] 7647f074a2c25b7a97f72fcf9a798192e63c9a29
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z b45130a35a269cbd499f87ad88f5232b65364ade
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z 7647f074a2c25b7a97f72fcf9a798192e63c9a29
+> git show -s --format=%an <%ae> [%ai] 0fd526a434cd7cdb401b277070b4accb6dcf2c80
+> git show -s --format=%an <%ae> [%ai] 0fd526a434cd7cdb401b277070b4accb6dcf2c80
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z 0fd526a434cd7cdb401b277070b4accb6dcf2c80
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z 0fd526a434cd7cdb401b277070b4accb6dcf2c80
+> git show -s --format=%an <%ae> [%ai] 4094d21f1b708b7c7f5be3feec5eb123b33b9783
+> git show -s --format=%an <%ae> [%ai] 4094d21f1b708b7c7f5be3feec5eb123b33b9783
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z 4094d21f1b708b7c7f5be3feec5eb123b33b9783
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z 4094d21f1b708b7c7f5be3feec5eb123b33b9783
+> git show -s --format=%an <%ae> [%ai] 81939d53884566b7b9074daf0d7cf407da24a0aa
+> git show -s --format=%an <%ae> [%ai] 81939d53884566b7b9074daf0d7cf407da24a0aa
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z 81939d53884566b7b9074daf0d7cf407da24a0aa
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z 81939d53884566b7b9074daf0d7cf407da24a0aa
+> git show -s --format=%an <%ae> [%ai] d238d1726ccccfa989f42fb160db9999987c2011
+> git show -s --format=%an <%ae> [%ai] d238d1726ccccfa989f42fb160db9999987c2011
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z d238d1726ccccfa989f42fb160db9999987c2011
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z d238d1726ccccfa989f42fb160db9999987c2011
+> git show -s --format=%an <%ae> [%ai] 35e45c8f9141ab6c039f27f8117fee003fbd50d8
+> git show -s --format=%an <%ae> [%ai] 35e45c8f9141ab6c039f27f8117fee003fbd50d8
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z 35e45c8f9141ab6c039f27f8117fee003fbd50d8
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z 35e45c8f9141ab6c039f27f8117fee003fbd50d8
+> git show -s --format=%an <%ae> [%ai] 7a23a178a60130ceed8bf9972ae575f407fa4097
+> git show -s --format=%an <%ae> [%ai] 7a23a178a60130ceed8bf9972ae575f407fa4097
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z 7a23a178a60130ceed8bf9972ae575f407fa4097
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z 7a23a178a60130ceed8bf9972ae575f407fa4097
+> git show -s --format=%an <%ae> [%ai] 9cb5c7769663d2c72f56542a3c2d210ea4098c38
+> git show -s --format=%an <%ae> [%ai] 9cb5c7769663d2c72f56542a3c2d210ea4098c38
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z 9cb5c7769663d2c72f56542a3c2d210ea4098c38
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z 9cb5c7769663d2c72f56542a3c2d210ea4098c38
+> git show -s --format=%an <%ae> [%ai] 2e48651d28c3234dccac6522be54ad56bdb00c6b
+> git show -s --format=%an <%ae> [%ai] 2e48651d28c3234dccac6522be54ad56bdb00c6b
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z 2e48651d28c3234dccac6522be54ad56bdb00c6b
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z 2e48651d28c3234dccac6522be54ad56bdb00c6b
+> git show -s --format=%an <%ae> [%ai] bd35274001c3100778ed109ae43ea171f1086808
+> git show -s --format=%an <%ae> [%ai] bd35274001c3100778ed109ae43ea171f1086808
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z bd35274001c3100778ed109ae43ea171f1086808
+> git show -s --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z bd35274001c3100778ed109ae43ea171f1086808
+> git show -s --format=%an <%ae> [%ai] 51b8b03ff1d2941ebbca99c5da72917f9d433d60
+> git show -s --format=%an <%ae> [%ai] 51b8b03ff1d2941ebbca99c5da72917f9d433d60
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git show --textconv :src/mesh_part.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/mesh_part.cpp
+> git cat-file -s 2696d85b22e97599e3784bb32463f1f94ffcf84b
+> git show --textconv :src/main.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/main.cpp
+> git cat-file -s 23e05fbd3d57557cf782ea0ed87871eb33bfac83
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git status -z -u
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git status -z -u
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git status -z -u
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git status -z -u
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git symbolic-ref --short HEAD
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git status -z -u
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git check-ignore -v -z --stdin
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git show --textconv :src/mesh.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/mesh.cpp
+> git cat-file -s 05ff5d7aff83b66850155230a147d2b83cf604da
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git show --textconv :src/main.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/main.cpp
+> git cat-file -s 23e05fbd3d57557cf782ea0ed87871eb33bfac83
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git show --textconv :src/mesh.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/mesh.cpp
+> git cat-file -s 05ff5d7aff83b66850155230a147d2b83cf604da
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :src/mesh.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/mesh.cpp
+> git cat-file -s 05ff5d7aff83b66850155230a147d2b83cf604da
+> git show --textconv :src/mesh_part.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/mesh_part.cpp
+> git cat-file -s 2696d85b22e97599e3784bb32463f1f94ffcf84b
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git status -z -u
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :src/mesh.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/mesh.cpp
+> git cat-file -s 05ff5d7aff83b66850155230a147d2b83cf604da
+> git show --textconv :src/mesh_part.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/mesh_part.cpp
+> git cat-file -s 2696d85b22e97599e3784bb32463f1f94ffcf84b
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/mesh_partitionObj.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh_partitionObj.h
+> git check-ignore -v -z --stdin
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :include/mesh_partitionObj.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh_partitionObj.h
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git show --textconv :include/mesh_partitionObj.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh_partitionObj.h
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :include/rcm.hpp
+> git ls-files --stage -- /home/guilherme/meshtools/include/rcm.hpp
+> git cat-file -s 1e0f61faf38660cbdd45c2e537ac6de7d9cc26c9
+> git show --textconv :include/meshObjetos.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObjetos.h
+> git show --textconv :include/meshObj.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObj.h
+> git check-ignore -v -z --stdin
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git show --textconv :include/meshObj.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObj.h
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git show --textconv :include/meshObj.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObj.h
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git show --textconv :include/mesh_partitionObj.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh_partitionObj.h
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git check-ignore -v -z --stdin
+> git check-ignore -v -z --stdin
+> git check-ignore -v -z --stdin
+> git show --textconv :src/main.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/main.cpp
+> git cat-file -s 23e05fbd3d57557cf782ea0ed87871eb33bfac83
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git show --textconv :include/mesh_partitionObj.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh_partitionObj.h
+> git show --textconv :include/meshObj.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/meshObj.h
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/mesh_partitionObj.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh_partitionObj.h
+> git show --textconv :src/meshObjetos.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/meshObjetos.cpp
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :include/mesh_partitionObj.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh_partitionObj.h
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git fetch
+Missing or invalid credentials.
+Skip silent fetch commands
+Missing or invalid credentials.
+Skip silent fetch commands
+remote: HTTP Basic: Access denied
+fatal: Authentication failed for 'https://gitlab.com/camata/meshtools.git/'
+> git show --textconv HEAD:include/mesh.h
+> git ls-tree -l HEAD -- /home/guilherme/meshtools/include/mesh.h
+> git show --textconv HEAD:src/main.cpp
+> git ls-tree -l HEAD -- /home/guilherme/meshtools/src/main.cpp
+> git show --textconv :include/mesh.h
+> git ls-files --stage -- /home/guilherme/meshtools/include/mesh.h
+> git cat-file -s dd52097019f687db63ef51371ecc0cc440d27487
+> git log --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%B -z -n21 -- /home/guilherme/meshtools/include/mesh.h
+> git show --textconv :src/mesh.cpp
+> git ls-files --stage -- /home/guilherme/meshtools/src/mesh.cpp
+> git cat-file -s 05ff5d7aff83b66850155230a147d2b83cf604da

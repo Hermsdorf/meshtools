@@ -1,0 +1,51 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+#ifndef __KAI_CWCTYPE
+#define __KAI_CWCTYPE
+
+#if defined(__hpux) || defined(__SR8000)
+#include <wchar.h>
+#else
+#include <wctype.h>
+#endif
+
+namespace std {
+using ::wint_t;
+using ::wctype_t;
+
+using ::towlower;
+using ::towupper;
+
+using ::iswalnum;
+using ::iswalpha;
+using ::iswcntrl;
+using ::iswctype;
+using ::iswdigit;
+using ::iswgraph;
+using ::iswlower;
+using ::iswprint;
+using ::iswpunct;
+using ::iswspace;
+using ::iswupper;
+using ::iswxdigit;
+
+using ::wctype;
+
+#if defined(__sparc) && defined(_WIDEC_H)
+  /* Solaris 2.5 libraries are missing a few functions */
+#else
+#if !defined(__hpux) && !defined(__SR8000) && !defined(__sgi)
+using ::wctrans_t;
+using ::towctrans;
+using ::wctrans;
+#endif
+#endif
+
+}  /* namespace std */
+
+
+#endif /* __KAI_CWCTYPE */

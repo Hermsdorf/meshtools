@@ -1,0 +1,19 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+#ifndef __KAI_CSIGNAL
+#define __KAI_CSIGNAL
+
+#include <signal.h>
+
+namespace std {
+using ::sig_atomic_t;
+using ::raise;
+using ::signal;
+}  /* namespace std */
+
+
+#endif /* __KAI_CSIGNAL */

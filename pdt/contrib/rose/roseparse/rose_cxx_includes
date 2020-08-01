@@ -1,0 +1,12 @@
+g++_HEADERS
+g++_HEADERS/hdrs
+g++_HEADERS/hdrs1
+g++_HEADERS/hdrs2
+g++_HEADERS/hdrs5
+/usr/local/packages/gcc-4.2.0/lib/gcc/x86_64-unknown-linux-gnu/4.2.0/../../../../include/c++/4.2.0
+/usr/local/packages/gcc-4.2.0/lib/gcc/x86_64-unknown-linux-gnu/4.2.0/../../../../include/c++/4.2.0/x86_64-unknown-linux-gnu
+/usr/local/packages/gcc-4.2.0/lib/gcc/x86_64-unknown-linux-gnu/4.2.0/../../../../include/c++/4.2.0/backward
+/usr/local/include
+/usr/local/packages/gcc-4.2.0/include
+/usr/local/packages/gcc-4.2.0/lib/gcc/x86_64-unknown-linux-gnu/4.2.0/include
+/usr/include

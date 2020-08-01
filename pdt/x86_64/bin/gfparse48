@@ -1,0 +1,210 @@
+#!/bin/bash 
+COMPILER_OPTS=" -D_GNU_SOURCE "
+
+#!/bin/sh 
+
+
+
+
+BINDIR=/home/guilherme/pdt/x86_64//bin
+PDTDIR=/home/guilherme/pdt
+FLINTHOME=${PDTDIR}/etc
+export FLINTHOME
+STDINC=
+VERBOSE=off
+PDB=pdtfilenotspecified
+
+if [ "x$TMPDIR" = "x" ]; then
+  TMP="/tmp"
+else
+  TMP=${TMPDIR}
+fi
+
+# Creation of exclude.txt to exclude modules that haven't been compiler by gfortran 4.8
+declare -a EXCLUDELIST=() #("mpi" "iso_c_binding")
+EXCLUDEDIR="/tmp/pdt-${USER}"
+mkdir -p ${EXCLUDEDIR}
+EXCLUDEFILE=${EXCLUDEDIR}/exclude.txt
+rm -f ${EXCLUDEFILE}
+# commented out right now because EXCLUDELIST is empty
+# echo ${EXCLUDELIST[0]} > ${EXCLUDEFILE}
+# for ((i=1;i<"${#EXCLUDELIST[@]}";i++)); do
+#     echo ${EXCLUDELIST[$i]} >> ${EXCLUDEFILE}
+# done
+
+# place it at the start of the path so that cc1/gfortran/f951 from PDT are used
+GFORTRAN="PATH=${BINDIR}/pdt_gfortran48:$PATH gfortran"
+
+
+PDTOPT=""
+if [ $# = 0 ] ; then
+  echo "Usage: `basename $0` [-v] [-o<file>] [files]" 1>&2
+  exit 1
+fi
+
+if [ ! -f ${BINDIR}/pdt_gfortran48/gfortran ] ; then
+  echo "gfparse48 invoking gfparse ..."
+  ${BINDIR}/gfparse $* -v
+  exit
+fi
+
+
+# default compiler options
+
+# ---------------------------------------------
+# local options, if any
+LOCOPT=" " 
+
+flintform="false"
+preprocess="no"
+
+for allargs in "$@" ; do
+    arg=`echo "x$allargs" | sed -e 's/^x//' -e 's/"/\\\"/g' -e s,\',%@%\',g -e 's/%@%/\\\/g' -e 's/ /\\\ /g'`
+
+    if [ "y$arg" = "y-v" ] ; then
+	VERBOSE=on
+    else
+
+	if [ "$flintform" = "true" ] ; then
+	    if [ "y$arg" = "yfree" ] ; then
+		SPAWNARGS="$SPAWNARGS -ffree-form"
+	    fi
+	    if [ "y$arg" = "yfixed" ] ; then
+		SPAWNARGS="$SPAWNARGS -ffixed-form"
+	    fi
+	    flintform="false"
+	else
+        
+      # CHECK for -o<file> option
+	    testarg=${arg#-o}
+	    if [ "y$testarg" != "y$arg" ] ; then
+		PDB=$testarg
+	    fi
+
+	    if [ "y$arg" = "y-R" ] ; then
+		flintform="true"
+	    elif [ "y$testarg" = "y-p" ] ; then
+		preprocess="yes"
+#		SPAWNARGS="$SPAWNARGS -fwe-did-preprocessing"
+	    elif [[ "$arg" = -Exclude=* ]] ; then
+		mod=${arg:9}
+		echo ${mod,,} >> ${EXCLUDEFILE}
+	    elif [[ "$arg" = -Exclude* ]] ; then
+		mod=${arg:8}
+		echo ${mod,,} >> ${EXCLUDEFILE}
+	    elif [[ (${arg:0:1} != "-") ]] ; then
+		INPUTFILE=${arg}
+	    else
+		SPAWNARGS="$SPAWNARGS $arg"
+	    fi
+	fi
+    fi
+done
+
+# for ppc64le we have to remove/deal with REAL128 etc.
+machine_arch=`uname -m`
+if [ "$machine_arch" = "ppc64le" -o "$machine_arch" = "aarch64" ] ; then #arm64linux
+    ARCHOPT="-cpp -DREAL128=REAL64 -Dreal128=real64 -I${EXCLUDEDIR}"
+    echo mpif-sizeof.h >> ${EXCLUDEFILE}
+    # remove the "kind = n" where n >= 16
+    EXCLUDEFILE=${EXCLUDEDIR}/exclude.txt
+    rm -f ${EXCLUDEDIR}/${INPUTFILE}
+    sed 's/[Kk][Ii][Nn][Dd][[:space:]]*[=][[:space:]]*\(16\|32\|64\|128\)/kind=8/g' ${INPUTFILE} >> ${EXCLUDEDIR}/${INPUTFILE}
+    INPUTFILE=${EXCLUDEDIR}/${INPUTFILE}
+# add number of mod names being excluded to front of file
+    wc -l < ${EXCLUDEFILE} | cat - ${EXCLUDEFILE} > ${EXCLUDEDIR}/tmp && mv ${EXCLUDEDIR}/tmp ${EXCLUDEFILE}
+fi
+
+
+# What is the name of the first file on the commandline? 
+for arg in "$@" ; do
+  case $arg in 
+    *.? | *.?? | *.??? ) INF=$arg
+         break
+    ;;
+  esac
+
+done
+
+#
+# if the -o<file> option is not specified, create the pdb file based on the
+# the name of the first source file
+#
+
+if [ $PDB = pdtfilenotspecified ] ; then
+  case ${INF} in
+    *.f)	PDB=`basename ${INF} .f`.pdb
+	;;
+    *.F)	PDB=`basename ${INF} .F`.pdb
+	;;
+    *.F90)	PDB=`basename ${INF} .F90`.pdb
+	;;
+    *.f90)	PDB=`basename ${INF} .f90`.pdb
+	;;
+    *.f95)	PDB=`basename ${INF} .f95`.pdb
+	;;
+    *)	PDB=${INF}.pdb
+	;;
+  esac
+fi
+
+if [ ! -r ${INF} ]; then
+  echo "PDT: ${INF} not readable"
+  exit 1
+fi
+
+if [ ${PDB} = ".pdb" ] ; then
+  echo "ERROR: Source file not specified."
+  echo "PDT accepts upto three letter suffixes in file names (e.g. foo.f90)"
+  exit 1
+fi
+
+
+#GF_ARGS="-c -o /dev/null -fdump-parse-tree"
+GF_ARGS="-c -o /dev/null -fdump-fortran-original -fsyntax-only"
+#
+# run the gfortran parser
+#
+
+ERROR=false
+export GFORTRAN_PDB_FILENAME="pdtgf$$.pdb"
+if [ $VERBOSE = on ] ; then
+    # print the output of the pdtflint command
+    echo "	gfortran ${SPAWNARGS} --> ${PDB}"
+    echo "Executing ${GFORTRAN} ${GF_ARGS} ${ARCHOPT} ${INPUTFILE} ${SPAWNARGS} ${LOCOPT} ${EDGOPT}"
+    rm -f $GFORTRAN_PDB_FILENAME
+    eval ${GFORTRAN} ${GF_ARGS} ${ARCHOPT} ${INPUTFILE} ${SPAWNARGS} ${LOCOPT} ${EDGOPT}
+    if [ $? != 0 ] ; then 
+        ERROR=true
+    fi
+    mv $GFORTRAN_PDB_FILENAME ${PDB}
+else
+    # disable printing of stdout/stderr unless there is an error
+    rm -f $GFORTRAN_PDB_FILENAME
+    eval ${GFORTRAN} ${GF_ARGS} ${ARCHOPT} ${INPUTFILE} ${SPAWNARGS} ${LOCOPT} ${EDGOPT} 1> /dev/null 2>&1
+    if [ $? != 0 ] ; then
+        ERROR=true
+        rm -f $GFORTRAN_PDB_FILENAME
+        eval ${GFORTRAN} ${GF_ARGS} ${ARCHOPT} ${INPUTFILE} ${SPAWNARGS} ${LOCOPT} ${EDGOPT}
+    fi
+	  mv $GFORTRAN_PDB_FILENAME ${PDB}
+fi
+
+# If gfparse can't produce a valid PDB file, invoke gfparse. This happens when
+# it produces a file with two lines <PDB 3.0> and language fortran. 
+if [ -r ${PDB} ]; then 
+  wordcount=`wc -c ${PDB} | awk '{print $1;}'` 
+else
+  wordcount=0
+fi 
+
+if [ $wordcount -eq 23  -o $wordcount -eq 0 ]; then
+  echo "Error ${PDB}: Invoking gfparse $*"
+  ${BINDIR}/gfparse $* 
+fi
+
+# CLEANUP
+rm -f ${EXCLUDEDIR}/${INPUTFILE}
+rm -f ${EXCLUDEFILE}
+
+# EOF

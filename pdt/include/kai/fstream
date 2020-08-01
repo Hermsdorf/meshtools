@@ -1,0 +1,795 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **
+ **  Class basic_filebuf rewritten by ADR for order of magnitude improvement in speed.
+ **  Modena's glacial version *had no buffer* in the basic_filebuf itself!
+ **/
+/**
+ **  Lib++  : The Modena C++ Standard Library,
+ **           Version 2.4, October 1997
+ **
+ **  Copyright (c) 1995-1997 Modena Software Inc.
+ **/
+#ifndef __KAI_FSTREAM
+#define __KAI_FSTREAM
+
+#include <mcompile.h>
+#include <iostreambase>	/* KAI change - Modena included overly-wide <iostream> */
+#include <locale> 	/* Need class codecvt and codecvt_base from here */
+#include <cstdio>
+#include <fcntl.h>
+#include <cassert>
+
+namespace __kai {
+    using namespace std;
+    FILE *open_file(const char* s, ios_base::openmode mode);
+}
+
+namespace std {
+
+template<class charT, class traits>
+class basic_filebuf : public basic_streambuf<charT, traits>
+{
+    // Grant friendship to allow cin,cout,err,clog to be created and/or sync with stdio.
+    friend class ios_base::Init;	
+    friend bool ios_base::sync_with_stdio(bool);
+    
+    typedef codecvt_base::result result;
+    typedef typename traits::state_type state_type;
+    typedef codecvt<charT, char, state_type> codecvt_facet_type;
+    const codecvt_facet_type *a_codecvt;
+    typedef typename codecvt_facet_type::extern_type extern_type;
+
+public:
+    typedef charT                     char_type;
+    typedef typename traits::int_type int_type;
+    typedef typename traits::pos_type pos_type;
+    typedef typename traits::off_type off_type;
+    typedef traits                    traits_type;
+
+    // 27.8.1.2 Constructors / destructor:
+    basic_filebuf();
+    virtual ~basic_filebuf();
+
+#if KAI_NONSTD_FSTREAM
+    basic_filebuf(FILE* pfile_arg);
+    int fd() { return fileno( pfile ); }
+#endif /* KAI_NONSTD_FSTREAM */
+
+    // 27.8.1.3 Members:
+    bool is_open() const { return pfile!=NULL; }
+
+    basic_filebuf* open(const char* s, ios_base::openmode mode);
+    basic_filebuf* close();
+ 
+protected:
+    // 27.8.1.4 Overridden virtual functions:
+    virtual streamsize showmanyc();
+    virtual int_type underflow();
+    virtual int_type uflow();
+    virtual int_type pbackfail(int_type c=traits::eof());
+    virtual int_type overflow(int_type c=traits::eof());
+
+    virtual basic_streambuf<charT, traits>* setbuf(char_type* s, streamsize n);
+    virtual pos_type seekoff(off_type off, ios_base::seekdir way, ios_base::openmode which=ios_base::in|ios_base::out);
+    virtual pos_type seekpos(pos_type sp, ios_base::openmode which= ios_base::in|ios_base::out);
+
+    virtual int sync();
+    virtual void imbue(const locale& loc);
+
+    // We override these to make I/O more efficient.
+    streamsize xsgetn(charT* s, streamsize n);
+    streamsize xsputn(const charT* s, streamsize n);
+ 
+private:
+    FILE* pfile; 
+    ios_base::openmode mode_;
+
+    // Size includes extra charT at end for sake of method overflow().
+    static const size_t buffer_size = 4096/sizeof(charT) < 2 ? 2 : 4096/sizeof(charT);
+    charT * buffer;	// NULL if file is not buffered.  E.g. synchronized stdio objects.
+    void kai_sync_with_stdio( bool sync );
+
+    void nullify_put_area() {
+	if( pnext ) {
+	    if( pbeg < pnext ) {
+	        overflow( traits::eof() );
+	    }
+	    fflush( pfile );
+	    pbeg = pnext = pend = 0;
+	}
+    }
+
+    void nullify_get_area() {
+	if( gnext ) {
+	    // Was reading - nullify the get area.
+	    if( gend>gnext ) {
+	        // Slurped some characters for input.  Back up some.
+		fseek( pfile, gnext-gend, SEEK_CUR );
+	    }
+	    // Mark input sequence as unusable unless underflow() is called.
+	    gbeg = gnext = gend = 0;
+        }
+    }
+};
+
+template<class charT, class traits>
+void basic_filebuf<charT, traits>::kai_sync_with_stdio( bool value ) {
+    if( buffer ) {
+	delete[] buffer;
+	buffer = 0;
+    }
+    pbeg = pnext = pend = 0;
+    gbeg = gnext = gend = 0;
+    if( value ) {
+	// Client wants to be sync'd with stdio, so do not buffer input or output.
+    } else {
+	// Client does not want to be sync'd with stdio, so use buffer to maximize throughput.
+	buffer = new charT[buffer_size];
+    }
+}
+
+template<class charT, class traits> 
+basic_filebuf<charT, traits>::basic_filebuf() : 
+    basic_streambuf<charT, traits>(), pfile(0), buffer(0),
+    a_codecvt(&use_facet<codecvt<charT,char,typename traits::state_type> >(getloc()))
+{ 
+}
+
+template<class charT, class traits> 
+basic_filebuf<charT, traits>::~basic_filebuf()
+{
+    MSIPL_TRY {
+        close();
+    } MSIPL_CATCH {
+	if( buffer ) {
+            delete[] buffer;
+	    buffer = 0;
+	}
+        MSIPL_RETHROW;
+    }
+}
+
+#if KAI_NONSTD_FSTREAM
+// Not given in the draft
+template<class charT, class traits> 
+basic_filebuf<charT, traits>::basic_filebuf(FILE* pfarg) : 
+    basic_streambuf<charT, traits>(), pfile(pfarg), buffer(0),
+    a_codecvt(&use_facet<codecvt<charT,char,typename traits::state_type> >(getloc()))
+{
+    buffer = new charT[buffer_size];
+}
+#endif /* KAI_NONSTD_FSTREAM */
+
+
+template<class charT, class traits> 
+basic_filebuf<charT, traits>* 
+basic_filebuf<charT, traits>::open(const char* s, ios_base::openmode mode) 
+{
+    if (pfile) 
+	return 0;
+    pfile = __kai::open_file(s,mode);
+    if (pfile) {
+	if ((mode&ios_base::ate) && fseek(pfile, 0, SEEK_END)==-1) {
+	    close();
+	} else {
+	    mode_=mode;
+	    buffer = new charT[buffer_size];
+	    return this;
+	}
+    }
+    return 0;
+}
+
+template<class charT, class traits> 
+basic_filebuf<charT, traits>* 
+basic_filebuf<charT, traits>::close()
+{
+    // Flush pending output.
+    nullify_put_area();
+    nullify_get_area();
+    delete[] buffer;
+    buffer = 0;
+    if (pfile==stdin || pfile==stdout || pfile==stderr) 
+	return this;
+    return (pfile && !fclose(pfile)) ? pfile=0, this : 0;
+}
+
+template<class charT, class traits> 
+streamsize basic_filebuf<charT, traits>::showmanyc() {
+    long int curpos = ftell(pfile);
+    nullify_put_area();
+    if (curpos==-1) 
+	return -1;
+    fseek(pfile, 0, SEEK_END);
+    long endpos = ftell(pfile);
+    // ADR: Section 27.5.2.4.3 would seem to imply that an overriding definition
+    // for showmanyc should return -1 if we are at end of file.  Certainly
+    // the definition of istream::readsome requires this behavior.
+    if (endpos==-1 || endpos==curpos) 
+	return -1;
+    fseek(pfile, curpos, SEEK_SET);
+    return streamsize((endpos-curpos) + (gend-gnext));
+}
+
+template<class charT, class traits> 
+basic_filebuf<charT, traits>::int_type 
+basic_filebuf<charT, traits>::underflow() {
+    if( pfile ) {
+	// Flush any pending output. 
+	nullify_put_area();
+
+	if( !buffer ) {
+	    // Unbuffered input (e.g. unsynchronized cin).
+	    if( sizeof(charT)==1 ) {
+	        int value = ungetc( fgetc (pfile), pfile );
+	        return value==EOF ? traits_type::eof() : value;
+	    } else {
+		int value = ungetc( fgetc (pfile), pfile );
+		if( value==EOF ) goto error;
+		extern_type ext_buffer[1];
+		ext_buffer[0] = value;
+		const extern_type * from_next;
+		charT temp[1];
+		charT * to_end;
+	        state_type fst;
+	        memset( &fst, 0, sizeof(fst) );
+	        const codecvt_facet_type& ft=*a_codecvt;
+		result conv = ft.in(fst, ext_buffer+0, ext_buffer+1, from_next, temp, temp+1, to_end );
+		switch( conv ) {
+		    case codecvt_base::ok:
+		        return temp[0];
+		    case codecvt_base::partial: 
+			// Unbuffered wide streams with multibyte expansions not supported yet.
+			// Should implement using fseek to look ahead.
+			// If we implement this, then uflow must also be updated to possibly
+			// skip more than one character.
+		        assert(0);	
+		    case codecvt_base::noconv:
+		    	return ext_buffer[0];
+		    case codecvt_base::error:
+		        goto error;
+		}
+	    } 
+	}
+
+	charT * begin = buffer;
+	charT * end = buffer+(buffer_size-1);
+	charT * next = end;
+	if( gnext<gend ) {
+	    // Need to scoot rest of sequence on down.  The standard seems to leave room
+	    // for this situation occuring when non-public members call underflow().
+	    size_t n = gend-gnext;
+	    memmove( begin, next, n*sizeof(charT) );
+	    begin += n;
+	}
+	gbeg = gnext = gend = begin;
+	const codecvt_facet_type& ft=*a_codecvt;
+	if (ft.always_noconv()) {
+	    size_t m = (buffer_size-1-(begin-gbeg));
+	    if( m>0 ) {
+		size_t status = fread( begin, sizeof(charT), m, pfile );
+		if( status==0 ) goto error;
+		gend = begin+status;
+	    } 
+	} else {
+	     // Check this for correct wchar_t support.
+	     // extern_size is an estimate of the number of external chars corresponding to
+	     // buffer_size internal chars.
+	     const size_t extern_size = buffer_size;
+	     extern_type buffer[extern_size];
+	     size_t n = extern_size - (gend-gnext)/sizeof(extern_type);
+	     size_t status = fread( buffer, sizeof(buffer[0]), n, pfile );
+	     if( status==0 ) goto error;
+	     state_type fst;
+	     memset( &fst, 0, sizeof(fst) );
+	     const extern_type *from_begin = buffer, *from_end=buffer+status;
+	     for(;;) {
+		 charT * to_end;
+		 const extern_type* from_next;
+		 result conv = ft.in(fst, from_begin, from_end, from_next, begin, end, to_end );
+		 from_begin = from_next;
+		 switch( conv ) {
+		     case codecvt_base::ok:
+			 gend = to_end;
+			 goto done;
+		     case codecvt_base::partial: 
+			 // Need to fseek backwards a tad.
+			 fseek( pfile, from_begin-from_end, SEEK_CUR );
+			 gend = to_end;
+			 goto done;
+		     case codecvt_base::noconv:
+			 memcpy( begin, buffer, status*sizeof(extern_type) );
+			 gend = begin+status;
+			 goto done;
+		     case codecvt_base::error:
+			 goto error;
+		 }	
+	     } 
+	}
+done:
+	// Standard is awfully vague on what return value should be.
+	return traits_type::to_int_type( *gnext );
+    }
+error:
+    return traits_type::eof();
+}
+
+template<class charT, class traits> 
+inline basic_filebuf<charT, traits>::int_type 
+basic_filebuf<charT, traits>::uflow()
+{
+    if( pfile ) {
+	int_type ch = underflow();
+	if( !traits::eq_int_type( ch, traits::eof() )) {
+	    if( buffer ) gnext++;
+	    else if( sizeof(charT)==1 ) fgetc(pfile);
+	    else {
+		// May need to skip more than one character here if undeflow() is extended 
+		// to handle the codecvt_base::partial case properly.
+		fgetc(pfile);
+	    }
+	    return ch;
+	}
+    }
+    return traits_type::eof();
+}
+
+template<class charT, class traits>
+basic_filebuf<charT, traits>::int_type
+basic_filebuf<charT, traits>::pbackfail(int_type c) {
+    if( pfile ) {
+        nullify_put_area();
+        if( gnext && gbeg < gnext ) {
+            --gnext;
+            if( !traits::eq_int_type(c, traits_type::eof() ) ) {
+                *gnext = traits::to_char_type(c);
+            }
+            return traits::not_eof(c);
+        } else {
+            nullify_get_area();
+            if (traits::eq_int_type(c, traits_type::eof())) {
+                return fseek(pfile, -1, SEEK_CUR) ? traits_type::eof() : traits::not_eof(c);
+            } else if( sizeof(charT)==1 ) {
+                return ungetc(c, pfile)!=EOF ? c : traits_type::eof();
+            } else {
+		// Not all systems have a ungetwc, so punt.
+		traits_type::eof();
+	    }
+        }
+    }
+    return traits_type::eof();
+}
+
+template<class charT, class traits> 
+basic_filebuf<charT, traits>::int_type 
+basic_filebuf<charT, traits>::overflow(int_type c) {
+    if( pfile ) {
+
+	// Get the put area.
+	const charT * begin = pbeg;
+	charT * next = pnext;
+
+	// Reset the put area, because it might have been nullified by method underflow().
+	if( buffer ) {
+	    pnext = pbeg = buffer;
+	    pend = pbeg+buffer_size-1;
+	} 
+
+	nullify_get_area();
+
+	// Append c if it is not eof.
+	charT temporary[1];
+	if(traits_type::eq_int_type(c, traits::eof())) {
+	    // See footnote 278 of Standard (Section 27.5.2.4.5.)
+	    c = traits::not_eof(traits::eof());
+	} else {
+	    // Stream has no buffer (e.g. sync'd with stdio or nullified)
+	    if( !next ) {
+		begin = next = temporary;
+	    }
+	    assert( next==temporary || buffer<=next );
+	    assert( next==temporary || next < buffer+buffer_size );
+	    *next++ = traits_type::to_char_type(c);
+	}
+	if( begin!=next ) {
+	    const codecvt_facet_type& ft=*a_codecvt;
+	    if (ft.always_noconv()) {
+		if( begin==temporary ) {
+		    // Use fputc for speed if possible, otherwise fall back on using fwrite.
+		    if( sizeof(charT)==1 ) fputc( temporary[0], pfile );
+		    else fwrite( temporary, sizeof(temporary[0]), 1, pfile );
+		    goto done;
+		}
+	    } else {
+		// Check this for correct wchar_t support.
+		const size_t ext_buffer_size = buffer_size/sizeof(codecvt_facet_type::extern_type) < 4 ? 4 : buffer_size/sizeof(codecvt_facet_type::extern_type);
+		extern_type buffer[ext_buffer_size], *to_end;
+		state_type fst;
+	        memset( &fst, 0, sizeof(fst) );
+		for(;;) {
+		    const charT * from_end;
+		    result conv = ft.out(fst, begin, next, from_end, buffer, buffer+ext_buffer_size, to_end);
+		    switch( conv ) {
+			case codecvt_base::ok:
+			case codecvt_base::partial: {
+			    size_t n = to_end-buffer;
+			    size_t status = fwrite( buffer, sizeof(buffer[0]), n, pfile );
+			    if( status!=n ) goto error;
+			    if( conv==codecvt_base::ok ) return c;
+			    begin = from_end;
+			    break;
+			}
+			case codecvt_base::noconv:
+			    goto quick;
+			case codecvt_base::error:
+			    goto error;
+		    }	
+		} 
+		// 22.2.1.5.2.p5 says that for char and wchar_t, unshift doesn't really do anything.
+		// So there's no need to call it here to "finish off" fst.
+	    }
+quick:
+	    size_t n = next-begin;
+	    size_t status = fwrite( begin, sizeof(charT), n, pfile );
+	    if( status!=n ) goto error;
+	}
+done:
+        return c;
+    }
+error:
+    return traits::eof();
+}
+
+template<class charT, class traits> 
+inline basic_streambuf<charT, traits>*
+basic_filebuf<charT, traits>::setbuf(char_type* s, streamsize n) {
+    if (pfile) {
+	if( !s && !n ) {
+	    nullify_get_area();
+	    nullify_put_area();
+	    delete[] buffer;
+	    buffer = 0;
+	    std::setbuf( pfile, 0 );
+	} else if( std::setvbuf(pfile, (char*)(void*)s, _IOFBF, n*sizeof(charT) ) != 0)
+	    return 0;
+	return this;
+    }
+    return 0;
+}
+
+template<class charT, class traits> 
+basic_filebuf<charT, traits>::pos_type
+basic_filebuf<charT, traits>::seekoff(off_type off, ios_base::seekdir way, ios_base::openmode ) {
+    if (!pfile)
+	return pos_type(-1);
+    nullify_put_area();
+    nullify_get_area();
+#ifdef MSIPL_WCHART
+    int width = a_codecvt->encoding();
+    if (off && width <= 0)
+	return pos_type(-1);
+#endif
+    switch( way ) {
+	case ios_base::beg:
+	    if (off < 0)
+		return pos_type(-1);
+	    break;
+        case ios_base::end:
+	    if (off>0)
+	        return pos_type(-1);
+	    break;
+    }
+#ifdef MSIPL_WCHART
+    if (width <= 0)
+	width = 1;
+    if (fseek(pfile, width * off, way)) 
+	return pos_type(-1);
+    return pos_type(ftell(pfile)/width);
+#else
+    if (fseek(pfile, off, way)) 
+	return pos_type(-1);
+    return pos_type(ftell(pfile));
+#endif /* MSIPL_WCHART */
+}
+
+template<class charT, class traits> 
+basic_filebuf<charT, traits>::pos_type
+basic_filebuf<charT, traits>::seekpos(pos_type sp, ios_base::openmode)
+{
+#ifdef MSIPL_WCHART
+    int width = a_codecvt->encoding();
+    if(width <= 0)
+	width = 1;
+#else
+    const int width = 1;
+#endif /* MSIPL_WCHART */
+    if( pfile && sp!=pos_type(-1) ) {
+	nullify_put_area();
+	nullify_get_area();
+	if( !fseek(pfile, off_type(sp)*width, SEEK_SET) ) {
+	    return ftell(pfile)/width;
+	}
+    }
+    return -1;
+}
+
+template<class charT, class traits> 
+int basic_filebuf<charT, traits>::sync()
+{
+    if( pbeg<pnext ) 
+	if( overflow( traits_type::eof() )==traits::eof() ) return -1; 
+    return fflush( pfile );
+}
+
+template<class charT, class traits> 
+void basic_filebuf<charT, traits>::imbue(const locale& loc_arg)
+{
+    loc = loc_arg;
+    a_codecvt = &use_facet<codecvt<charT,char,typename traits::state_type> >(loc);
+}
+
+template<class charT, class traits> 
+streamsize
+basic_filebuf<charT, traits>::xsputn(const charT* s, streamsize n) {
+    bool use_loop = false;	// Allows us to be lazy about getting always_noconv().
+    streamsize result = 0;
+    if( pfile && n ) { 
+	nullify_get_area();
+	for(;;) {
+	    int_type c=traits::eof();
+	    if( size_t m = pend-pnext ) {
+		if( m>n ) m = n;
+		traits::copy( pnext, s, m );
+		pnext += m;
+		result += m;
+		n -= m;
+		if( n==0 ) break;
+		s += m;
+	    }else if(use_loop){
+	    	if( n==0) break;
+		c = traits::to_int_type(*s++);
+		++result;
+		--n;
+	    }	
+	    overflow( c );
+	    if( use_loop ) continue;
+	    const codecvt_facet_type& ft=use_facet<codecvt_facet_type>(loc);
+	    if (ft.always_noconv()) {
+		// Expectation is that cout and cerr always take this arm, never loop.
+		result += fwrite(s, sizeof(char_type), n, pfile);
+		break;
+	    }
+	    // Cannot write it all in one swat.  Do it in chunks.
+	    use_loop = true;
+	}
+     }
+     return result;
+}
+
+template<class charT, class traits> 
+streamsize
+basic_filebuf<charT, traits>::xsgetn(charT* s, streamsize n) {
+    // Use internal buffer for short reads, on speculation that more short reads will follow.
+    bool use_loop = n<=64;		
+    streamsize result = 0;
+    if( pfile && n ) { 
+	nullify_put_area();
+	int_type ch;
+	do {
+	    if( size_t m = gend-gnext ) {
+		if( m>n ) m = n;
+		traits::copy( s, gnext, m );
+		gnext += m;
+		result += m;
+		n -= m;
+		if( n==0 ) break;
+		s += m;
+	    }
+	    if( !use_loop ) {
+		const codecvt_facet_type& ft=use_facet<codecvt_facet_type>(loc);
+		if (ft.always_noconv()) {
+		    result += fread(s, sizeof(char_type), n, pfile);
+		    break;
+		}
+		// Cannot read it all in one swat.  Do it in chunks.
+		use_loop = true;
+	    }
+	    ch = underflow();
+	} while( !traits::eq_int_type( ch, traits::eof() ));
+    }
+    return result;
+}
+
+
+//================================================================================
+// 27.8.1.5 Template class basic_ifstream
+template<class charT, class traits>
+class basic_ifstream : public basic_istream<charT, traits>
+{
+public:
+    typedef charT                     char_type;
+    typedef typename traits::int_type int_type;
+    typedef typename traits::pos_type pos_type;
+    typedef typename traits::off_type off_type;
+    typedef traits                    traits_type;
+ 
+    // 27.8.1.6 Constructors:
+    basic_ifstream();
+    explicit basic_ifstream(const char*, ios_base::openmode mode=ios_base::in);
+
+    virtual ~basic_ifstream();
+
+    // 27.8.1.7 Members:
+    basic_filebuf<charT, traits> * rdbuf() const { return const_cast<basic_filebuf<charT, traits> *>(&fbuf); }
+
+    inline bool is_open() { return fbuf.is_open(); }
+    inline void open(const char* s, ios_base::openmode mode=ios_base::in);
+    inline void close() { if (!fbuf.close()) setstate(failbit); }
+private:
+    basic_filebuf<charT, traits> fbuf;
+};
+
+template<class charT, class traits> 
+inline basic_ifstream<charT, traits>::basic_ifstream()
+     : basic_istream<charT, traits>(&fbuf)
+{
+    init(&fbuf);
+}
+
+template<class charT, class traits> 
+basic_ifstream<charT, traits>::basic_ifstream(const char* s, ios_base::openmode mode)
+     : basic_istream<charT, traits>(&fbuf)
+{
+    init(&fbuf);
+    if (!fbuf.open(s, mode|in)) 
+       setstate(failbit);
+}
+
+template<class charT, class traits> 
+basic_ifstream<charT, traits>::~basic_ifstream()
+{ }
+
+template<class charT, class traits> 
+inline void 
+basic_ifstream<charT, traits>::open(const char* s, ios_base::openmode mode)
+{
+    // OK here's the dilemma. The standard says next to set failbit if open fails
+    // But what do you do if it succeeds? Do you reinitialized everything, or just
+    // set goodbit?
+    if (!fbuf.open(s, mode|in)) 
+        setstate(failbit);
+    else
+	setstate(goodbit);	// KAI addition
+}
+
+//================================================================================
+// 27.8.1.8 Template class basic_ofstream 
+template<class charT, class traits>
+class basic_ofstream:public basic_ostream<charT, traits>
+{
+public:
+    typedef charT                     char_type;
+    typedef typename traits::int_type int_type;
+    typedef typename traits::pos_type pos_type;
+    typedef typename traits::off_type off_type;
+    typedef traits                    traits_type;
+
+    // 27.8.1.9 Constructors:
+    basic_ofstream();
+    explicit basic_ofstream(const char*, ios_base::openmode mode=ios_base::out|ios_base::trunc);
+    virtual ~basic_ofstream();
+
+    // 27.8.1.10 Members::
+    basic_filebuf<charT, traits> * rdbuf() const { return const_cast<basic_filebuf<charT, traits> *>(&fbuf); }
+
+    inline bool is_open() { return fbuf.is_open(); }
+    void open(const char* s, ios_base::openmode mode=ios_base::out|ios_base::trunc);
+    void close() { if (!fbuf.close()) setstate(failbit); }
+
+private:
+    basic_filebuf<charT, traits> fbuf;
+};
+
+template<class charT, class traits>
+basic_ofstream<charT, traits>::basic_ofstream() : basic_ostream<charT, traits>(&fbuf)
+{
+    init(&fbuf);
+}
+
+template<class charT, class traits> 
+basic_ofstream<charT, traits>::basic_ofstream(const char* s, ios_base::openmode mode)
+    : basic_ostream<charT, traits>(&fbuf)
+{
+    init(&fbuf);
+    if (!fbuf.open(s, mode|out))
+        setstate(failbit);
+}
+
+template<class charT, class traits> 
+basic_ofstream<charT, traits>::~basic_ofstream()
+{    }
+
+template<class charT, class traits> 
+void basic_ofstream<charT, traits>::open(const char* s, ios_base::openmode mode)
+{
+    if (!fbuf.open(s, mode | out))
+        setstate(failbit);
+    else
+	setstate(goodbit);	// KAI addition
+}
+
+
+// 27.8.1.11  Template class basic_fstream
+template<class charT, class traits>
+class basic_fstream : public basic_iostream<charT, traits>
+{
+public:
+    typedef charT                     char_type;
+    typedef typename traits::int_type int_type;
+    typedef typename traits::pos_type pos_type;
+    typedef typename traits::off_type off_type;
+    typedef traits                    traits_type;
+
+    // 27.8.1.12  Constructors:
+    basic_fstream();
+    explicit basic_fstream(const char* s, ios_base::openmode mode=ios_base::in|ios_base::out);
+    virtual ~basic_fstream();
+
+    // 27.8.1.13 Members:
+    basic_filebuf<charT, traits> * rdbuf() const { return const_cast<basic_filebuf<charT, traits> *>(&fbuf); }
+
+    inline bool is_open() const { return fbuf.is_open(); }
+    void open(const char* s, ios_base::openmode mode=ios_base::in|ios_base::out);
+    void close() { if (!fbuf.close()) setstate(failbit); }
+
+private:
+    basic_filebuf<charT, traits> fbuf;
+};
+
+template<class charT, class traits> 
+basic_fstream<charT, traits>::basic_fstream() : fbuf(), basic_iostream<charT, traits>(&fbuf)
+{
+    init(&fbuf);
+}
+
+template<class charT, class traits> 
+basic_fstream<charT, traits>::basic_fstream(const char* s, ios_base::openmode mode)
+     : basic_iostream<charT, traits>(&fbuf)
+{
+    init(&fbuf);
+    if (!fbuf.open(s, mode))
+        setstate(failbit);
+}
+
+template<class charT, class traits> 
+basic_fstream<charT, traits>::~basic_fstream()
+{ }
+
+template<class charT, class traits> 
+void basic_fstream<charT, traits>::open(const char* s, ios_base::openmode mode)
+{
+    if (!fbuf.open(s, mode)) 
+        setstate(failbit);
+    else
+	setstate(goodbit);	// KAI addition
+}
+
+typedef basic_filebuf <char, char_traits<char> > filebuf;
+typedef basic_ifstream<char, char_traits<char> > ifstream;
+typedef basic_ofstream<char, char_traits<char> > ofstream;
+typedef basic_fstream <char, char_traits<char> > fstream;
+
+#ifdef MSIPL_WCHART
+typedef basic_filebuf <wchar_t, char_traits<wchar_t> > wfilebuf;
+typedef basic_ifstream<wchar_t, char_traits<wchar_t> > wifstream;
+typedef basic_ofstream<wchar_t, char_traits<wchar_t> > wofstream;
+typedef basic_fstream <wchar_t, char_traits<wchar_t> > wfstream;
+#endif
+} // namespace std
+#endif /* __KAI_FSTREAM */
+
+

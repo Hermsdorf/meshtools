@@ -1,0 +1,5 @@
+#!/bin/sh
+
+ROSEPARSE_DIR="/home/users/sameer/pdt/checkout/pdtoolkit/contrib/rose/roseparse"
+
+exec $ROSEPARSE_DIR/roseparse -rose:UPC -rose:upc_threads 4 "$@" 

@@ -1,0 +1,561 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **
+ **  KAI header file for class set<Key,Compare,Allocator>.
+ **  Derived completely from ANSI draft.  Unrelated to Modena's implementation.
+ **
+ **  C.f <map>
+ **/
+#ifndef __KAI_SET
+#define __KAI_SET
+
+#include <kai_tree>
+#include <functional>		/* For less */
+#include <iterator>             /* For reverse_iterator */
+#include <memory>		/* For allocator */
+#include <new>
+#include <utility>              /* For relops */
+#include <algobase> 		/* For swap */
+
+namespace std {
+template <class Key, class Compare, class Allocator> class set;
+template <class Key, class Compare, class Allocator> class multiset;
+}
+
+namespace __kai {
+template <class Key> 
+struct set_node: public rb_tree_node_base {
+public:
+    const Key key;
+    set_node( const Key& k ) : key(k) {}
+};
+
+//
+// Class set_base implements functionality common to map and multimap.
+//
+template <class Key, class Compare, class Allocator>
+class set_base: public rb_tree<Key,Compare,sizeof(rb_tree_node_base)> {
+private:
+    static const size_t key_offset = sizeof(rb_tree_node_base);
+
+public:
+    // types:
+    typedef Key                                       key_type;
+    typedef Key 				      value_type;
+    typedef Compare                                   key_compare;
+    typedef Compare				      value_compare;
+    typedef Allocator                                 allocator_type;
+    typedef typename Allocator::reference             reference;
+    typedef typename Allocator::const_reference       const_reference;
+    typedef typename Allocator::size_type             size_type;
+    typedef typename Allocator::difference_type       difference_type;
+    typedef typename Allocator::pointer               pointer;
+    typedef typename Allocator::const_pointer         const_pointer;
+
+    typedef set_node<Key> tree_node;
+
+protected:
+    struct value_of_node {
+        value_type& operator()( const rb_tree_node_base * node ) const {
+            return const_cast<value_type&>(static_cast<const tree_node*>(node)->key);
+        }
+    };
+
+    // iterators:	
+    typedef typename rb_tree<Key,Compare,key_offset>::template iterator<Key,difference_type,value_of_node> iterator;
+    typedef typename rb_tree<Key,Compare,key_offset>::template const_iterator<Key,difference_type,value_of_node> const_iterator;
+    typedef std::reverse_iterator<iterator> reverse_iterator;
+    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+     
+    // construct/copy/destroy:
+    set_base( const Compare& comp ) :
+        rb_tree<Key,Compare,key_offset>(comp),
+	value_allocator(),
+	node_allocator()
+    {
+        __initialize();
+    }
+
+    set_base( const Compare& comp, const Allocator& allocator1 ) :
+        rb_tree<Key,Compare,key_offset>(comp),
+	value_allocator(allocator1),
+	node_allocator(allocator1)
+    {
+        __initialize();
+    };
+
+    set_base( const set_base<Key,Compare,Allocator>& x ) :
+	rb_tree<Key,Compare,key_offset> (x.key_comparison),
+	value_allocator(x.value_allocator),
+	node_allocator(x.node_allocator)
+    {
+	__initialize();
+	cleanup2 c(this);
+	__copy( x, key_offset );
+	c.clear();
+    }
+
+    ~set_base() {__destroy();}
+
+    void swap( set_base& a );
+
+protected:
+    Allocator value_allocator;
+    typename Allocator::template rebind<tree_node>::other node_allocator;
+
+private:
+    struct cleanup;
+    struct cleanup2;
+    friend struct cleanup;
+    friend struct cleanup2;
+    
+    class cleanup {
+        tree_node* ptr;
+        set_base* const set; 
+    public:
+        cleanup( set_base* s, tree_node* x ) : set(s), ptr(x) {}
+        void clear() {ptr = NULL;}
+        ~cleanup() {if( ptr ) set->node_allocator.deallocate(ptr,1);};
+    };
+    class cleanup2 {
+        set_base* set; 
+    public:
+        cleanup2( set_base* s ) : set(s) {}
+        void clear() {set = NULL;}
+        ~cleanup2() {if(set) set->__destroy();}
+    };
+
+    rb_tree_node_base * make_node( const void * key );
+	// Override rb_tree_node_base::make_node
+    void destroy_node( __kai::rb_tree_node_base * node );
+	// Override rb_tree_node_base::destroy_node
+};
+
+template <class Key, class Compare, class Allocator>
+const size_t set_base<Key,Compare,Allocator>::key_offset;
+
+template <class Key, class Compare, class Allocator>
+__kai::rb_tree_node_base * set_base<Key,Compare,Allocator>::make_node( const void * key ) {
+    tree_node * result = node_allocator.allocate(1);
+    if( key ) {
+        cleanup c(this,result);
+        value_allocator.construct( const_cast<Key*>(&result->key), *static_cast<const Key*>(key) );
+        c.clear();
+    }
+    return result;
+}
+
+template <class Key, class Compare, class Allocator>
+void set_base<Key,Compare,Allocator>::destroy_node( __kai::rb_tree_node_base * node ) {
+    __kai_assert( node );
+    tree_node * result = static_cast<tree_node*>(node);
+    if( result!=header ) {
+        value_allocator.destroy( const_cast<Key*>(&result->key) );
+    }
+    node_allocator.deallocate( result,1 );
+}
+
+template <class Key, class Compare, class Allocator>
+void set_base<Key,Compare,Allocator>::swap( set_base& a ) {
+    std::swap( value_allocator, a.value_allocator ); 
+    std::swap( node_allocator, a.node_allocator ); 
+    std::swap( key_comparison, a.key_comparison );
+    std::swap( *(rb_tree_base_data*)this, *(rb_tree_base_data*)&a );
+}
+
+} // namespace __kai 
+
+namespace std {
+
+template <class Key, class Compare = less<Key>, class Allocator=allocator<Key> >
+class set: private __kai::set_base<Key,Compare,Allocator> {
+    // The KeyOffset should be offsetof(set_node<Key,Compare>,key)>, not the 
+    // constant, but EDG has not yet fixed front-end to handle this situation.
+private:
+    typedef __kai::set_base<Key,Compare,Allocator> base;
+public:
+    // [lib.set.types] types:
+    typedef typename base::key_type	    key_type;
+    typedef typename base::value_type	    value_type;
+    typedef typename base::key_compare	    key_compare;
+    typedef typename base::value_compare    value_compare;
+    typedef typename base::allocator_type   allocator_type;
+    typedef typename base::reference	    reference;
+    typedef typename base::const_reference  const_reference;
+    typedef typename base::iterator	    iterator;
+    typedef typename base::const_iterator   const_iterator;
+    typedef typename base::size_type	    size_type;
+    typedef typename base::difference_type  difference_type;
+    typedef typename base::pointer          pointer;
+    typedef typename base::const_pointer    const_pointer;
+    typedef typename base::reverse_iterator reverse_iterator;
+    typedef typename base::const_reverse_iterator const_reverse_iterator;
+
+    // [23.3.3.1] construct/copy/destroy:
+    explicit set() : base(Compare()) {}
+    explicit set(const Compare& comp) : base(comp) {}
+    explicit set(const Compare& comp, const Allocator& a) : base(comp,a) {}
+
+    template <class InputIterator>
+    set(InputIterator first, InputIterator last) : base(Compare()) { insert( first, last ); }
+    template <class InputIterator>
+    set(InputIterator first, InputIterator last, const Compare& comp ) : base(comp) { insert( first, last ); }
+    template <class InputIterator>
+    set(InputIterator first, InputIterator last, const Compare& comp, const Allocator& a )
+	: base(comp,a) { insert( first, last ); }
+
+    set( const set& x) : base(x) { }
+
+    allocator_type get_allocator() const {return Allocator(value_allocator);}
+
+    set& operator=(const set& x) {
+        __assign(x);
+        return *this;
+    }
+
+    // iterators:
+    iterator       begin() {return iterator( extrema[LEFT] );}
+    const_iterator begin() const {return const_iterator( extrema[LEFT] );}
+    iterator       end() {return iterator( header);}
+    const_iterator end() const {return const_iterator( header );}
+    reverse_iterator       rbegin() {return reverse_iterator( header );}
+    const_reverse_iterator rbegin() const {return const_reverse_iterator( header );}
+    reverse_iterator       rend() {return reverse_iterator( extrema[LEFT] );}
+    const_reverse_iterator rend() const {return const_reverse_iterator ( extrema[LEFT] );}
+
+    // capacity:
+    bool      empty() const {return node_count==0;}
+    size_type size() const {return node_count;}
+    size_type max_size() const {return node_allocator.max_size();}
+
+    // modifiers:
+    pair<iterator, bool> insert(const value_type& x) {
+        bool success;
+        tree_node * node = static_cast<tree_node*>(__modify( x, &success, INSERT_MAYBE ));
+        return pair<iterator,bool>(node,success);
+    }
+    iterator insert( iterator position, const value_type& x ) {
+	return iterator( __insert_unique( position.__node, x, NULL ));
+    }
+    template <class InputIterator> void insert(InputIterator first, InputIterator last); 
+    void erase(iterator position) {__erase(position.__node);}
+    size_type erase(const key_type& x) {
+	bool missing;
+	__modify( x, &missing, ERASE );
+	return !missing;
+    }
+    void erase(iterator first, iterator last) {__erase(first.__node,last.__node);}
+    void swap( set& a ) {base::swap(a);}
+    void clear() {__clear();}
+
+    // observers:
+    key_compare   key_comp() const {return key_comparison;}
+    value_compare value_comp() const {return key_comparison;}
+
+    // set operations:
+#if KAI_NONSTD_SET
+    iterator find(const key_type& x) {
+	tree_node * node = static_cast<tree_node*>(__search(x,FIND_MAYBE));
+        return iterator( node );
+    }
+    const_iterator find(const key_type& x) const {
+	tree_node * node = static_cast<tree_node*>(__search(x,FIND_MAYBE));
+        return const_iterator( node );
+    }
+#else
+    iterator find(const key_type& x) const {
+	tree_node * node = static_cast<tree_node*>(__search(x,FIND_MAYBE));
+        return iterator( node );
+    }
+#endif /* KAI_NONSTD_SET */
+    size_type count(const key_type& x) const {
+	return __search(x,__kai::rb_tree_base::FIND_MAYBE) != header;
+    }
+    // operations:
+    iterator lower_bound(const key_type& x) const {
+	tree_node * node = static_cast<tree_node*>(__search(x,LOWER_BOUND));
+	return iterator(node);
+    }
+    iterator upper_bound(const key_type& x) const {
+	tree_node * node = static_cast<tree_node*>(__upper_bound(x));
+	return iterator(node);
+    }
+#if KAI_NONSTD_SET
+    iterator lower_bound(const key_type& x) {
+	tree_node * node = static_cast<tree_node*>(__search(x,LOWER_BOUND));
+	return iterator(node);
+    }
+    iterator upper_bound(const key_type& x) {
+	tree_node * node = static_cast<tree_node*>(__upper_bound(x));
+	return iterator(node);
+    }
+#endif /* KAI_NONSTD_SET */
+    pair<iterator,iterator> equal_range(const key_type& x) {
+	pair<__kai::rb_tree_node_base*,__kai::rb_tree_node_base*> temp = 
+	    __equal_range_unique(x); 
+	return make_pair(iterator(temp.first), iterator(temp.second));
+    };
+    pair<const_iterator,const_iterator> equal_range(const key_type& x) const {
+	pair<__kai::rb_tree_node_base*,__kai::rb_tree_node_base*> temp = 
+	    const_cast<set*>(this)->__equal_range_unique(x); 
+	return make_pair(const_iterator(temp.first), const_iterator(temp.second));
+    }
+    // KCC does not yet implement explicit qualification of template arguments,
+    // so we have to be a bit broad in granting friendship.
+    template <class Key2, class Compare2, class Allocator2>
+    friend bool operator==( const set<Key2,Compare2,Allocator2>&, const set<Key2,Compare2,Allocator2>& );
+    template <class Key2, class Compare2, class Allocator2>
+    friend bool operator!=( const set<Key2,Compare2,Allocator2>&, const set<Key2,Compare2,Allocator2>& );
+    template <class Key2, class Compare2, class Allocator2>
+    friend bool operator<( const set<Key2,Compare2,Allocator2>&, const set<Key2,Compare2,Allocator2>& );
+    template <class Key2, class Compare2, class Allocator2>
+    friend bool operator>( const set<Key2,Compare2,Allocator2>&, const set<Key2,Compare2,Allocator2>& );
+    template <class Key2, class Compare2, class Allocator2>
+    friend bool operator>=( const set<Key2,Compare2,Allocator2>&, const set<Key2,Compare2,Allocator2>& );
+    template <class Key2, class Compare2, class Allocator2>
+    friend bool operator<=( const set<Key2,Compare2,Allocator2>&, const set<Key2,Compare2,Allocator2>& );
+};
+
+template <class Key, class Compare, class Allocator >
+template <class InputIterator> 
+void set<Key,Compare,Allocator>::insert(InputIterator first, InputIterator last) {
+    // See note in corresponding map method about asymptotic running time.
+    __kai::rb_tree_node_base * where = header;
+    for( ; first!=last; first++ ) {
+        __insert_unique( where, *first, &where );
+    }
+}
+
+// When EDG implements template template parameters, we can use the name
+// injection trick to factor out the commonality in operator== etc.
+// for map, multimap, set, and multiset.  Until then, we write them out longhand.
+
+template <class Key, class Compare, class Allocator>
+inline bool operator==( const set<Key,Compare,Allocator>& x, const set<Key,Compare,Allocator>& y ) {
+    return x.size()==y.size() && x.__compare(y)==0;
+}
+template <class Key, class Compare, class Allocator>
+inline bool operator!=( const set<Key,Compare,Allocator>& x, const set<Key,Compare,Allocator>& y ) {
+    return x.size()!=y.size() || x.__compare(y)!=0;
+}
+template <class Key, class Compare, class Allocator>
+inline bool operator<(  const set<Key,Compare,Allocator>& x, const set<Key,Compare,Allocator>& y ) {
+    return x.__compare(y) < 0;
+}
+template <class Key, class Compare, class Allocator>
+inline bool operator>(  const set<Key,Compare,Allocator>& x, const set<Key,Compare,Allocator>& y ) {
+    return x.__compare(y) > 0;
+}
+template <class Key, class Compare, class Allocator>
+inline bool operator>=(  const set<Key,Compare,Allocator>& x, const set<Key,Compare,Allocator>& y ) {
+    return x.__compare(y) >= 0;
+}
+template <class Key, class Compare, class Allocator>
+inline bool operator<=(  const set<Key,Compare,Allocator>& x, const set<Key,Compare,Allocator>& y ) {
+    return x.__compare(y) <= 0;
+}
+
+template <class Key, class Compare, class Allocator>
+inline void swap( set<Key,Compare,Allocator>& x, set<Key,Compare,Allocator>& y ) {
+    x.swap(y);
+}
+
+//------------------------------------------------------------------------
+// multiset
+//------------------------------------------------------------------------
+
+template <class Key, class Compare = less<Key>, class Allocator=allocator<Key> >
+class multiset: private __kai::set_base<Key,Compare,Allocator> {
+private:
+    typedef __kai::set_base<Key,Compare,Allocator> base;
+public:
+    // types:
+    typedef typename base::key_type	    key_type;
+    typedef typename base::value_type	    value_type;
+    typedef typename base::key_compare	    key_compare;
+    typedef typename base::value_compare    value_compare;
+    typedef typename base::allocator_type   allocator_type;
+    typedef typename base::reference	    reference;
+    typedef typename base::const_reference  const_reference;
+    typedef typename base::iterator	    iterator;
+    typedef typename base::const_iterator   const_iterator;
+    typedef typename base::size_type        size_type;
+    typedef typename base::difference_type  difference_type;
+    typedef typename base::pointer          pointer;
+    typedef typename base::const_pointer    const_pointer;
+    typedef typename base::reverse_iterator reverse_iterator;
+    typedef typename base::const_reverse_iterator const_reverse_iterator;
+
+    // construct/copy/destroy:
+    explicit multiset() : base(Compare()) {}
+    explicit multiset(const Compare& comp) : base(comp) {}
+    explicit multiset(const Compare& comp, const Allocator& a ) : base(comp,a) {}
+
+    template <class InputIterator>
+    multiset(InputIterator first, InputIterator last) : base( Compare() ) {
+	insert( first, last );
+    }
+    template <class InputIterator>
+    multiset(InputIterator first, InputIterator last, const Compare& comp ) : base(comp) {
+	insert( first, last );
+    }
+    template <class InputIterator>
+    multiset(InputIterator first, InputIterator last, const Compare& comp, const Allocator& a) : base(comp,a) {
+	insert( first, last );
+    }
+    multiset( const multiset& x ) : base(x) {}
+
+    multiset& operator=(const multiset& x) {
+        __assign(x);
+        return *this;
+    }
+    allocator_type get_allocator() const {return Allocator(value_allocator);}
+
+    // iterators:
+    iterator       begin() {return iterator( extrema[LEFT] );}
+    const_iterator begin() const {return const_iterator( extrema[LEFT] );}
+    iterator       end() {return iterator( header);}
+    const_iterator end() const {return const_iterator( header );}
+    reverse_iterator       rbegin() {return reverse_iterator( header );}
+    const_reverse_iterator rbegin() const {return const_reverse_iterator( header );}
+    reverse_iterator       rend() {return reverse_iterator( extrema[LEFT] );}
+    const_reverse_iterator rend() const {return const_reverse_iterator ( extrema[LEFT] );}
+
+    // capacity:
+    bool      empty() const {return node_count==0;}
+    size_type size() const {return node_count;}
+    size_type max_size() const {return node_allocator.max_size();}
+
+    // modifiers:
+    iterator insert(const value_type& x) {
+	bool missing;
+        return iterator( __modify( x, &missing, INSERT_ALWAYS ) );
+    }
+    iterator insert(iterator position, const value_type& x) {
+	return iterator( __insert_multi( position.__node, x, NULL ));
+    }
+    template <class InputIterator> void insert(InputIterator first, InputIterator last); 
+    void erase(iterator position) {__erase(position.__node);}
+    size_type erase(const key_type& x) {return __erase(__search(x,LOWER_BOUND),__upper_bound(x));}
+    void erase(iterator first, iterator last) {__erase(first.__node,last.__node);}
+    void swap( multiset& a ) {base::swap(a);}
+    void clear() {__clear();}
+
+    // observers:
+    key_compare key_comp() const {return key_comparison;}
+    value_compare value_comp() const {return value_compare( key_comparison );}
+
+    // operations:
+#if KAI_NONSTD_SET
+    iterator find(const key_type& x) {
+	tree_node * node = static_cast<tree_node*>(__search(x,FIND_MAYBE));
+        return iterator( node );
+    }
+    const_iterator find(const key_type& x) const {
+	tree_node * node = static_cast<tree_node*>(__search(x,FIND_MAYBE));
+        return const_iterator( node );
+    }
+#else
+    iterator find(const key_type& x) const {
+	tree_node * node = static_cast<tree_node*>(__search(x,FIND_MAYBE));
+        return iterator( node );
+    }
+#endif /* KAI_NONSTD_SET */
+    size_type count(const key_type& x) const { return __count(x); }
+#if KAI_NONSTD_SET
+    iterator lower_bound(const key_type& x) {
+	tree_node * node = static_cast<tree_node*>(__search(x,LOWER_BOUND));
+	return iterator(node);
+    }
+    const_iterator lower_bound(const key_type& x) const {
+	tree_node * node = static_cast<tree_node*>(__search(x,LOWER_BOUND));
+	return const_iterator(node);
+    }
+    iterator upper_bound(const key_type& x) {
+	tree_node * node = static_cast<tree_node*>(__upper_bound(x));
+	return iterator(node);
+    }
+    const_iterator upper_bound(const key_type& x) const {
+	tree_node * node = static_cast<tree_node*>(__upper_bound(x));
+	return const_iterator(node);
+    }
+    pair<iterator,iterator> equal_range(const key_type& x) {
+	return make_pair(lower_bound(x),upper_bound(x));
+    };
+    pair<const_iterator,const_iterator> equal_range(const key_type& x) const {
+	return make_pair(lower_bound(x),upper_bound(x));
+    }
+#else
+    iterator lower_bound(const key_type& x) const {
+	tree_node * node = static_cast<tree_node*>(__search(x,LOWER_BOUND));
+	return iterator(node);
+    }
+    iterator upper_bound(const key_type& x) const {
+	tree_node * node = static_cast<tree_node*>(__upper_bound(x));
+	return iterator(node);
+    }
+    pair<iterator,iterator> equal_range(const key_type& x) const { return make_pair(lower_bound(x),upper_bound(x)); };
+#endif /* KAI_NONSTD_SET */
+
+    // KCC does not yet implement explicit qualification of template arguments,
+    // so we have to be a bit broad in granting friendship.
+    template <class Key2, class Compare2, class Allocator2>
+    friend bool operator==( const multiset<Key2,Compare2,Allocator2>&, const multiset<Key2,Compare2,Allocator2>& );
+    template <class Key2, class Compare2, class Allocator2>
+    friend bool operator!=( const multiset<Key2,Compare2,Allocator2>&, const multiset<Key2,Compare2,Allocator2>& );
+    template <class Key2, class Compare2, class Allocator2>
+    friend bool operator<( const multiset<Key2,Compare2,Allocator2>&, const multiset<Key2,Compare2,Allocator2>& );
+    template <class Key2, class Compare2, class Allocator2>
+    friend bool operator>( const multiset<Key2,Compare2,Allocator2>&, const multiset<Key2,Compare2,Allocator2>& );
+    template <class Key2, class Compare2, class Allocator2>
+    friend bool operator>=( const multiset<Key2,Compare2,Allocator2>&, const multiset<Key2,Compare2,Allocator2>& );
+    template <class Key2, class Compare2, class Allocator2>
+    friend bool operator<=( const multiset<Key2,Compare2,Allocator2>&, const multiset<Key2,Compare2,Allocator2>& );
+}; // class multiset
+
+template <class Key, class Compare, class Allocator>
+template <class InputIterator> 
+void multiset<Key,Compare,Allocator>::insert(InputIterator first, InputIterator last) {
+    // See comments for similar method in class set.
+    __kai::rb_tree_node_base * where = header;
+    for( ; first!=last; first++ ) {
+	__insert_multi( where, *first, &where );
+    }
+}
+ 
+template <class Key, class Compare, class Allocator>
+inline bool operator==( const multiset<Key,Compare,Allocator>& x, const multiset<Key,Compare,Allocator>& y ) {
+    return x.size()==y.size() && x.__compare(y)==0;
+}
+template <class Key, class Compare, class Allocator>
+inline bool operator!=( const multiset<Key,Compare,Allocator>& x, const multiset<Key,Compare,Allocator>& y ) {
+    return x.size()!=y.size() || x.__compare(y)!=0;
+}
+template <class Key, class Compare, class Allocator>
+inline bool operator<(  const multiset<Key,Compare,Allocator>& x, const multiset<Key,Compare,Allocator>& y ) {
+    return x.__compare(y) < 0;
+}
+template <class Key, class Compare, class Allocator>
+inline bool operator>(  const multiset<Key,Compare,Allocator>& x, const multiset<Key,Compare,Allocator>& y ) {
+    return x.__compare(y) > 0;
+}
+template <class Key, class Compare, class Allocator>
+inline bool operator>=(  const multiset<Key,Compare,Allocator>& x, const multiset<Key,Compare,Allocator>& y ) {
+    return x.__compare(y) >= 0;
+}
+template <class Key, class Compare, class Allocator>
+inline bool operator<=(  const multiset<Key,Compare,Allocator>& x, const multiset<Key,Compare,Allocator>& y ) {
+    return x.__compare(y) <= 0;
+}
+
+template <class Key, class Compare, class Allocator>
+inline void swap( multiset<Key,Compare,Allocator>& x, multiset<Key,Compare,Allocator>& y ) {
+    x.swap(y);
+}
+
+} /* namespace std */
+
+#endif /* __KAI_SET */

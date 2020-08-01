@@ -1,0 +1,12 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+#ifndef __KAI_CSETJMP
+#define __KAI_CSETJMP
+
+#include <setjmp.h>
+
+#endif /* __KAI_CSETJMP */

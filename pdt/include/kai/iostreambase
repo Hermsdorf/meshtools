@@ -1,0 +1,36 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+/**
+ **  Lib++  : The Modena C++ Standard Library,
+ **           Version 2.4, October 1997
+ **
+ **  Copyright (c) 1995-1997 Modena Software Inc.
+ **/
+/**  Split by KAI into <iostream> and <iostreambase> so that users of <fstream>
+ **  and <sstream> do not have to buy the overhead of __msipl_ios_init.
+ **/
+#ifndef __KAI_IOSTREAMBASE
+#define __KAI_IOSTREAMBASE
+
+#include <mcompile.h>
+#include <istream>
+#include <ostream>
+
+namespace std {
+
+template<class charT,class traits> class basic_iostream
+    : public basic_istream<charT,traits>, public basic_ostream<charT,traits>
+{
+public:
+    explicit basic_iostream(basic_streambuf<charT,traits>* sb)
+	: basic_istream<charT,traits>(sb), basic_ostream<charT,traits>(sb), basic_ios<charT, traits>(sb)
+	{ }
+    virtual ~basic_iostream() { }
+};
+
+} // namespace std
+#endif /* __KAI_IOSTREAMBASE */

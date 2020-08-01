@@ -1,0 +1,42 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+#ifndef __KAI_ALLOCATOR
+#define __KAI_ALLOCATOR
+
+#include <new>
+
+namespace __kai {
+
+template<class A> struct allocator_base_helper: public A {
+    char x;
+};
+
+template<class A,size_t S=sizeof(allocator_base_helper<A>)> struct allocator_base {
+public:
+    A get_allocator() const {return my_allocator;}
+    typename A::size_type max_size() const { return my_allocator.max_size();}
+protected:
+    allocator_base( const A& a ) : my_allocator(a) {}
+    template<class B> B _get_rebound_allocator() const {return B(my_allocator);}
+    A _get_allocator() const {return my_allocator;}
+private:
+    A my_allocator;
+};
+
+template<class A> struct allocator_base<A,1> {	// partial specialization for empty allocators
+public:
+    A get_allocator() const {return A();}
+    typename A::size_type max_size() const { return A().max_size();}
+protected:
+    allocator_base( const A& ) {} 
+    template<class B> B _get_rebound_allocator() const {return B();}
+    static A _get_allocator() {return A();}
+};
+
+} // namespace kai
+
+#endif /* __KAI_ALLOCATOR */

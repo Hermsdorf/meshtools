@@ -1,0 +1,590 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1997-2001 Intel Corp. All rights reserved.
+ **  Modena's code has been rewritten in places to improve speed and/or
+ **  get correct answers.  Do not update with Modena's code.
+ **/
+/**
+ **  Lib++  : The Modena C++ Standard Library,
+ **           Version 2.4, October 1997
+ **
+ **  Copyright (c) 1995-1997 Modena Software Inc.
+ **/
+
+#ifndef MSIPL_COMPLEX_H
+#define MSIPL_COMPLEX_H
+
+#include <mcompile.h>
+
+#include <iosfwd>
+#include <sstream>
+#include <cmath>
+
+namespace std {
+
+// [26.2] Complex numbers:
+template <class T> class complex;
+template<> class complex<float>;
+template<> class complex<double>;
+template<> class complex<long double>;
+
+}
+
+namespace __kai {
+    template<class T> struct extend_precision {typedef T type;};
+    // Specialize if there is a type with exponent range 2x wider than for T.
+    template<> struct extend_precision<float> {typedef double type;};
+#ifdef __i386
+    // x86 architecture supports fast long double.
+    template<> struct extend_precision<double> {typedef long double type;};
+#endif /* __i386 */
+    template<class L,class R> inline void do_divide( std::complex<L>& z, L c, L d, R a, R b );
+}
+
+namespace std {
+
+template <class T> class complex {
+
+private:
+    T  re;
+    T  im;
+
+public:
+    typedef T value_type;
+
+    complex(const T& r = T(), const T& i = T()) : re(r), im(i) {}
+
+    T real() const { return re; }
+    T imag() const { return im; }
+
+    complex <T>& operator=(const T& rhs) { re = rhs; im = T(); return *this; }
+    complex <T>& operator+=(const T& rhs) { re += rhs; return *this; }
+    complex <T>& operator-=(const T& rhs) { re -= rhs; return *this; }
+    complex <T>& operator*=(const T& rhs) { re *= rhs; im *= rhs; return *this; }
+    complex <T>& operator/=(const T& rhs) { re /= rhs; im /= rhs; return *this; }
+
+    complex& operator=(const complex& cx) { re = cx.re; im = cx.im; return *this; }
+
+    template <class X> complex& operator=(const complex<X>& cx) { re = cx.real(); im = cx.imag(); return *this; }
+    template <class X> complex& operator+=(const complex<X>& cx) { re += cx.real(); im += cx.imag(); return *this; }
+    template <class X> complex& operator-=(const complex<X>& cx) { re -= cx.real(); im -= cx.imag(); return *this; }
+    template <class X>
+    complex& operator*=(const complex<X>& cx) {
+        T  ret = re*cx.real() - im*cx.imag();
+        im = re*cx.imag() + im*cx.real();
+        re = ret;
+        return *this;
+    }
+
+    template <class X>
+    complex<T>& operator/=(const complex<X>& cx) {
+#if KAI_COMPLEX_EXTRA_CHECKS
+        if (! (cx.real() || cx.imag()))
+	    domain_error::__throw("Division by zero error");
+#endif
+	T a = cx.real();
+	T b = cx.imag();
+        T value = a*a + b*b;
+        T r = (re*a + im*b)/value;
+        im =  (im*a - re*b)/value;
+        re = r;
+        return *this;
+    }
+
+};
+
+template<>
+class complex<float> {
+
+private :
+    float re;
+    float im;
+
+public :
+    typedef float   value_type;
+
+    complex(float r = 0.0f, float i = 0.0f) : re(r), im(i) {}
+    explicit inline complex(const complex<double>& cx);
+    explicit inline complex(const complex<long double>& cx);
+
+    float real() const { return re; }
+    float imag() const { return im; }
+
+    complex& operator=(float rhs) { re = rhs; im = 0.0; return *this; }
+    complex& operator+=(float rhs) { re += rhs; return *this; }
+    complex& operator-=(float rhs) { re -= rhs; return *this; }
+    complex& operator*=(float rhs) { re *= rhs; im *= rhs; return *this; }
+    complex& operator/=(float rhs) { re /= rhs; im /= rhs; return *this; }
+
+    inline complex& operator=(const complex& cx) { re = cx.re; im = cx.im; return *this; }
+
+    template <class X> 
+    inline complex& operator=(const complex<X>& cx) { re = cx.real(); im = cx.imag(); return *this; }
+    template <class X>
+    inline complex& operator+=(const complex<X>& cx) { re += cx.real(); im += cx.imag(); return *this; }
+    template <class X>
+    inline complex& operator-=(const complex<X>& cx) { re -= cx.real(); im -= cx.imag(); return *this; }
+    template <class X>
+    inline complex& operator*=(const complex<X>& cx) {
+	float  ret = re*cx.real() - im*cx.imag();
+	im = re*cx.imag() + im*cx.real();
+	re = ret;
+	return *this;
+    }
+    template <class X>
+    inline complex& operator/=(const complex<X>& cx) {
+	__kai::do_divide( *this, re, im, cx.real(), cx.imag() );
+	return *this;
+    }
+};
+
+template<>
+class complex<double> {
+
+private :
+    double re;
+    double im;
+
+public :
+    typedef double   value_type;
+
+    complex(double r = 0.0, double i = 0.0) : re(r), im(i) {}
+    complex(const complex<float>& cx) : re(cx.real()), im(cx.imag()) {}
+    explicit inline complex(const complex<long double>& cx);
+
+    double real() const { return re; }
+    double imag() const { return im; }
+
+    complex& operator=(double rhs) { re = rhs; im = 0.0; return *this; }
+    complex& operator+=(double rhs) { re += rhs; return *this; }
+    complex& operator-=(double rhs) { re -= rhs; return *this; }
+    complex& operator*=(double rhs) { re *= rhs; im *= rhs; return *this; }
+    complex& operator/=(double rhs) { re /= rhs; im /= rhs; return *this; }
+
+    complex& operator=(const complex<double>& cx) { re = cx.real(); im = cx.imag(); return *this; }
+
+    template <class X>
+    inline complex& operator=(const complex<X>& cx) { re = cx.real(); im = cx.imag(); return *this; }
+    template <class X>
+    inline complex& operator+=(const complex<X>& cx) { re += cx.real(); im += cx.imag(); return *this; }
+    template <class X>
+    inline complex& operator-=(const complex<X>& cx) { re -= cx.real(); im -= cx.imag(); return *this; }
+    template <class X>
+    inline complex& operator*=(const complex<X>& cx) {
+	double  re_t = re*cx.real() - im*cx.imag();
+	im = re*cx.imag() + im*cx.real();
+	re = re_t;
+	return *this;
+    }
+    template <class X>
+    inline complex& operator/=(const complex<X>& cx) {
+	__kai::do_divide( *this, re, im, cx.real(), cx.imag() );
+	return *this;
+    }
+};
+
+template<>
+class complex<long double> {
+
+private :
+    long double re;
+    long double im;
+
+public :
+    typedef long double value_type;
+
+    complex(long double r = 0.0l, long double i = 0.0l) : re(r), im(i) {}
+    complex(const complex<float>& cx) : re(cx.real()), im(cx.imag()) {}
+    complex(const complex<double>& cx) : re(cx.real()), im(cx.imag()) {}
+ 
+    long double real() const { return re; }
+    long double imag() const { return im; }
+
+    complex& operator=(long double rhs) { re = rhs; im = 0.0; return *this; }
+    complex& operator+=(long double rhs) { re += rhs; return *this; }
+    complex& operator-=(long double rhs) { re -= rhs; return *this; }
+    complex& operator*=(long double rhs) { re *= rhs; im *= rhs; return *this; }
+    complex& operator/=(long double rhs) { re /= rhs; im /= rhs; return *this; }
+
+    complex& operator=(const complex& cx) { re = cx.re; im = cx.im; return *this; }
+
+    template <class X>
+    inline complex<long double>& operator=(const complex<X>& cx) { re = cx.real(); im = cx.imag(); return *this; }
+    template <class X>
+    inline complex<long double>& operator+=(const complex<X>& cx) { re += cx.real(); im += cx.imag(); return *this; }
+    template <class X>
+    inline complex<long double>& operator-=(const complex<X>& cx) { re -= cx.real(); im -= cx.imag(); return *this; }
+    template <class X>
+    inline complex<long double>& operator*=(const complex<X>& cx) {
+	long double  re_t = re*cx.real() - im*cx.imag();
+	im = re*cx.imag() + im*cx.real();
+	re = re_t;
+	return *this;
+    }
+
+    template <class X>
+    inline complex<long double>& operator/=(const complex<X>& cx) {
+	__kai::do_divide( *this, re, im, cx.real(), cx.imag() );
+	return *this;
+    }
+
+};
+
+// Because of the ordering of the class declarations, these must be done here.
+complex<float>::complex(const complex<double>& cx) : re(cx.real()), im(cx.imag()) {}
+complex<float>::complex(const complex<long double>& cx) : re(cx.real()), im(cx.imag()) {}
+complex<double>::complex(const complex<long double>& cx) : re(cx.real()), im(cx.imag()) {}
+
+
+// [26.2.6] operators:
+template <class T>
+inline complex<T> operator+(const complex<T>& c1, const complex<T>& c2) { return complex<T>(c1.real()+c2.real(),
+											    c1.imag()+c2.imag()); }
+template <class T>
+inline complex<T> operator+(const T& re, const complex<T>& cx) { return complex<T>(re+cx.real(), cx.imag()); }
+template <class T>
+inline complex<T> operator+(const complex<T>& cx, const T& re) { return complex<T>(re+cx.real(), cx.imag()); }
+
+template <class T>
+inline complex<T> operator-(const complex<T>& c1, const complex<T>& c2) { return complex<T>(c1.real()-c2.real(),
+											    c1.imag()-c2.imag()); }
+template <class T>
+inline complex<T> operator-(const T& re, const complex<T>& cx) { return complex<T>(re-cx.real(), -cx.imag()); }
+template <class T>
+inline complex<T> operator-(const complex<T>& cx, const T& re) { return complex<T>(cx.real()-re, cx.imag()); }
+
+template <class T>
+inline complex<T> operator*(const complex<T>& c1, const complex<T>& c2) {
+    return complex<T>((c1.real()*c2.real()-c1.imag()*c2.imag()),
+		      (c1.real()*c2.imag()+c2.real()*c1.imag()));
+}
+
+template <class T>
+inline complex<T> operator*(const T& re, const complex<T>& cx) { return complex<T>(re*cx.real(), re*cx.imag()); }
+template <class T>
+inline complex<T> operator*(const complex<T>& cx, const T& re) { return complex<T>(re*cx.real(), re*cx.imag()); }
+
+template <class T>
+inline complex<T> operator/(const complex<T>& c1, const complex<T>& c2)
+{
+    complex<T> result;
+    __kai::do_divide( result, c1.real(), c1.imag(), c2.real(), c2.imag() );
+    return result;
+}
+
+template <class T>
+inline complex<T> operator/(const T& z, const complex<T>& y)
+{
+#if KAI_COMPLEX_EXTRA_CHECKS
+    if (! (cx.real() || cx.imag())) {
+	domain_error::__throw("Division by zero error");
+    }
+#endif
+    typedef __kai::extend_precision<T>::type S;
+    S re, im;
+    S a = y.real();
+    S b = y.imag();
+    S c = (S)z;
+    if( sizeof(S)>sizeof(T) ) {
+	// Need not worry about exponent overflow/underflow.
+        S value = 1/(a*a+b*b);
+	re = (c*a)*value;
+	im = (-c*b)*value;
+    } else {
+	// Worry about exponent overflow/underflow.
+	S s;
+	if( std::abs(a)>=std::abs(b) ) {
+	    S q = b/a;
+	    s = a + q*b;
+	    re = c;
+	    im = -c*q; 
+	} else {
+	    S r = a/b;
+	    s = b + a*r;
+	    re = c*r;
+	    im = -c; 
+	}
+	re /= s;
+	im /= s;
+    }
+    return complex<T>(re,im);
+}
+
+template <class T>
+inline complex<T> operator/(const complex<T>& cx, const T& re)
+{
+#if KAI_COMPLEX_EXTRA_CHECKS
+    if (!re) {
+	domain_error::__throw("Division by zero error");
+    }
+#endif
+    return complex<T>(cx.real()/re, cx.imag()/re);
+}
+
+template <class T> inline complex<T> operator+(const complex<T>& cx) { return complex<T>(cx.real(), cx.imag()); }
+template <class T> inline complex<T> operator-(const complex<T>& cx) { return complex<T>(-cx.real(), -cx.imag()); }
+
+template <class T>
+inline bool operator==(const complex<T>& c1, const complex<T>& c2) { return ((c1.real() == c2.real()) &&
+									     (c1.imag() == c2.imag())); }
+template <class T>
+inline bool operator==(const T& re, const complex<T>& cx) { return ((re == cx.real()) && (!cx.imag())); }
+template <class T>
+inline bool operator==(const complex<T>& cx, const T& re) { return ((re == cx.real()) && (!cx.imag())); }
+
+template <class T>
+inline bool operator!=(const complex<T>& c1, const complex<T>& c2) { return ((c1.real() != c2.real()) ||
+									     (c1.imag() != c2.imag())); }
+template <class T>
+inline bool operator!=(const T& re, const complex<T>& cx) { return ((re != cx.real()) || (cx.imag())); }
+template <class T>
+inline bool operator!=(const complex<T>& cx, const T& re) { return ((re != cx.real()) || (cx.imag())); }
+
+template <class T, class charT, class traits>
+basic_istream<charT, traits>& operator>>(basic_istream<charT, traits>& is, complex<T>& cx)
+{
+    T re_t = 0;
+    T imt = 0;
+    char ch;
+    is >> ch;
+    if (!is.fail() && ch == '(') {	// if '(' : one of(re), (re, im)
+	is >> re_t >> ch;
+	if (!is.fail() && ch == ',')
+	    is >> imt >> ch;
+	if (!is.fail() && ch != ')') {	// no ')' : error
+	    is.setstate(ios_base::failbit);
+	    return is;
+	}
+    } else if (!is.fail()) {		// no '(' in the beginning: "re"
+	is.putback(ch);    
+	is >> re_t;
+    }
+
+    // check "is" is in good state
+    if (!is.fail())
+	cx = complex<T>(re_t, imt);
+    return is;
+}
+
+template <class T, class charT, class traits>
+basic_ostream<charT, traits>& operator<<(basic_ostream<charT, traits>& os, const complex<T>& cx)
+{
+    // We perform the output to a stringstream so the width setting of the ostream is obeyed.
+    basic_ostringstream<charT,traits> s;
+    s.flags(os.flags());
+    s.imbue(os.getloc());
+    s.precision(os.precision());
+    s << '(' << cx.real() << "," << cx.imag() << ')';
+    return os << s.str();
+}
+
+// [26.2.7] values:
+template <class T>
+inline T real(const complex<T>& x) { return x.real(); }
+
+template <class T>
+inline T imag(const complex<T>& x) { return x.imag(); }
+
+template <class T>
+inline T abs(const complex<T>& cx) { 
+    typedef __kai::extend_precision<T>::type S;
+    S a = cx.real();
+    S b = cx.imag();
+    return std::sqrt(a*a+b*b); 
+}
+
+template <class T>
+inline T arg(const complex<T>& cx)
+{
+#if KAI_COMPLEX_EXTRA_CHECKS
+    if (! (cx.real() || cx.imag()))
+	domain_error::__throw("arg(complex &): both real and imag are zero");
+#endif
+    return std::atan2(cx.imag(), cx.real());
+}
+
+template <class T>
+inline T norm(const complex<T>& cx) { return ( cx.real() * cx.real() + cx.imag() * cx.imag() ); }
+
+template <class T>
+inline complex<T> conj(const complex<T>& cx) { return complex<T>(cx.real(), -cx.imag()); }
+
+template <class T>
+inline complex<T> polar(const T& r, const T& arg) { return complex<T>(r*std::cos(arg), r*std::sin(arg)); }
+
+#if KAI_NONSTD_COMPLEX
+// Function inv was in previous releases of KCC.
+// It is not part of Cfront nor ANSI drafts since April 1995.
+// It is expected that it will disappear in some future release.
+template <class T> inline complex<T> inv(const complex<T>& cx)
+{
+    T value = (T)1/norm(cx);
+    return complex<T>(cx.real()*value, -cx.imag()*value);
+}
+#endif /* KAI_NONSTD_COMPLEX */
+
+// [26.2.8] transcendentals:
+template <class T>
+inline complex<T> cos(const complex<T>& cx)
+{
+    return complex<T>( std::cos(cx.real())*std::cosh(cx.imag()),
+		       -std::sin(cx.real())*std::sinh(cx.imag()));
+}
+
+template <class T>
+inline complex<T> cosh(const complex<T>& cx)
+{
+    return complex<T>( std::cos(cx.imag())*std::cosh(cx.real()),
+		       std::sin(cx.imag())*std::sinh(cx.real()));
+}
+
+template <class T>
+inline complex<T> exp(const complex<T>& cx)
+{
+    T value = std::exp(cx.real());
+    return complex<T>(value*std::cos(cx.imag()), value*std::sin(cx.imag()));
+}
+
+template <class T>
+inline complex<T> log(const complex<T>& cx) { return complex<T>(std::log(abs(cx)), arg(cx)); }
+template <class T>
+inline complex<T> log10(const complex<T>& cx) { return complex<T>(log(cx)/std::log(10.0)); }
+
+template <class T>
+inline complex<T> pow(const complex<T>& cb, const complex<T>& ce) { return exp(ce*log(cb)); }
+template <class T>
+inline complex<T> pow(const complex<T>& cx, const T& re) { return polar(std::pow(abs(cx), re), re*arg(cx)); }
+template <class T>
+inline complex<T> pow(const T& re, const complex<T>& cx) { return exp(cx*((T)log(re))); }
+template <class T>
+inline complex<T> pow(const complex<T>& cx, int i) { return polar(std::pow(abs(cx), i), i*arg(cx)); }
+
+template <class T>
+inline complex<T> sin(const complex<T>& cx)
+{ 
+    return complex<T>( std::sin(cx.real())*std::cosh(cx.imag()),
+		       std::cos(cx.real())*std::sinh(cx.imag()));
+}
+
+template <class T>
+inline complex<T> sinh(const complex<T>& cx)
+{
+    return complex<T>( std::cos(cx.imag())*std::sinh(cx.real()),
+		       std::sin(cx.imag())*std::cosh(cx.real()));
+}
+
+template <class T>
+inline complex<T> sqrt(const complex<T>& cx)
+{
+    typedef __kai::extend_precision<T>::type S;
+    S re, im;
+    S a = std::abs(cx.real());
+    S b = std::abs(cx.imag());
+    if ( b==0 ) {
+        re = std::sqrt( a );
+	im = 0;
+    } else {
+	S u;
+	if( sizeof(S)>sizeof(T) ) {
+	    // No need for scaling - avoid extra branch and divisions.
+            u = std::sqrt((a + std::sqrt( a*a+b*b ))*(S)2);
+	} else {
+	    // Exponent underflow/overflow a problem.  
+	    S p, q, r;
+	    if( a>=b ) {
+		// Real part is greater.
+		p = b/a; q = 1; r = a;
+	    } else {
+		// Imaginary part is greater.
+		p = a/b; q = p; r = b;
+	    }
+            u = std::sqrt((q + std::sqrt( 1+p*p ))*(S)2*r);
+	}
+	im = cx.imag()/u;
+	re = (S)0.5*u;
+    }	
+    if ( cx.real()<0 ) {
+	T temp;
+	if ( cx.imag()>=0 ) {
+	    temp=re; re=im; 
+	} else {
+	    temp=-re; re=-im; 
+	}	
+	im = temp;
+    } 
+    return complex<T>(re,im);
+}
+
+template <class T>
+inline complex<T> tan(const complex<T>& cx)
+{
+    T value = std::cos(2*cx.real()) + std::cosh(2*cx.imag());
+    if (value)
+        return complex<T>(std::sin(2*cx.real())/value, std::sinh(2*cx.imag())/value);
+    else
+        return complex<T>(std::tan(cx.real()), 0);
+}
+
+template <class T>
+inline complex<T> tanh(const complex<T>& cx)
+{
+    T value = std::cos(2*cx.imag()) + std::cosh(2*cx.real());
+    if (value)
+        return complex<T>(std::sinh(2*cx.real())/value, std::sin(2*cx.imag())/value);
+    else
+        return complex<T>(0, std::tan(cx.real()));
+}
+
+} // namespace std
+
+namespace __kai {
+
+template<class L,class R> inline void do_divide( std::complex<L>& z, L c, L d, R a, R b ) {
+#if KAI_COMPLEX_EXTRA_CHECKS
+    if (! (c2.real() || c2.imag())) {
+	domain_error::__throw("Division by zero error");
+    }
+#endif /* KAI_COMPLEX_EXTRA_CHECKS */
+    typedef __kai::extend_precision<L>::type EL;
+    typedef __kai::extend_precision<R>::type ER;
+    L re, im;
+    if( sizeof(ER)>sizeof(R) ) {
+	// Need not worry about exponent overflow/underflow.
+	ER x = (ER)a;
+	ER y = (ER)b;
+        ER value = 1/(x*x+y*y);
+	re = (c*x+d*y)*value;
+	im = (d*x-c*y)*value;
+    } else if( sizeof(EL)>sizeof(L) ) {
+	// Need not worry about exponent overflow/underflow, because in those cases the
+	// result does not fit anyway.
+	EL x = (EL)a;
+	EL y = (EL)b;
+	EL value = 1/(x*x+y*y);
+	re = (c*x+d*y)*value;
+	im = (d*x-c*y)*value;
+    } else {
+	// Worry about exponent overflow/underflow.
+	R s;
+	if( std::abs(a)>=std::abs(b) ) {
+	    R q = b/a;
+	    s = a + q*b;
+	    re = c + d*q;
+	    im = d - c*q; 
+	} else {
+	    R r = a/b;
+	    s = b + a*r;
+	    re = c*r + d;
+	    im = d*r - c; 
+	}
+	re /= s;
+	im /= s;
+    }
+    z = std::complex<L>(re,im);
+}
+
+} // namespace __kai
+
+#endif /* MSIPL_COMPLEX_H */

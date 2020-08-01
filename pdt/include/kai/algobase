@@ -1,0 +1,157 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+/**
+ **  Lib++  : The Modena C++ Standard Library,
+ **           Version 2.4, October 1997
+ **
+ **  Copyright (c) 1995-1997 Modena Software Inc.
+ **/
+#ifndef __KAI_ALGOBASE
+#define __KAI_ALGOBASE
+
+#include <mcompile.h>
+#include <iterator>
+#include <utility>
+
+namespace __kai {
+    template<class T> struct default_less {
+        bool operator()( const T& a, const T& b ) const {return a<b;}
+    };
+} // namespace __kai    
+
+namespace std {
+
+// Section 25.1.7 -- Mismatch
+template <class InputIterator1, class InputIterator2>
+inline pair<InputIterator1, InputIterator2>
+mismatch(InputIterator1 first1, InputIterator1 last1,
+	 InputIterator2 first2)
+{
+    while (first1 != last1 && *first1 == *first2) {
+        ++first1;
+        ++first2;
+    }
+    return pair<InputIterator1, InputIterator2>(first1, first2);
+}
+
+template <class InputIterator1, class InputIterator2, class BinaryPredicate>
+inline pair<InputIterator1, InputIterator2>
+mismatch(InputIterator1 first1, InputIterator1 last1,
+	 InputIterator2 first2, BinaryPredicate binary_pred)
+{
+    while (first1 != last1 && binary_pred(*first1, *first2)) {
+        ++first1;
+        ++first2;
+    }
+    return pair<InputIterator1, InputIterator2> (first1, first2);
+}
+
+// Section 25.1.8 -- Equal
+template <class InputIterator1, class InputIterator2>
+inline bool equal (InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
+{ return mismatch (first1, last1, first2).first == last1; }
+
+template <class InputIterator1, class InputIterator2, class BinaryPredicate>
+inline bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate binary_pred)
+{ return mismatch (first1, last1, first2, binary_pred).first == last1; }
+
+
+// Section 25.2.1 -- Copy 
+template <class InputIterator, class OutputIterator>
+inline OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result)
+{
+    for (; first != last; ++result, ++first)
+	*result = *first;
+    return result;
+}
+
+// Section 25.2.1 -- Copy backward 
+template <class BidirectionalIterator1, class BidirectionalIterator2>
+inline BidirectionalIterator2 copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 last, 
+					    BidirectionalIterator2 result)
+{
+    while (first != last)
+	*--result = *--last;
+    return result;
+}
+
+// Section 25.2.2.1 -- swap
+template <class T>
+inline void swap(T& a, T& b)
+{
+    T tmp = a;
+    a = b;
+    b = tmp;
+}
+
+// Section 25.2.5 -- Fill 
+template <class ForwardIterator, class T>
+inline void fill(ForwardIterator first, ForwardIterator last, const T& value)
+{
+    for (; first != last; ++first)
+	*first = value;
+}
+
+template <class OutputIterator, class Size, class T>
+inline OutputIterator fill_n(OutputIterator first, Size n, const T& value)
+{
+    for (; n-- > 0; ++first)
+	*first = value;
+    return first;
+}
+
+// Section 25.3.7.1 -- min
+
+template <class T>
+inline const T& min(const T& a, const T& b)
+{ return b < a ? b : a; }
+
+template <class T, class Compare>
+inline const T& min (const T& a, const T& b, Compare comp)
+{ return comp(b, a) ? b : a; }
+
+// Section 25.3.7.2 -- max
+template <class T>
+inline const T& max (const T& a, const T& b)
+{ return  a < b ? b : a; }
+
+template <class T, class Compare>
+inline const T& max(const T& a, const T& b, Compare comp)
+{ return comp (a, b) ? b : a; }
+
+// Section 25.3.8 -- Lexicographical comparison 
+template <class InputIterator1, class InputIterator2>
+bool lexicographical_compare(InputIterator1 first1, InputIterator1 last1,
+			     InputIterator2 first2, InputIterator2 last2)
+{
+    for (; first1 != last1 && first2 != last2; ++first1, ++first2)
+    {
+        if (*first1 < *first2) return true;
+        if (*first2 < *first1) return false;
+    }
+    return first1 == last1 && first2 != last2;
+}
+
+template <class InputIterator1, class InputIterator2, class Compare>
+bool lexicographical_compare(InputIterator1 first1, InputIterator1 last1,
+			     InputIterator2 first2, InputIterator2 last2,
+			     Compare comp)
+{
+    for (; first1 != last1 && first2 != last2; ++first1, ++first2)
+    {
+        if (comp(*first1, *first2))
+	    return true;
+        if (comp(*first2, *first1))
+	    return false;
+    }
+    return first1 == last1 && first2 != last2;
+}
+
+} // namespace std
+
+#endif /* MSIPL_ALGOBASE_H */
+

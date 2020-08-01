@@ -1,0 +1,649 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **/
+/**
+ **  Lib++  : The Modena C++ Standard Library,
+ **           Version 2.4, October 1997
+ **
+ **  Copyright (c) 1995-1997 Modena Software Inc.
+ **/
+#ifndef __KAI_LIST
+#define __KAI_LIST
+
+#include <mcompile.h>
+#include <memory>
+#include <algobase>
+#include <limits>
+#include <kai_allocator>
+
+namespace __kai {
+
+struct list_node_base {
+    list_node_base * next;
+    list_node_base * prev;
+};
+
+inline void list_transfer( list_node_base*p, list_node_base* q, list_node_base* r_next ) 
+// Must not be called if q==r_next
+{
+    if( p!=q && p!=r_next ) {
+	// Cut [q,r] from source list.
+	list_node_base* p_prev = p->prev;
+	list_node_base* r = r_next->prev;
+	list_node_base* q_prev = q->prev;
+	q_prev->next = r_next;
+	r_next->prev = q_prev;
+
+	// Splice [q,r] in front of p.
+	p->prev = r;
+	p_prev->next = q;
+	r->next = p;
+	q->prev = p_prev;
+    }
+}
+
+void list_reverse( list_node_base * p ) throw();
+ 
+template<class T> class list_n_of_iterator {
+private:
+    size_t n;
+    const T* value;
+public:
+    list_n_of_iterator( size_t n1, const T& value1 ) : n(n1), value(&value1) {}
+    list_n_of_iterator() : n(0), value(0) {}
+    const T& operator*() const {return *value;}
+    const list_n_of_iterator& operator++() {--n; return *this;}
+    bool operator==( const list_n_of_iterator& other ) {return n==0;}
+};
+
+} // namespace kai
+
+namespace std {
+
+template <class T, class Allocator = allocator<T> >
+class list: public __kai::allocator_base<Allocator> {
+public:
+    // types:
+    typedef typename Allocator::reference	reference;
+    typedef typename Allocator::const_reference	const_reference;
+    class iterator;
+    class const_iterator;
+    // Note that the size of a list is unrelated to Allocator::size_type - ADR
+    typedef unsigned long 			size_type;
+    typedef long 			        difference_type;
+    typedef          T				value_type;
+    typedef          Allocator			allocator_type;
+    typedef typename Allocator::pointer		pointer;
+    typedef typename Allocator::const_pointer	const_pointer;
+    typedef std::reverse_iterator<iterator>	reverse_iterator;
+    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+   
+private:
+    typedef __kai::list_node_base list_node_base;
+
+    struct list_node: public list_node_base {
+	T data;
+    };
+
+    typedef __kai::allocator_base<Allocator> value_allocator_type;
+    typedef typename Allocator:: template rebind<list_node>::other list_node_allocator_type;
+
+    template<bool b> class _Helper {};
+
+    template<class InputIterator>
+    void _disambiguate_assign(InputIterator first, InputIterator last, _Helper<true> *) {
+	_assign( __kai::list_n_of_iterator<T>((size_type)first,(T)last), __kai::list_n_of_iterator<T>() );
+    }
+
+    template<class InputIterator>
+    void _disambiguate_assign(InputIterator first, InputIterator last, _Helper<false> *) {
+	_assign( first, last );
+    }
+
+    template<class InputIterator>
+    void _insert(iterator position, InputIterator first, InputIterator last, _Helper<true> *) {
+	size_type n = static_cast<size_type>(first);
+	const T value = static_cast<T>(last);
+	insert(position, n, value);
+    }
+    template<class InputIterator>
+    void _insert(iterator position, InputIterator first, InputIterator last, _Helper<false> *) {
+	for (; first != last; ++first) 
+	    insert(position, *first);
+    }
+   
+    template<class InputIterator>
+    void _assign(InputIterator first, InputIterator last);
+
+public:
+    //  23.2.2.1  construct/copy/destroy:
+    explicit list(const Allocator& a=Allocator()) : value_allocator_type(a), length(0) {root.prev=root.next=&root;}
+
+    list(size_type n, const T& value=T(), const Allocator& a=Allocator()) :
+	value_allocator_type(a), length(0) 
+    {
+	root.prev=root.next=&root; 
+	if(n>0) {
+	    _assign( __kai::list_n_of_iterator<T>(n,value), __kai::list_n_of_iterator<T>() );
+	}
+    }
+
+    template <class InputIterator>
+    list(InputIterator first, InputIterator last, const Allocator& a=Allocator() ) : 
+	value_allocator_type(a), length(0)
+    {
+	root.prev=root.next=&root; 
+	_disambiguate_assign(first, last, (_Helper<numeric_limits<InputIterator>::is_integer> *)0);
+    }
+
+    list(const list<T, Allocator>& x) : 
+	value_allocator_type(x), length(0)
+    {
+	root.prev=root.next=&root;
+	if( x.length ) {
+	    _assign( x.begin(), x.end() );
+	}
+    }
+
+    ~list();
+
+    list<T, Allocator>& operator=(const list<T, Allocator>& x);
+
+    template<class InputIterator>
+    void assign(InputIterator first2, InputIterator last2) {_disambiguate_assign(first2,last2,(_Helper<numeric_limits<InputIterator>::is_integer> *)0);}
+
+    void assign(size_type n, const T& t) {
+	_assign( __kai::list_n_of_iterator<T>(n,t), __kai::list_n_of_iterator<T>() );
+    }
+
+    //  Iterators:
+    iterator		   begin()	 { return iterator(root.next); }
+    const_iterator	   begin() const { return const_iterator(root.next); }
+    iterator		   end()       { return iterator(&root); }
+    const_iterator	   end() const { return const_iterator(&root); }
+    reverse_iterator       rbegin()	  { return reverse_iterator(end()); }
+    const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
+    reverse_iterator       rend()	{ return reverse_iterator(begin()); }
+    const_reverse_iterator rend() const { return const_reverse_iterator(begin()); }
+
+    // 23.2.2.2
+    bool empty() const { return(length == 0); }
+    size_type size() const { return length; }
+
+    void resize(size_type new_size) { resize(new_size, T()); }
+
+    void resize(size_type new_size, T c);
+    
+    //   element access:
+    reference         front()       { return *begin();   }
+    const_reference   front() const { return *begin();   }
+    reference         back()        { return *(--end()); }
+    const_reference   back() const  { return *(--end()); }
+
+    //   23.2.2.3  modifiers
+    void push_front(const T& x) { insert(begin(), x); }
+    void push_back(const T& x)  { insert(end(), x);   }
+    void pop_front()            { erase(begin()); }
+    void pop_back()		{ erase(--end()); }
+
+ 
+    iterator insert(iterator position, const T& x) {
+	link_type tmp = get_node();
+	MSIPL_TRY {
+	    _get_allocator().construct(&((*tmp).data), x);
+	}
+	MSIPL_CATCH {
+	    free_node(tmp);
+	    MSIPL_RETHROW;
+	}
+	list_node_base * next = position.node;
+	list_node_base * prev = next->prev;
+	tmp->prev = prev;
+	tmp->next = next;
+	prev->next = tmp;
+	next->prev = tmp;
+	++length;
+	return iterator(tmp);
+    }
+     
+    void insert(iterator position, size_type n, const T& x) {
+	if( n>0 ) {
+	    list tmp( n, x );
+	    __kai::list_transfer( position.node, tmp.root.next, &tmp.root );
+	    length += tmp.length;
+	    tmp.root.next = tmp.root.prev = &tmp.root;
+	    tmp.length = 0;
+	}
+    }
+
+    template <class InputIterator>
+    void insert(iterator position, InputIterator first, InputIterator last) {
+	if( first!=last ) {
+	    list tmp( first, last );
+	    __kai::list_transfer( position.node, tmp.root.next, &tmp.root );
+	    length += tmp.length;
+	    tmp.root.next = tmp.root.prev = &tmp.root;
+	    tmp.length = 0;
+	}
+    }
+
+    iterator erase(iterator position) {
+	link_type p = static_cast<link_type>(position.node);
+	list_node_base* next = p->next;
+	list_node_base* prev = p->prev;
+	prev->next = p->next;
+	next->prev = p->prev;
+	_get_allocator().destroy(&p->data);	
+	--length;
+	free_node(p);
+	return iterator(next);
+    }
+
+    iterator erase(iterator first, iterator last) {
+	while(first != last) 
+	    erase(first++);
+	return last;
+    }
+
+    void swap(list<T, Allocator>& x) {
+	std::swap( *(value_allocator_type*)this, *(value_allocator_type*)&x );
+	std::swap(length, x.length);
+	std::swap(root, x.root);
+	if( length ) {
+	    root.prev->next = root.next->prev = &root;
+	} else {
+	    root.prev = root.next = &root;
+	}
+	if( x.length ) {
+	    x.root.prev->next = x.root.next->prev = &x.root;
+	} else {
+	    x.root.prev = x.root.next = &x.root;
+	}
+    }
+
+    void clear() { erase(begin(), end()); }
+
+    // 23.2.2.4 list operations
+    void splice(iterator position, list<T, Allocator>& x) {
+	if (!x.empty() && &x != this) {
+	    __kai::list_transfer(position.node, x.begin().node, x.end().node );
+	    length += x.length;
+	    x.length = 0;
+	}
+    }
+
+    void splice(iterator position, list<T, Allocator>& x, iterator i) {
+	__kai::list_transfer(position.node, i.node, i.node->next);       
+	++length;
+	--x.length;
+    }
+
+    void splice(iterator position, list<T, Allocator>& x, iterator first, iterator last) {
+	if (first != last) {
+	    if (&x != this) {
+		difference_type n = distance(first, last);
+		x.length -= n;
+		length += n;
+	    }
+	    __kai::list_transfer(position.node, first.node, last.node);
+	}
+    }
+
+    void remove(const T& value);
+    template <class Predicate>
+    void remove_if(Predicate pred);
+ 
+    void unique();
+    template <class BinaryPredicate>
+    void unique(BinaryPredicate binary_pred);
+ 
+    void merge(list<T, Allocator>& x) {merge(x,__kai::default_less<T>());}
+
+    template <class Compare>
+    void merge(list<T, Allocator>& x, Compare comp);
+
+    void sort() {sort(__kai::default_less<T>());}
+
+    template <class Compare>
+    void sort(Compare comp);
+ 
+    void reverse() {if( length>=2 ) __kai::list_reverse(&root);}
+
+private:
+    void clean_up() {
+	while( root.next != &root ) {
+	    link_type p = static_cast<link_type>(root.next);
+	    root.next = p ->next;
+	    if( length>0 ) {
+		--length;
+		_get_allocator().destroy(&p->data);
+	    }
+	    free_node(p);
+	}
+    }
+
+private:
+    friend class list::iterator;
+    friend class list::const_iterator;
+    typedef struct list::list_node * link_type;
+
+    list_node_base 		  root;
+    size_type                     length;
+	// Note on exception safety: the first "length" items in the list are always constructed.
+	// When cleaning up after an exception, the first "length" items must be destroyed.
+	// Then all items in the list must be deallocated.  
+	
+    link_type get_node() {
+	return _get_rebound_allocator<list_node_allocator_type>().allocate((typename Allocator::size_type)1);
+    }
+
+    void free_node( list_node_base * p ) {
+	return _get_rebound_allocator<list_node_allocator_type>().deallocate(static_cast<list_node*>(p),(typename Allocator::size_type)1);
+    }
+
+public:
+    class iterator : public std::iterator<bidirectional_iterator_tag, T, difference_type, pointer, reference>
+    {
+	friend class list;
+	friend class list::const_iterator;
+
+	list_node_base* node;
+
+	iterator(list_node_base* x) : node(x) {}
+
+    public:
+	iterator() : node(0) {} 
+
+	bool operator==(const iterator& x) const { return node == x.node; }
+	bool operator==(const const_iterator& x) const { return node == x.node; }
+	bool operator!=(const iterator& x) const { return node != x.node; }
+	bool operator!=(const const_iterator& x) const { return node != x.node; }
+	reference operator*() const { return static_cast<link_type>(node)->data; }
+	pointer operator->() const { return &(operator*()); }
+	iterator& operator++() {
+	    node = node->next;
+	    return *this;
+	}
+	iterator operator++(int) {
+	    iterator tmp = *this;
+	    ++*this;
+	    return tmp;
+	}
+	iterator& operator--() {
+	    node = node->prev;
+	    return *this;
+	}
+	iterator operator--(int) {
+	    iterator tmp = *this;
+	    --*this;
+	    return tmp;
+	}
+    };
+
+    // const_iterator
+    class const_iterator : public std::iterator<bidirectional_iterator_tag, T, difference_type, const_pointer, const_reference>
+    {
+	friend class list;
+	friend class list::iterator;
+
+	const list_node_base* node;
+
+	const_iterator(const list_node_base* x) : node(x) { }
+
+    public:
+	const_iterator(): node(0) { }
+
+	const_iterator(const list::iterator& x) : node(x.node) { }
+
+	bool operator==(const const_iterator& x) const { return node == x.node; }
+	bool operator!=(const const_iterator& x) const { return node != x.node; }
+	const_reference operator*() const { return static_cast<const list_node*>(node)->data; }
+	const_pointer operator->() const { return &(operator*()); }
+	const_iterator& operator++() {
+	    node = node->next;
+	    return *this;
+	}
+	const_iterator operator++(int) {
+	    const_iterator tmp = *this;
+	    ++*this;
+	    return tmp;
+	}
+	const_iterator& operator--() {
+	    node = node->prev;
+	    return *this;
+	}
+	const_iterator operator--(int) {
+	    const_iterator tmp = *this;
+	    --*this;
+	    return tmp;
+	}
+    };
+
+};
+
+template <class T, class Allocator>
+inline bool operator==(const list<T, Allocator>& x, const list<T, Allocator>& y)
+{
+    return x.size() == y.size() && equal(x.begin(), x.end(), y.begin());
+}
+template <class T, class Allocator>
+inline bool operator<(const list<T, Allocator>& x, const list<T, Allocator>& y)
+{
+    return lexicographical_compare(x.begin(), x.end(), y.begin(), y.end());
+}
+template <class T, class Allocator>
+inline bool operator!=(const list<T, Allocator>& x, const list<T, Allocator>& y) { return ! (x == y); }
+template <class T, class Allocator>
+inline bool operator>(const list<T, Allocator>& x, const list<T, Allocator>& y) { return(y < x); }
+template <class T, class Allocator>
+inline bool operator>=(const list<T, Allocator>& x, const list<T, Allocator>& y) { return ! (x < y); }
+template <class T, class Allocator>
+inline bool operator<=(const list<T, Allocator>& x, const list<T, Allocator>& y) { return ! (y < x); }
+
+template <class T, class Allocator>
+void swap(list<T, Allocator>& x, list<T, Allocator>& y)
+{
+    x.swap(y);
+}
+
+template <class T, class Allocator>
+list<T, Allocator>::~list() {
+    clean_up();
+}
+
+template<class T, class Allocator>
+template<class InputIterator>
+void list<T, Allocator>::_assign( InputIterator first, InputIterator last ) {
+    // Destroy any extra nodes.
+    list_node_base * p=root.prev;
+    while( length>0 ) {
+	_get_allocator().destroy(&static_cast<link_type>(p)->data);
+	p = p->prev;
+	--length;
+    }
+    p = root.next;
+    if( !(first==last) ) {
+        // Construct nodes
+	MSIPL_TRY {
+	    do {
+	        if( p==&root ) {
+		    // Link in a new node at end of list.
+		    p = get_node();
+	            list_node_base * q = root.prev;
+		    p->next = &root;
+		    p->prev = root.prev;
+		    q->next = p;
+		    root.prev = p;
+	        }
+		_get_allocator().construct( &static_cast<link_type>(p)->data, *first );
+		++first;
+		++length;
+		p = p->next;
+	    } while( !(first==last) );
+	}
+	MSIPL_CATCH {
+    	    clean_up();     
+            MSIPL_RETHROW;
+	}
+    }
+    // Free any extra nodes.
+    while( p!=&root ) {
+	list_node_base* p_next = p->next;
+	list_node_base* p_prev = p->prev;
+	p_next->prev = p_prev;
+	p_prev->next = p_next;
+	free_node( p );
+	p = p_next;
+    }
+}
+
+template <class T, class Allocator>
+list<T, Allocator>& list<T, Allocator>::operator=(const list<T, Allocator>& x) {
+    if (this == &x)
+	return *this;
+    iterator first1 = begin();
+    iterator last1 = end();
+    const_iterator first2 = x.begin();
+    const_iterator last2 = x.end();
+    for (; first1 != last1 && first2 != last2; ++first1, ++first2) 
+	*first1 = *first2;
+    if (first2 == last2)
+	erase(first1, last1);
+    else
+	insert(last1, first2, last2);
+    return *this;
+}
+
+template <class T, class Allocator>
+void list<T, Allocator>::resize(size_type new_size, T c) {
+    const size_type len = length;
+    if (new_size < len) {
+	iterator iter;
+	if (new_size < len / 2) {
+	    iter = begin();
+	    advance(iter,  (difference_type)new_size);
+	} else {
+	    iter = end();
+	    advance(iter,  (difference_type) (new_size - len));
+	}
+	erase(iter, end());
+    } else if (new_size > len)
+	insert(end(), new_size - len, c);
+}
+
+template <class T, class Allocator>
+void list<T, Allocator>::remove(const T& value)
+{
+    iterator first = begin();
+    iterator last = end();
+    while (first != last)
+	if (*first == value) 
+	    erase(first++);
+	else 
+	    ++first;
+}
+ 
+template <class T, class Allocator>
+void list<T, Allocator>::unique()
+{
+    iterator first = begin();
+    iterator last = end();
+    if (first == last) return;
+    iterator next = first;
+    while (++next != last) {
+	if (*first == *next) {
+	    erase(next);
+	    next = first;
+	} else {
+	    first = next;
+	}
+    }
+}
+
+template <class T, class Allocator>
+template <class Predicate>
+void list<T, Allocator>::remove_if(Predicate pred)
+{
+    iterator first = begin();
+    iterator last = end();
+    while (first != last)
+	if (pred(*first)) 
+	    erase(first++);
+	else 
+	    first++;
+}
+ 
+template <class T, class Allocator>
+template <class BinaryPredicate>
+void list<T, Allocator>::unique(BinaryPredicate binary_pred)
+{
+    iterator first = begin();
+    iterator last = end();
+    if (first == last)
+	return;
+    iterator next = first;
+    while (++next != last)
+	if (binary_pred(*first, *next)) { 
+	    erase(next); next =first;
+	} else
+	    first = next;
+}
+ 
+template <class T, class Allocator>
+template <class Compare>
+void list<T, Allocator>::merge(list<T, Allocator>& x, Compare comp)
+{
+    if( this == &x || x.empty())
+	return;
+    list_node_base* first1 = root.next;
+    list_node_base* last1 = &root;
+    list_node_base* first2 = x.root.next;
+    list_node_base* last2 = &x.root;
+    while( first1 != last1 && first2 != last2 ) {
+	list_node_base* p=first2; 
+	while( comp(static_cast<link_type>(first2)->data,static_cast<link_type>(first1)->data) ) {
+	    first2=first2->next;
+	    if( first2==last2 ) break;
+	}
+	if( p!=first2 ) {
+	    __kai::list_transfer(first1, p, first2);
+	}
+	first1 = first1->next;
+    }
+    if( first2 != last2 ) 
+	__kai::list_transfer( last1, first2, last2);
+    length += x.length;
+    x.length= 0;
+}
+ 
+template <class T, class Allocator>
+template <class Compare>
+void list<T, Allocator>::sort(Compare comp)
+{
+    if (size() < 2)
+	return;
+    list<T, Allocator> carry;
+    list<T, Allocator> counter[64];
+    int fill = 0;
+    while (!empty()) {
+	carry.splice(carry.begin(), *this, begin());
+	int i = 0;
+	while (i < fill && !counter[i].empty()) {
+	    counter[i].merge(carry, comp);
+	    carry.swap(counter[i++]);
+	}
+	carry.swap(counter[i]);
+	if (i == fill) 
+	    ++fill;
+    }
+    while (fill--) 
+	merge(counter[fill], comp);
+}
+
+
+} // namespace std
+
+#endif /* __KAI_LIST */

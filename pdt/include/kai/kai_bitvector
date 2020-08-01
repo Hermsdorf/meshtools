@@ -1,0 +1,84 @@
+/** -*- C++ -*-
+ **
+ **  KAI C++ Compiler
+ **
+ **  Copyright (C) 1996-2001 Intel Corp. All rights reserved.
+ **
+ **  This is a plug-in replacement for Modena's <bitset>.
+ **  It generates much faster and more compact bitsets than Modena's version.
+ **/
+#ifndef __KAI_BITVECTOR
+#define __KAI_BITVECTOR
+
+#include <cstddef>
+#include <climits>			/* need CHAR_BIT from here */
+
+namespace std {
+template<size_t N> class bitset;
+}
+
+namespace __kai {
+
+// type of a chunk.
+typedef unsigned long chunk_t; 
+
+// number of bits in a chunk.
+static const int chunk_bits = CHAR_BIT*sizeof(chunk_t);
+
+// Functions from KAI run-time support library.
+void vector_and( chunk_t[], const chunk_t[], const chunk_t[], size_t n ) MSIPL_THROW;
+void vector_or( chunk_t[], const chunk_t[], const chunk_t[], size_t n ) MSIPL_THROW;
+void vector_xor( chunk_t[], const chunk_t[], const chunk_t[], size_t n ) MSIPL_THROW;
+void set( chunk_t[], size_t n, chunk_t last_mask ) MSIPL_THROW;
+void reset( chunk_t[], size_t n ) MSIPL_THROW;
+bool any( const chunk_t[], size_t n ) MSIPL_THROW;
+size_t count( const chunk_t a[], size_t n ) MSIPL_THROW;
+void shift_left( chunk_t[], const chunk_t[], size_t pos, size_t n_chunk, chunk_t last_mask ) MSIPL_THROW;
+void shift_right( chunk_t[], const chunk_t[], size_t pos, size_t n_chunk ) MSIPL_THROW;
+void vector_not( chunk_t[], const chunk_t[], size_t n, chunk_t last_mask ) MSIPL_THROW;
+bool equal( const chunk_t[], const chunk_t[], size_t n ) MSIPL_THROW;
+
+enum no_initialization_t {
+    NO_INITIALIZATION
+};
+
+//
+// bit reference
+//
+class bit_reference {
+public :
+    bit_reference& operator= (bool x) { 
+	if( x ) *chunk |= mask; 
+	else *chunk &= ~mask; 
+	return *this; 
+    }
+    bit_reference& operator=(const bit_reference& x) {
+	return *this = bool(x);
+    }
+    bool operator~() const {
+	return !bool();
+    }
+    operator bool() const { 
+	return (*chunk & mask) != 0; 
+    }
+    bit_reference& flip () { 
+	*chunk ^= mask; 
+	return *this; 
+    }
+private:
+    __kai::chunk_t * chunk;
+    __kai::chunk_t mask;
+
+    // N.B. % and / operations are unsigned, and thus optimize 
+    // to bit twiddling when __kai::chunk_bits is power of two.
+    bit_reference( int n_chunk, chunk_t * chunk1, size_t i ) : 
+	chunk( n_chunk==1 ? chunk1 : chunk1 + i/chunk_bits ),		
+	mask( (chunk_t)1<<(i % chunk_bits) )
+    {}
+    template<size_t N>  friend class std::bitset;
+         // Class bitset needs access to constructor.
+};
+
+} // namespace __kai
+
+#endif /*__KAI_BITVECTOR */
