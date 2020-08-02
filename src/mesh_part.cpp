@@ -16,33 +16,31 @@ Mesh_partition_t::Mesh_partition_t()
 
 Mesh_partition_t::~Mesh_partition_t()
 {
-    if(this) {
-        if(this->elem_part) delete [] this->elem_part;
-        if(this->nodal_part) delete [] this->nodal_part;
-    }
+    delete [] this->elem_part;
+    delete [] this->nodal_part;
 }
 
-int Mesh_partition_t::get_N_partitions()
+int Mesh_partition_t::get_n_partitions()
 {
     return this->n_partitions;
 }
-int* Mesh_partition_t::get_Nodal_part()
+int* Mesh_partition_t::get_nodal_part()
 {
     return this->nodal_part;
 }
-int* Mesh_partition_t::get_Elem_part()
+int* Mesh_partition_t::get_elem_part()
 {
     return this->elem_part;
 }
-void Mesh_partition_t::set_N_partitions(int n_partitions)
+void Mesh_partition_t::set_n_partitions(int n_partitions)
 {
     this->n_partitions = n_partitions;
 }
-void Mesh_partition_t::set_Nodal_part(int* nodal_part)
+void Mesh_partition_t::set_nodal_part(int* nodal_part)
 {
     this->nodal_part = nodal_part;
 }
-void Mesh_partition_t::set_Elem_part(int* elem_part)
+void Mesh_partition_t::set_elem_part(int* elem_part)
 {
     this->elem_part = elem_part;
 }
@@ -50,9 +48,8 @@ void Mesh_partition_t::set_Elem_part(int* elem_part)
 void Mesh_partition_t::MeshPartitionerInternal(Mesh* mesh, int nparts)
 {
     int metis_return; 
-    int nelem = mesh->get_N_elements();
-    int nfe = mesh->get_N_face_elements();
-    int nnodes = mesh->get_N_nodes();
+    int nelem = (int)mesh->get_n_elements();
+    int nnodes = (int)mesh->get_n_nodes();
     
     std::cout << "Partitioning in "<< nparts <<" parts" << std::endl;
 
@@ -72,27 +69,19 @@ void Mesh_partition_t::MeshPartitionerInternal(Mesh* mesh, int nparts)
     }
     else
     {
-        int ofs          = mesh->getOffset()[nfe];
-        int *eptr        = new int [nelem + 1];
+        int ofs          = mesh->getElementOffset(0)[0];
+        int *eptr        = new int[nelem + 1];
         
-#ifdef DEBUG_
-        std::cout << "EPTR: " << endl;
-#endif
-        for(int i = nfe, j = 0; i < mesh->getOffset().size() ; i++, j++)
+        int* offset_aux = (int*)mesh->getElementOffset(0);
+        for (int i = 0, j = 0; i <= nelem ; i++, j++)
         {
-                eptr[j] = mesh->getOffset()[i] - ofs;
-#ifdef DEBUG_
-                std::cout << eptr[j] << " ";
-#endif
+            eptr[j] = offset_aux[i] - ofs;
         }
-        
-#ifdef DEBUG_
-        std::cout << std::endl;
-#endif
+
 
         idx_t *ne       = &nelem;
         idx_t *nn       = &nnodes; 
-        idx_t *eind     = &mesh->getConn()[ofs]; // mesh->conn + ofs;
+        idx_t *eind     = (idx_t*)mesh->getElementConn(0);
         idx_t *vwgt     = 0;
         idx_t *vsize    = 0;
         idx_t ncommon   = 1;
@@ -107,8 +96,6 @@ void Mesh_partition_t::MeshPartitionerInternal(Mesh* mesh, int nparts)
         options[METIS_OPTION_OBJTYPE]   = METIS_OBJTYPE_CUT;
         options[METIS_OPTION_NUMBERING] = 0;
 
-
-        //metis_return = METIS_PartMeshDual(ne,nn,eptr,eind,vwgt,vsize, &ncommon, &nparts, tpwgts, options, &objval, mp->elem_part, mp->nodal_part);
         metis_return = METIS_PartMeshNodal(ne,nn,eptr,eind,vwgt,vsize, &nparts, tpwgts, options, &objval, this->elem_part, this->nodal_part);
 
         delete [] eptr;
@@ -121,9 +108,9 @@ void Mesh_partition_t::MeshPartitioner(Mesh* mesh, int nparts)
 {
 
     int metis_return; 
-    int nelem = mesh->get_N_elements();
-    int nfe = mesh->get_N_face_elements();
-    int nnodes = mesh->get_N_nodes();
+    int nelem = (int)mesh->get_n_elements();
+    int nfe = (int)mesh->get_n_face_elements();
+    int nnodes = (int)mesh->get_n_nodes();
     int ntelem = nelem + nfe;
 
     std::cout << "Partitioning in "<< nparts <<" parts" << std::endl;
@@ -133,7 +120,7 @@ void Mesh_partition_t::MeshPartitioner(Mesh* mesh, int nparts)
     this->elem_part    = new int [ntelem];
     this->nodal_part   = new int [nnodes];
 
-    for(int i = 0 ; i < ntelem + nfe ; i++)
+    for(int i = 0 ; i < ntelem ; i++)
         this->elem_part[i] = 0;
     for(int i = 0 ; i < nnodes ; i++)
         this->nodal_part[i] = 0;
@@ -146,8 +133,8 @@ void Mesh_partition_t::MeshPartitioner(Mesh* mesh, int nparts)
     {
         idx_t *ne       = &ntelem;
         idx_t *nn       = &nnodes; 
-        idx_t *eptr     = mesh->getSurfaceElementOffset(0);
-        idx_t *eind     = mesh->getSurfaceElementConn(0);
+        idx_t *eptr     = (idx_t*)mesh->getSurfaceElementOffset(0);
+        idx_t *eind     = (idx_t*)mesh->getSurfaceElementConn(0);
         idx_t *vwgt     = 0;
         idx_t *vsize    = 0;
         idx_t ncommon   = 1;

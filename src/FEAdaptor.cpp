@@ -28,28 +28,27 @@ namespace
 
     vtkNew<vtkDoubleArray> pointArray;
     pointArray->SetNumberOfComponents(3);
-    pointArray->SetArray(pointData, static_cast<vtkIdType>(mesh->get_N_nodes() * 3), 1); 
+    pointArray->SetArray(pointData, static_cast<vtkIdType>(mesh->get_n_nodes() * 3), 1); 
     vtkNew<vtkPoints> points;
     points->SetData(pointArray.GetPointer());
     VTKGrid->SetPoints(points.GetPointer());
 
     // create the cells
-    int ne = mesh->get_N_elements();
-    int nfe = mesh->get_N_face_elements();
-    unsigned int* cellsData = (unsigned int*)&mesh->getConn()[mesh->getOffset()[nfe]];
+    unsigned int ne = mesh->get_n_elements();
+    unsigned int nfe = mesh->get_n_face_elements();
+    unsigned int* cellsData = mesh->getElementConn(0);
 
-    VTKGrid->Allocate(static_cast<vtkIdType>(mesh->getOffset().back() - mesh->getOffset()[nfe]));
+    VTKGrid->Allocate(static_cast<vtkIdType>(mesh->getOffset().back() - mesh->getElementOffset(0)[0]));
     for (unsigned int cell = 0; cell < ne; cell++)
     {
-      unsigned int cell_skip = cell + nfe;
-      int n_conn = mesh->getOffset()[cell_skip + 1] - mesh->getOffset()[cell_skip];
+      int n_conn = mesh->getElementOffset(cell + 1)[0] - mesh->getElementOffset(cell)[0];
       unsigned int *cellPoints = cellsData + (n_conn * cell);
 
       vtkIdType* tmp = new vtkIdType[n_conn];
       for (int i = 0; i < n_conn; i++)
         tmp[i] = cellPoints[i]; // conectividade
 
-      VTKGrid->InsertNextCell(mesh->getType()[cell_skip], n_conn, tmp); // (tipo do elemento, numero de nós, vetor com as conn)
+      VTKGrid->InsertNextCell(mesh->getElementType(cell), n_conn, tmp); // (tipo do elemento, numero de nós, vetor com as conn)
       delete[] tmp;
     }
   }
@@ -57,8 +56,8 @@ namespace
   void UpdateVTKAttributes(vtkCPInputDataDescription *idd, Mesh *mesh,
                            double *velocityData, float *pressureData)
   {
-    int nnodes = mesh->get_N_nodes();
-    int ne = mesh->get_N_elements();
+    unsigned int nnodes = mesh->get_n_nodes();
+    unsigned int ne = mesh->get_n_elements();
     if (idd->IsFieldNeeded("velocity", vtkDataObject::POINT) == true)
     {
       if (VTKGrid->GetPointData()->GetNumberOfArrays() == 0)

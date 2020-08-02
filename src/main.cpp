@@ -38,17 +38,20 @@ int main(int argc, char* argv[])
     if(argc == 4)
         n_script = 1;
 
-    //CatalystInitialize(n_script, argv+3);
-    
+    CatalystInitialize(n_script, argv+3);
+    int n_part = atoi(argv[2]);
+
     Mesh* mesh = new Mesh(argv[1]);
 
-
-    //mesh->MeshReordering(RCM);
+    mesh->MeshReordering(RCM);
     mesh->MeshColoring();
 
+    Mesh_partition_t* parts = new Mesh_partition_t;
 
-    /*double *velocity = new double[mesh->get_N_nodes()*3];
-    float *pressure  = new float[mesh->get_N_nodes()];
+    parts->MeshPartitionerInternal(mesh, n_part);
+
+    double *velocity = new double[mesh->get_n_nodes()*3];
+    float *pressure  = new float[mesh->get_n_nodes()];
 
     double time      = 0.0;
     double max_time  = 1.0;
@@ -56,23 +59,23 @@ int main(int argc, char* argv[])
     int timeStep = 1;
     while(time < max_time)
     {
-        UpdateAttr(mesh->get_N_nodes(), time, mesh, &velocity, &pressure);
+        UpdateAttr(mesh->get_n_nodes(), time, mesh, &velocity, &pressure);
         
-        //CatalystCoProcess(mesh, velocity, pressure,time,timeStep, 0);
+        CatalystCoProcess(mesh, velocity, pressure,time,timeStep, 0);
 
         //MeshVTKWriterBinAppended(0, parts->get_Nodal_part(), parts->get_Elem_part(), mesh->get_Mesh_coloring_internal(), velocity, pressure);
 
         time += dt;
         timeStep++;
-    }*/
+    }
 
-    //CatalystFinalize();
-    mesh->MeshVTKWriter(0, NULL, NULL, mesh->get_Mesh_coloring_internal(), NULL, NULL);
+    CatalystFinalize();
+    mesh->MeshVTKWriterInternalBinAppended(0, parts->get_nodal_part(), parts->get_elem_part(), mesh->get_mesh_coloring_internal(), NULL, NULL);
 
-    //delete [] velocity;
-    //delete [] pressure;
+    delete [] velocity;
+    delete [] pressure;
     delete mesh;
-    //delete parts;
+    delete parts;
 
     return 0;
 }

@@ -84,22 +84,25 @@ void WriteAIJ(const char *fname, int nvts, idx_t *xadj, idx_t *adjncy, int one_f
 void MeshToGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
 {
     int result;
-    int nfe = mesh->get_N_face_elements();
-    int nelem = mesh->get_N_elements();
-    int nnodes = mesh->get_N_nodes();
+    int nelem = (int)mesh->get_n_elements();
+    int nnodes = (int)mesh->get_n_nodes();
 
     idx_t *ne = &nelem;
     idx_t *nn = &nnodes;
     idx_t numflag = 0;
 
-    int ofs = mesh->getOffset()[nfe];
-    int *eptr = new int[mesh->get_N_elements() + 1];
-    for (int i = nfe, j = 0; i < mesh->getOffset().size(); i++, j++)
+    unsigned int ofs = mesh->getElementOffset(0)[0];
+    int *eptr = new int[mesh->get_n_elements() + 1];
+
+    int* offset_aux = (int*)mesh->getElementOffset(0);
+    for (unsigned int i = 0, j = 0; i <= nelem ; i++, j++)
     {
-        eptr[j] = mesh->getOffset()[i] - ofs;
+        eptr[j] = offset_aux[i] - ofs;
     }
 
-    idx_t *eind = &mesh->getConn()[ofs];
+
+
+    idx_t *eind = (idx_t*)mesh->getElementConn(0);
 
     result = METIS_MeshToNodal(ne, nn, eptr, eind, &numflag, xadj, adjncy);
 
@@ -140,7 +143,7 @@ void ApplyReorderMesh(Mesh *mesh, int *perm, int *iperm)
     cout << "  Applying reordering..." << endl;
 
 #pragma omp parallel for
-    for (int i = 0; i < mesh->get_N_nodes(); i++)
+    for (unsigned int i = 0; i < mesh->get_n_nodes(); i++)
     {
         for (int j = 0; j < 3; j++)
             newCoord[(3 * i) + j] = mesh->getCoord()[(3 * perm[i]) + j];
@@ -148,11 +151,11 @@ void ApplyReorderMesh(Mesh *mesh, int *perm, int *iperm)
     mesh->getCoord().swap(newCoord);
     newCoord.clear();
 
-    vector<int> newConn;
+    vector<unsigned int> newConn;
     newConn.resize(mesh->getConn().size());
     
 #pragma omp parallel for
-    for (int i = 0; i < mesh->getConn().size(); i++)
+    for (unsigned int i = 0; i < mesh->getConn().size(); i++)
     {
         newConn[i] = iperm[mesh->getConn()[i]];
     }
@@ -175,21 +178,21 @@ void MeshToRCMGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
     idx_t *xadjA = *xadj;
     idx_t *adjncyA = *adjncy;
 
-    unsigned int nnodes = mesh->get_N_nodes();
+    unsigned int nnodes = mesh->get_n_nodes();
 
 #ifdef DEBUG
     WriteAIJ("antes_rcm.txt", nnodes, xadjA, adjncyA, 0);
 #endif
 
 #pragma omp parallel for
-    for (int n = 0; n < nnodes; n++)
+    for (unsigned int n = 0; n < nnodes; n++)
     {
-        int start = xadjA[n];
-        int end   = xadjA[n + 1];
+        unsigned int start = xadjA[n];
+        unsigned int end   = xadjA[n + 1];
         qsort(&adjncyA[start], (end - start), sizeof(idx_t), compare_idx);
     }
 
-    int n_adjncyA = xadjA[nnodes];
+    unsigned int n_adjncyA = xadjA[nnodes];
 
 #pragma omp parallel for
     for (int i = 0; i <= nnodes; i++)
@@ -203,7 +206,7 @@ void MeshToRCMGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
 void MeshReorderingRCM(Mesh *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int *iperm)
 {
     cout << "  Applyng RCM reordering " << endl;
-    unsigned int nnodes = mesh->get_N_nodes();
+    unsigned int nnodes = mesh->get_n_nodes();
 #ifdef DEBUG
     WriteAIJ("adj_rcm.txt", nnodes, xadj, adjncy, 1);
 #endif
@@ -223,7 +226,7 @@ void MeshReorderingRCM(Mesh *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int *i
 void MeshReorderingMETIS(Mesh *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int *iperm)
 {
     int result;
-    int nnodes = mesh->get_N_nodes();
+    int nnodes = (int)mesh->get_n_nodes();
 
     idx_t *nn = &nnodes;
     idx_t *vwgt = 0;
@@ -272,15 +275,15 @@ void MeshReorderingFirstTouch(Mesh *mesh, int *perm, int *iperm)
 {
 
 #pragma omp parallel for
-    for (int i = 0; i < mesh->get_N_nodes(); i++)
+    for (int i = 0; i < mesh->get_n_nodes(); i++)
         perm[i] = -1;
 
     unsigned int counter = 0;
 
 
-    for (int i = 0; i < mesh->get_N_elements(); i++)
+    for (int i = 0; i < mesh->get_n_elements(); i++)
     {
-        int iel = mesh->get_N_face_elements() + i;
+        unsigned int iel = mesh->get_n_face_elements() + i;
 
         for (int eno = mesh->getOffset()[iel]; eno < mesh->getOffset()[iel + 1]; eno++)
         {

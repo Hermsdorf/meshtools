@@ -37,12 +37,12 @@ vector<double> Mesh::getCoord()
     return this->coord;
 }
 
-vector<int> Mesh::getConn()
+vector<unsigned int> Mesh::getConn()
 {
     return this->conn;
 }
 
-vector<int> Mesh::getOffset()
+vector<unsigned int> Mesh::getOffset()
 {
     return this->offset;
 }
@@ -52,37 +52,37 @@ vector<unsigned short> Mesh::getType()
     return this->type;
 }
 
-vector<int> Mesh::get_Physical_tag()
+vector<int> Mesh::get_physical_tag()
 {
     return this->physical_tag;
 }
 
-int* Mesh::get_Mesh_coloring_internal()
+int* Mesh::get_mesh_coloring_internal()
 {
     return this->mesh_coloring_internal;
 }
 
-int Mesh::get_N_internal_colors()
+unsigned int Mesh::get_n_internal_colors()
 {
     return this->n_internal_colors;
 }
 
-map<int, physical_data_t> Mesh::getPhysical_map()
+map<int, physical_data_t> Mesh::get_physical_map()
 {
     return this->physical_map;
 }
 
-int Mesh::get_N_face_elements()
+unsigned int Mesh::get_n_face_elements()
 {
     return this->n_face_elements;
 }
 
-int Mesh::get_N_elements()
+unsigned int Mesh::get_n_elements()
 {
     return this->n_elements;
 }
 
-int Mesh::get_N_nodes()
+unsigned int Mesh::get_n_nodes()
 {
     return this->n_nodes;
 }
@@ -97,27 +97,37 @@ string Mesh::getFilename()
     return this->filename;
 }
 
+unsigned short Mesh::getElementType(unsigned int element_num)
+{
+    return this->type[element_num + this->n_face_elements];
+} // [0, n_elements)
+
+unsigned short Mesh::getSurfaceElementType(unsigned int element_num)
+{
+    return this->type[element_num];
+} // [0, n_face_elements)
+
 void Mesh::setCoord(vector<double> coord)
 {
     this->coord = coord;
 }
 
-void Mesh::setConn(vector<int> conn)
+void Mesh::setConn(vector<unsigned int> conn)
 {
     this->conn = conn;
 }
 
-void Mesh::setConnPosition(unsigned int value, int position)
+void Mesh::setConnPosition(unsigned int value, unsigned int position)
 {
     this->conn[position] = value;
 }
 
-void Mesh::setOffset(vector<int> offset)
+void Mesh::setOffset(vector<unsigned int> offset)
 {
     this->offset = offset;
 }
 
-void Mesh::setOffsetPosition(unsigned int value, int position)
+void Mesh::setOffsetPosition(unsigned int value, unsigned int position)
 {
     this->offset[position] = value;
 }
@@ -127,37 +137,37 @@ void Mesh::setType(vector<unsigned short> type)
     this->type = type;
 }
 
-void Mesh::set_Physical_tag(vector<int> physical_tag)
+void Mesh::set_physical_tag(vector<int> physical_tag)
 {
     this->physical_tag = physical_tag;
 }
 
-void Mesh::set_Mesh_coloring_internal(int* mesh_coloring_internal)
+void Mesh::set_mesh_coloring_internal(int* mesh_coloring_internal)
 {
     this->mesh_coloring_internal = mesh_coloring_internal;
 }
 
-void Mesh::set_N_internal_colors(int n_internal_colors)
+void Mesh::set_n_internal_colors(unsigned int n_internal_colors)
 {
     this->n_internal_colors = n_internal_colors;
 }
 
-void Mesh::set_Physical_map(map<int, physical_data_t> physical_map)
+void Mesh::set_physical_map(map<int, physical_data_t> physical_map)
 {
     this->physical_map = physical_map;
 }
 
-void Mesh::set_N_face_elements(int n_face_elements)
+void Mesh::set_n_face_elements(unsigned int n_face_elements)
 {
     this->n_face_elements = n_face_elements;
 }
 
-void Mesh::set_N_elements(int n_elements)
+void Mesh::set_n_elements(unsigned int n_elements)
 {
     this->n_elements = n_elements;
 }
 
-void Mesh::set_N_nodes(int n_nodes)
+void Mesh::set_n_nodes(unsigned int n_nodes)
 {
     this->n_nodes = n_nodes;
 }
@@ -172,7 +182,7 @@ void Mesh::setFilename(string filename)
     this->filename = filename;
 }
 
-int* Mesh::getElementConn(int element_num)
+unsigned int* Mesh::getElementConn(unsigned int element_num)
 {
     if(element_num < this->n_elements)
     {
@@ -186,7 +196,7 @@ int* Mesh::getElementConn(int element_num)
     
 } // element_num = [0, n_elements);
 
-int* Mesh::getElementOffset(int element_num)
+unsigned int* Mesh::getElementOffset(unsigned int element_num)
 {
     if(element_num <= this->n_elements)
     {
@@ -200,7 +210,7 @@ int* Mesh::getElementOffset(int element_num)
     
 } 
 
-int* Mesh::getSurfaceElementConn(int element_num)
+unsigned int* Mesh::getSurfaceElementConn(unsigned int element_num)
 {
     if(element_num < this->n_face_elements)
     {
@@ -214,7 +224,7 @@ int* Mesh::getSurfaceElementConn(int element_num)
     
 } // element_num = [0, n_surface_elements);
 
-int* Mesh::getSurfaceElementOffset(int element_num)
+unsigned int* Mesh::getSurfaceElementOffset(unsigned int element_num)
 {
     if(element_num < this->n_face_elements)
     {
@@ -227,7 +237,7 @@ int* Mesh::getSurfaceElementOffset(int element_num)
     }
 }
 
-int Mesh::getElementConnSize(int element_num)
+unsigned int Mesh::getElementConnSize(unsigned int element_num)
 {
     if(element_num < this->n_elements)
     {
@@ -240,7 +250,7 @@ int Mesh::getElementConnSize(int element_num)
     
 }
 
-int Mesh::getSurfaceElementConnSize(int element_num)
+unsigned int Mesh::getSurfaceElementConnSize(unsigned int element_num)
 {
     if(element_num < this->n_face_elements)
     {
