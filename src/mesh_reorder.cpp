@@ -138,26 +138,28 @@ void MeshToGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
 void ApplyReorderMesh(Mesh *mesh, int *perm, int *iperm)
 {
     vector<double> newCoord;
+    vector<double> coordAux = mesh->getCoord();
     newCoord.resize(mesh->getCoord().size());
-
     cout << "  Applying reordering..." << endl;
 
 #pragma omp parallel for
     for (unsigned int i = 0; i < mesh->get_n_nodes(); i++)
     {
         for (int j = 0; j < 3; j++)
-            newCoord[(3 * i) + j] = mesh->getCoord()[(3 * perm[i]) + j];
+            newCoord[(3 * i) + j] = coordAux[(3 * perm[i]) + j];
     }
     mesh->getCoord().swap(newCoord);
     newCoord.clear();
 
     vector<unsigned int> newConn;
-    newConn.resize(mesh->getConn().size());
+    vector<unsigned int> connAux = mesh->getConn();
+    unsigned int connSize = mesh->getConn().size();
+    newConn.resize(connSize);
     
 #pragma omp parallel for
-    for (unsigned int i = 0; i < mesh->getConn().size(); i++)
+    for (unsigned int i = 0; i < connSize; i++)
     {
-        newConn[i] = iperm[mesh->getConn()[i]];
+        newConn[i] = iperm[connAux[i]];
     }
     mesh->getConn().swap(newConn);
     newConn.clear();
@@ -273,7 +275,7 @@ void MeshReorderingMETIS(Mesh *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int 
 
 void MeshReorderingFirstTouch(Mesh *mesh, int *perm, int *iperm)
 {
-
+    vector<unsigned int> connAux = mesh->getConn();
 #pragma omp parallel for
     for (int i = 0; i < mesh->get_n_nodes(); i++)
         perm[i] = -1;
@@ -287,10 +289,10 @@ void MeshReorderingFirstTouch(Mesh *mesh, int *perm, int *iperm)
 
         for (int eno = mesh->getOffset()[iel]; eno < mesh->getOffset()[iel + 1]; eno++)
         {
-            if (perm[mesh->getConn()[eno]] == -1)
+            if (perm[connAux[eno]] == -1)
             {
-                perm[mesh->getConn()[eno]] = counter;
-                iperm[counter] = mesh->getConn()[eno];
+                perm[connAux[eno]] = counter;
+                iperm[counter] = connAux[eno];
                 counter++;
             }
         }

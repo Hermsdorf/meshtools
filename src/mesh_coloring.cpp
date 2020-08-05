@@ -105,6 +105,7 @@ void UpdateMeshArrays(Mesh* mesh, int* sort, unsigned int** new_conn, unsigned i
 void ReorderElements(Mesh* mesh, int* sort, unsigned int** new_conn, unsigned int** new_offset)
 {
     unsigned int ne = mesh->get_n_elements();
+    vector<unsigned int> connAux = mesh->getConn();
     *new_conn = new unsigned int [mesh->getOffset().back() - mesh->getElementOffset(0)[0]];
 
     *new_offset = new unsigned int [ne + 1];
@@ -122,7 +123,7 @@ void ReorderElements(Mesh* mesh, int* sort, unsigned int** new_conn, unsigned in
         count_offset++;
         for(unsigned int j = start ; j < end ; j++)
         {
-            (*new_conn)[count_conn] = mesh->getConn()[j];
+            (*new_conn)[count_conn] = connAux[j];
             count_conn++;
         }
     }
