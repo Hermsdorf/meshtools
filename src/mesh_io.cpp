@@ -138,7 +138,7 @@ void Mesh::MeshGmshReader(const char* filename)
 
                 int node_id;
                 double x,y,z;
-                for(int i = 0; i < num_nodes; i++) {
+                for(unsigned int i = 0; i < num_nodes; i++) {
                     in >> node_id >> x >> y >> z;
                     this->coord[(i*3)+0] = x;
                     this->coord[(i*3)+1] = y;

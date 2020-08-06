@@ -70,13 +70,12 @@ void MeshToDualGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
     delete[] eptr;
 }
 
-void UpdateMeshArrays(Mesh* mesh, int* sort, unsigned int** new_conn, unsigned int** new_offset)
+void UpdateMeshArrays(Mesh* mesh, unsigned int** new_conn, unsigned int** new_offset)
 {
     unsigned int ne = mesh->get_n_elements();
     unsigned int nfe = mesh->get_n_face_elements();
     unsigned int n_colors;
     int* mesh_coloring;
-    unsigned int count = 0;
     unsigned int color = 1;
 
     mesh_coloring = mesh->get_mesh_coloring_internal();
@@ -90,10 +89,10 @@ void UpdateMeshArrays(Mesh* mesh, int* sort, unsigned int** new_conn, unsigned i
 
     int* mesh_coloringAux = new int [n_colors];
     
-    for(int i = 0 ; i < n_colors ; i++)
+    for(unsigned int i = 0 ; i < n_colors ; i++)
         mesh_coloringAux[i] = 0;
 
-    for(int i = 0 ; i < ne ; i++)
+    for(unsigned int i = 0 ; i < ne ; i++)
     {
         mesh_coloringAux[mesh_coloring[i]-1]++;
     }
@@ -105,7 +104,7 @@ void UpdateMeshArrays(Mesh* mesh, int* sort, unsigned int** new_conn, unsigned i
 void ReorderElements(Mesh* mesh, int* sort, unsigned int** new_conn, unsigned int** new_offset)
 {
     unsigned int ne = mesh->get_n_elements();
-    vector<unsigned int> connAux = mesh->getConn();
+    vector<unsigned int> &connAux = mesh->getConn();
     *new_conn = new unsigned int [mesh->getOffset().back() - mesh->getElementOffset(0)[0]];
 
     *new_offset = new unsigned int [ne + 1];
@@ -132,13 +131,14 @@ void ReorderElements(Mesh* mesh, int* sort, unsigned int** new_conn, unsigned in
 void CreateSort(Mesh* mesh, int* sort)
 {
     unsigned int ne = mesh->get_n_elements();
+    unsigned int aux_n_colors = mesh->get_n_internal_colors();
     int* mesh_coloring = mesh->get_mesh_coloring_internal();
 
     unsigned int count = 0;
 
-    for(unsigned int i = 1 ; i <= mesh->get_n_internal_colors() ; i++)
+    for(unsigned int i = 1 ; i <= aux_n_colors ; i++)
     {
-        for(int j = 0 ; j < ne ; j++)
+        for(unsigned int j = 0 ; j < ne ; j++)
         {
             if(mesh_coloring[j] == i)
             {
@@ -212,7 +212,7 @@ void Mesh::MeshColoring()
 
     CreateSort(this, sort_internal);
     ReorderElements(this, sort_internal, &new_conn, &new_offset);
-    UpdateMeshArrays(this, sort_internal, &new_conn, &new_offset);
+    UpdateMeshArrays(this, &new_conn, &new_offset);
     
     cout << "Finished mesh coloring..." << endl;  
 

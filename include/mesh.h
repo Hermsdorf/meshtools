@@ -15,11 +15,11 @@ class Mesh {
         Mesh();
         Mesh(const char* filename);
         ~Mesh();
-        vector<double> getCoord();
-        vector<unsigned int> getConn();
-        vector<unsigned int> getOffset();
-        vector<unsigned short> getType();
-        vector<int> get_physical_tag();
+        vector<double>& getCoord();
+        vector<unsigned int>& getConn();
+        vector<unsigned int>& getOffset();
+        vector<unsigned short>& getType();
+        vector<int>& get_physical_tag();
         int* get_mesh_coloring_internal();
         unsigned int get_n_internal_colors();
         map<int, physical_data_t> get_physical_map();

@@ -23,7 +23,6 @@ namespace
   void BuildVTKGrid(Mesh *mesh)
   {
     // create the points information
-    int size_coord    = mesh->getCoord().size();
     double* pointData = &mesh->getCoord()[0];
 
     vtkNew<vtkDoubleArray> pointArray;
@@ -35,7 +34,6 @@ namespace
 
     // create the cells
     unsigned int ne = mesh->get_n_elements();
-    unsigned int nfe = mesh->get_n_face_elements();
     unsigned int* cellsData = mesh->getElementConn(0);
 
     VTKGrid->Allocate(static_cast<vtkIdType>(mesh->getOffset().back() - mesh->getElementOffset(0)[0]));

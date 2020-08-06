@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 
     Mesh_partition_t* parts = new Mesh_partition_t;
 
-    parts->MeshPartitionerInternal(mesh, n_part);
+    parts->MeshPartitioner(mesh, n_part);
 
     double *velocity = new double[mesh->get_n_nodes()*3];
     float *pressure  = new float[mesh->get_n_nodes()];
@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
     }
 
     CatalystFinalize();
-    mesh->MeshVTKWriterInternalBinAppended(0, parts->get_nodal_part(), parts->get_elem_part(), mesh->get_mesh_coloring_internal(), velocity, pressure);
+    mesh->MeshVTKWriterBinAppended(0, parts->get_nodal_part(), parts->get_elem_part(), mesh->get_mesh_coloring_internal(), velocity, pressure);
 
     delete [] velocity;
     delete [] pressure;

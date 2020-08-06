@@ -84,7 +84,6 @@ void Mesh_partition_t::MeshPartitionerInternal(Mesh* mesh, int nparts)
         idx_t *eind     = (idx_t*)mesh->getElementConn(0);
         idx_t *vwgt     = 0;
         idx_t *vsize    = 0;
-        idx_t ncommon   = 1;
         real_t *tpwgts  = 0;
         idx_t options[METIS_NOPTIONS];
         idx_t  objval   = 0;
@@ -97,9 +96,33 @@ void Mesh_partition_t::MeshPartitionerInternal(Mesh* mesh, int nparts)
         options[METIS_OPTION_NUMBERING] = 0;
 
         metis_return = METIS_PartMeshNodal(ne,nn,eptr,eind,vwgt,vsize, &nparts, tpwgts, options, &objval, this->elem_part, this->nodal_part);
+        if (metis_return == METIS_OK)
+        {
+                cout << "Successfully partitioned" << endl;
+        }
+        else
+        {
+            if (metis_return == METIS_ERROR_INPUT)
+            {
+                cout << "Input error" << endl;
+                exit(1);
+            }
+            else
+            {
+                if (metis_return == METIS_ERROR_MEMORY)
+                {
+                    cout << "Memory error" << endl;
+                    exit(1);
+                }
+                else
+                {
+                    cout << "Another kind of error" << endl;
+                    exit(1);
+                }
+            }
+        }
 
         delete [] eptr;
-        cout << "Successfully partitioned" << endl;
     }
 }
 
@@ -137,7 +160,6 @@ void Mesh_partition_t::MeshPartitioner(Mesh* mesh, int nparts)
         idx_t *eind     = (idx_t*)mesh->getSurfaceElementConn(0);
         idx_t *vwgt     = 0;
         idx_t *vsize    = 0;
-        idx_t ncommon   = 1;
         real_t *tpwgts  = 0;
         idx_t options[METIS_NOPTIONS];
         idx_t  objval   = 0;
@@ -150,7 +172,33 @@ void Mesh_partition_t::MeshPartitioner(Mesh* mesh, int nparts)
 
 
         metis_return = METIS_PartMeshNodal(ne,nn, eptr, eind,vwgt,vsize, &nparts, tpwgts, options, &objval, this->elem_part, this->nodal_part);
-        cout << "Successfully partitioned" << endl;
+
+        if (metis_return == METIS_OK)
+        {
+                cout << "Successfully partitioned" << endl;
+        }
+        else
+        {
+            if (metis_return == METIS_ERROR_INPUT)
+            {
+                cout << "Input error" << endl;
+                exit(1);
+            }
+            else
+            {
+                if (metis_return == METIS_ERROR_MEMORY)
+                {
+                    cout << "Memory error" << endl;
+                    exit(1);
+                }
+                else
+                {
+                    cout << "Another kind of error" << endl;
+                    exit(1);
+                }
+            }
+        }
+
     }
 }
 

@@ -32,27 +32,27 @@ Mesh::~Mesh()
     delete [] this->mesh_coloring_internal;
 }
 
-vector<double> Mesh::getCoord()
+vector<double>& Mesh::getCoord()
 {
     return this->coord;
 }
 
-vector<unsigned int> Mesh::getConn()
+vector<unsigned int>& Mesh::getConn()
 {
     return this->conn;
 }
 
-vector<unsigned int> Mesh::getOffset()
+vector<unsigned int>& Mesh::getOffset()
 {
     return this->offset;
 }
 
-vector<unsigned short> Mesh::getType()
+vector<unsigned short>& Mesh::getType()
 {
     return this->type;
 }
 
-vector<int> Mesh::get_physical_tag()
+vector<int>& Mesh::get_physical_tag()
 {
     return this->physical_tag;
 }
@@ -246,6 +246,7 @@ unsigned int Mesh::getElementConnSize(unsigned int element_num)
     else
     {
         cout << "ERROR getElementConnSize: element number = " << element_num << " >= n_elements"  << endl;
+        exit(1);
     }
     
 }

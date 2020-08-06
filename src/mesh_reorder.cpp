@@ -95,7 +95,7 @@ void MeshToGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
     int *eptr = new int[mesh->get_n_elements() + 1];
 
     int* offset_aux = (int*)mesh->getElementOffset(0);
-    for (unsigned int i = 0, j = 0; i <= nelem ; i++, j++)
+    for (int i = 0, j = 0; i <= nelem ; i++, j++)
     {
         eptr[j] = offset_aux[i] - ofs;
     }
@@ -138,7 +138,7 @@ void MeshToGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
 void ApplyReorderMesh(Mesh *mesh, int *perm, int *iperm)
 {
     vector<double> newCoord;
-    vector<double> coordAux = mesh->getCoord();
+    vector<double> &coordAux = mesh->getCoord();
     newCoord.resize(mesh->getCoord().size());
     cout << "  Applying reordering..." << endl;
 
@@ -152,7 +152,7 @@ void ApplyReorderMesh(Mesh *mesh, int *perm, int *iperm)
     newCoord.clear();
 
     vector<unsigned int> newConn;
-    vector<unsigned int> connAux = mesh->getConn();
+    vector<unsigned int> &connAux = mesh->getConn();
     unsigned int connSize = mesh->getConn().size();
     newConn.resize(connSize);
     
@@ -194,10 +194,10 @@ void MeshToRCMGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
         qsort(&adjncyA[start], (end - start), sizeof(idx_t), compare_idx);
     }
 
-    unsigned int n_adjncyA = xadjA[nnodes];
+    int n_adjncyA = xadjA[nnodes];
 
 #pragma omp parallel for
-    for (int i = 0; i <= nnodes; i++)
+    for (unsigned int i = 0; i <= nnodes; i++)
         xadjA[i] += 1;
 
 #pragma omp parallel for
@@ -218,7 +218,7 @@ void MeshReorderingRCM(Mesh *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int *i
     perm_inverse3(nnodes, perm, iperm);
 
 #pragma omp parallel for
-    for (int i = 0; i < nnodes; i++)
+    for (unsigned int i = 0; i < nnodes; i++)
     {
         perm[i]--;
         iperm[i]--;
@@ -275,19 +275,19 @@ void MeshReorderingMETIS(Mesh *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int 
 
 void MeshReorderingFirstTouch(Mesh *mesh, int *perm, int *iperm)
 {
-    vector<unsigned int> connAux = mesh->getConn();
+    vector<unsigned int> &connAux = mesh->getConn();
 #pragma omp parallel for
-    for (int i = 0; i < mesh->get_n_nodes(); i++)
+    for (unsigned int i = 0; i < mesh->get_n_nodes(); i++)
         perm[i] = -1;
 
     unsigned int counter = 0;
 
 
-    for (int i = 0; i < mesh->get_n_elements(); i++)
+    for (unsigned int i = 0; i < mesh->get_n_elements(); i++)
     {
         unsigned int iel = mesh->get_n_face_elements() + i;
 
-        for (int eno = mesh->getOffset()[iel]; eno < mesh->getOffset()[iel + 1]; eno++)
+        for (unsigned int eno = mesh->getOffset()[iel]; eno < mesh->getOffset()[iel + 1]; eno++)
         {
             if (perm[connAux[eno]] == -1)
             {
