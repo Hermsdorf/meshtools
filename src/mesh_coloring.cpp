@@ -1,19 +1,7 @@
 #include <iostream>
-#include <algorithm>
-
-using namespace std;
 
 #include "metis.h"
 #include "mesh.h"
-
-
-int compare_int(const void *a, const void *b)
-{
-    const int *da = (const int *)a;
-    const int *db = (const int *)b;
-
-    return (*da > *db);
-}
 
 void MeshToDualGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
 {
@@ -43,25 +31,25 @@ void MeshToDualGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
 
     if (result == METIS_OK)
     {
-        cout << "Mesh to Dual Graph sucessfully applied" << endl;
+        std::cout << "Mesh to Dual Graph sucessfully applied\n";
     }
     else
     {
         if (result == METIS_ERROR_INPUT)
         {
-            cout << "Input error" << endl;
+            std::cout << "Input error\n";
             exit(1);
         }
         else
         {
             if (result == METIS_ERROR_MEMORY)
             {
-                cout << "Memory error" << endl;
+                std::cout << "Memory error\n";
                 exit(1);
             }
             else
             {
-                cout << "Another kind of error" << endl;
+                std::cout << "Another kind of error\n";
                 exit(1);
             }
         }
@@ -104,7 +92,7 @@ void UpdateMeshArrays(Mesh* mesh, unsigned int** new_conn, unsigned int** new_of
 void ReorderElements(Mesh* mesh, int* sort, unsigned int** new_conn, unsigned int** new_offset)
 {
     unsigned int ne = mesh->get_n_elements();
-    vector<unsigned int> &connAux = mesh->getConn();
+    std::vector<unsigned int> &connAux = mesh->getConn();
     *new_conn = new unsigned int [mesh->getOffset().back() - mesh->getElementOffset(0)[0]];
 
     *new_offset = new unsigned int [ne + 1];
@@ -201,7 +189,7 @@ int Coloring(Mesh* mesh)
 
 void Mesh::MeshColoring()
 {
-    cout << "Starting mesh coloring..." << endl;
+    std::cout << "Starting mesh coloring...\n";
     int* sort_internal = new int [this->get_n_elements()];
     unsigned int* new_conn;
     unsigned int* new_offset;
@@ -214,7 +202,7 @@ void Mesh::MeshColoring()
     ReorderElements(this, sort_internal, &new_conn, &new_offset);
     UpdateMeshArrays(this, &new_conn, &new_offset);
     
-    cout << "Finished mesh coloring..." << endl;  
+    std::cout << "Finished mesh coloring...\n";  
 
     delete [] sort_internal;
     delete [] new_conn;

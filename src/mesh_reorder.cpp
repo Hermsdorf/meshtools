@@ -1,18 +1,10 @@
-
-#include <fstream>
-#include <sstream>
 #include <iostream>
-#include <iomanip>
-#include <algorithm>
+#include <fstream>
 #include <memory>
-
-using namespace std;
 
 #include "metis.h"
 #include "mesh.h"
 #include "rcm.hpp"
-
-
 
 void convert_to_one_index( int node_num, int adj_num, int adj_row[], int adj[])
 {
@@ -42,17 +34,17 @@ void convert_to_zero_index( int node_num, int adj_num, int adj_row[], int adj[])
 
 void WriteAdj(const char *fname, int nvts, idx_t *xadj, idx_t *adjncy)
 {
-    ofstream fout;
+    std::ofstream fout;
     fout.open(fname);
     if (fout.is_open())
     {
 
-        fout << nvts << endl;
+        fout << nvts << "\n";
         for (int i = 0; i <= nvts; i++)
-            fout << xadj[i] << endl;
+            fout << xadj[i] << "\n";
 
         for (int i = 0; i < xadj[nvts]; i++)
-            fout << adjncy[i] << endl;
+            fout << adjncy[i] << "\n";
 
         fout.close();
     }
@@ -61,7 +53,7 @@ void WriteAdj(const char *fname, int nvts, idx_t *xadj, idx_t *adjncy)
 void WriteAIJ(const char *fname, int nvts, idx_t *xadj, idx_t *adjncy, int one_flag)
 {
 
-    ofstream fout;
+    std::ofstream fout;
     fout.open(fname);
     if (fout.is_open())
     {
@@ -73,7 +65,7 @@ void WriteAIJ(const char *fname, int nvts, idx_t *xadj, idx_t *adjncy, int one_f
                 int col = adjncy[j - one_flag] - one_flag;
                 fout << col << " ";
             }
-            fout << endl;
+            fout << "\n";
         }
         fout.close();
     }
@@ -108,25 +100,25 @@ void MeshToGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
 
     if (result == METIS_OK)
     {     
-        cout << "Mesh to Nodal Graph succesfully applied" << endl;
+        std::cout << "Mesh to Nodal Graph succesfully applied\n";
     }
     else
     {
         if (result == METIS_ERROR_INPUT)
         {
-            cout << "Input error" << endl;
+            std::cout << "Input error\n";
             exit(1);
         }
         else
         {
             if (result == METIS_ERROR_MEMORY)
             {
-                cout << "Memory error" << endl;
+                std::cout << "Memory error\n";
                 exit(1);
             }
             else
             {
-                cout << "Another kind of error" << endl;
+                std::cout << "Another kind of error\n";
                 exit(1);
             }
         }
@@ -137,10 +129,10 @@ void MeshToGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
 
 void ApplyReorderMesh(Mesh *mesh, int *perm, int *iperm)
 {
-    vector<double> newCoord;
-    vector<double> &coordAux = mesh->getCoord();
+    std::vector<double> newCoord;
+    std::vector<double> &coordAux = mesh->getCoord();
     newCoord.resize(mesh->getCoord().size());
-    cout << "  Applying reordering..." << endl;
+    std::cout << "  Applying reordering...\n";
 
 #pragma omp parallel for
     for (unsigned int i = 0; i < mesh->get_n_nodes(); i++)
@@ -151,8 +143,8 @@ void ApplyReorderMesh(Mesh *mesh, int *perm, int *iperm)
     mesh->getCoord().swap(newCoord);
     newCoord.clear();
 
-    vector<unsigned int> newConn;
-    vector<unsigned int> &connAux = mesh->getConn();
+    std::vector<unsigned int> newConn;
+    std::vector<unsigned int> &connAux = mesh->getConn();
     unsigned int connSize = mesh->getConn().size();
     newConn.resize(connSize);
     
@@ -173,6 +165,14 @@ int compare_idx(const void *a, const void *b)
     return (*da > *db);
 }
 
+/*inline int compare_idx(const void *a, const void *b)
+{
+    const idx_t *da = (const idx_t *)a;
+    const idx_t *db = (const idx_t *)b;
+
+    return (*da > *db);
+}*/
+
 void MeshToRCMGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
 {
     MeshToGraph(mesh, xadj, adjncy);
@@ -191,7 +191,8 @@ void MeshToRCMGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
     {
         unsigned int start = xadjA[n];
         unsigned int end   = xadjA[n + 1];
-        qsort(&adjncyA[start], (end - start), sizeof(idx_t), compare_idx);
+        std::qsort(&adjncyA[start], (end - start), sizeof(idx_t), compare_idx);
+        //std::sort(&adjncyA[start], &adjncyA[end]);
     }
 
     int n_adjncyA = xadjA[nnodes];
@@ -207,7 +208,7 @@ void MeshToRCMGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
 
 void MeshReorderingRCM(Mesh *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int *iperm)
 {
-    cout << "  Applyng RCM reordering " << endl;
+    std::cout << "  Applyng RCM reordering\n";
     unsigned int nnodes = mesh->get_n_nodes();
 #ifdef DEBUG
     WriteAIJ("adj_rcm.txt", nnodes, xadj, adjncy, 1);
@@ -234,7 +235,7 @@ void MeshReorderingMETIS(Mesh *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int 
     idx_t *vwgt = 0;
     idx_t options[METIS_NOPTIONS];
 
-    cout << "  Applyng METIS_NodeND reordering " << endl;
+    std::cout << "  Applyng METIS_NodeND reordering\n";
     METIS_SetDefaultOptions(options);
 
     options[METIS_OPTION_NUMBERING] = 0;
@@ -242,7 +243,7 @@ void MeshReorderingMETIS(Mesh *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int 
 
     if (result == METIS_OK)
     {
-        cout << "METIS reordering succesfully applied" << endl;
+        std::cout << "METIS reordering succesfully applied\n";
 
         for(int i = 0; i < nnodes; i++)
         {
@@ -254,19 +255,19 @@ void MeshReorderingMETIS(Mesh *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int 
     {
         if (result == METIS_ERROR_INPUT)
         {
-            cout << "Input error" << endl;
+            std::cout << "Input error\n";
             exit(1);
         }
         else
         {
             if (result == METIS_ERROR_MEMORY)
             {
-                cout << "Memory error" << endl;
+                std::cout << "Memory error\n";
                 exit(1);
             }
             else
             {
-                cout << "Another kind of error" << endl;
+                std::cout << "Another kind of error\n";
                 exit(1);
             }
         }
@@ -275,7 +276,7 @@ void MeshReorderingMETIS(Mesh *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int 
 
 void MeshReorderingFirstTouch(Mesh *mesh, int *perm, int *iperm)
 {
-    vector<unsigned int> &connAux = mesh->getConn();
+    std::vector<unsigned int> &connAux = mesh->getConn();
 #pragma omp parallel for
     for (unsigned int i = 0; i < mesh->get_n_nodes(); i++)
         perm[i] = -1;
@@ -304,13 +305,13 @@ void Mesh::MeshReordering(reorder_t reorder = RCM)
     idx_t *xadj;
     idx_t *adjncy;
 
-    std::unique_ptr<int[]> perm_ptr = make_unique<int[]>(this->n_nodes);
-    std::unique_ptr<int[]> iperm_ptr = make_unique<int[]>(this->n_nodes);
+    std::unique_ptr<int[]> perm_ptr = std::make_unique<int[]>(this->n_nodes);
+    std::unique_ptr<int[]> iperm_ptr = std::make_unique<int[]>(this->n_nodes);
 
     int *perm = perm_ptr.get();
     int *iperm = iperm_ptr.get();
 
-    cout << "Starting mesh reordering... " << endl;
+    std::cout << "Starting mesh reordering...\n";
     switch (reorder)
     {
     case FF:
@@ -328,7 +329,7 @@ void Mesh::MeshReordering(reorder_t reorder = RCM)
         ApplyReorderMesh(this, perm, iperm);
         break;
     }
-    cout << "Finished mesh reordering... " << endl;
+    std::cout << "Finished mesh reordering...\n";
 
     METIS_Free(xadj);
     METIS_Free(adjncy);

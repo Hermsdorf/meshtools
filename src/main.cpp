@@ -1,6 +1,4 @@
 #include <iostream>
-#include <fstream>
-#include <string>
 #include <math.h>
 
 #include "FEAdaptor.h"
@@ -11,26 +9,27 @@ void UpdateAttr(int n, double time, Mesh* mesh, double** v, float** p)
 {
     float variable_a = 0.02;
     float variable_v = 0.01;
-    vector<double> coordAux = mesh->getCoord();
+
+    std::vector<double> coordAux = mesh->getCoord();
     for(int i = 0; i < n; i++)
     {   
 
         double x = coordAux[i*3];
         double y = coordAux[i*3+1];
 
-        (*v)[i*3]    = (-1)*cos(variable_a*M_PI*x)*sin(variable_a*M_PI*y)*exp(-2*variable_a*variable_a*M_PI*M_PI*time*variable_v);
-        (*v)[i*3+1]  = sin(variable_a*M_PI*x)*cos(variable_a*M_PI*y)*exp(-2*variable_a*variable_a*M_PI*M_PI*time*variable_v);
+        (*v)[i*3]    = (-1)*std::cos(variable_a*M_PI*x)*std::sin(variable_a*M_PI*y)*std::exp(-2*variable_a*variable_a*M_PI*M_PI*time*variable_v);
+        (*v)[i*3+1]  = std::sin(variable_a*M_PI*x)*std::cos(variable_a*M_PI*y)*std::exp(-2*variable_a*variable_a*M_PI*M_PI*time*variable_v);
         (*v)[i*3+2]  = 0;
-        (*p)[i]      = -0.25*(cos(2*variable_a*M_PI*x)+cos(2*variable_a*M_PI*y))*exp(-4*variable_a*variable_a*M_PI*M_PI*time*variable_v);
+        (*p)[i]      = -0.25*(std::cos(2*variable_a*M_PI*x)+std::cos(2*variable_a*M_PI*y))*std::exp(-4*variable_a*variable_a*M_PI*M_PI*time*variable_v);
     }
 }
 
 int main(int argc, char* argv[])
-{          
+{         
     if(argc < 3)
     {
-        cout << "ERROR: WRONG EXECUTION" << endl;
-	    cout << "./meshtools filename.msh n_partitions [catalyst.py]" << endl;
+        std::cout << "ERROR: WRONG EXECUTION\n";
+	    std::cout << "./meshtools filename.msh n_partitions [catalyst.py]\n";
 
 	    return 0;
     }

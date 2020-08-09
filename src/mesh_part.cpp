@@ -1,11 +1,8 @@
-#include <fstream>
 #include <iostream>
 
 #include "metis.h"
 #include "mesh.h"
 #include "mesh_part.h"
-
-using namespace std;
 
 Mesh_partition_t::Mesh_partition_t() 
 {
@@ -51,7 +48,7 @@ void Mesh_partition_t::MeshPartitionerInternal(Mesh* mesh, int nparts)
     int nelem = (int)mesh->get_n_elements();
     int nnodes = (int)mesh->get_n_nodes();
     
-    std::cout << "Partitioning in "<< nparts <<" parts" << std::endl;
+    std::cout << "Partitioning in "<< nparts <<" parts\n";
 
     // Allocate a new mesh partition data info and initialize
     this->n_partitions = nparts;
@@ -65,7 +62,7 @@ void Mesh_partition_t::MeshPartitionerInternal(Mesh* mesh, int nparts)
 
     if(nparts <= 1)
     {
-        cout << "Successfully partitioned" << endl;
+        std::cout << "Successfully partitioned\n";
     }
     else
     {
@@ -98,25 +95,25 @@ void Mesh_partition_t::MeshPartitionerInternal(Mesh* mesh, int nparts)
         metis_return = METIS_PartMeshNodal(ne,nn,eptr,eind,vwgt,vsize, &nparts, tpwgts, options, &objval, this->elem_part, this->nodal_part);
         if (metis_return == METIS_OK)
         {
-                cout << "Successfully partitioned" << endl;
+                std::cout << "Successfully partitioned\n";
         }
         else
         {
             if (metis_return == METIS_ERROR_INPUT)
             {
-                cout << "Input error" << endl;
+                std::cout << "Input error\n";
                 exit(1);
             }
             else
             {
                 if (metis_return == METIS_ERROR_MEMORY)
                 {
-                    cout << "Memory error" << endl;
+                    std::cout << "Memory error\n";
                     exit(1);
                 }
                 else
                 {
-                    cout << "Another kind of error" << endl;
+                    std::cout << "Another kind of error\n";
                     exit(1);
                 }
             }
@@ -136,7 +133,7 @@ void Mesh_partition_t::MeshPartitioner(Mesh* mesh, int nparts)
     int nnodes = (int)mesh->get_n_nodes();
     int ntelem = nelem + nfe;
 
-    std::cout << "Partitioning in "<< nparts <<" parts" << std::endl;
+    std::cout << "Partitioning in "<< nparts <<" parts\n";
 
     // Allocate a new mesh partition data info and initialize
     this->n_partitions = nparts;
@@ -150,7 +147,7 @@ void Mesh_partition_t::MeshPartitioner(Mesh* mesh, int nparts)
     
     if(nparts <= 1)
     {
-        cout << "Successfully partitioned" << endl;
+        std::cout << "Successfully partitioned\n";
     }
     else
     {
@@ -175,25 +172,25 @@ void Mesh_partition_t::MeshPartitioner(Mesh* mesh, int nparts)
 
         if (metis_return == METIS_OK)
         {
-                cout << "Successfully partitioned" << endl;
+                std::cout << "Successfully partitioned\n";
         }
         else
         {
             if (metis_return == METIS_ERROR_INPUT)
             {
-                cout << "Input error" << endl;
+                std::cout << "Input error\n";
                 exit(1);
             }
             else
             {
                 if (metis_return == METIS_ERROR_MEMORY)
                 {
-                    cout << "Memory error" << endl;
+                    std::cout << "Memory error\n";
                     exit(1);
                 }
                 else
                 {
-                    cout << "Another kind of error" << endl;
+                    std::cout << "Another kind of error\n";
                     exit(1);
                 }
             }
