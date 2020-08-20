@@ -10,8 +10,8 @@ enable_testing()
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 set(CMAKE_CXX_FLAGS "-O3")
 #set(CMAKE_CXX_FLAGS "-O3 -Wall -Wextra")
-#set(CMAKE_C_COMPILER tau_cc.sh)
-#set(CMAKE_CXX_COMPILER tau_cxx.sh)
+set(CMAKE_C_COMPILER tau_cc.sh)
+set(CMAKE_CXX_COMPILER tau_cxx.sh)
 
 file(GLOB source_files
             "*.h"

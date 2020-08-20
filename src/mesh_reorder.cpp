@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <memory>
+#include <algorithm>
 
 #include "metis.h"
 #include "mesh.h"
@@ -75,7 +76,6 @@ void WriteAIJ(const char *fname, int nvts, idx_t *xadj, idx_t *adjncy, int one_f
 
 void MeshToGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
 {
-    int result;
     int nelem = (int)mesh->get_n_elements();
     int nnodes = (int)mesh->get_n_nodes();
 
@@ -96,7 +96,7 @@ void MeshToGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
 
     idx_t *eind = (idx_t*)mesh->getElementConn(0);
 
-    result = METIS_MeshToNodal(ne, nn, eptr, eind, &numflag, xadj, adjncy);
+    int result = METIS_MeshToNodal(ne, nn, eptr, eind, &numflag, xadj, adjncy);
 
     if (result == METIS_OK)
     {     
@@ -137,9 +137,11 @@ void ApplyReorderMesh(Mesh *mesh, int *perm, int *iperm)
 #pragma omp parallel for
     for (unsigned int i = 0; i < mesh->get_n_nodes(); i++)
     {
-        for (int j = 0; j < 3; j++)
-            newCoord[(3 * i) + j] = coordAux[(3 * perm[i]) + j];
+            newCoord[3 * i] = coordAux[3 * perm[i]];
+            newCoord[(3 * i) + 1] = coordAux[(3 * perm[i]) + 1];
+            newCoord[(3 * i) + 2] = coordAux[(3 * perm[i]) + 2];
     }
+
     mesh->getCoord().swap(newCoord);
     newCoord.clear();
 
@@ -157,15 +159,7 @@ void ApplyReorderMesh(Mesh *mesh, int *perm, int *iperm)
     newConn.clear();
 }
 
-int compare_idx(const void *a, const void *b)
-{
-    const idx_t *da = (const idx_t *)a;
-    const idx_t *db = (const idx_t *)b;
-
-    return (*da > *db);
-}
-
-/*inline int compare_idx(const void *a, const void *b)
+/*int compare_idx(const void *a, const void *b)
 {
     const idx_t *da = (const idx_t *)a;
     const idx_t *db = (const idx_t *)b;
@@ -186,14 +180,21 @@ void MeshToRCMGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
     WriteAIJ("antes_rcm.txt", nnodes, xadjA, adjncyA, 0);
 #endif
 
+unsigned int count = 0;
+
 #pragma omp parallel for
     for (unsigned int n = 0; n < nnodes; n++)
     {
         unsigned int start = xadjA[n];
         unsigned int end   = xadjA[n + 1];
-        std::qsort(&adjncyA[start], (end - start), sizeof(idx_t), compare_idx);
-        //std::sort(&adjncyA[start], &adjncyA[end]);
+        //std::qsort(&adjncyA[start], (end - start), sizeof(idx_t), compare_idx);
+        if(!std::is_sorted(&adjncyA[start], &adjncyA[end]))
+        {
+            count++;
+            std::sort(&adjncyA[start], &adjncyA[end]);
+        }
     }
+    std::cout << "Were sorted " << count << " parts of the array\n";
 
     int n_adjncyA = xadjA[nnodes];
 
@@ -228,7 +229,6 @@ void MeshReorderingRCM(Mesh *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int *i
 
 void MeshReorderingMETIS(Mesh *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int *iperm)
 {
-    int result;
     int nnodes = (int)mesh->get_n_nodes();
 
     idx_t *nn = &nnodes;
@@ -239,7 +239,7 @@ void MeshReorderingMETIS(Mesh *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int 
     METIS_SetDefaultOptions(options);
 
     options[METIS_OPTION_NUMBERING] = 0;
-    result = METIS_NodeND(nn, xadj, adjncy, vwgt, options, perm, iperm);
+    int result = METIS_NodeND(nn, xadj, adjncy, vwgt, options, perm, iperm);
 
     if (result == METIS_OK)
     {

@@ -44,7 +44,6 @@ void Mesh_partition_t::set_elem_part(int* elem_part)
 
 void Mesh_partition_t::MeshPartitionerInternal(Mesh* mesh, int nparts)
 {
-    int metis_return; 
     int nelem = (int)mesh->get_n_elements();
     int nnodes = (int)mesh->get_n_nodes();
     
@@ -92,7 +91,7 @@ void Mesh_partition_t::MeshPartitionerInternal(Mesh* mesh, int nparts)
         options[METIS_OPTION_OBJTYPE]   = METIS_OBJTYPE_CUT;
         options[METIS_OPTION_NUMBERING] = 0;
 
-        metis_return = METIS_PartMeshNodal(ne,nn,eptr,eind,vwgt,vsize, &nparts, tpwgts, options, &objval, this->elem_part, this->nodal_part);
+        int metis_return = METIS_PartMeshNodal(ne,nn,eptr,eind,vwgt,vsize, &nparts, tpwgts, options, &objval, this->elem_part, this->nodal_part);
         if (metis_return == METIS_OK)
         {
                 std::cout << "Successfully partitioned\n";
@@ -126,8 +125,6 @@ void Mesh_partition_t::MeshPartitionerInternal(Mesh* mesh, int nparts)
 
 void Mesh_partition_t::MeshPartitioner(Mesh* mesh, int nparts)
 {
-
-    int metis_return; 
     int nelem = (int)mesh->get_n_elements();
     int nfe = (int)mesh->get_n_face_elements();
     int nnodes = (int)mesh->get_n_nodes();
@@ -168,7 +165,7 @@ void Mesh_partition_t::MeshPartitioner(Mesh* mesh, int nparts)
         options[METIS_OPTION_NUMBERING] = 0;
 
 
-        metis_return = METIS_PartMeshNodal(ne,nn, eptr, eind,vwgt,vsize, &nparts, tpwgts, options, &objval, this->elem_part, this->nodal_part);
+        int metis_return = METIS_PartMeshNodal(ne,nn, eptr, eind,vwgt,vsize, &nparts, tpwgts, options, &objval, this->elem_part, this->nodal_part);
 
         if (metis_return == METIS_OK)
         {

@@ -5,19 +5,16 @@
 
 void MeshToDualGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
 {
-    int result;
     int nelem = mesh->get_n_elements();
     int nnodes = mesh->get_n_nodes();
-    idx_t* eptr;
-    idx_t* eind;
-    idx_t* ne;
+    idx_t* eptr = new idx_t[mesh->get_n_elements() + 1];
+    idx_t* eind = (idx_t*)mesh->getElementConn(0);
+    idx_t* ne = &nelem;;
     idx_t* nn = &nnodes;
     idx_t numflag = 0;
     idx_t ncommon = 1;
 
-    ne = &nelem;
     unsigned int ofs = mesh->getElementOffset(0)[0];
-    eptr = new idx_t[mesh->get_n_elements() + 1];
 
     int* offset_aux = (int*)mesh->getElementOffset(0);
     for (int i = 0, j = 0; i <= nelem ; i++, j++)
@@ -25,9 +22,7 @@ void MeshToDualGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
         eptr[j] = offset_aux[i] - ofs;
     }
 
-    eind = (idx_t*)mesh->getElementConn(0);
-
-    result = METIS_MeshToDual(ne, nn, eptr, eind, &ncommon, &numflag, xadj, adjncy);
+    int result = METIS_MeshToDual(ne, nn, eptr, eind, &ncommon, &numflag, xadj, adjncy);
 
     if (result == METIS_OK)
     {
@@ -62,12 +57,8 @@ void UpdateMeshArrays(Mesh* mesh, unsigned int** new_conn, unsigned int** new_of
 {
     unsigned int ne = mesh->get_n_elements();
     unsigned int nfe = mesh->get_n_face_elements();
-    unsigned int n_colors;
-    int* mesh_coloring;
-    unsigned int color = 1;
-
-    mesh_coloring = mesh->get_mesh_coloring_internal();
-    n_colors = mesh->get_n_internal_colors();
+    unsigned int n_colors = mesh->get_n_internal_colors();
+    int* mesh_coloring = mesh->get_mesh_coloring_internal();
 
     for(unsigned int i = nfe, j = 0 ; i <= nfe + ne ; i++, j++)
         mesh->setOffsetPosition((*new_offset)[j], i);
