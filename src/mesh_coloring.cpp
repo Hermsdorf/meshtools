@@ -138,8 +138,10 @@ int Coloring(Mesh* mesh)
 
     MeshToDualGraph(mesh, &xadj, &adjncy);
 
-    for(unsigned int i = 0 ; i < ne ; i++)
-        elements_color[i] = -1; // flag para elemento sem cor
+    std::fill(&elements_color[0], &elements_color[ne], -1);  // flag para elemento sem cor
+    
+    //for(unsigned int i = 0 ; i < ne ; i++)
+        //elements_color[i] = -1; // flag para elemento sem cor
 
     for(unsigned int i = 0 ; i < ne ; i++)
     {
@@ -160,7 +162,8 @@ int Coloring(Mesh* mesh)
             }
             else
                 j++;
-        }
+        } // verificamos as cores dos elementos adjacentes ao elemento i, ao final count vai ter a coloração correta para o elemento i
+          // sendo ela menor cor possível dentre as cores dos elementos adjacentes
 
         elements_color[i] = count;
 
@@ -169,7 +172,7 @@ int Coloring(Mesh* mesh)
     }
 
 
-    delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader onde inicializa todo o vetor mesh_coloring_bound com -1
+    delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader onde inicializa todo o vetor mesh_coloring_internal com -1
     mesh->set_mesh_coloring_internal(elements_color);
     
     METIS_Free(xadj);
@@ -184,9 +187,8 @@ void Mesh::MeshColoring()
     int* sort_internal = new int [this->get_n_elements()];
     unsigned int* new_conn;
     unsigned int* new_offset;
-    unsigned int n_colors;
+    unsigned int n_colors = Coloring(this);
 
-    n_colors = Coloring(this);
     this->n_internal_colors = n_colors;
 
     CreateSort(this, sort_internal);

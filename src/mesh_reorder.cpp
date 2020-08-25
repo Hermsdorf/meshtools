@@ -159,14 +159,6 @@ void ApplyReorderMesh(Mesh *mesh, int *perm, int *iperm)
     newConn.clear();
 }
 
-/*int compare_idx(const void *a, const void *b)
-{
-    const idx_t *da = (const idx_t *)a;
-    const idx_t *db = (const idx_t *)b;
-
-    return (*da > *db);
-}*/
-
 void MeshToRCMGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
 {
     MeshToGraph(mesh, xadj, adjncy);
@@ -180,21 +172,15 @@ void MeshToRCMGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
     WriteAIJ("antes_rcm.txt", nnodes, xadjA, adjncyA, 0);
 #endif
 
-unsigned int count = 0;
-
 #pragma omp parallel for
     for (unsigned int n = 0; n < nnodes; n++)
     {
         unsigned int start = xadjA[n];
         unsigned int end   = xadjA[n + 1];
-        //std::qsort(&adjncyA[start], (end - start), sizeof(idx_t), compare_idx);
-        if(!std::is_sorted(&adjncyA[start], &adjncyA[end]))
-        {
-            count++;
-            std::sort(&adjncyA[start], &adjncyA[end]);
-        }
+
+        std::sort(&adjncyA[start], &adjncyA[end]);
+        
     }
-    std::cout << "Were sorted " << count << " parts of the array\n";
 
     int n_adjncyA = xadjA[nnodes];
 

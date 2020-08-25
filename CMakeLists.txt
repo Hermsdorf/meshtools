@@ -10,8 +10,8 @@ enable_testing()
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 set(CMAKE_CXX_FLAGS "-O3")
 #set(CMAKE_CXX_FLAGS "-O3 -Wall -Wextra")
-set(CMAKE_C_COMPILER tau_cc.sh)
-set(CMAKE_CXX_COMPILER tau_cxx.sh)
+#set(CMAKE_C_COMPILER tau_cc.sh)
+#set(CMAKE_CXX_COMPILER tau_cxx.sh)
 
 file(GLOB source_files
             "*.h"
@@ -26,8 +26,13 @@ file(GLOB source_files
 
 find_package(MPI)
 find_package(METIS REQUIRED)
-
 find_package(ParaView CONFIG COMPONENTS Catalyst PythonCatalyst)
+
+IF (${ParaView_FOUND})
+   MESSAGE(STATUS "Found ParaView Catalyst.")
+ELSE (${ParaView_FOUND})
+   MESSAGE(STATUS "Could not locate ParaView Catalyst.")
+ENDIF (${ParaView_FOUND})
 
 include_directories(${METIS_INCLUDE_DIRS})
 include_directories(include)
