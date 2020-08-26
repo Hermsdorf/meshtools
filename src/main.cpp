@@ -1,9 +1,14 @@
 #include <iostream>
 #include <math.h>
 
-#include "FEAdaptor.h"
 #include "mesh.h"
 #include "mesh_part.h"
+
+#ifdef PARAVIEWCAT_FOUND
+   #include "FEAdaptor.h"
+#else
+   #define PARAVIEWCAT_FOUND 0 
+#endif
 
 void UpdateAttr(int n, double time, Mesh* mesh, double** v, float** p)
 {
@@ -38,7 +43,10 @@ int main(int argc, char* argv[])
     if(argc == 4)
         n_script = 1;
 
-    CatalystInitialize(n_script, argv+3);
+    if(PARAVIEWCAT_FOUND)
+        CatalystInitialize(n_script, argv+3);
+
+
     int n_part = atoi(argv[2]);
 
     Mesh* mesh = new Mesh(argv[1]);
@@ -60,8 +68,9 @@ int main(int argc, char* argv[])
     while(time < max_time)
     {
         UpdateAttr(mesh->get_n_nodes(), time, mesh, &velocity, &pressure);
-        
-        CatalystCoProcess(mesh, velocity, pressure,time,timeStep, 0);
+
+        if(PARAVIEWCAT_FOUND)
+            CatalystCoProcess(mesh, velocity, pressure,time,timeStep, 0);
 
         //mesh->MeshVTKWriterInternalBinAppended(timeStep, parts->get_nodal_part(), parts->get_elem_part(), mesh->get_mesh_coloring_internal(), velocity, pressure);
 
@@ -69,7 +78,10 @@ int main(int argc, char* argv[])
         timeStep++;
     }
 
-    CatalystFinalize();
+    if(PARAVIEWCAT_FOUND)
+        CatalystFinalize();
+
+
     mesh->MeshVTKWriterInternalBinAppended(0, parts->get_nodal_part(), parts->get_elem_part(), mesh->get_mesh_coloring_internal(), velocity, pressure);
 
     delete [] velocity;
