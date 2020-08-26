@@ -6,8 +6,6 @@
 
 #ifdef PARAVIEWCAT_FOUND
    #include "FEAdaptor.h"
-#else
-   #define PARAVIEWCAT_FOUND 0 
 #endif
 
 void UpdateAttr(int n, double time, Mesh* mesh, double** v, float** p)
@@ -43,9 +41,9 @@ int main(int argc, char* argv[])
     if(argc == 4)
         n_script = 1;
 
-    if(PARAVIEWCAT_FOUND)
+#ifdef PARAVIEWCAT_FOUND
         CatalystInitialize(n_script, argv+3);
-
+#endif
 
     int n_part = atoi(argv[2]);
 
@@ -69,18 +67,18 @@ int main(int argc, char* argv[])
     {
         UpdateAttr(mesh->get_n_nodes(), time, mesh, &velocity, &pressure);
 
-        if(PARAVIEWCAT_FOUND)
+#ifdef PARAVIEWCAT_FOUND
             CatalystCoProcess(mesh, velocity, pressure,time,timeStep, 0);
-
+#endif
         //mesh->MeshVTKWriterInternalBinAppended(timeStep, parts->get_nodal_part(), parts->get_elem_part(), mesh->get_mesh_coloring_internal(), velocity, pressure);
 
         time += dt;
         timeStep++;
     }
 
-    if(PARAVIEWCAT_FOUND)
+#ifdef PARAVIEWCAT_FOUND
         CatalystFinalize();
-
+#endif
 
     mesh->MeshVTKWriterInternalBinAppended(0, parts->get_nodal_part(), parts->get_elem_part(), mesh->get_mesh_coloring_internal(), velocity, pressure);
 
