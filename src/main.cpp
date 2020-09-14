@@ -40,14 +40,14 @@ int main(int argc, char* argv[])
     int n_script = 0;
     if(argc == 4)
         n_script = 1;
+   
+    int n_part = atoi(argv[2]);
+
+    Mesh* mesh = new Mesh(argv[1]);
 
 #ifdef PARAVIEWCAT_FOUND
         CatalystInitialize(n_script, argv+3);
 #endif
-
-    int n_part = atoi(argv[2]);
-
-    Mesh* mesh = new Mesh(argv[1]);
 
     mesh->MeshReordering(RCM);
     mesh->MeshColoring();
@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
         CatalystFinalize();
 #endif
 
-    mesh->MeshVTKWriterInternalBinAppended(0, parts->get_nodal_part(), parts->get_elem_part(), mesh->get_mesh_coloring_internal(), velocity, pressure);
+    mesh->MeshVTKWriterInternalBinAppended(0, parts->get_nodal_part(), parts->get_elem_part(), mesh->get_mesh_coloring_internal(), NULL, NULL);
 
     delete [] velocity;
     delete [] pressure;
@@ -89,5 +89,3 @@ int main(int argc, char* argv[])
 
     return 0;
 }
-
-

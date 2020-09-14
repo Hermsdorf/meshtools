@@ -72,8 +72,6 @@ void WriteAIJ(const char *fname, int nvts, idx_t *xadj, idx_t *adjncy, int one_f
     }
 }
 
-
-
 void MeshToGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
 {
     int nelem = (int)mesh->get_n_elements();
@@ -91,8 +89,6 @@ void MeshToGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
     {
         eptr[j] = offset_aux[i] - ofs;
     }
-
-
 
     idx_t *eind = (idx_t*)mesh->getElementConn(0);
 
@@ -141,7 +137,7 @@ void ApplyReorderMesh(Mesh *mesh, int *perm, int *iperm)
             newCoord[(3 * i) + 1] = coordAux[(3 * perm[i]) + 1];
             newCoord[(3 * i) + 2] = coordAux[(3 * perm[i]) + 2];
     }
-
+    
     mesh->getCoord().swap(newCoord);
     newCoord.clear();
 
@@ -149,7 +145,7 @@ void ApplyReorderMesh(Mesh *mesh, int *perm, int *iperm)
     std::vector<unsigned int> &connAux = mesh->getConn();
     unsigned int connSize = mesh->getConn().size();
     newConn.resize(connSize);
-    
+
 #pragma omp parallel for
     for (unsigned int i = 0; i < connSize; i++)
     {
@@ -178,8 +174,7 @@ void MeshToRCMGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
         unsigned int start = xadjA[n];
         unsigned int end   = xadjA[n + 1];
 
-        std::sort(&adjncyA[start], &adjncyA[end]);
-        
+        std::sort(&adjncyA[start], &adjncyA[end]);        
     }
 
     int n_adjncyA = xadjA[nnodes];
@@ -230,12 +225,6 @@ void MeshReorderingMETIS(Mesh *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int 
     if (result == METIS_OK)
     {
         std::cout << "METIS reordering succesfully applied\n";
-
-        for(int i = 0; i < nnodes; i++)
-        {
-            perm[i]--;
-            iperm[i]--;
-        }
     }
     else
     {

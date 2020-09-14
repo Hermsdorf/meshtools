@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 
 #include "metis.h"
 #include "mesh.h"
@@ -53,6 +54,7 @@ void MeshToDualGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
     delete[] eptr;
 }
 
+// TODO: implementar a alteração do vetor de tipos também
 void UpdateMeshArrays(Mesh* mesh, unsigned int** new_conn, unsigned int** new_offset)
 {
     unsigned int ne = mesh->get_n_elements();
@@ -128,6 +130,75 @@ void CreateSort(Mesh* mesh, int* sort)
     }
 }
 
+/*struct greater
+{
+    template<class T>
+    bool operator()(T const &a, T const &b) const { return a > b; }
+};
+
+void ReorderGraph(Mesh* mesh, idx_t** xadj, idx_t** adjncy)
+{
+    std::cout << "Reordering graph...\n";
+
+    unsigned int ne = mesh->get_n_elements();
+    unsigned int* n_adjsort = new unsigned int [ne];
+    unsigned int* n_adj = new unsigned int [ne];
+
+    for(unsigned int i = 0 ; i < ne ; i++)
+    {
+        unsigned int dif = *(xadj)[i+1] - *(xadj)[i];
+        n_adj[i] = n_adjsort[i] = dif;
+    }
+
+    std::sort(&n_adjsort[0], &n_adjsort[ne], greater());
+
+    idx_t* xadj_aux = new idx_t [ne+1];
+    idx_t* adjncy_aux = new idx_t [*(xadj)[ne]];
+
+    xadj_aux[0] = 0;
+    unsigned int c_xadj = 1;
+    unsigned int c_adjncy = 0;
+    for(unsigned int i = 0 ; i < ne ; i++)
+    {
+        unsigned int value = n_adjsort[i];
+        unsigned int pos;
+        for(int k = 0 ; k < ne ; k++)
+        {
+            if(n_adj[k] == value)
+            {
+                pos = k;
+                break;
+            }
+        }
+        
+        xadj_aux[c_xadj] = xadj_aux[c_xadj - 1] + value;
+        c_xadj++;
+
+        unsigned int start = *(xadj)[pos];
+        unsigned int end = *(xadj)[pos+1];
+
+        for(unsigned int j = start ; j < end ; j++)
+        {
+            adjncy_aux[c_adjncy] = *(adjncy)[j];
+            c_adjncy++;
+        }
+
+        n_adj[pos] = -1; // elemento ja inserido no vetor
+    }
+
+    xadj_aux[ne] = *(xadj)[ne];
+
+    delete [] n_adj;
+    delete [] n_adjsort;
+    delete [] xadj;
+    delete [] adjncy;
+
+    xadj = &xadj_aux;
+    adjncy = &adjncy_aux;
+    
+    std::cout << "\nGraph reordered succesfully!\n";
+}*/
+
 int Coloring(Mesh* mesh)
 {
     idx_t* xadj;
@@ -138,10 +209,9 @@ int Coloring(Mesh* mesh)
 
     MeshToDualGraph(mesh, &xadj, &adjncy);
 
+    //ReorderGraph(mesh, &xadj, &adjncy);        
+
     std::fill(&elements_color[0], &elements_color[ne], -1);  // flag para elemento sem cor
-    
-    //for(unsigned int i = 0 ; i < ne ; i++)
-        //elements_color[i] = -1; // flag para elemento sem cor
 
     for(unsigned int i = 0 ; i < ne ; i++)
     {
@@ -195,7 +265,7 @@ void Mesh::MeshColoring()
     ReorderElements(this, sort_internal, &new_conn, &new_offset);
     UpdateMeshArrays(this, &new_conn, &new_offset);
     
-    std::cout << "Finished mesh coloring...\n";  
+    std::cout << "Finished mesh coloring...\n";
 
     delete [] sort_internal;
     delete [] new_conn;
