@@ -1,15 +1,13 @@
 cmake_minimum_required(VERSION 3.0.0)
 cmake_policy(SET CMP0057 NEW)
 
-
 project(meshtools)
 
 include(CTest)
 enable_testing()
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
-set(CMAKE_CXX_FLAGS "-O3")
-#set(CMAKE_CXX_FLAGS "-O3 -Wall -Wextra")
+set(CMAKE_CXX_FLAGS "-g")
 #set(CMAKE_C_COMPILER tau_cc.sh)
 #set(CMAKE_CXX_COMPILER tau_cxx.sh)
 

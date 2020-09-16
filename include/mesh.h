@@ -478,10 +478,10 @@ class Mesh {
         unsigned int n_elements;                 // Numero de elementos internos.
         unsigned int n_nodes;                    // Numero de nós.
         std::vector<double> coord;               // Coordenadas nodais.
-        std::vector<unsigned int>    conn;       // Conectividade dos elementos.
-        std::vector<unsigned int>    offset;     // Mapeia a localização de cada elemento no array conn.
-        std::vector<unsigned short>    type;     // Array indicando o tipo de cada elemento.
-        std::vector<int>    physical_tag;        // Array indicando o physical tag de cada elemento.
+        std::vector<unsigned int> conn;          // Conectividade dos elementos.
+        std::vector<unsigned int> offset;        // Mapeia a localização de cada elemento no array conn.
+        std::vector<unsigned short> type;        // Array indicando o tipo de cada elemento.
+        std::vector<int> physical_tag;           // Array indicando o physical tag de cada elemento.
         int* mesh_coloring_internal;             // Array indicando as cores dos elementos.
         unsigned int n_internal_colors;          // Número total de cores dos elementos internos da malha.
         std::map<int, physical_data_t>  physical_map;
