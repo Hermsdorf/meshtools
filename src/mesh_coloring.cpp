@@ -142,82 +142,45 @@ void CreateSort(Mesh* mesh, unsigned int* sort)
     }
 }
 
-struct greater
+void DecreasingAdj(Mesh* mesh, idx_t** xadj, idx_t** adjncy, int** sequence)
 {
-    template<class T>
-    bool operator()(T const &a, T const &b) const { return a > b; }
-};
-
-void ReorderGraph(Mesh* mesh, idx_t** xadj, idx_t** adjncy, int** unsortpos)
-{
-    std::cout << "Reordering graph...\n";
+    std::cout << "  Calculating number of adjacencies...\n";
 
     unsigned int ne = mesh->get_n_elements();
-    unsigned int* n_adjsort = new unsigned int [ne];
     unsigned int* n_adj = new unsigned int [ne];
     idx_t* p_xadj = *xadj;
     idx_t* p_adjncy = *adjncy;
-    int* p_unsortpos = *unsortpos;
+    int* p_sequence = *sequence;
 
-    for(unsigned int i = 0 ; i < ne ; i++)
+    int greater_diff = 0;
+    int small_diff = p_xadj[1] - p_xadj[0];
+    for(int i = 0 ; i < ne ; i++)
     {
-        unsigned int dif = p_xadj[i+1] - p_xadj[i];
-        n_adj[i] = n_adjsort[i] = dif;
+        n_adj[i] = p_xadj[i+1] - p_xadj[i];
+
+        if(n_adj[i] > greater_diff)
+            greater_diff = n_adj[i];
+
+        if(n_adj[i] < small_diff)
+            small_diff = n_adj[i];
     }
 
-    std::sort(&n_adjsort[0], &n_adjsort[ne], greater());
-
-    idx_t* xadj_aux = new idx_t [ne+1];
-    idx_t* adjncy_aux = new idx_t [p_xadj[ne]];
-
-    xadj_aux[0] = 0;
-    unsigned int c_xadj = 1;
-    unsigned int c_adjncy = 0;
-    unsigned int c_unsortpos = 0;
-    for(unsigned int i = 0 ; i < ne ; i++)
+    int s_count = 0;
+    for(int i = greater_diff ; i >= small_diff ; i--)
     {
-        unsigned int value = n_adjsort[i];
-        unsigned int pos;
-        for(int k = 0 ; k < ne ; k++)
+        for(int j = 0 ; j < ne ; j++)
         {
-            if(n_adj[k] == value)
+            if(n_adj[j] == i)
             {
-                pos = k;
-                p_unsortpos[c_unsortpos] = pos;
-                c_unsortpos++;
-                break;
+                p_sequence[s_count] = j;
+                s_count++;
             }
-        }
-        
-        xadj_aux[c_xadj] = xadj_aux[c_xadj - 1] + value;
-        c_xadj++;
-
-        unsigned int start = p_xadj[pos];
-        unsigned int end = p_xadj[pos+1];
-
-        for(unsigned int j = start ; j < end ; j++)
-        {
-            adjncy_aux[c_adjncy] = p_adjncy[j];
-            c_adjncy++;
-        }
-
-        n_adj[pos] = 0; // elemento ja inserido no vetor
+        }    
     }
-
-    xadj_aux[ne] = p_xadj[ne];
-
-    for(int i = 0 ; i < c_xadj ; i++)
-        (*xadj)[i] = xadj_aux[i];
-
-    for(int i = 0 ; i < c_adjncy ; i++)
-        (*adjncy)[i] = adjncy_aux[i];
-
+    
     delete [] n_adj;
-    delete [] n_adjsort;
-    delete [] xadj_aux;
-    delete [] adjncy_aux;
 
-    std::cout << "Graph reordered succesfully!\n";
+    std::cout << "  Adjacencies calculated succesfully\n";
 }
 
 unsigned int ColoringReordLimit(Mesh* mesh)
@@ -226,21 +189,21 @@ unsigned int ColoringReordLimit(Mesh* mesh)
     idx_t* adjncy;
     unsigned int ne = mesh->get_n_elements();
     int* elements_color = new int[ne];
-    int* unsortpos = new int[ne];
-    unsigned int n_colors = 1;                // Número total de cores da malha.
-    unsigned int max_n_elements = 20000;       // Número máximo de elementos por cor.
-    std::vector<unsigned int> n_elements_color(9999999, 0); // Vector responsável por contar quantos elementos tem por cor.
+    int* sequence = new int[ne];
+    unsigned int n_colors = 1;                         // Número total de cores da malha.
+    unsigned int max_n_elements = 30000;               // Número máximo de elementos por cor.
+    std::vector<unsigned int> n_elements_color(n_colors, 0); // Vector responsável por contar quantos elementos tem por cor. 
 
     MeshToDualGraph(mesh, &xadj, &adjncy);
 
-    ReorderGraph(mesh, &xadj, &adjncy, &unsortpos);        
+    DecreasingAdj(mesh, &xadj, &adjncy, &sequence);  
 
-    std::fill(&elements_color[0], &elements_color[ne], -1);  // Flag para elemento sem cor.
+    std::fill(&elements_color[0], &elements_color[ne], -1); // Flag para elemento sem cor.
 
     for(unsigned int i = 0 ; i < ne ; i++)
     {
-        unsigned int start = xadj[i];
-        unsigned int end = xadj[i+1];
+        unsigned int start = xadj[sequence[i]];
+        unsigned int end = xadj[sequence[i]+1];
 
         unsigned int color = 1;  // Possível cor para o elemento i.
         unsigned int j = start;
@@ -261,18 +224,19 @@ unsigned int ColoringReordLimit(Mesh* mesh)
           // ao final color vai ter a coloração correta para o elemento i
           // sendo ela menor cor possível dentre as cores dos elementos adjacentes.
 
-        elements_color[unsortpos[i]] = color;
+        elements_color[sequence[i]] = color;
 
         if(color > n_colors)
         {
             n_colors = color;
-            //n_elements_color.resize(n_colors, 0);
+            n_elements_color.resize(n_colors+1, 0); // porque n_colors+1 (?)
         }
         
         n_elements_color[color-1]++;
     }
 
     n_elements_color.clear();
+    delete [] sequence;
     delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader 
                                                   // onde inicializa todo o vetor mesh_coloring_internal com -1.
     mesh->set_mesh_coloring_internal(elements_color);
@@ -291,18 +255,18 @@ unsigned int ColoringReord(Mesh* mesh)
     unsigned int ne = mesh->get_n_elements();
     int* elements_color = new int[ne];
     unsigned int n_colors = 1;                // Número total de cores da malha.
-    int* unsortpos = new int [ne];
-
+    int* sequence = new int [ne];
+    
     MeshToDualGraph(mesh, &xadj, &adjncy);
 
-    ReorderGraph(mesh, &xadj, &adjncy, &unsortpos);        
+    DecreasingAdj(mesh, &xadj, &adjncy, &sequence);        
 
     std::fill(&elements_color[0], &elements_color[ne], -1);  // Flag para elemento sem cor.
 
     for(unsigned int i = 0 ; i < ne ; i++)
     {
-        unsigned int start = xadj[i];
-        unsigned int end = xadj[i+1];
+        unsigned int start = xadj[sequence[i]];
+        unsigned int end = xadj[sequence[i]+1];
 
         unsigned int color = 1;  // Possível cor para o elemento i.
         unsigned int j = start;
@@ -322,15 +286,13 @@ unsigned int ColoringReord(Mesh* mesh)
           // ao final color vai ter a coloração correta para o elemento i
           // sendo ela menor cor possível dentre as cores dos elementos adjacentes.
         
-
-
-        elements_color[unsortpos[i]] = color; // seguir a coloração com sentido à reordenação do grafo
+        elements_color[sequence[i]] = color; // seguir a coloração com sentido à reordenação do grafo
 
         if(color > n_colors)
             n_colors = color;
     }
 
-    delete [] unsortpos;
+    delete [] sequence;
     delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader 
                                                   // onde inicializa todo o vetor mesh_coloring_internal com -1.
     mesh->set_mesh_coloring_internal(elements_color);
@@ -406,6 +368,7 @@ void Mesh::MeshColoring()
     ReorderElements(this, sort_internal, &new_conn, &new_offset);
     UpdateMeshArrays(this, &new_conn, &new_offset);
 
+    std::cout << "  # elements per color: ";
     for(int i = 0 ; i < n_internal_colors ; i++)
         std::cout << mesh_coloring_internal[i] << " ";
 
