@@ -18,4 +18,4 @@ São disponibilizados algoritmos de particionamento, coloração e reordenação
 É possível escrever sua malha em formato VTK em quatro diferentes funções, a *MeshVTKWriter* a qual escreve em ASCII todos os elementos da malha, ou seja, tanto os elementos internos quanto de superfície, ou ainda usando da rotina *MeshVTKWriterInternal* a qual escreve também em ASCII a malha levando em consideração somente os elementos internos ou também as versões dessas duas funções com escrita em binário, respectivamente *MeshVTKWriterBinAppended* e *MeshVTKWriterInternalBinAppended*.
 
 ## Observação
-Informações como parâmetros, tipos de retorno e o objetivo de cada função das classes é possível serem encontrados nos headers de cada arquivo.
+Informações como parâmetros, tipos de retorno e o objetivo de cada função das classes são encontrados nos headers de cada arquivo.
