@@ -6,7 +6,7 @@ MeshTools é uma biblioteca de leitura de malha de elementos finitos, pré-proce
 
 ## Rotinas
 #### Leitura: 
-Para a leitura é disponibilizada da função *MeshGmshReader* a qual armazena as informações da malha a partir de um arquivo de entrada indicado no argumento da execução do programa.
+Para a leitura é disponibilizada da função *MeshGmshReader* a qual armazena as informações da malha a partir de um arquivo de entrada indicado no argumento da execução do programa. Essa biblioteca só é compatível com formato msh versão 2.2.
 
 #### Técnicas de computação de alto desempenho: 
 São disponibilizados algoritmos de particionamento, coloração e reordenação nodal. 
