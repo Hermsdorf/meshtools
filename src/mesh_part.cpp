@@ -1,124 +1,85 @@
-#include <fstream>
 #include <iostream>
 
 #include "metis.h"
-
-
 #include "mesh.h"
+#include "mesh_part.h"
 
-
-mesh_partition_t* MeshPartitionerInternal(mesh_t* mesh, int nparts)
+Mesh_partition_t::Mesh_partition_t() 
 {
-    int metis_return; 
-    
-    std::cout << "Partitioning in "<< nparts <<" parts" << std::endl;
-
-    // Allocate a new mesh partition data info and initialize
-    mesh_partition_t *mp = new mesh_partition_t();
-    mp->n_partitions = nparts;
-    mp->elem_part    = new int [mesh->n_elements];
-    mp->nodal_part   = new int [mesh->n_nodes];
-
-    for(int i = 0 ; i < mesh->n_elements ; i++)
-        mp->elem_part[i] = 0;
-    for(int i = 0 ; i < mesh->n_nodes ; i++)
-        mp->nodal_part[i] = 0;
-
-    if(nparts <= 1)
-    {
-        cout << "Successfully partitioned" << endl;
-        return mp;
-    }
-    else
-    {
-        int ofs          = mesh->offset[mesh->n_face_elements];
-        int *eptr        = new int [mesh->n_elements+1];
-        
-#ifdef DEBUG_
-        std::cout << "EPTR: " << endl;
-#endif
-        for(int i = mesh->n_face_elements, j = 0; i < mesh->offset.size() ; i++, j++)
-        {
-                eptr[j] = mesh->offset[i] - ofs;
-#ifdef DEBUG_
-                std::cout << eptr[j] << " ";
-#endif
-        }
-        
-#ifdef DEBUG_
-        std::cout << std::endl;
-#endif
-
-        idx_t *ne       = &mesh->n_elements;
-        idx_t *nn       = &mesh->n_nodes; 
-        idx_t *eind     = &mesh->conn[ofs]; // mesh->conn + ofs;
-        idx_t *vwgt     = 0;
-        idx_t *vsize    = 0;
-        idx_t ncommon   = 1;
-        real_t *tpwgts  = 0;
-        idx_t options[METIS_NOPTIONS];
-        idx_t  objval   = 0;
-
-        METIS_SetDefaultOptions(options);
-
-        //idx_t *epart, idx t *npart
-        options[METIS_OPTION_PTYPE]     = METIS_PTYPE_KWAY;
-        options[METIS_OPTION_OBJTYPE]   = METIS_OBJTYPE_CUT;
-        options[METIS_OPTION_NUMBERING] = 0;
-
-
-        //metis_return = METIS_PartMeshDual(ne,nn,eptr,eind,vwgt,vsize, &ncommon, &nparts, tpwgts, options, &objval, mp->elem_part, mp->nodal_part);
-        metis_return = METIS_PartMeshNodal(ne,nn,eptr,eind,vwgt,vsize, &nparts, tpwgts, options, &objval, mp->elem_part, mp->nodal_part);
-
-        delete [] eptr;
-        cout << "Successfully partitioned" << endl;
-
-        return mp;
-    }
+    this->n_partitions = 1;
+    this->nodal_part = NULL;
+    this->elem_part = NULL;
 }
 
-
-mesh_partition_t* MeshPartitioner(mesh_t* mesh, int nparts)
+Mesh_partition_t::~Mesh_partition_t()
 {
+    delete [] this->elem_part;
+    delete [] this->nodal_part;
+}
 
-    int metis_return; 
+int Mesh_partition_t::get_n_partitions()
+{
+    return this->n_partitions;
+}
+int* Mesh_partition_t::get_nodal_part()
+{
+    return this->nodal_part;
+}
+int* Mesh_partition_t::get_elem_part()
+{
+    return this->elem_part;
+}
+void Mesh_partition_t::set_n_partitions(int n_partitions)
+{
+    this->n_partitions = n_partitions;
+}
+void Mesh_partition_t::set_nodal_part(int* nodal_part)
+{
+    this->nodal_part = nodal_part;
+}
+void Mesh_partition_t::set_elem_part(int* elem_part)
+{
+    this->elem_part = elem_part;
+}
 
-    std::cout << "Partitioning in "<< nparts <<" parts" << std::endl;
+void Mesh_partition_t::MeshPartitionerInternal(Mesh* mesh, int nparts)
+{
+    int nelem = (int)mesh->get_n_elements();
+    int nnodes = (int)mesh->get_n_nodes();
+    
+    std::cout << "Partitioning in "<< nparts <<" parts\n";
 
     // Allocate a new mesh partition data info and initialize
-    mesh_partition_t *mp = new mesh_partition_t();
-    mp->n_partitions = nparts;
-    mp->elem_part    = new int [mesh->n_elements + mesh->n_face_elements];
-    mp->nodal_part   = new int [mesh->n_nodes];
+    this->n_partitions = nparts;
+    this->elem_part    = new int [nelem];
+    this->nodal_part   = new int [nnodes];
 
-    for(int i = 0 ; i < mesh->n_elements ; i++)
-        mp->elem_part[i] = 0;
-    for(int i = 0 ; i < mesh->n_nodes ; i++)
-        mp->nodal_part[i] = 0;
+    for(int i = 0 ; i < nelem ; i++)
+        this->elem_part[i] = 0;
+    for(int i = 0 ; i < nnodes ; i++)
+        this->nodal_part[i] = 0;
 
-    
     if(nparts <= 1)
     {
-        cout << "Successfully partitioned" << endl;
-        return mp;
+        std::cout << "Successfully partitioned\n";
     }
     else
     {
-        //int ofs          = 0; // meshh->offset[mesh->n_face_elements];
-        int *eptr         = &mesh->offset[0]; // new int [mesh->n_elements+mesh->n_face_elements+1];
+        int ofs          = mesh->getElementOffset(0)[0];
+        int *eptr        = new int[nelem + 1];
         
-#ifdef DEBUG_
-        std::cout << std::endl;
-#endif
+        int* offset_aux = (int*)mesh->getElementOffset(0);
+        for (int i = 0, j = 0; i <= nelem ; i++, j++)
+        {
+            eptr[j] = offset_aux[i] - ofs;
+        }
 
-        int nelem = mesh->n_elements + mesh->n_face_elements;
 
         idx_t *ne       = &nelem;
-        idx_t *nn       = &mesh->n_nodes; 
-        idx_t *eind     = &mesh->conn[0]; // mesh->conn + ofs;
+        idx_t *nn       = &nnodes; 
+        idx_t *eind     = (idx_t*)mesh->getElementConn(0);
         idx_t *vwgt     = 0;
         idx_t *vsize    = 0;
-        idx_t ncommon   = 1;
         real_t *tpwgts  = 0;
         idx_t options[METIS_NOPTIONS];
         idx_t  objval   = 0;
@@ -130,25 +91,109 @@ mesh_partition_t* MeshPartitioner(mesh_t* mesh, int nparts)
         options[METIS_OPTION_OBJTYPE]   = METIS_OBJTYPE_CUT;
         options[METIS_OPTION_NUMBERING] = 0;
 
+        int metis_return = METIS_PartMeshNodal(ne,nn,eptr,eind,vwgt,vsize, &nparts, tpwgts, options, &objval, this->elem_part, this->nodal_part);
+        if (metis_return == METIS_OK)
+        {
+                std::cout << "Successfully partitioned\n";
+        }
+        else
+        {
+            if (metis_return == METIS_ERROR_INPUT)
+            {
+                std::cout << "Input error\n";
+                exit(1);
+            }
+            else
+            {
+                if (metis_return == METIS_ERROR_MEMORY)
+                {
+                    std::cout << "Memory error\n";
+                    exit(1);
+                }
+                else
+                {
+                    std::cout << "Another kind of error\n";
+                    exit(1);
+                }
+            }
+        }
 
-        //metis_return = METIS_PartMeshDual(ne,nn,eptr,eind,vwgt,vsize, &ncommon, &mp->n_partitions, tpwgts, options, &objval, mp->elem_part, mp->nodal_part);
-        metis_return = METIS_PartMeshNodal(ne,nn,eptr,eind,vwgt,vsize, &nparts, tpwgts, options, &objval, mp->elem_part, mp->nodal_part);
-        cout << "Successfully partitioned" << endl;
-
-        return mp;
+        delete [] eptr;
     }
 }
 
 
-void MeshPartitionDestroy(mesh_partition_t* mp)
+void Mesh_partition_t::MeshPartitioner(Mesh* mesh, int nparts)
 {
+    int nelem = (int)mesh->get_n_elements();
+    int nfe = (int)mesh->get_n_face_elements();
+    int nnodes = (int)mesh->get_n_nodes();
+    int ntelem = nelem + nfe;
 
-    if(mp) {
-        if(mp->elem_part) delete [] mp->elem_part;
-        if(mp->nodal_part) delete [] mp->nodal_part;
-        delete mp;
+    std::cout << "Partitioning in "<< nparts <<" parts\n";
+
+    // Allocate a new mesh partition data info and initialize
+    this->n_partitions = nparts;
+    this->elem_part    = new int [ntelem];
+    this->nodal_part   = new int [nnodes];
+
+    for(int i = 0 ; i < ntelem ; i++)
+        this->elem_part[i] = 0;
+    for(int i = 0 ; i < nnodes ; i++)
+        this->nodal_part[i] = 0;
+    
+    if(nparts <= 1)
+    {
+        std::cout << "Successfully partitioned\n";
     }
+    else
+    {
+        idx_t *ne       = &ntelem;
+        idx_t *nn       = &nnodes; 
+        idx_t *eptr     = (idx_t*)mesh->getSurfaceElementOffset(0);
+        idx_t *eind     = (idx_t*)mesh->getSurfaceElementConn(0);
+        idx_t *vwgt     = 0;
+        idx_t *vsize    = 0;
+        real_t *tpwgts  = 0;
+        idx_t options[METIS_NOPTIONS];
+        idx_t  objval   = 0;
 
+        METIS_SetDefaultOptions(options);
+
+        options[METIS_OPTION_PTYPE]     = METIS_PTYPE_KWAY;
+        options[METIS_OPTION_OBJTYPE]   = METIS_OBJTYPE_CUT;
+        options[METIS_OPTION_NUMBERING] = 0;
+
+
+        int metis_return = METIS_PartMeshNodal(ne,nn, eptr, eind,vwgt,vsize, &nparts, tpwgts, options, &objval, this->elem_part, this->nodal_part);
+
+        if (metis_return == METIS_OK)
+        {
+                std::cout << "Successfully partitioned\n";
+        }
+        else
+        {
+            if (metis_return == METIS_ERROR_INPUT)
+            {
+                std::cout << "Input error\n";
+                exit(1);
+            }
+            else
+            {
+                if (metis_return == METIS_ERROR_MEMORY)
+                {
+                    std::cout << "Memory error\n";
+                    exit(1);
+                }
+                else
+                {
+                    std::cout << "Another kind of error\n";
+                    exit(1);
+                }
+            }
+        }
+
+    }
 }
 
 

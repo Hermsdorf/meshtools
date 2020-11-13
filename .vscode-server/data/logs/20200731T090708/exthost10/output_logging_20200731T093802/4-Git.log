@@ -1,0 +1,35 @@
+Looking for git in: git
+Using git 2.17.1 from git
+> git rev-parse --show-toplevel
+> git rev-parse --git-dir
+Open repository: /home/guilherme/TeoriaDosGrafos
+> git fetch
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show --textconv :Grafo/src/Grafo.cpp
+> git ls-files --stage -- /home/guilherme/TeoriaDosGrafos/Grafo/src/Grafo.cpp
+> git check-ignore -v -z --stdin
+> git cat-file -s b1c33fe70575d770e0018641bd8441a4579d9c8f
+> git config --global user.email
+> git config --global user.name
+> git status -z -u
+> git symbolic-ref --short HEAD
+> git rev-parse master
+> git rev-parse --symbolic-full-name master@{u}
+Missing or invalid credentials.
+Skip silent fetch commands
+Missing or invalid credentials.
+Skip silent fetch commands
+remote: HTTP Basic: Access denied
+fatal: Authentication failed for 'https://gitlab.com/gfarache/teoriadosgrafos.git/'
+> git rev-list --left-right master...refs/remotes/origin/master
+> git for-each-ref --sort -committerdate --format %(refname) %(objectname)
+> git remote --verbose
+> git config --get commit.template
+> git show -s --format=%an <%ae> [%ai] 3a1ff170a7b50aeef0b794bf6a5ecb0b8a0932ff

@@ -10,7 +10,7 @@ void CatalystInitialize(int numScripts, char* scripts[]);
 
 void CatalystFinalize();
 
-void CatalystCoProcess(mesh_t* mesh, double* velocityData, float* pressureData, double time,
+void CatalystCoProcess(Mesh* mesh, double* velocityData, float* pressureData, double time,
   unsigned int timeStep, int lastTimeStep);
 #ifdef __cplusplus
 }

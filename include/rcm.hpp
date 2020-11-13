@@ -8,9 +8,9 @@ int adj_perm_bandwidth ( int node_num, int adj_num, int adj_row[], int adj[],
 void adj_perm_show ( int node_num, int adj_num, int adj_row[], int adj[], 
   int perm[], int perm_inv[] );
 void adj_print ( int node_num, int adj_num, int adj_row[], int adj[], 
-  string title );
+  std::string title );
 void adj_print_some ( int node_num, int node_lo, int node_hi, int adj_num, 
-  int adj_row[], int adj[], string title );
+  int adj_row[], int adj[], std::string title );
 void adj_set ( int node_num, int adj_max, int *adj_num, int adj_row[], 
   int adj[], int irow, int jcol );
 void adj_show ( int node_num, int adj_num, int adj_row[], int adj[] );
@@ -28,13 +28,13 @@ int i4col_compare ( int m, int n, int a[], int i, int j );
 void i4col_sort_a ( int m, int n, int a[] );
 void i4col_swap ( int m, int n, int a[], int irow1, int irow2 );
 void i4mat_print_some ( int m, int n, int a[], int ilo, int jlo, int ihi, 
-  int jhi, string title );
-void i4mat_transpose_print ( int m, int n, int a[], string title );
+  int jhi, std::string title );
+void i4mat_transpose_print ( int m, int n, int a[], std::string title );
 void i4mat_transpose_print_some ( int m, int n, int a[], int ilo, int jlo, 
-  int ihi, int jhi, string title );
+  int ihi, int jhi, std::string title );
 void i4vec_heap_d ( int n, int a[] );
 int *i4vec_indicator ( int n );
-void i4vec_print ( int n, int a[], string title );
+void i4vec_print ( int n, int a[], std::string title );
 void i4vec_reverse ( int n, int a[] );
 void i4vec_sort_heap_a ( int n, int a[] );
 void level_set ( int root, int adj_num, int adj_row[], int adj[], int mask[], 
@@ -48,9 +48,9 @@ float r4_abs ( float x );
 int r4_nint ( float x );
 void r82vec_permute ( int n, double a[], int p[] );
 void r8mat_print_some ( int m, int n, double a[], int ilo, int jlo, int ihi, 
-  int jhi, string title );
+  int jhi, std::string title );
 void r8mat_transpose_print_some ( int m, int n, double a[], int ilo, int jlo, 
-  int ihi, int jhi, string title );
+  int ihi, int jhi, std::string title );
 void rcm ( int root, int adj_num, int adj_row[], int adj[], int mask[], 
   int perm[], int *iccsze, int node_num );
 void root_find ( int *root, int adj_num, int adj_row[], int adj[], int mask[], 

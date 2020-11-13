@@ -1,4 +1,3 @@
-#include "FEAdaptor.h"
 #include <iostream>
 
 #include <vtkCPDataDescription.h>
@@ -14,52 +13,49 @@
 #include <vtkPoints.h>
 #include <vtkUnstructuredGrid.h>
 
+#include "FEAdaptor.h"
+
 namespace
 {
   vtkCPProcessor *Processor = NULL;
   vtkUnstructuredGrid *VTKGrid;
 
-  void BuildVTKGrid(mesh_t *mesh)
+  void BuildVTKGrid(Mesh *mesh)
   {
     // create the points information
-    int size_coord    = mesh->coord.size();
-    double* pointData = &mesh->coord[0];
+    double* pointData = &mesh->getCoord()[0];
 
     vtkNew<vtkDoubleArray> pointArray;
     pointArray->SetNumberOfComponents(3);
-    pointArray->SetArray(pointData, static_cast<vtkIdType>(mesh->n_nodes * 3), 1); 
+    pointArray->SetArray(pointData, static_cast<vtkIdType>(mesh->get_n_nodes() * 3), 1); 
     vtkNew<vtkPoints> points;
     points->SetData(pointArray.GetPointer());
     VTKGrid->SetPoints(points.GetPointer());
 
     // create the cells
-    int ne = mesh->n_elements;
-    int nfe = mesh->n_face_elements;
-    unsigned int* cellsData = (unsigned int*)&mesh->conn[mesh->offset[nfe]];
+    unsigned int ne = mesh->get_n_elements();
+    unsigned int* cellsData = mesh->getElementConn(0);
 
-    VTKGrid->Allocate(static_cast<vtkIdType>(mesh->offset.back() - mesh->offset[nfe]));
+    VTKGrid->Allocate(static_cast<vtkIdType>(mesh->getOffset().back() - mesh->getElementOffset(0)[0]));
     for (unsigned int cell = 0; cell < ne; cell++)
     {
-      unsigned int cell_skip = cell + nfe;
-      int n_conn = mesh->offset[cell_skip + 1] - mesh->offset[cell_skip];
+      int n_conn = mesh->getElementOffset(cell + 1)[0] - mesh->getElementOffset(cell)[0];
       unsigned int *cellPoints = cellsData + (n_conn * cell);
 
       vtkIdType* tmp = new vtkIdType[n_conn];
       for (int i = 0; i < n_conn; i++)
         tmp[i] = cellPoints[i]; // conectividade
 
-      VTKGrid->InsertNextCell(mesh->type[cell_skip], n_conn, tmp); // (tipo do elemento, numero de nós, vetor com as conn)
+      VTKGrid->InsertNextCell(mesh->getElementType(cell), n_conn, tmp); // (tipo do elemento, numero de nós, vetor com as conn)
       delete[] tmp;
     }
-
-    //delete [] pointData; // devo deletar o pointData pois o pointArray aponta pra ele, não sei se o pointArray é deletado automaticamente
   }
 
-  void UpdateVTKAttributes(vtkCPInputDataDescription *idd, mesh_t *mesh,
+  void UpdateVTKAttributes(vtkCPInputDataDescription *idd, Mesh *mesh,
                            double *velocityData, float *pressureData)
   {
-    int nn = mesh->n_nodes;
-    int ne = mesh->n_elements;
+    unsigned int nnodes = mesh->get_n_nodes();
+    unsigned int ne = mesh->get_n_elements();
     if (idd->IsFieldNeeded("velocity", vtkDataObject::POINT) == true)
     {
       if (VTKGrid->GetPointData()->GetNumberOfArrays() == 0)
@@ -68,7 +64,7 @@ namespace
         vtkNew<vtkDoubleArray> velocity;
         velocity->SetName("velocity");
         velocity->SetNumberOfComponents(3);
-        velocity->SetNumberOfTuples(static_cast<vtkIdType>(nn));
+        velocity->SetNumberOfTuples(static_cast<vtkIdType>(nnodes));
         VTKGrid->GetPointData()->AddArray(velocity.GetPointer());
       }
       vtkDoubleArray *velocity =
@@ -76,10 +72,10 @@ namespace
       // The velocity array is ordered as vx0,vx1,vx2,..,vy0,vy1,vy2,..,vz0,vz1,vz2,..
       // so we need to create a full copy of it with VTK's ordering of
       // vx0,vy0,vz0,vx1,vy1,vz1,..
-      for (unsigned int i = 0; i < nn; i++)
+      for (unsigned int i = 0; i < nnodes; i++)
       {
-        double values[3] = {velocityData[i], velocityData[i + nn],
-                            velocityData[i + 2 * nn]};
+        double values[3] = {velocityData[i], velocityData[i + nnodes],
+                            velocityData[i + 2 * nnodes]};
         velocity->SetTypedTuple(i, values);
       }
     }
@@ -102,7 +98,7 @@ namespace
     }
   }
 
-  void BuildVTKDataStructures(vtkCPInputDataDescription *idd, mesh_t *mesh,
+  void BuildVTKDataStructures(vtkCPInputDataDescription *idd, Mesh *mesh,
                               double *velocity, float *pressure)
   {
     if (VTKGrid == NULL)
@@ -150,7 +146,7 @@ void CatalystFinalize()
   }
 }
 
-void CatalystCoProcess(mesh_t *mesh, double *velocityData, float *pressureData, double time,
+void CatalystCoProcess(Mesh *mesh, double *velocityData, float *pressureData, double time,
                        unsigned int timeStep, int lastTimeStep)
 {
   vtkNew<vtkCPDataDescription> dataDescription;
