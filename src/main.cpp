@@ -3,6 +3,7 @@
 
 #include "mesh.h"
 #include "mesh_part.h"
+#include "alglin.h"
 
 #ifdef PARAVIEWCAT_FOUND
    #include "FEAdaptor.h"
@@ -26,6 +27,46 @@ void UpdateAttr(int n, double time, Mesh* mesh, double** v, float** p)
         (*p)[i]      = -0.25*(std::cos(2*variable_a*M_PI*x)+std::cos(2*variable_a*M_PI*y))*std::exp(-4*variable_a*variable_a*M_PI*M_PI*time*variable_v);
     }
 }
+
+void matvec_ebe(Mesh* mesh, Matrix& EBE, double y[], double r[])
+{
+    unsigned int nnodes = mesh->get_n_nodes();
+    unsigned int nelem = mesh->get_n_elements();
+   
+    std::fill(&r[0], &r[nnodes], 0.0);
+
+    for(int iel = 0 ; iel < nelem ; iel++ )
+    {
+
+        unsigned int* conn = mesh->getElementConn(iel);
+        unsigned int connsize = mesh->getElementConnSize(iel);
+        double y_local[connsize];
+        double r_local[connsize];
+
+        for(int i = 0 ; i < connsize ; i++)
+        {
+            unsigned int no = conn[i];
+            y_local[i] = y[no];
+        }
+
+        std::fill(&r_local[0], &r_local[connsize], 0.0);
+
+        for(int i = 0 ; i < connsize ; i++)
+        {
+            for(int j = 0 ; j < connsize ; j++)
+            {
+                r_local[i] += EBE(iel, i, j)*y_local[j];
+            }
+        }
+
+        for(int i = 0 ; i < connsize ; i++)
+        {
+            unsigned int no = conn[i];
+            r[no] += r_local[no];
+        }
+    }
+}
+
 
 int main(int argc, char* argv[])
 {         
