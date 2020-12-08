@@ -4,6 +4,7 @@
 #include "mesh.h"
 #include "mesh_part.h"
 #include "alglin.h"
+#include <omp.h>
 
 #ifdef PARAVIEWCAT_FOUND
    #include "FEAdaptor.h"
@@ -28,20 +29,19 @@ void UpdateAttr(int n, double time, Mesh* mesh, double** v, float** p)
     }
 }
 
-void matvec_ebe(Mesh* mesh, Matrix& EBE, double y[], double r[])
+void matvec_ebe(Mesh* mesh, Matrix& EBE, double* y, double* r)
 {
     unsigned int nnodes = mesh->get_n_nodes();
     unsigned int nelem = mesh->get_n_elements();
-   
+    double y_local[8];
+    double r_local[8];
+    
     std::fill(&r[0], &r[nnodes], 0.0);
 
     for(int iel = 0 ; iel < nelem ; iel++ )
     {
-
         unsigned int* conn = mesh->getElementConn(iel);
         unsigned int connsize = mesh->getElementConnSize(iel);
-        double y_local[connsize];
-        double r_local[connsize];
 
         for(int i = 0 ; i < connsize ; i++)
         {
@@ -62,8 +62,58 @@ void matvec_ebe(Mesh* mesh, Matrix& EBE, double y[], double r[])
         for(int i = 0 ; i < connsize ; i++)
         {
             unsigned int no = conn[i];
-            r[no] += r_local[no];
+            r[no] += r_local[i];
         }
+    }
+}
+
+void matvec_openmp(Mesh* mesh, Matrix& EBE, double* y, double* r)
+{
+    unsigned int nnodes = mesh->get_n_nodes();
+    unsigned int nelem = mesh->get_n_elements();
+    double y_local[8];
+    double r_local[8];
+    
+    std::fill(&r[0], &r[nnodes], 0.0);
+    
+    unsigned int ncolors = mesh->get_n_internal_colors();
+    int* elem_color = mesh->get_mesh_coloring_internal();
+
+    unsigned int begin = 0;
+    unsigned int end;
+    for(int k = 0 ; k < ncolors; k++)
+    {
+        end = begin + elem_color[k];
+
+        #pragma omp parallel for private(y_local, r_local)
+        for(int iel = begin ; iel < end ; iel++)
+        {
+            unsigned int* conn = mesh->getElementConn(iel);
+            unsigned int connsize = mesh->getElementConnSize(iel);
+
+            for(int i = 0 ; i < connsize ; i++)
+            {
+                unsigned int no = conn[i];
+                y_local[i] = y[no];
+            }
+
+            std::fill(&r_local[0], &r_local[connsize], 0.0);
+
+            for(int i = 0 ; i < connsize ; i++)
+            {
+                for(int j = 0 ; j < connsize ; j++)
+                {
+                    r_local[i] += EBE(iel, i, j)*y_local[j];
+                }
+            }
+
+            for(int i = 0 ; i < connsize ; i++)
+            {
+                unsigned int no = conn[i];
+                r[no] += r_local[i];
+            }
+        }
+        begin += elem_color[k];
     }
 }
 
@@ -90,43 +140,72 @@ int main(int argc, char* argv[])
         //CatalystInitialize(n_script, argv+3);
 #endif
 
-    mesh->MeshReordering(RCM);
+    //mesh->MeshReordering(RCM);
     mesh->MeshColoring();
 
-    Mesh_partition_t* parts = new Mesh_partition_t;
+    //Mesh_partition_t* parts = new Mesh_partition_t;
 
-    parts->MeshPartitionerInternal(mesh, n_part);
+    //parts->MeshPartitionerInternal(mesh, n_part);
 
-    double *velocity = new double[mesh->get_n_nodes()*3];
-    float *pressure  = new float[mesh->get_n_nodes()];
+//     double *velocity = new double[mesh->get_n_nodes()*3];
+//     float *pressure  = new float[mesh->get_n_nodes()];
 
-    double time      = 0.0;
-    double max_time  = 1.0;
-    double dt        = 0.05; 
-    int timeStep = 1;
-    while(time < max_time)
-    {
-        UpdateAttr(mesh->get_n_nodes(), time, mesh, &velocity, &pressure);
+//     double time      = 0.0;
+//     double max_time  = 1.0;
+//     double dt        = 0.05; 
+//     int timeStep = 1;
+//     while(time < max_time)
+//     {
+//         UpdateAttr(mesh->get_n_nodes(), time, mesh, &velocity, &pressure);
 
-#ifdef PARAVIEWCAT_FOUND
-            //CatalystCoProcess(mesh, velocity, pressure,time,timeStep, 0);
-#endif
-        //mesh->MeshVTKWriterInternalBinAppended(timeStep, parts->get_nodal_part(), parts->get_elem_part(), mesh->get_mesh_coloring_internal(), velocity, pressure);
+// #ifdef PARAVIEWCAT_FOUND
+             //CatalystCoProcess(mesh, velocity, pressure,time,timeStep, 0);
+// #endif
+         //mesh->MeshVTKWriterInternalBinAppended(timeStep, parts->get_nodal_part(), parts->get_elem_part(), mesh->get_mesh_coloring_internal(), velocity, pressure);
 
-        time += dt;
-        timeStep++;
-    }
+//         time += dt;
+//         timeStep++;
+//     }
 
 #ifdef PARAVIEWCAT_FOUND
         //CatalystFinalize();
 #endif
 
-    mesh->MeshVTKWriterInternalBinAppended(0, parts->get_nodal_part(), parts->get_elem_part(), mesh->get_mesh_coloring_internal(), NULL, NULL);
+    unsigned int nelem = mesh->get_n_elements();
+    unsigned int nnodes = mesh->get_n_nodes();
+    unsigned int nconn = mesh->getElementConnSize(0);
+    Matrix ebe(nelem, m);
+    
+    double* y = new double[nnodes];
+    double* r = new double[nnodes];
 
-    delete [] velocity;
-    delete [] pressure;
+    std::fill(&y[0], &y[nnodes], 1.0);
+
+    for(int i = 0 ; i < nelem ; i++)
+    {
+        for(int j = 0 ; j < nconn ; j++)
+        {
+            for(int k = 0 ; k < nconn ; k++)
+            {
+                ebe(i, j, k) = 1.0;
+            }
+        }
+    }
+
+    matvec_ebe(mesh, ebe, y, r);
+
+    for(int i = 0 ; i < nnodes ; i++)
+        std::cout << r[i] << " ";
+        
+    std::cout << "\n";
+    //mesh->MeshVTKWriterInternalBinAppended(0, parts->get_nodal_part(), parts->get_elem_part(), mesh->get_mesh_coloring_internal(), NULL, NULL);
+
+    // delete [] velocity;
+    // delete [] pressure;
     delete mesh;
-    delete parts;
+    //delete parts;
+    delete [] y;
+    delete [] r;
 
     return 0;
 }

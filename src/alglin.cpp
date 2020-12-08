@@ -1,24 +1,29 @@
 #include <iostream>
 #include "alglin.h"
 
-Matrix::Matrix(int n, int m, int z)
+Matrix::Matrix(unsigned int n, unsigned int m, unsigned int z)
 {
     nx = n;
     ny = m;
     nz = z;
-    _data = new double [n*m*z];
+    _data = new double[n*m*z];
 }
 
 
-Matrix::Matrix(int n, int m)
+Matrix::Matrix(unsigned int n, unsigned int m)
 {
     nx = n;
     ny = m;
     nz = m;
-    _data = new double [n*m*m];
+    _data = new double[n*m*m];
 }
 
-double& Matrix::operator()(int  i, int j, int k)
+Matrix::~Matrix()
 {
-    return _data[i*(nz*nx) + j*nz + k];
+    delete [] _data;
+}
+
+double& Matrix::operator()(unsigned int i, unsigned int j, unsigned int k)
+{
+    return _data[i*(ny*nz) + j*nz + k];
 }

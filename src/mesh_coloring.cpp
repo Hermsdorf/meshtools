@@ -78,8 +78,7 @@ void UpdateMeshArrays(Mesh* mesh, unsigned int** new_conn, unsigned int** new_of
 
     int* mesh_coloringAux = new int [n_colors];
     
-    for(unsigned int i = 0 ; i < n_colors ; i++)
-        mesh_coloringAux[i] = 0;
+    std::fill(&mesh_coloringAux[0], &mesh_coloringAux[n_colors], 0);
 
     for(unsigned int i = 0 ; i < ne ; i++)
     {
@@ -363,7 +362,7 @@ void Mesh::MeshColoring()
     unsigned int* new_conn;
     unsigned int* new_offset;
 
-    n_internal_colors = ColoringReordLimit(this);
+    n_internal_colors = Coloring(this);
     CreateSort(this, sort_internal);
     ReorderElements(this, sort_internal, &new_conn, &new_offset);
     UpdateMeshArrays(this, &new_conn, &new_offset);

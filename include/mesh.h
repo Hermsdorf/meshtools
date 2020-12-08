@@ -474,7 +474,7 @@ class Mesh {
         */
 
     private:
-        unsigned int n_face_elements;            // Numeros de elementos de superficie.
+        unsigned int n_face_elements;            // Numero de elementos de superficie.
         unsigned int n_elements;                 // Numero de elementos internos.
         unsigned int n_nodes;                    // Numero de nós.
         std::vector<double> coord;               // Coordenadas nodais.

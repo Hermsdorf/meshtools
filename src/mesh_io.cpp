@@ -232,9 +232,6 @@ void Mesh::MeshGmshReader(const char* filename)
     
     this->mesh_coloring_internal = new int [this->n_elements];
 
-    //for(int i = 0 ; i < this->n_elements ; i++)
-        //this->mesh_coloring_internal[i] = -1;
-
     std::fill(&this->mesh_coloring_internal[0], &this->mesh_coloring_internal[n_elements], -1);
 
     

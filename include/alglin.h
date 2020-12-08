@@ -3,9 +3,10 @@
 class Matrix
 {
     public:
-        Matrix(int n, int m);
-        Matrix(int n, int m, int z);
-        double& operator()(int i, int j, int z);
+        Matrix(unsigned int n, unsigned int m);
+        Matrix(unsigned int n, unsigned int m, unsigned int z);
+        ~Matrix();
+        double& operator()(unsigned int i, unsigned int j, unsigned int z);
 
     private:
         double *_data;
