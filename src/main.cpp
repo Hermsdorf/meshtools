@@ -4,7 +4,10 @@
 #include "mesh.h"
 #include "mesh_part.h"
 #include "alglin.h"
-#include <omp.h>
+
+#ifdef _OPENMP
+    #include <omp.h>
+#endif
 
 #ifdef PARAVIEWCAT_FOUND
    #include "FEAdaptor.h"
@@ -137,7 +140,7 @@ int main(int argc, char* argv[])
     Mesh* mesh = new Mesh(argv[1]);
 
 #ifdef PARAVIEWCAT_FOUND
-        //CatalystInitialize(n_script, argv+3);
+        CatalystInitialize(n_script, argv+3);
 #endif
 
     //mesh->MeshReordering(RCM);
@@ -151,7 +154,7 @@ int main(int argc, char* argv[])
 //     float *pressure  = new float[mesh->get_n_nodes()];
 
 //     double time      = 0.0;
-//     double max_time  = 1.0;
+//     double max_time  = 1.0;calc
 //     double dt        = 0.05; 
 //     int timeStep = 1;
 //     while(time < max_time)
@@ -168,13 +171,13 @@ int main(int argc, char* argv[])
 //     }
 
 #ifdef PARAVIEWCAT_FOUND
-        //CatalystFinalize();
+        CatalystFinalize();
 #endif
 
     unsigned int nelem = mesh->get_n_elements();
     unsigned int nnodes = mesh->get_n_nodes();
     unsigned int nconn = mesh->getElementConnSize(0);
-    Matrix ebe(nelem, m);
+    Matrix ebe(nelem, nconn);
     
     double* y = new double[nnodes];
     double* r = new double[nnodes];
@@ -192,12 +195,8 @@ int main(int argc, char* argv[])
         }
     }
 
-    matvec_ebe(mesh, ebe, y, r);
+    matvec_openmp(mesh, ebe, y, r);
 
-    for(int i = 0 ; i < nnodes ; i++)
-        std::cout << r[i] << " ";
-        
-    std::cout << "\n";
     //mesh->MeshVTKWriterInternalBinAppended(0, parts->get_nodal_part(), parts->get_elem_part(), mesh->get_mesh_coloring_internal(), NULL, NULL);
 
     // delete [] velocity;

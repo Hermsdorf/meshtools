@@ -7,9 +7,9 @@ include(CTest)
 enable_testing()
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
-set(CMAKE_CXX_FLAGS "-g -O2")
-#set(CMAKE_C_COMPILER tau_cc.sh)
-#set(CMAKE_CXX_COMPILER tau_cxx.sh)
+set(CMAKE_CXX_FLAGS "-g -fopenmp")
+set(CMAKE_C_COMPILER tau_cc.sh)
+set(CMAKE_CXX_COMPILER tau_cxx.sh)
 
 find_package(MPI)
 find_package(METIS REQUIRED)
@@ -42,7 +42,7 @@ add_executable(meshtools ${source_files})
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(meshtools PUBLIC OpenMP::OpenMP_CXX)
-    set(CMAKE_CXX_FLAGS "-g -fopenmp -O2")
+    set(CMAKE_CXX_FLAGS "-g -fopenmp")
 endif()
 
 target_link_libraries(meshtools 
