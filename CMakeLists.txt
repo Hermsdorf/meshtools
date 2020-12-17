@@ -1,15 +1,17 @@
 cmake_minimum_required(VERSION 3.0.0)
 cmake_policy(SET CMP0057 NEW)
 
+set(CMAKE_CXX_STANDARD 14)
+
 project(meshtools)
 
 include(CTest)
 enable_testing()
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
-set(CMAKE_CXX_FLAGS "-g -fopenmp")
 set(CMAKE_C_COMPILER tau_cc.sh)
 set(CMAKE_CXX_COMPILER tau_cxx.sh)
+set (CMAKE_CXX_FLAGS "-fopenmp")
 
 find_package(MPI)
 find_package(METIS REQUIRED)
@@ -42,7 +44,6 @@ add_executable(meshtools ${source_files})
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(meshtools PUBLIC OpenMP::OpenMP_CXX)
-    set(CMAKE_CXX_FLAGS "-g -fopenmp")
 endif()
 
 target_link_libraries(meshtools 

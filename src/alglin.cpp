@@ -27,3 +27,4 @@ double& Matrix::operator()(unsigned int i, unsigned int j, unsigned int k)
 {
     return _data[i*(ny*nz) + j*nz + k];
 }
+

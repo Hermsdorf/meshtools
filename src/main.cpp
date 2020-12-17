@@ -1,9 +1,11 @@
 #include <iostream>
-#include <math.h>
+#include <cmath>
 
 #include "mesh.h"
 #include "mesh_part.h"
 #include "alglin.h"
+
+using namespace std;
 
 #ifdef _OPENMP
     #include <omp.h>
@@ -131,6 +133,7 @@ int main(int argc, char* argv[])
 	    return 0;
     }
 
+
     int n_script = 0;
     if(argc == 4)
         n_script = 1;
@@ -208,3 +211,7 @@ int main(int argc, char* argv[])
 
     return 0;
 }
+
+
+
+

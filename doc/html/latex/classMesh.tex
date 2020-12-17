@@ -1,0 +1,761 @@
+\hypertarget{classMesh}{}\doxysection{Mesh Class Reference}
+\label{classMesh}\index{Mesh@{Mesh}}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classMesh_ab90377f854f0bc28dce63e2542548762}{Mesh}} (const char $\ast$filename)
+\item 
+\mbox{\hyperlink{classMesh_a5efe4da1a4c0971cfb037bd70304c303}{$\sim$\+Mesh}} ()
+\item 
+unsigned int \mbox{\hyperlink{classMesh_aea3e3d9a9c784474984bf3628178d52f}{get\+\_\+n\+\_\+face\+\_\+elements}} ()
+\item 
+unsigned int \mbox{\hyperlink{classMesh_a48495a2ab16c73690fe9b36f19358f8a}{get\+\_\+n\+\_\+elements}} ()
+\item 
+unsigned int \mbox{\hyperlink{classMesh_a972be7a469659c8601430523a57d8456}{get\+\_\+n\+\_\+nodes}} ()
+\item 
+unsigned int \mbox{\hyperlink{classMesh_aca74697385bd1badf892e1969b3f1334}{get\+\_\+n\+\_\+internal\+\_\+colors}} ()
+\item 
+std\+::vector$<$ double $>$ \& \mbox{\hyperlink{classMesh_adc28cacfac6932cef11e5d7dd492138a}{get\+Coord}} ()
+\item 
+std\+::vector$<$ unsigned int $>$ \& \mbox{\hyperlink{classMesh_a1f1bddd3877304f98cc088ef11617bf3}{get\+Conn}} ()
+\item 
+std\+::vector$<$ unsigned int $>$ \& \mbox{\hyperlink{classMesh_a17b6d3624054ea27f391113ff6060e79}{get\+Offset}} ()
+\item 
+std\+::vector$<$ unsigned short $>$ \& \mbox{\hyperlink{classMesh_a78d9a8dc50f7d871aca436713079037f}{get\+Type}} ()
+\item 
+std\+::vector$<$ int $>$ \& \mbox{\hyperlink{classMesh_a20132b635a7325f219b7005077b3c5e7}{get\+\_\+physical\+\_\+tag}} ()
+\item 
+int $\ast$ \mbox{\hyperlink{classMesh_aeae3c1091453b2c15b29e5f089b98503}{get\+\_\+mesh\+\_\+coloring\+\_\+internal}} ()
+\item 
+std\+::map$<$ int, physical\+\_\+data\+\_\+t $>$ \mbox{\hyperlink{classMesh_afba668d8e44ef13242a20ac7dd1819dc}{get\+\_\+physical\+\_\+map}} ()
+\item 
+int \mbox{\hyperlink{classMesh_a6972a3635455e7e275b88b21a24d545d}{get\+Dim}} ()
+\item 
+std\+::string \mbox{\hyperlink{classMesh_a07a335af9713f329bea3b8c35f4e83ef}{get\+Filename}} ()
+\item 
+unsigned int $\ast$ \mbox{\hyperlink{classMesh_a66ea30a848b8e9b7a5bc7a774b172b9b}{get\+Element\+Conn}} (unsigned int element\+\_\+num)
+\item 
+unsigned int $\ast$ \mbox{\hyperlink{classMesh_a9cf27904bc7e21b96cad5710bd839034}{get\+Element\+Offset}} (unsigned int element\+\_\+num)
+\item 
+unsigned int $\ast$ \mbox{\hyperlink{classMesh_a88614c9a6aabe21d96091ba95282985f}{get\+Surface\+Element\+Conn}} (unsigned int element\+\_\+num)
+\item 
+unsigned int $\ast$ \mbox{\hyperlink{classMesh_aa7f10001edabe2bee6b6767b06245f27}{get\+Surface\+Element\+Offset}} (unsigned int element\+\_\+num)
+\item 
+unsigned int \mbox{\hyperlink{classMesh_af59531e76820299da0b30efd23c0471a}{get\+Element\+Conn\+Size}} (unsigned int element\+\_\+num)
+\item 
+unsigned int \mbox{\hyperlink{classMesh_abf89b84cdb1af751080402916f90c6fd}{get\+Surface\+Element\+Conn\+Size}} (unsigned int element\+\_\+num)
+\item 
+unsigned short \mbox{\hyperlink{classMesh_ad7cdf9b1cdb407769840a70476f15df2}{get\+Element\+Type}} (unsigned int element\+\_\+num)
+\item 
+unsigned short \mbox{\hyperlink{classMesh_acb864e88db21c3540627850bfb3083f6}{get\+Surface\+Element\+Type}} (unsigned int element\+\_\+num)
+\item 
+void \mbox{\hyperlink{classMesh_a45515f82607b5f0df802eced96bd6442}{set\+Coord}} (std\+::vector$<$ double $>$ coord)
+\item 
+void \mbox{\hyperlink{classMesh_a4df19c7a33e88c65eec76b947e711a35}{set\+Conn}} (std\+::vector$<$ unsigned int $>$ conn)
+\item 
+void \mbox{\hyperlink{classMesh_a9fe7175ed67c8a633663a05a6f83399d}{set\+Conn\+Position}} (unsigned int value, unsigned int position)
+\item 
+void \mbox{\hyperlink{classMesh_a2f011175a93ca4d0da154f95c41065ff}{set\+Offset}} (std\+::vector$<$ unsigned int $>$ offset)
+\item 
+void \mbox{\hyperlink{classMesh_aee2e958dcc71388e1499d09ac28519fd}{set\+Offset\+Position}} (unsigned int value, unsigned int position)
+\item 
+void \mbox{\hyperlink{classMesh_a55448760407d22ec136959c592811fb0}{set\+Type}} (std\+::vector$<$ unsigned short $>$ type)
+\item 
+void \mbox{\hyperlink{classMesh_ae837b333b0e32319e83440b864b446bb}{set\+\_\+physical\+\_\+tag}} (std\+::vector$<$ int $>$ physical\+\_\+tag)
+\item 
+void \mbox{\hyperlink{classMesh_a1c36c81648342dc15a6a62ae98e505d8}{set\+\_\+mesh\+\_\+coloring\+\_\+internal}} (int $\ast$mesh\+\_\+coloring\+\_\+internal)
+\item 
+void \mbox{\hyperlink{classMesh_afb1c08c94bddbc2f5c610f5e1c62fc07}{set\+\_\+n\+\_\+internal\+\_\+colors}} (unsigned int n\+\_\+internal\+\_\+colors)
+\item 
+void \mbox{\hyperlink{classMesh_a815b27bfaa09dfef4bbfb3b694397558}{set\+\_\+physical\+\_\+map}} (std\+::map$<$ int, physical\+\_\+data\+\_\+t $>$ physical\+\_\+map)
+\item 
+void \mbox{\hyperlink{classMesh_a0551e281b51d5e08b262f912f54367f3}{set\+\_\+n\+\_\+face\+\_\+elements}} (unsigned int n\+\_\+face\+\_\+elements)
+\item 
+void \mbox{\hyperlink{classMesh_a093e55c04a0673b89f028d4c43116478}{set\+\_\+n\+\_\+elements}} (unsigned int n\+\_\+elements)
+\item 
+void \mbox{\hyperlink{classMesh_ad1cca95663bcc7ac50b27917e98f1eb7}{set\+\_\+n\+\_\+nodes}} (unsigned int n\+\_\+nodes)
+\item 
+void \mbox{\hyperlink{classMesh_a1acffdf36829c2fa8bd935106433a8d2}{set\+Dim}} (int dim)
+\item 
+void \mbox{\hyperlink{classMesh_ad4c595db0d0a69dd89cf5e99b17c2281}{set\+Filename}} (std\+::string filename)
+\item 
+void \mbox{\hyperlink{classMesh_a4d6320f27d1186d73b2d407f374221e9}{Mesh\+Gmsh\+Reader}} (const char $\ast$filename)
+\item 
+void \mbox{\hyperlink{classMesh_a795584bc0a6cead49a62eb8458737032}{Mesh\+V\+T\+K\+Writer}} (int time\+Step, int $\ast$npart, int $\ast$epart, int $\ast$color, double $\ast$velocity, float $\ast$pressure)
+\item 
+void \mbox{\hyperlink{classMesh_a62966548096e810df2472f0cdeacb896}{Mesh\+V\+T\+K\+Writer\+Internal}} (int time\+Step, int $\ast$nparts, int $\ast$epart, int $\ast$color, double $\ast$velocity, float $\ast$pressure)
+\item 
+void \mbox{\hyperlink{classMesh_a49db62a59151de41318d71f82ff037c2}{Mesh\+V\+T\+K\+Writer\+Bin\+Appended}} (int time\+Step, int $\ast$npart, int $\ast$epart, int $\ast$color, double $\ast$velocity, float $\ast$pressure)
+\item 
+void \mbox{\hyperlink{classMesh_ab3b4935e15efca2e9c4e8d14cf33a1fc}{Mesh\+V\+T\+K\+Writer\+Internal\+Bin\+Appended}} (int time\+Step, int $\ast$npart, int $\ast$epart, int $\ast$color, double $\ast$velocity, float $\ast$pressure)
+\item 
+void \mbox{\hyperlink{classMesh_aa62be4f28d2f1a104f1a66305bd5590c}{Mesh\+Reordering}} (reorder\+\_\+t reorder)
+\item 
+void \mbox{\hyperlink{classMesh_af312cb303b3670495229c3042731e1ba}{Mesh\+Coloring}} ()
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classMesh_ab90377f854f0bc28dce63e2542548762}\label{classMesh_ab90377f854f0bc28dce63e2542548762}} 
+\index{Mesh@{Mesh}!Mesh@{Mesh}}
+\index{Mesh@{Mesh}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{Mesh()}{Mesh()}}
+{\footnotesize\ttfamily Mesh\+::\+Mesh (\begin{DoxyParamCaption}\item[{const char $\ast$}]{filename }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Construtor da classe \mbox{\hyperlink{classMesh}{Mesh}}, responsável por inicializar as variáveis. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a5efe4da1a4c0971cfb037bd70304c303}\label{classMesh_a5efe4da1a4c0971cfb037bd70304c303}} 
+\index{Mesh@{Mesh}!````~Mesh@{$\sim$Mesh}}
+\index{````~Mesh@{$\sim$Mesh}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{$\sim$Mesh()}{~Mesh()}}
+{\footnotesize\ttfamily Mesh\+::$\sim$\+Mesh (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Construtor da classe \mbox{\hyperlink{classMesh}{Mesh}}, responsável por inicializar as variáveis e preencher as informações da malha a partir do nome do arquivo chamando a função Mesh\+Gmsh\+Reader.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em filename} & Nome do arquivo, formato msh, com os dados da malha. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classMesh_aeae3c1091453b2c15b29e5f089b98503}\label{classMesh_aeae3c1091453b2c15b29e5f089b98503}} 
+\index{Mesh@{Mesh}!get\_mesh\_coloring\_internal@{get\_mesh\_coloring\_internal}}
+\index{get\_mesh\_coloring\_internal@{get\_mesh\_coloring\_internal}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{get\_mesh\_coloring\_internal()}{get\_mesh\_coloring\_internal()}}
+{\footnotesize\ttfamily int $\ast$ Mesh\+::get\+\_\+mesh\+\_\+coloring\+\_\+internal (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter a array phyisical\+\_\+tag a qual armazena as tags dos grupos físicos da malha.
+\item R\+E\+T\+O\+R\+NO\+: Referência a um vector do tipo int. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a48495a2ab16c73690fe9b36f19358f8a}\label{classMesh_a48495a2ab16c73690fe9b36f19358f8a}} 
+\index{Mesh@{Mesh}!get\_n\_elements@{get\_n\_elements}}
+\index{get\_n\_elements@{get\_n\_elements}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{get\_n\_elements()}{get\_n\_elements()}}
+{\footnotesize\ttfamily unsigned int Mesh\+::get\+\_\+n\+\_\+elements (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter o número de elementos de superfície da malha.
+\item R\+E\+T\+O\+R\+NO\+: Variável do tipo unsigned int. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_aea3e3d9a9c784474984bf3628178d52f}\label{classMesh_aea3e3d9a9c784474984bf3628178d52f}} 
+\index{Mesh@{Mesh}!get\_n\_face\_elements@{get\_n\_face\_elements}}
+\index{get\_n\_face\_elements@{get\_n\_face\_elements}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{get\_n\_face\_elements()}{get\_n\_face\_elements()}}
+{\footnotesize\ttfamily unsigned int Mesh\+::get\+\_\+n\+\_\+face\+\_\+elements (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Destrutor da classe \mbox{\hyperlink{classMesh}{Mesh}}, responsável por desalocar todas as arrays alocadas. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_aca74697385bd1badf892e1969b3f1334}\label{classMesh_aca74697385bd1badf892e1969b3f1334}} 
+\index{Mesh@{Mesh}!get\_n\_internal\_colors@{get\_n\_internal\_colors}}
+\index{get\_n\_internal\_colors@{get\_n\_internal\_colors}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{get\_n\_internal\_colors()}{get\_n\_internal\_colors()}}
+{\footnotesize\ttfamily unsigned int Mesh\+::get\+\_\+n\+\_\+internal\+\_\+colors (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter o número total de nós da malha.
+\item R\+E\+T\+O\+R\+NO\+: Variável do tipo unsigned int. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a972be7a469659c8601430523a57d8456}\label{classMesh_a972be7a469659c8601430523a57d8456}} 
+\index{Mesh@{Mesh}!get\_n\_nodes@{get\_n\_nodes}}
+\index{get\_n\_nodes@{get\_n\_nodes}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{get\_n\_nodes()}{get\_n\_nodes()}}
+{\footnotesize\ttfamily unsigned int Mesh\+::get\+\_\+n\+\_\+nodes (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter o número de elementos internos da malha.
+\item R\+E\+T\+O\+R\+NO\+: Variável do tipo unsigned int. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_afba668d8e44ef13242a20ac7dd1819dc}\label{classMesh_afba668d8e44ef13242a20ac7dd1819dc}} 
+\index{Mesh@{Mesh}!get\_physical\_map@{get\_physical\_map}}
+\index{get\_physical\_map@{get\_physical\_map}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{get\_physical\_map()}{get\_physical\_map()}}
+{\footnotesize\ttfamily std\+::map$<$ int, physical\+\_\+data\+\_\+t $>$ Mesh\+::get\+\_\+physical\+\_\+map (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter a a array mesh\+\_\+coloring\+\_\+internal que armazena as cores dos elementos internos da malha.
+\item R\+E\+T\+O\+R\+NO\+: Array do tipo int. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a20132b635a7325f219b7005077b3c5e7}\label{classMesh_a20132b635a7325f219b7005077b3c5e7}} 
+\index{Mesh@{Mesh}!get\_physical\_tag@{get\_physical\_tag}}
+\index{get\_physical\_tag@{get\_physical\_tag}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{get\_physical\_tag()}{get\_physical\_tag()}}
+{\footnotesize\ttfamily std\+::vector$<$ int $>$ \& Mesh\+::get\+\_\+physical\+\_\+tag (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter a array type a qual armazena os tipos dos elementos da malha.
+\item R\+E\+T\+O\+R\+NO\+: Referência a um vector do tipo unsigned short. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a1f1bddd3877304f98cc088ef11617bf3}\label{classMesh_a1f1bddd3877304f98cc088ef11617bf3}} 
+\index{Mesh@{Mesh}!getConn@{getConn}}
+\index{getConn@{getConn}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{getConn()}{getConn()}}
+{\footnotesize\ttfamily std\+::vector$<$ unsigned int $>$ \& Mesh\+::get\+Conn (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter a array coord a qual armazena as coordenadas nodais da malha.
+\item R\+E\+T\+O\+R\+NO\+: Referência a um vector do tipo double. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_adc28cacfac6932cef11e5d7dd492138a}\label{classMesh_adc28cacfac6932cef11e5d7dd492138a}} 
+\index{Mesh@{Mesh}!getCoord@{getCoord}}
+\index{getCoord@{getCoord}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{getCoord()}{getCoord()}}
+{\footnotesize\ttfamily std\+::vector$<$ double $>$ \& Mesh\+::get\+Coord (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter o número total de cores dos elementos internas da malha.
+\item R\+E\+T\+O\+R\+NO\+: Variável do tipo unsigned int 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a6972a3635455e7e275b88b21a24d545d}\label{classMesh_a6972a3635455e7e275b88b21a24d545d}} 
+\index{Mesh@{Mesh}!getDim@{getDim}}
+\index{getDim@{getDim}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{getDim()}{getDim()}}
+{\footnotesize\ttfamily int Mesh\+::get\+Dim (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter a variável phyisical\+\_\+map a qual armazena o mapeamento dos grupos físicos da malha.
+\item R\+E\+T\+O\+R\+NO\+: Variável do tipo map$<$int, physical\+\_\+data\+\_\+t$>$. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a66ea30a848b8e9b7a5bc7a774b172b9b}\label{classMesh_a66ea30a848b8e9b7a5bc7a774b172b9b}} 
+\index{Mesh@{Mesh}!getElementConn@{getElementConn}}
+\index{getElementConn@{getElementConn}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{getElementConn()}{getElementConn()}}
+{\footnotesize\ttfamily unsigned int $\ast$ Mesh\+::get\+Element\+Conn (\begin{DoxyParamCaption}\item[{unsigned int}]{element\+\_\+num }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter a variável filename a qual armazena o nome do arquivo msh.
+\item R\+E\+T\+O\+R\+NO\+: Variável do tipo string. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_af59531e76820299da0b30efd23c0471a}\label{classMesh_af59531e76820299da0b30efd23c0471a}} 
+\index{Mesh@{Mesh}!getElementConnSize@{getElementConnSize}}
+\index{getElementConnSize@{getElementConnSize}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{getElementConnSize()}{getElementConnSize()}}
+{\footnotesize\ttfamily unsigned int Mesh\+::get\+Element\+Conn\+Size (\begin{DoxyParamCaption}\item[{unsigned int}]{element\+\_\+num }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter o offset do elemento de superfície passado por argumento.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em element\+\_\+num} & Número \mbox{[}0, n\+\_\+face\+\_\+elements) que indica o elemento de superfície da malha.\\
+\hline
+\end{DoxyParams}
+
+\item R\+E\+T\+O\+R\+NO\+: Array do tipo unsigned int o qual aponta para a posição do elemento de superfície desejado no array offset da malha. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a9cf27904bc7e21b96cad5710bd839034}\label{classMesh_a9cf27904bc7e21b96cad5710bd839034}} 
+\index{Mesh@{Mesh}!getElementOffset@{getElementOffset}}
+\index{getElementOffset@{getElementOffset}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{getElementOffset()}{getElementOffset()}}
+{\footnotesize\ttfamily unsigned int $\ast$ Mesh\+::get\+Element\+Offset (\begin{DoxyParamCaption}\item[{unsigned int}]{element\+\_\+num }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter a conectividade do elemento interno passado por argumento.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em element\+\_\+num} & Número \mbox{[}0, n\+\_\+elements) que indica o elemento de superfície da malha.\\
+\hline
+\end{DoxyParams}
+
+\item R\+E\+T\+O\+R\+NO\+: Array do tipo unsigned int o qual aponta para a posição do elemento interno desejado no array conn da malha. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_ad7cdf9b1cdb407769840a70476f15df2}\label{classMesh_ad7cdf9b1cdb407769840a70476f15df2}} 
+\index{Mesh@{Mesh}!getElementType@{getElementType}}
+\index{getElementType@{getElementType}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{getElementType()}{getElementType()}}
+{\footnotesize\ttfamily unsigned short Mesh\+::get\+Element\+Type (\begin{DoxyParamCaption}\item[{unsigned int}]{element\+\_\+num }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter o número de conectividades do elemento de superfície passado por argumento.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em element\+\_\+num} & Número \mbox{[}0, n\+\_\+face\+\_\+elements) que indica o elemento interno da malha.\\
+\hline
+\end{DoxyParams}
+
+\item R\+E\+T\+O\+R\+NO\+: Variável do tipo unsigned int com o número de conectividades do elemento de superfície desejado. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a07a335af9713f329bea3b8c35f4e83ef}\label{classMesh_a07a335af9713f329bea3b8c35f4e83ef}} 
+\index{Mesh@{Mesh}!getFilename@{getFilename}}
+\index{getFilename@{getFilename}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{getFilename()}{getFilename()}}
+{\footnotesize\ttfamily std\+::string Mesh\+::get\+Filename (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter a variável dim a qual armazena a dimensão da malha.
+\item R\+E\+T\+O\+R\+NO\+: Variável do tipo int. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a17b6d3624054ea27f391113ff6060e79}\label{classMesh_a17b6d3624054ea27f391113ff6060e79}} 
+\index{Mesh@{Mesh}!getOffset@{getOffset}}
+\index{getOffset@{getOffset}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{getOffset()}{getOffset()}}
+{\footnotesize\ttfamily std\+::vector$<$ unsigned int $>$ \& Mesh\+::get\+Offset (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter a array conn a qual armazena as conectividades dos elementos da malha.
+\item R\+E\+T\+O\+R\+NO\+: Referência a um vector do tipo int. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a88614c9a6aabe21d96091ba95282985f}\label{classMesh_a88614c9a6aabe21d96091ba95282985f}} 
+\index{Mesh@{Mesh}!getSurfaceElementConn@{getSurfaceElementConn}}
+\index{getSurfaceElementConn@{getSurfaceElementConn}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{getSurfaceElementConn()}{getSurfaceElementConn()}}
+{\footnotesize\ttfamily unsigned int $\ast$ Mesh\+::get\+Surface\+Element\+Conn (\begin{DoxyParamCaption}\item[{unsigned int}]{element\+\_\+num }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter o offset do elemento interno passado por argumento.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em element\+\_\+num} & Número \mbox{[}0, n\+\_\+elements) que indica o elemento de superfície da malha.\\
+\hline
+\end{DoxyParams}
+
+\item R\+E\+T\+O\+R\+NO\+: Array do tipo unsigned int o qual aponta para a posição do elemento interno desejado no array offset da malha. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_abf89b84cdb1af751080402916f90c6fd}\label{classMesh_abf89b84cdb1af751080402916f90c6fd}} 
+\index{Mesh@{Mesh}!getSurfaceElementConnSize@{getSurfaceElementConnSize}}
+\index{getSurfaceElementConnSize@{getSurfaceElementConnSize}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{getSurfaceElementConnSize()}{getSurfaceElementConnSize()}}
+{\footnotesize\ttfamily unsigned int Mesh\+::get\+Surface\+Element\+Conn\+Size (\begin{DoxyParamCaption}\item[{unsigned int}]{element\+\_\+num }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter o número de conectividades do elemento interno passado por argumento.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em element\+\_\+num} & Número \mbox{[}0, n\+\_\+elements) que indica o elemento interno da malha.\\
+\hline
+\end{DoxyParams}
+
+\item R\+E\+T\+O\+R\+NO\+: Variável do tipo unsigned int com o número de conectividades do elemento interno desejado. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_aa7f10001edabe2bee6b6767b06245f27}\label{classMesh_aa7f10001edabe2bee6b6767b06245f27}} 
+\index{Mesh@{Mesh}!getSurfaceElementOffset@{getSurfaceElementOffset}}
+\index{getSurfaceElementOffset@{getSurfaceElementOffset}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{getSurfaceElementOffset()}{getSurfaceElementOffset()}}
+{\footnotesize\ttfamily unsigned int $\ast$ Mesh\+::get\+Surface\+Element\+Offset (\begin{DoxyParamCaption}\item[{unsigned int}]{element\+\_\+num }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter a conectividade do elemento de superfície passado por argumento.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em element\+\_\+num} & Número \mbox{[}0, n\+\_\+face\+\_\+elements) que indica o elemento de superfície da malha.\\
+\hline
+\end{DoxyParams}
+
+\item R\+E\+T\+O\+R\+NO\+: Array do tipo unsigned int o qual aponta para a posição do elemento de superfície desejado no array conn da malha. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_acb864e88db21c3540627850bfb3083f6}\label{classMesh_acb864e88db21c3540627850bfb3083f6}} 
+\index{Mesh@{Mesh}!getSurfaceElementType@{getSurfaceElementType}}
+\index{getSurfaceElementType@{getSurfaceElementType}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{getSurfaceElementType()}{getSurfaceElementType()}}
+{\footnotesize\ttfamily unsigned short Mesh\+::get\+Surface\+Element\+Type (\begin{DoxyParamCaption}\item[{unsigned int}]{element\+\_\+num }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter o tipo do elementos interno passado por argumento.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em element\+\_\+num} & Número \mbox{[}0, n\+\_\+elements) que indica o elemento interno da malha.\\
+\hline
+\end{DoxyParams}
+
+\item R\+E\+T\+O\+R\+NO\+: Variável do tipo unsigned short com o tipo do elemento interno desejado. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a78d9a8dc50f7d871aca436713079037f}\label{classMesh_a78d9a8dc50f7d871aca436713079037f}} 
+\index{Mesh@{Mesh}!getType@{getType}}
+\index{getType@{getType}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{getType()}{getType()}}
+{\footnotesize\ttfamily std\+::vector$<$ unsigned short $>$ \& Mesh\+::get\+Type (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter a array offset a qual armazena o offset dos elementos da malha.
+\item R\+E\+T\+O\+R\+NO\+: Referência a um vector do tipo int. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_af312cb303b3670495229c3042731e1ba}\label{classMesh_af312cb303b3670495229c3042731e1ba}} 
+\index{Mesh@{Mesh}!MeshColoring@{MeshColoring}}
+\index{MeshColoring@{MeshColoring}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{MeshColoring()}{MeshColoring()}}
+{\footnotesize\ttfamily void Mesh\+::\+Mesh\+Coloring (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Reordenar os elementos de forma que seu armazenamento seja mais otimizado
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em reorder} & Algoritmo utilizado para a reordenação podendo ser FF, M\+E\+T\+I\+S\+\_\+\+ND ou R\+CM. Recomendamos o algoritmo R\+CM. ~\newline
+ \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a4d6320f27d1186d73b2d407f374221e9}\label{classMesh_a4d6320f27d1186d73b2d407f374221e9}} 
+\index{Mesh@{Mesh}!MeshGmshReader@{MeshGmshReader}}
+\index{MeshGmshReader@{MeshGmshReader}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{MeshGmshReader()}{MeshGmshReader()}}
+{\footnotesize\ttfamily void Mesh\+::\+Mesh\+Gmsh\+Reader (\begin{DoxyParamCaption}\item[{const char $\ast$}]{filename }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Alterar a variável filename, a qual armazena o nome do arquivo formato msh.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em filename} & Variável do tipo string com o novo nome do arquivo de entrada extensão msh. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_aa62be4f28d2f1a104f1a66305bd5590c}\label{classMesh_aa62be4f28d2f1a104f1a66305bd5590c}} 
+\index{Mesh@{Mesh}!MeshReordering@{MeshReordering}}
+\index{MeshReordering@{MeshReordering}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{MeshReordering()}{MeshReordering()}}
+{\footnotesize\ttfamily void Mesh\+::\+Mesh\+Reordering (\begin{DoxyParamCaption}\item[{reorder\+\_\+t}]{reorder = {\ttfamily RCM} }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Escrita da malha em binário somente com elementos internos no formato V\+TK.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em time\+Step} & Variável para criar uma sequência de arquivos a serem abertos no Para\+View. (Para gerar somente um arquivo da malha, inserir 0 no valor do time\+Step) \\
+\hline
+{\em npart} & Array do tipo inteiro com as informações nodais de partição. \\
+\hline
+{\em epart} & Array do tipo inteiro com as informações elementares de partição. \\
+\hline
+{\em color} & Array do tipo inteiro com as informações de coloração dos elementos internos. \\
+\hline
+{\em velocity} & Array do tipo double com informações das velocidades da malha. \\
+\hline
+{\em pressure} & Array do tipo float com informações das pressões da malha. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a795584bc0a6cead49a62eb8458737032}\label{classMesh_a795584bc0a6cead49a62eb8458737032}} 
+\index{Mesh@{Mesh}!MeshVTKWriter@{MeshVTKWriter}}
+\index{MeshVTKWriter@{MeshVTKWriter}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{MeshVTKWriter()}{MeshVTKWriter()}}
+{\footnotesize\ttfamily void Mesh\+::\+Mesh\+V\+T\+K\+Writer (\begin{DoxyParamCaption}\item[{int}]{time\+Step,  }\item[{int $\ast$}]{npart,  }\item[{int $\ast$}]{epart,  }\item[{int $\ast$}]{color,  }\item[{double $\ast$}]{velocity,  }\item[{float $\ast$}]{pressure }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Ler o arquivo no formato msh e preencher as informações da estrutura mesh\+\_\+t.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em filename} & Variável do tipo const char$\ast$ com o nome do arquivo de entrada extensão msh. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a49db62a59151de41318d71f82ff037c2}\label{classMesh_a49db62a59151de41318d71f82ff037c2}} 
+\index{Mesh@{Mesh}!MeshVTKWriterBinAppended@{MeshVTKWriterBinAppended}}
+\index{MeshVTKWriterBinAppended@{MeshVTKWriterBinAppended}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{MeshVTKWriterBinAppended()}{MeshVTKWriterBinAppended()}}
+{\footnotesize\ttfamily void Mesh\+::\+Mesh\+V\+T\+K\+Writer\+Bin\+Appended (\begin{DoxyParamCaption}\item[{int}]{time\+Step,  }\item[{int $\ast$}]{npart,  }\item[{int $\ast$}]{epart,  }\item[{int $\ast$}]{color,  }\item[{double $\ast$}]{velocity,  }\item[{float $\ast$}]{pressure }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Escrita da malha somente com elementos internos no formato V\+TK.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em time\+Step} & Variável para criar uma sequência de arquivos a serem abertos no Para\+View. (Para gerar somente um arquivo da malha, inserir 0 no valor do time\+Step) \\
+\hline
+{\em npart} & Array do tipo inteiro com as informações nodais de partição. \\
+\hline
+{\em epart} & Array do tipo inteiro com as informações elementares de partição. \\
+\hline
+{\em color} & Array do tipo inteiro com as informações de coloração dos elementos internos. \\
+\hline
+{\em velocity} & Array do tipo double com informações das velocidades da malha. \\
+\hline
+{\em pressure} & Array do tipo float com informações das pressões da malha. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a62966548096e810df2472f0cdeacb896}\label{classMesh_a62966548096e810df2472f0cdeacb896}} 
+\index{Mesh@{Mesh}!MeshVTKWriterInternal@{MeshVTKWriterInternal}}
+\index{MeshVTKWriterInternal@{MeshVTKWriterInternal}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{MeshVTKWriterInternal()}{MeshVTKWriterInternal()}}
+{\footnotesize\ttfamily void Mesh\+::\+Mesh\+V\+T\+K\+Writer\+Internal (\begin{DoxyParamCaption}\item[{int}]{time\+Step,  }\item[{int $\ast$}]{nparts,  }\item[{int $\ast$}]{epart,  }\item[{int $\ast$}]{color,  }\item[{double $\ast$}]{velocity,  }\item[{float $\ast$}]{pressure }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Escrita da malha completa, com elementos internos e de superfície, no formato V\+TK.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em time\+Step} & Variável para criar uma sequência de arquivos a serem abertos no Para\+View. (Para gerar somente um arquivo da malha, inserir 0 no valor do time\+Step) \\
+\hline
+{\em npart} & Array do tipo inteiro com as informações nodais de partição. \\
+\hline
+{\em epart} & Array do tipo inteiro com as informações elementares de partição. \\
+\hline
+{\em color} & Array do tipo inteiro com as informações de coloração dos elementos internos. \\
+\hline
+{\em velocity} & Array do tipo double com informações das velocidades da malha. \\
+\hline
+{\em pressure} & Array do tipo float com informações das pressões da malha. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_ab3b4935e15efca2e9c4e8d14cf33a1fc}\label{classMesh_ab3b4935e15efca2e9c4e8d14cf33a1fc}} 
+\index{Mesh@{Mesh}!MeshVTKWriterInternalBinAppended@{MeshVTKWriterInternalBinAppended}}
+\index{MeshVTKWriterInternalBinAppended@{MeshVTKWriterInternalBinAppended}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{MeshVTKWriterInternalBinAppended()}{MeshVTKWriterInternalBinAppended()}}
+{\footnotesize\ttfamily void Mesh\+::\+Mesh\+V\+T\+K\+Writer\+Internal\+Bin\+Appended (\begin{DoxyParamCaption}\item[{int}]{time\+Step,  }\item[{int $\ast$}]{npart,  }\item[{int $\ast$}]{epart,  }\item[{int $\ast$}]{color,  }\item[{double $\ast$}]{velocity,  }\item[{float $\ast$}]{pressure }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Escrita da malha completa em binário, com elementos internos e de superfície, no formato V\+TK.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em time\+Step} & Variável para criar uma sequência de arquivos a serem abertos no Para\+View. (Para gerar somente um arquivo da malha, inserir 0 no valor do time\+Step) \\
+\hline
+{\em npart} & Array do tipo inteiro com as informações nodais de partição. \\
+\hline
+{\em epart} & Array do tipo inteiro com as informações elementares de partição. \\
+\hline
+{\em color} & Array do tipo inteiro com as informações de coloração dos elementos internos. \\
+\hline
+{\em velocity} & Array do tipo double com informações das velocidades da malha. \\
+\hline
+{\em pressure} & Array do tipo float com informações das pressões da malha. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a1c36c81648342dc15a6a62ae98e505d8}\label{classMesh_a1c36c81648342dc15a6a62ae98e505d8}} 
+\index{Mesh@{Mesh}!set\_mesh\_coloring\_internal@{set\_mesh\_coloring\_internal}}
+\index{set\_mesh\_coloring\_internal@{set\_mesh\_coloring\_internal}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{set\_mesh\_coloring\_internal()}{set\_mesh\_coloring\_internal()}}
+{\footnotesize\ttfamily void Mesh\+::set\+\_\+mesh\+\_\+coloring\+\_\+internal (\begin{DoxyParamCaption}\item[{int $\ast$}]{mesh\+\_\+coloring\+\_\+internal }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Alterar o vector de phyisical tag da malha.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em phyisical\+\_\+tag} & Vector do tipo int com as novas informações de phyisical tag da malha. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a093e55c04a0673b89f028d4c43116478}\label{classMesh_a093e55c04a0673b89f028d4c43116478}} 
+\index{Mesh@{Mesh}!set\_n\_elements@{set\_n\_elements}}
+\index{set\_n\_elements@{set\_n\_elements}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{set\_n\_elements()}{set\_n\_elements()}}
+{\footnotesize\ttfamily void Mesh\+::set\+\_\+n\+\_\+elements (\begin{DoxyParamCaption}\item[{unsigned int}]{n\+\_\+elements }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Alterar o número de elementos de superfície presentes na malha
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em n\+\_\+face\+\_\+elements} & Variável do tipo unsigned int com o novo número de elementos de superfície para ser atualizado. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a0551e281b51d5e08b262f912f54367f3}\label{classMesh_a0551e281b51d5e08b262f912f54367f3}} 
+\index{Mesh@{Mesh}!set\_n\_face\_elements@{set\_n\_face\_elements}}
+\index{set\_n\_face\_elements@{set\_n\_face\_elements}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{set\_n\_face\_elements()}{set\_n\_face\_elements()}}
+{\footnotesize\ttfamily void Mesh\+::set\+\_\+n\+\_\+face\+\_\+elements (\begin{DoxyParamCaption}\item[{unsigned int}]{n\+\_\+face\+\_\+elements }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Alterar o mapeamento dos grupos físicos da malha.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em physical\+\_\+map} & Variável do tipo map$<$int, physical\+\_\+data\+\_\+t$>$ com o novo mapeamento do grupo físico da malha para ser atualizado. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_afb1c08c94bddbc2f5c610f5e1c62fc07}\label{classMesh_afb1c08c94bddbc2f5c610f5e1c62fc07}} 
+\index{Mesh@{Mesh}!set\_n\_internal\_colors@{set\_n\_internal\_colors}}
+\index{set\_n\_internal\_colors@{set\_n\_internal\_colors}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{set\_n\_internal\_colors()}{set\_n\_internal\_colors()}}
+{\footnotesize\ttfamily void Mesh\+::set\+\_\+n\+\_\+internal\+\_\+colors (\begin{DoxyParamCaption}\item[{unsigned int}]{n\+\_\+internal\+\_\+colors }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Alterar o array de cores da malha.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em mesh\+\_\+coloring\+\_\+internal} & Array do tipo int$\ast$ com a nova informação de coloração dos elementos internos da malha. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_ad1cca95663bcc7ac50b27917e98f1eb7}\label{classMesh_ad1cca95663bcc7ac50b27917e98f1eb7}} 
+\index{Mesh@{Mesh}!set\_n\_nodes@{set\_n\_nodes}}
+\index{set\_n\_nodes@{set\_n\_nodes}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{set\_n\_nodes()}{set\_n\_nodes()}}
+{\footnotesize\ttfamily void Mesh\+::set\+\_\+n\+\_\+nodes (\begin{DoxyParamCaption}\item[{unsigned int}]{n\+\_\+nodes }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Alterar o número de elementos internos presentes na malha.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em n\+\_\+elements} & Variável do tipo unsigned int com o novo número de elemento internos para ser atualizado. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a815b27bfaa09dfef4bbfb3b694397558}\label{classMesh_a815b27bfaa09dfef4bbfb3b694397558}} 
+\index{Mesh@{Mesh}!set\_physical\_map@{set\_physical\_map}}
+\index{set\_physical\_map@{set\_physical\_map}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{set\_physical\_map()}{set\_physical\_map()}}
+{\footnotesize\ttfamily void Mesh\+::set\+\_\+physical\+\_\+map (\begin{DoxyParamCaption}\item[{std\+::map$<$ int, physical\+\_\+data\+\_\+t $>$}]{physical\+\_\+map }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Alterar o número total de cores nos elementos internos da malha.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em n\+\_\+internal\+\_\+colors} & Variável do tipo unsigned int com o novo número a ser atualizado de cores internas da malha. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_ae837b333b0e32319e83440b864b446bb}\label{classMesh_ae837b333b0e32319e83440b864b446bb}} 
+\index{Mesh@{Mesh}!set\_physical\_tag@{set\_physical\_tag}}
+\index{set\_physical\_tag@{set\_physical\_tag}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{set\_physical\_tag()}{set\_physical\_tag()}}
+{\footnotesize\ttfamily void Mesh\+::set\+\_\+physical\+\_\+tag (\begin{DoxyParamCaption}\item[{std\+::vector$<$ int $>$}]{physical\+\_\+tag }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Alterar o vector de tipos dos elementos da malha.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em type} & Vector do tipo unsigned short com as novas informações de tipos dos elementos da malha. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a4df19c7a33e88c65eec76b947e711a35}\label{classMesh_a4df19c7a33e88c65eec76b947e711a35}} 
+\index{Mesh@{Mesh}!setConn@{setConn}}
+\index{setConn@{setConn}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{setConn()}{setConn()}}
+{\footnotesize\ttfamily void Mesh\+::set\+Conn (\begin{DoxyParamCaption}\item[{std\+::vector$<$ unsigned int $>$}]{conn }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Alterar o vector coord da malha.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em coord} & Vector do tipo double com as novas informações de coordenadas dos nós da malha. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a9fe7175ed67c8a633663a05a6f83399d}\label{classMesh_a9fe7175ed67c8a633663a05a6f83399d}} 
+\index{Mesh@{Mesh}!setConnPosition@{setConnPosition}}
+\index{setConnPosition@{setConnPosition}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{setConnPosition()}{setConnPosition()}}
+{\footnotesize\ttfamily void Mesh\+::set\+Conn\+Position (\begin{DoxyParamCaption}\item[{unsigned int}]{value,  }\item[{unsigned int}]{position }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Alterar o vector conn da malha.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em conn} & Vector do tipo unsigned int com as novas informações de conectividades dos elementos da malha. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a45515f82607b5f0df802eced96bd6442}\label{classMesh_a45515f82607b5f0df802eced96bd6442}} 
+\index{Mesh@{Mesh}!setCoord@{setCoord}}
+\index{setCoord@{setCoord}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{setCoord()}{setCoord()}}
+{\footnotesize\ttfamily void Mesh\+::set\+Coord (\begin{DoxyParamCaption}\item[{std\+::vector$<$ double $>$}]{coord }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Obter o tipo do elementos de superfície passado por argumento.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em element\+\_\+num} & Número \mbox{[}0, n\+\_\+face\+\_\+elements) que indica o elemento de superfície da malha.\\
+\hline
+\end{DoxyParams}
+
+\item R\+E\+T\+O\+R\+NO\+: Variável do tipo unsigned short com o tipo do elemento de superfície desejado. 
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a1acffdf36829c2fa8bd935106433a8d2}\label{classMesh_a1acffdf36829c2fa8bd935106433a8d2}} 
+\index{Mesh@{Mesh}!setDim@{setDim}}
+\index{setDim@{setDim}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{setDim()}{setDim()}}
+{\footnotesize\ttfamily void Mesh\+::set\+Dim (\begin{DoxyParamCaption}\item[{int}]{dim }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Alterar o número de nós presentes na malha.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em n\+\_\+nodes} & Variável do tipo unsigned int com o novo número de nós para ser atualizado. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_ad4c595db0d0a69dd89cf5e99b17c2281}\label{classMesh_ad4c595db0d0a69dd89cf5e99b17c2281}} 
+\index{Mesh@{Mesh}!setFilename@{setFilename}}
+\index{setFilename@{setFilename}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{setFilename()}{setFilename()}}
+{\footnotesize\ttfamily void Mesh\+::set\+Filename (\begin{DoxyParamCaption}\item[{std\+::string}]{filename }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Alterar a variável dim, a qual armazena a dimensão da malha.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em dim} & Variável do tipo int com a nova dimensão da malha, podendo ser 1, 2 ou 3. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a2f011175a93ca4d0da154f95c41065ff}\label{classMesh_a2f011175a93ca4d0da154f95c41065ff}} 
+\index{Mesh@{Mesh}!setOffset@{setOffset}}
+\index{setOffset@{setOffset}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{setOffset()}{setOffset()}}
+{\footnotesize\ttfamily void Mesh\+::set\+Offset (\begin{DoxyParamCaption}\item[{std\+::vector$<$ unsigned int $>$}]{offset }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Alterar o vector conn com o valor e a posição passados por argumento.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em value} & Variável do tipo unsigned int indicando o valor a substituir. \\
+\hline
+{\em position} & Variável do tipo unsigned int indicando a posição a substituir o valor da variável value. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_aee2e958dcc71388e1499d09ac28519fd}\label{classMesh_aee2e958dcc71388e1499d09ac28519fd}} 
+\index{Mesh@{Mesh}!setOffsetPosition@{setOffsetPosition}}
+\index{setOffsetPosition@{setOffsetPosition}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{setOffsetPosition()}{setOffsetPosition()}}
+{\footnotesize\ttfamily void Mesh\+::set\+Offset\+Position (\begin{DoxyParamCaption}\item[{unsigned int}]{value,  }\item[{unsigned int}]{position }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Alterar o vector offset da malha.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em offset} & Vector do tipo unsigned int com as novas informações de offset dos elementos da malha. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}\mbox{\Hypertarget{classMesh_a55448760407d22ec136959c592811fb0}\label{classMesh_a55448760407d22ec136959c592811fb0}} 
+\index{Mesh@{Mesh}!setType@{setType}}
+\index{setType@{setType}!Mesh@{Mesh}}
+\doxysubsubsection{\texorpdfstring{setType()}{setType()}}
+{\footnotesize\ttfamily void Mesh\+::set\+Type (\begin{DoxyParamCaption}\item[{std\+::vector$<$ unsigned short $>$}]{type }\end{DoxyParamCaption})}
+
+
+\begin{DoxyItemize}
+\item O\+B\+J\+E\+T\+I\+VO\+: Alterar o vector offset com o valor e a posição passados por argumento.
+\item P\+A\+R\+A\+M\+E\+T\+R\+OS\+: 
+\begin{DoxyParams}{Parameters}
+{\em value} & Variável do tipo unsigned int indicando o valor a substituir. \\
+\hline
+{\em position} & Variável do tipo unsigned int indicando a posição a substituir o valor da variável value. \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+/home/camata/git/meshtools/include/mesh.\+h\item 
+/home/camata/git/meshtools/src/mesh.\+cpp\item 
+/home/camata/git/meshtools/src/mesh\+\_\+coloring.\+cpp\item 
+/home/camata/git/meshtools/src/mesh\+\_\+io.\+cpp\item 
+/home/camata/git/meshtools/src/mesh\+\_\+reorder.\+cpp\end{DoxyCompactItemize}

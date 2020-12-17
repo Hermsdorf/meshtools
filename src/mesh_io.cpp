@@ -1,9 +1,12 @@
 #include <iostream>
 #include <fstream>
+#include <string>
+#include <sstream>
 
 #include "metis.h"
 #include "mesh.h"
 #include "rcm.hpp"
+
 
 static int element_type[6] = {-1, 2, 3, 4, 4, 8};
 static int element_dim[6]  = { 0, 1, 2, 2, 3, 3};
@@ -18,7 +21,7 @@ int getGmshElemNNodes(int type)
         case 4: return 4;
         case 5: return 8;
         case 15: return 1;
-    default: return -1;
+        default: return -1;
         break;
     }
 }
@@ -33,7 +36,7 @@ int getGmshElemTypeDim(int type)
         case 4: return 3;
         case 5: return 3;
         case 15: return 0;
-    default: return -1;
+        default: return -1;
         break;
     }
 }
@@ -48,8 +51,9 @@ int GmshToVTKType(int type)
         case 4: return 10;
         case 5: return 12;
         case 15: return 1;
-    default: return -1;
+        default: return -1;
         break;
+
     }
 }
 
@@ -257,12 +261,21 @@ void Mesh::MeshVTKWriter(int timeStep, int *npart, int* epart, int* color, doubl
     if(timeStep)
     {
         std::string str = this->getFilename();
-        str.insert(str.length() - 4, "_" + std::to_string(timeStep));
 
-        fout.open(str);
+        
+        //create an output string stream
+        std::ostringstream os ;
+
+        //throw the value into the string stream
+        os << timeStep ;
+
+
+        str.insert(str.length() - 4, "_" + os.str());
+
+        fout.open(str.c_str());
     }
     else{
-            fout.open(this->getFilename());
+            fout.open(this->getFilename().c_str());
     }
 
     if(fout.is_open())
@@ -417,13 +430,19 @@ void Mesh::MeshVTKWriterInternal(int timeStep, int* npart, int* epart, int* colo
 
     if(timeStep)
     {
-        std::string str = this->getFilename();
-        str.insert(str.length() - 4, "_" + std::to_string(timeStep));
+        //create an output string stream
+        std::ostringstream os ;
 
-        fout.open(str);
+        //throw the value into the string stream
+        os << timeStep ;
+
+        std::string str = this->getFilename();
+        str.insert(str.length() - 4, "_" + os.str());
+
+        fout.open(str.c_str());
     }
     else{
-            fout.open(this->getFilename());
+            fout.open(this->getFilename().c_str());
     }
 
     if(fout.is_open())
@@ -578,8 +597,16 @@ void Mesh::MeshVTKWriterInternalBinAppended(int timeStep, int* npart, int* epart
 
     std::string str = this->getFilename();
     if(timeStep)
-        str.insert(str.length() - 4, "_" + std::to_string(timeStep));
+    {
 
+        //create an output string stream
+        std::ostringstream os ;
+
+        //throw the value into the string stream
+        os << timeStep ;
+
+        str.insert(str.length() - 4, "_" + os.str());
+    }
     fout = fopen(str.c_str(), "wb");
 
     if(fout)
@@ -742,9 +769,17 @@ void Mesh::MeshVTKWriterBinAppended(int timeStep, int* npart, int* epart, int* c
     const char *byte_order = BinaryBigEndian() ? "BigEndian" : "LittleEndian";
 
     std::string str = this->getFilename();
-    if(timeStep)
-        str.insert(str.length() - 4, "_" + std::to_string(timeStep));
+    if(timeStep) 
+    {
 
+        //create an output string stream
+        std::ostringstream os ;
+
+        //throw the value into the string stream
+        os << timeStep ;
+    
+        str.insert(str.length() - 4, "_" + os.str());
+    }
     fout = fopen(str.c_str(), "wb");
 
     if(fout)
@@ -889,3 +924,7 @@ void Mesh::MeshVTKWriterBinAppended(int timeStep, int* npart, int* epart, int* c
         std::cout << "Writing completed successfully\n";
     }
 }
+
+
+
+

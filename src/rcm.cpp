@@ -848,7 +848,7 @@ void adj_show ( int node_num, int adj_num, int adj_row[], int adj[] )
       {
         nonzero_num = nonzero_num + 1;
       }
-      band_lo = max ( band_lo, i - col );
+      band_lo = i4_max ( band_lo, i - col );
       band[col] = 'X';
     }
     cout << "  " << setw(8) << i + 1 << " ";
@@ -5523,3 +5523,6 @@ void triangulation_order6_example2_size ( int *node_num, int *triangle_num,
 
   return;
 }
+
+
+

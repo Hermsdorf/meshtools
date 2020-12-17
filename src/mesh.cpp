@@ -1,6 +1,8 @@
 #include <iostream>
-
+#include <cassert>
 #include "mesh.h" 
+
+using namespace std;
 
 Mesh::Mesh()
 {
@@ -100,12 +102,12 @@ std::string Mesh::getFilename()
 unsigned short Mesh::getElementType(unsigned int element_num)
 {
     return this->type[element_num + this->n_face_elements];
-} // [0, n_elements)
+} 
 
 unsigned short Mesh::getSurfaceElementType(unsigned int element_num)
 {
     return this->type[element_num];
-} // [0, n_face_elements)
+} 
 
 void Mesh::setCoord(std::vector<double> coord)
 {
@@ -184,82 +186,49 @@ void Mesh::setFilename(std::string filename)
 
 unsigned int* Mesh::getElementConn(unsigned int element_num)
 {
-    if(element_num < this->n_elements)
-    {
-        return &this->conn[this->offset[element_num + this->n_face_elements]];
-    }
-    else
-    {
-        std::cout << "ERROR getElementConn: element number = " << element_num << " >= n_elements\n";
-        exit(1);
-    }
-    
-} // element_num = [0, n_elements);
+
+    assert(element_num < this->n_elements);
+    return &this->conn[this->offset[element_num + this->n_face_elements]];
+
+}
 
 unsigned int* Mesh::getElementOffset(unsigned int element_num)
 {
-    if(element_num <= this->n_elements)
-    {
-        return &this->offset[element_num + this->n_face_elements];
-    }
-    else
-    {
-        std::cout << "ERROR getElementOffset: element number = " << element_num << " > n_elements\n";
-        exit(1);
-    }
+
+    assert(element_num <= this->n_elements);
+    return &this->offset[element_num + this->n_face_elements];
     
 } 
 
 unsigned int* Mesh::getSurfaceElementConn(unsigned int element_num)
 {
-    if(element_num < this->n_face_elements || (this->n_face_elements == 0 && element_num ==0))
-    {
-        return &this->conn[this->offset[element_num]];
-    }
-    else
-    {
-        std::cout << "ERROR getSurfaceElementConn: element number = " << element_num << " >= n_elements\n";
-        exit(1);
-    }
-    
-} // element_num = [0, n_surface_elements);
+
+    assert(element_num < this->n_face_elements || (this->n_face_elements == 0 && element_num ==0));
+    return &this->conn[this->offset[element_num]];
+
+} 
 
 unsigned int* Mesh::getSurfaceElementOffset(unsigned int element_num)
 {
-    if(element_num < this->n_face_elements || (this->n_face_elements == 0 && element_num ==0))
-    {
-        return &this->offset[element_num];
-    }
-    else
-    {
-        std::cout << "ERROR getSurfaceElementOffset: element number = " << element_num << " >= n_elements\n";
-        exit(1);
-    }
+
+    assert(element_num < this->n_face_elements || (this->n_face_elements == 0 && element_num ==0));
+    return &this->offset[element_num];
+
 }
 
 unsigned int Mesh::getElementConnSize(unsigned int element_num)
 {
-    if(element_num < this->n_elements)
-    {
-        return (this->offset[this->n_face_elements + element_num + 1] - this->offset[this->n_face_elements + element_num]);
-    }
-    else
-    {
-        std::cout << "ERROR getElementConnSize: element number = " << element_num << " >= n_elements\n";
-        exit(1);
-    }
+
+    assert(element_num < this->n_elements);
+    return (this->offset[this->n_face_elements + element_num + 1] - this->offset[this->n_face_elements + element_num]);
     
 }
 
 unsigned int Mesh::getSurfaceElementConnSize(unsigned int element_num)
 {
-    if(element_num < this->n_face_elements)
-    {
-        return (this->offset[element_num + 1] - this->offset[element_num]);
-    }
-    else
-    {
-        std::cout << "ERROR getSurfaceElementConnSize: element number = " << element_num << " >= n_elements\n";
-        exit(1);
-    }
+
+    assert(element_num < this->n_face_elements);
+    return (this->offset[element_num + 1] - this->offset[element_num]);
+
 }
+

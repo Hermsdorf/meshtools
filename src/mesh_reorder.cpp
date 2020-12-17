@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <fstream>
 #include <memory>
@@ -19,7 +20,7 @@ void convert_to_one_index( int node_num, int adj_num, int adj_row[], int adj[])
     
         adj_row[node_num]+=1;
 
-  }
+}
 
 void convert_to_zero_index( int node_num, int adj_num, int adj_row[], int adj[])
   {
@@ -280,11 +281,15 @@ void Mesh::MeshReordering(reorder_t reorder = RCM)
     idx_t *xadj;
     idx_t *adjncy;
 
-    std::unique_ptr<int[]> perm_ptr = std::make_unique<int[]>(this->n_nodes);
-    std::unique_ptr<int[]> iperm_ptr = std::make_unique<int[]>(this->n_nodes);
 
-    int *perm = perm_ptr.get();
-    int *iperm = iperm_ptr.get();
+    //std::unique_ptr<int[]> perm_ptr = std::make_unique<int[]>(this->n_nodes);
+    //std::unique_ptr<int[]> iperm_ptr = std::make_unique<int[]>(this->n_nodes);
+
+    //int *perm = perm_ptr.get();
+    //int *iperm = iperm_ptr.get();
+
+    int *perm  =  new int[this->n_nodes];
+    int *iperm =  new int[this->n_nodes];
 
     std::cout << "Starting mesh reordering...\n";
     switch (reorder)
@@ -308,4 +313,9 @@ void Mesh::MeshReordering(reorder_t reorder = RCM)
 
     METIS_Free(xadj);
     METIS_Free(adjncy);
+
+    delete [] perm;
+    delete [] iperm;
 }
+
+
