@@ -381,7 +381,10 @@ unsigned int ColoringOpenMP_Halappanavar(Mesh* mesh)
   
     while(!U.empty())
     {
-        std::vector<int> forbiddenColors(ne, -1); // ne elementos com valor -1 (sem elementos proibidos)
+        //std::vector<int> forbiddenColors(ne, -1); 
+        int* forbiddenColors = new int [ne];
+        for(int i = 0 ; i < ne ; i++)
+            forbiddenColors[i] = -1; // ne elementos com valor -1 (sem elementos proibidos)
 
         //#pragma omp parallel for private(forbiddenColors)
         for(auto it = U.begin() ; it != U.end() ; it++)
@@ -392,7 +395,8 @@ unsigned int ColoringOpenMP_Halappanavar(Mesh* mesh)
             for(int j = start ; j < end ; j++)
             {
                 unsigned int elem_adj = adjncy[j];
-                forbiddenColors[elements_color[elem_adj]] = *it;
+                if(elements_color[elem_adj] != -1)
+                    forbiddenColors[elements_color[elem_adj]] = *it;
             }
             
             for(int i = 1 ; i <= ne ; i++)
@@ -425,7 +429,7 @@ unsigned int ColoringOpenMP_Halappanavar(Mesh* mesh)
 
         U.swap(R);
         R.clear();
-        forbiddenColors.clear();
+        delete [] forbiddenColors;
     }
 
     for(int i = 0 ; i < ne ; i++)
@@ -559,7 +563,7 @@ void Mesh::MeshColoring()
     unsigned int* new_conn;
     unsigned int* new_offset;
 
-    n_internal_colors = ColoringOpenMP_Rokos(this);
+    n_internal_colors = ColoringOpenMP_Halappanavar(this);
     CreateSort(this, sort_internal);
     ReorderElements(this, sort_internal, &new_conn, &new_offset);
     UpdateMeshArrays(this, &new_conn, &new_offset);
