@@ -379,15 +379,15 @@ unsigned int ColoringOpenMP_Halappanavar(Mesh* mesh)
     for(unsigned int i = 0 ; i < ne ; i++)
         U.push_back(i);
   
+    int* forbiddenColors = new int [ne];
+    for(int i = 0 ; i < ne ; i++)
+        forbiddenColors[i] = -1; // ne elementos com valor -1 (sem elementos proibidos)
+
     while(!U.empty())
     {
-        //std::vector<int> forbiddenColors(ne, -1); 
-        int* forbiddenColors = new int [ne];
-        for(int i = 0 ; i < ne ; i++)
-            forbiddenColors[i] = -1; // ne elementos com valor -1 (sem elementos proibidos)
-
-        //#pragma omp parallel for private(forbiddenColors)
-        for(auto it = U.begin() ; it != U.end() ; it++)
+        
+        #pragma omp parallel for private(forbiddenColors)
+        for(auto it = U.begin() ; it != U.end() ; )
         {
             unsigned int start = xadj[*it];
             unsigned int end = xadj[(*it) + 1];
@@ -408,12 +408,12 @@ unsigned int ColoringOpenMP_Halappanavar(Mesh* mesh)
                 }
             } // dessa forma inserimos a menor cor possivel no elemento *it
             
-            U.erase(it);
+            U.erase(it); // como apagamos o elemento, it vai pro proximo elemento entao nao temos que fazer it++
         }
         
         std::vector<unsigned int> R;
 
-        //#pragma omp parallel for
+        #pragma omp parallel for
         for(unsigned int i = 0 ; i < ne ; i++)
         {
             unsigned int start = xadj[i];
@@ -429,7 +429,6 @@ unsigned int ColoringOpenMP_Halappanavar(Mesh* mesh)
 
         U.swap(R);
         R.clear();
-        delete [] forbiddenColors;
     }
 
     for(int i = 0 ; i < ne ; i++)
@@ -444,6 +443,7 @@ unsigned int ColoringOpenMP_Halappanavar(Mesh* mesh)
 
     METIS_Free(xadj);
     METIS_Free(adjncy);
+    delete [] forbiddenColors;
 
     return n_colors;
 }
