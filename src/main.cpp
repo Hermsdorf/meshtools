@@ -90,7 +90,8 @@ void matvec_openmp(Mesh* mesh, Matrix& EBE, double* y, double* r)
     {
         end = begin + elem_color[k];
 
-        #pragma omp parallel for private(y_local, r_local)
+        #pragma omp parallel private(y_local, r_local)
+        #pragma omp for nowait 
         for(int iel = begin ; iel < end ; iel++)
         {
             unsigned int* conn = mesh->getElementConn(iel);
@@ -149,9 +150,9 @@ int main(int argc, char* argv[])
     //mesh->MeshReordering(RCM);
     mesh->MeshColoring();
 
-    //Mesh_partition_t* parts = new Mesh_partition_t;
+    // Mesh_partition_t* parts = new Mesh_partition_t;
 
-    //parts->MeshPartitionerInternal(mesh, n_part);
+    // parts->MeshPartitionerInternal(mesh, n_part);
 
 //     double *velocity = new double[mesh->get_n_nodes()*3];
 //     float *pressure  = new float[mesh->get_n_nodes()];

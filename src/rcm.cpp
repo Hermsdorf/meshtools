@@ -5523,6 +5523,3 @@ void triangulation_order6_example2_size ( int *node_num, int *triangle_num,
 
   return;
 }
-
-
-

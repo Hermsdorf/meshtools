@@ -1,5 +1,7 @@
 #include <iostream>
 
+#ifndef ALGLIN_H__
+#define ALGLIN_H__
 class Matrix
 {
     public:
@@ -12,3 +14,5 @@ class Matrix
         double *_data;
         unsigned int nx, ny, nz;
 };
+#endif //ALGLIN_H__
+

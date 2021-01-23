@@ -924,7 +924,3 @@ void Mesh::MeshVTKWriterBinAppended(int timeStep, int* npart, int* epart, int* c
         std::cout << "Writing completed successfully\n";
     }
 }
-
-
-
-

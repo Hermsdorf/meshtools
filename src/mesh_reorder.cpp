@@ -317,5 +317,3 @@ void Mesh::MeshReordering(reorder_t reorder = RCM)
     delete [] perm;
     delete [] iperm;
 }
-
-
