@@ -231,3 +231,4 @@ unsigned int Mesh::getSurfaceElementConnSize(unsigned int element_num)
     return (this->offset[element_num + 1] - this->offset[element_num]);
 
 }
+

@@ -1,10 +1,7 @@
 #include <iostream>
 #include <algorithm>
-#include <list>
-#include <vector>
 
 #include "metis.h"
-
 #include "../include/mesh.h"
 
 void MeshToDualGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
@@ -357,200 +354,6 @@ unsigned int Coloring(Mesh* mesh)
     return n_colors;
 }
 
-
-
-
-
-unsigned int ColoringOpenMP_Halappanavar(Mesh* mesh)
-{
-    idx_t* xadj;
-    idx_t* adjncy;
-
-    unsigned int ne = mesh->get_n_elements();
-    int* elements_color = new int[ne];
-    unsigned int n_colors = 1;                // Número total de cores da malha.
-
-    std::fill(&elements_color[0], &elements_color[ne], -1);  // Flag para elemento sem cor.
-
-    MeshToDualGraph(mesh, &xadj, &adjncy);   
-
-    std::vector<unsigned int> U; // vector com todos os vértices a serem coloridos
-
-    for(unsigned int i = 0 ; i < ne ; i++)
-        U.push_back(i);
-  
-    while(!U.empty())
-    {
-        std::vector<int> forbiddenColors(ne, -1); // ne elementos com valor -1 (sem elementos proibidos)
-
-        //#pragma omp parallel for private(forbiddenColors)
-        for(auto it = U.begin() ; it != U.end() ; it++)
-        {
-            unsigned int start = xadj[*it];
-            unsigned int end = xadj[(*it) + 1];
-
-            for(int j = start ; j < end ; j++)
-            {
-                unsigned int elem_adj = adjncy[j];
-                forbiddenColors[elements_color[elem_adj]] = *it;
-            }
-            
-            for(int i = 1 ; i <= ne ; i++)
-            {
-                if(forbiddenColors[i] != *it) 
-                {
-                    elements_color[*it] = i;
-                    break;  
-                }
-            } // dessa forma inserimos a menor cor possivel no elemento *it
-            
-            U.erase(it);
-        }
-        
-        std::vector<unsigned int> R;
-
-        //#pragma omp parallel for
-        for(unsigned int i = 0 ; i < ne ; i++)
-        {
-            unsigned int start = xadj[i];
-            unsigned int end = xadj[i+1];
-
-            for(unsigned int j = start ; j < end ; j++)
-            {
-                unsigned int elem_adj = adjncy[j];
-                if((elements_color[i] == elements_color[elem_adj]) && (i > elem_adj))
-                    R.push_back(i);
-            } // inserindo em R os vertices que precisam ser recoloridos
-        }
-
-        U.swap(R);
-        R.clear();
-        forbiddenColors.clear();
-    }
-
-    for(int i = 0 ; i < ne ; i++)
-    {
-        if(n_colors < elements_color[i])
-                n_colors = elements_color[i];
-    }
-
-    delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader 
-                                                  // onde inicializa todo o vetor mesh_coloring_internal com -1.
-    mesh->set_mesh_coloring_internal(elements_color);
-
-    METIS_Free(xadj);
-    METIS_Free(adjncy);
-
-    return n_colors;
-}
-
-
-unsigned int ColoringOpenMP_Rokos(Mesh* mesh)
-{
-    idx_t* xadj;
-    idx_t* adjncy;
-
-    unsigned int ne = mesh->get_n_elements();
-    int* elements_color = new int[ne];
-    unsigned int n_colors = 1;                // Número total de cores da malha.
-
-    MeshToDualGraph(mesh, &xadj, &adjncy);      
-
-    std::fill(&elements_color[0], &elements_color[ne], -1);  // Flag para elemento sem cor.
-
-    #pragma omp parallel for
-    for(unsigned int i = 0 ; i < ne ; i++)
-    {
-        unsigned int start = xadj[i];
-        unsigned int end = xadj[i+1];
-
-        unsigned int color = 1;  // Possível cor para o elemento i.
-        unsigned int j = start;
-
-        while(j < end)
-        {
-            unsigned int elem_adj = adjncy[j];
-
-            if(elements_color[elem_adj] == color)
-            {
-                color++;
-                j = start;
-            }
-            else
-                j++;
-        }
-
-        elements_color[i] = color; // seguir a coloração com sentido à reordenação do grafo
-    }
-
-    #pragma omp barrier
-    
-    std::vector<unsigned int> U; // vector com todos os vértices a serem coloridos
-    for(int i = 0 ; i < ne ; i++)
-        U.push_back(i);
-
-    while(!U.empty())
-    {
-        std::vector<unsigned int> L; // vector com o vértices que tem de ser recoloridos
-
-        #pragma omp parallel for
-        for(auto it = U.begin() ; it != U.end() ; ++it)
-        {
-            unsigned int start = xadj[*it];
-            unsigned int end = xadj[(*it) + 1];
-
-            for(int j = start ; j < end ; j++)
-            {
-                unsigned int elem_adj_it = adjncy[j];
-                if(elements_color[*it] == elements_color[elem_adj_it] && elem_adj_it > *it)
-                {
-                    unsigned int z = start;
-                    unsigned int color = 1;
-                    while(z < end)
-                    {
-                        unsigned int elem_adj = adjncy[z];
-
-                        if(color == elements_color[elem_adj])
-                        {
-                            color++;
-                            z = start;
-                        }
-                        else
-                            z++;
-                    }
-
-                    elements_color[*it] = color;
-                    L.push_back(*it); 
-                }
-            }
-
-            U.erase(it);
-        }
-
-        #pragma omp barrier
-
-        U.swap(L);
-        L.clear();
-    }
-
-    for(int i = 0 ; i < ne ; i++)
-    {
-        if(n_colors < elements_color[i])
-                n_colors = elements_color[i];
-    }
-
-    delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader 
-                                                  // onde inicializa todo o vetor mesh_coloring_internal com -1.
-    mesh->set_mesh_coloring_internal(elements_color);
-
-    METIS_Free(xadj);
-    METIS_Free(adjncy);
-
-    return n_colors;
-}
-
-
-
 void Mesh::MeshColoring()
 {
     std::cout << "Starting mesh coloring...\n";
@@ -559,7 +362,7 @@ void Mesh::MeshColoring()
     unsigned int* new_conn;
     unsigned int* new_offset;
 
-    n_internal_colors = ColoringOpenMP_Rokos(this);
+    n_internal_colors = Coloring(this);
     CreateSort(this, sort_internal);
     ReorderElements(this, sort_internal, &new_conn, &new_offset);
     UpdateMeshArrays(this, &new_conn, &new_offset);
@@ -574,3 +377,6 @@ void Mesh::MeshColoring()
     delete [] new_conn;
     delete [] new_offset; 
 }
+
+
+

@@ -8,6 +8,4 @@ src/mesh_part.o
 .vscode/c_cpp_properties.json
 build
 build/*
-setup_guilherme.sh
-testes/
-testes_papi/
+
