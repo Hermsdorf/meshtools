@@ -413,7 +413,7 @@ unsigned int ColoringOpenMP_Halappanavar(Mesh* mesh)
         U.clear(); // nao da pra apagar elemento por elemento dentro do for porque da problema com o iterator
         std::vector<unsigned int> R;
 
-        #pragma omp parallel for 
+        #pragma omp parallel for
         for(unsigned int i = 0 ; i < ne ; i++)
         {
             unsigned int start = xadj[i];
@@ -423,7 +423,10 @@ unsigned int ColoringOpenMP_Halappanavar(Mesh* mesh)
             {
                 unsigned int elem_adj = adjncy[j];
                 if((elements_color[i] == elements_color[elem_adj]) && (i > elem_adj))
+                {
+                    #pragma omp critical
                     R.push_back(i);
+                }
             } // inserindo em R os vertices que precisam ser recoloridos
         }
 
@@ -524,6 +527,8 @@ unsigned int ColoringOpenMP_Rokos(Mesh* mesh)
                     }
 
                     elements_color[*it] = color;
+
+                    #pragma omp critical
                     L.push_back(*it); 
                 }
             }
@@ -562,7 +567,7 @@ void Mesh::MeshColoring()
     unsigned int* new_conn;
     unsigned int* new_offset;
 
-    n_internal_colors = ColoringOpenMP_Rokos(this);
+    n_internal_colors = ColoringOpenMP_Halappanavar(this);
     CreateSort(this, sort_internal);
     ReorderElements(this, sort_internal, &new_conn, &new_offset);
     UpdateMeshArrays(this, &new_conn, &new_offset);
