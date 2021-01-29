@@ -1,7 +1,7 @@
 #include <iostream>
 #include <algorithm>
-#include <list>
 #include <vector>
+#include <map>
 
 #include "metis.h"
 
@@ -55,6 +55,28 @@ void MeshToDualGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
     }
 
     delete[] eptr;
+}
+
+void CheckColoring(idx_t** xadj, idx_t** adjncy, int** elements_color, int ne)
+{
+    idx_t* xadj_aux = *xadj;
+    idx_t* adjncy_aux = *adjncy;
+    int* color = *elements_color;
+
+    for(unsigned int i = 0 ; i < ne ; i++)
+    {
+        unsigned int start = xadj_aux[i];
+        unsigned int end = xadj_aux[i+1];
+
+        for(unsigned int j = start ; j < end ; j++)
+        {
+            if(color[i] == color[adjncy_aux[j]])
+            {
+                std::cout << "ERRO: ELEMENTOS ADJACENTES COM MESMA COR\n";
+                break;
+            }
+        }
+    }
 }
 
 // TODO: implementar a alteração do vetor de tipos também
@@ -357,8 +379,6 @@ unsigned int Coloring(Mesh* mesh)
     return n_colors;
 }
 
-
-
 unsigned int ColoringOpenMP_Halappanavar(Mesh* mesh)
 {
     idx_t* xadj;
@@ -372,15 +392,23 @@ unsigned int ColoringOpenMP_Halappanavar(Mesh* mesh)
 
     MeshToDualGraph(mesh, &xadj, &adjncy);   
 
-    std::vector<unsigned int> U; // vector com todos os vértices a serem coloridos
+    std::vector<unsigned int> U(ne); // vector com todos os vértices a serem coloridos
 
+    //unsigned int forbiddenColors[ne]; // no tesla tava dando segmentation fault
+
+    //unsigned int* forbiddenColors = new unsigned int[ne]; // no tesla tava rodando infinitamente
+
+    std::map<unsigned int, unsigned int> forbiddenColors;
+
+    #pragma omp parallel for
     for(unsigned int i = 0 ; i < ne ; i++)
-        U.push_back(i);
-  
-    //int* forbiddenColors = new int [ne];
-    int forbiddenColors[ne];
-    for(int i = 0 ; i < ne ; i++)
-        forbiddenColors[i] = -1; // ne elementos com valor -1 (sem elementos proibidos)
+        U[i] = i;
+    
+    //  #pragma omp parallel for
+    //  for(unsigned int i = 0 ; i < ne ; i++)
+    //      forbiddenColors[i] = -1; // ne elementos com valor -1 (sem elementos proibidos)
+
+    // TODO: abrir as threads antes do while com #pragma omp parallel, usar single no U.clear em diante, R e U devem ser shared
 
     while(!U.empty())
     {
@@ -398,19 +426,42 @@ unsigned int ColoringOpenMP_Halappanavar(Mesh* mesh)
                     forbiddenColors[elements_color[elem_adj]] = *it;
             }
             
+            // for(int i = 1 ; i <= ne ; i++)
+            // {
+            //     if(forbiddenColors[i] != *it) 
+            //     {
+            //        elements_color[*it] = i;
+            //        break;  
+            //     }
+            // } // dessa forma inserimos a menor cor possivel no elemento *it
+
             for(int i = 1 ; i <= ne ; i++)
             {
-                if(forbiddenColors[i] != *it) 
+                auto it_forbidden = forbiddenColors.find(i);
+                if(it_forbidden == forbiddenColors.end())
                 {
                     elements_color[*it] = i;
-                    break;  
+                    break;
                 }
-            } // dessa forma inserimos a menor cor possivel no elemento *it
-            
-            //U.erase(it); // como apagamos o elemento, it vai pro proximo elemento entao nao temos que fazer it++
+            }
+
+            // for(auto it_forbidden = forbiddenColors.begin() ; it_forbidden != forbiddenColors.end() ; )
+            // {
+            //     if(i != it_forbidden->first)
+            //     {
+            //         elements_color[it_forbidden->second] = i;  
+            //         it_forbidden++;               
+            //     }
+            //     else
+            //     {
+            //         i++;
+            //         it_forbidden = forbiddenColors.begin();
+            //     }
+            // }
         }
-        
-        U.clear(); // nao da pra apagar elemento por elemento dentro do for porque da problema com o iterator
+
+        //forbiddenColors.clear();
+        U.clear();
         std::vector<unsigned int> R;
 
         #pragma omp parallel for
@@ -432,13 +483,17 @@ unsigned int ColoringOpenMP_Halappanavar(Mesh* mesh)
 
         U.swap(R);
         R.clear();
+        std::cout << U.size() << "\n";
     }
 
+    #pragma omp parallel for reduction(max : n_colors)
     for(int i = 0 ; i < ne ; i++)
     {
         if(n_colors < elements_color[i])
                 n_colors = elements_color[i];
     }
+    
+    //CheckColoring(&xadj, &adjncy, &elements_color, ne);
 
     delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader 
                                                   // onde inicializa todo o vetor mesh_coloring_internal com -1.
@@ -450,7 +505,6 @@ unsigned int ColoringOpenMP_Halappanavar(Mesh* mesh)
 
     return n_colors;
 }
-
 
 unsigned int ColoringOpenMP_Rokos(Mesh* mesh)
 {
@@ -492,15 +546,18 @@ unsigned int ColoringOpenMP_Rokos(Mesh* mesh)
 
     #pragma omp barrier
     
-    std::vector<unsigned int> U; // vector com todos os vértices a serem coloridos
+    std::vector<unsigned int> U(ne); // vector com todos os vértices a serem coloridos
+    std::vector<unsigned int> L; // vector com o vértices que tem de ser recoloridos
+
+#pragma omp parallel shared(U, L)
+{
+    #pragma omp for
     for(int i = 0 ; i < ne ; i++)
-        U.push_back(i);
+        U[i] = i;
 
     while(!U.empty())
     {
-        std::vector<unsigned int> L; // vector com o vértices que tem de ser recoloridos
-
-        #pragma omp parallel for
+        #pragma omp for
         for(auto it = U.begin() ; it != U.end() ; it++)
         {
             unsigned int start = xadj[*it];
@@ -529,23 +586,33 @@ unsigned int ColoringOpenMP_Rokos(Mesh* mesh)
                     elements_color[*it] = color;
 
                     #pragma omp critical
-                    L.push_back(*it); 
+                    {
+                        L.push_back(*it); 
+                    }
                 }
             }
         }
 
-        U.clear(); // nao da pra apagar elemento por elemento dentro do for porque da problema com o iterator
+        #pragma omp single
+        U.clear();
+
         #pragma omp barrier
 
+        #pragma omp single
+        {
         U.swap(L);
         L.clear();
+        }
     }
 
+    #pragma omp for reduction(max : n_colors)
     for(int i = 0 ; i < ne ; i++)
     {
         if(n_colors < elements_color[i])
                 n_colors = elements_color[i];
     }
+}
+    //CheckColoring(&xadj, &adjncy, &elements_color, ne);
 
     delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader 
                                                   // onde inicializa todo o vetor mesh_coloring_internal com -1.
@@ -556,8 +623,6 @@ unsigned int ColoringOpenMP_Rokos(Mesh* mesh)
 
     return n_colors;
 }
-
-
 
 void Mesh::MeshColoring()
 {
