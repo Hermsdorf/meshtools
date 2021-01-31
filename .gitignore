@@ -11,3 +11,6 @@ build/*
 setup_guilherme.sh
 testes/
 testes_papi/
+tempos/
+tempos_forkjoin/
+tempo_forkjoin.zip
