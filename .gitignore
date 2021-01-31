@@ -13,4 +13,5 @@ testes/
 testes_papi/
 tempos/
 tempos_forkjoin/
-tempo_forkjoin.zip
+tempos_forkjoin.zip
+script.sh
