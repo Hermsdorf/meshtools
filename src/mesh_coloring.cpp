@@ -400,13 +400,11 @@ unsigned int ColoringOpenMP_Halappanavar(Mesh* mesh)
     for(unsigned int i = 0 ; i < ne ; i++)
         U[i] = i;
 
-    // TODO: abrir as threads antes do while com #pragma omp parallel, usar single no U.clear em diante, R e U devem ser shared
-
     while(!U.empty())
     {
-        
+        std::vector<unsigned int>::iterator it;
         #pragma omp parallel for firstprivate(forbiddenColors)
-        for(auto it = U.begin() ; it != U.end() ; it++)
+        for(it = U.begin() ; it != U.end() ; it++)
         {
             unsigned int start = xadj[*it];
             unsigned int end = xadj[(*it) + 1];
@@ -420,22 +418,14 @@ unsigned int ColoringOpenMP_Halappanavar(Mesh* mesh)
             
             for(int i = 1 ; i <= ne ; i++)
             {
-                auto it_forbidden = forbiddenColors.find(i);
+                std::map<unsigned int, unsigned int>::iterator it_forbidden;
+                it_forbidden = forbiddenColors.find(i);
                 if(it_forbidden == forbiddenColors.end())
                 {
                     elements_color[*it] = i;
                     break;
                 }
-                // else
-                // {
-                //     if(it_forbidden->second != *it)
-                //     {
-                //         elements_color[*it] = i;
-                //         break;
-                //     }
-                // }
             }
-
             forbiddenColors.clear();
         }
 
@@ -508,9 +498,10 @@ unsigned int ColoringOpenMP_HalappanavarOpt(Mesh* mesh)
 
     while(!U.empty())
     {
-        
+        std::vector<unsigned int>::iterator it;
+
         #pragma omp for firstprivate(forbiddenColors)
-        for(auto it = U.begin() ; it != U.end() ; it++)
+        for(it = U.begin() ; it != U.end() ; it++)
         {
             unsigned int start = xadj[*it];
             unsigned int end = xadj[(*it) + 1];
@@ -524,22 +515,14 @@ unsigned int ColoringOpenMP_HalappanavarOpt(Mesh* mesh)
             
             for(int i = 1 ; i <= ne ; i++)
             {
-                auto it_forbidden = forbiddenColors.find(i);
+                std::map<unsigned int, unsigned int>::iterator it_forbidden;
+                it_forbidden = forbiddenColors.find(i);
                 if(it_forbidden == forbiddenColors.end())
                 {
                     elements_color[*it] = i;
                     break;
                 }
-                // else
-                // {
-                //     if(it_forbidden->second != *it)
-                //     {
-                //         elements_color[*it] = i;
-                //         break;
-                //     }
-                // }
             }
-
             forbiddenColors.clear();
         }
 
@@ -638,8 +621,9 @@ unsigned int ColoringOpenMP_Rokos(Mesh* mesh)
     {
         std::vector<unsigned int> L; // vector com o vértices que tem de ser recoloridos
 
+        std::vector<unsigned int>::iterator it;
         #pragma omp parallel for
-        for(auto it = U.begin() ; it != U.end() ; it++)
+        for(it = U.begin() ; it != U.end() ; it++)
         {
             unsigned int start = xadj[*it];
             unsigned int end = xadj[(*it) + 1];
@@ -748,8 +732,9 @@ unsigned int ColoringOpenMP_RokosOpt(Mesh* mesh)
 
     while(!U.empty())
     {
+        std::vector<unsigned int>::iterator it;
         #pragma omp for
-        for(auto it = U.begin() ; it != U.end() ; it++)
+        for(it = U.begin() ; it != U.end() ; it++)
         {
             unsigned int start = xadj[*it];
             unsigned int end = xadj[(*it) + 1];
@@ -823,7 +808,7 @@ void Mesh::MeshColoring()
     unsigned int* new_conn;
     unsigned int* new_offset;
 
-    n_internal_colors = ColoringOpenMP_Rokos(this);
+    n_internal_colors = ColoringOpenMP_Halappanavar(this);
     CreateSort(this, sort_internal);
     ReorderElements(this, sort_internal, &new_conn, &new_offset);
     UpdateMeshArrays(this, &new_conn, &new_offset);
