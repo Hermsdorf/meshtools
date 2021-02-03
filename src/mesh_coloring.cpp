@@ -582,7 +582,9 @@ unsigned int ColoringOpenMP_Rokos(Mesh* mesh)
     int* elements_color = new int[ne];
     unsigned int n_colors = 1;                // Número total de cores da malha.
 
-    MeshToDualGraph(mesh, &xadj, &adjncy);      
+    MeshToDualGraph(mesh, &xadj, &adjncy);  
+
+    std::vector<unsigned int> U(ne); // vector com todos os vértices a serem coloridos    
 
     std::fill(&elements_color[0], &elements_color[ne], -1);  // Flag para elemento sem cor.
 
@@ -610,8 +612,6 @@ unsigned int ColoringOpenMP_Rokos(Mesh* mesh)
 
         elements_color[i] = color; // seguir a coloração com sentido à reordenação do grafo
     }
-
-    std::vector<unsigned int> U(ne); // vector com todos os vértices a serem coloridos
 
     #pragma omp parallel for
     for(int i = 0 ; i < ne ; i++)
@@ -701,7 +701,7 @@ unsigned int ColoringOpenMP_RokosOpt(Mesh* mesh)
 
 #pragma omp parallel shared(U, L)
 {
-    #pragma omp for
+    #pragma omp for nowait schedule(dynamic)
     for(unsigned int i = 0 ; i < ne ; i++)
     {
         unsigned int start = xadj[i];
@@ -726,14 +726,14 @@ unsigned int ColoringOpenMP_RokosOpt(Mesh* mesh)
         elements_color[i] = color; // seguir a coloração com sentido à reordenação do grafo
     }
     
-    #pragma omp for
+    #pragma omp for schedule(dynamic)
     for(int i = 0 ; i < ne ; i++)
         U[i] = i;
-
+    
     while(!U.empty())
     {
         std::vector<unsigned int>::iterator it;
-        #pragma omp for
+        #pragma omp for schedule(dynamic)
         for(it = U.begin() ; it != U.end() ; it++)
         {
             unsigned int start = xadj[*it];
@@ -808,7 +808,7 @@ void Mesh::MeshColoring()
     unsigned int* new_conn;
     unsigned int* new_offset;
 
-    n_internal_colors = ColoringOpenMP_Halappanavar(this);
+    n_internal_colors = ColoringOpenMP_RokosOpt(this);
     CreateSort(this, sort_internal);
     ReorderElements(this, sort_internal, &new_conn, &new_offset);
     UpdateMeshArrays(this, &new_conn, &new_offset);
