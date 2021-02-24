@@ -11,9 +11,9 @@ enable_testing()
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 set(CMAKE_C_COMPILER tau_cc.sh)
 set(CMAKE_CXX_COMPILER tau_cxx.sh)
-set (CMAKE_CXX_FLAGS "-fopenmp")
+set(CMAKE_CXX_FLAGS "-fopenmp -O3")
 
-find_package(MPI)
+#find_package(MPI)
 find_package(METIS REQUIRED)
 find_package(ParaView CONFIG COMPONENTS Catalyst PythonCatalyst)
 
@@ -48,7 +48,7 @@ endif()
 
 target_link_libraries(meshtools 
 PRIVATE
-MPI::MPI_C
+#MPI::MPI_C
 ${ADDITIONAL_ITEMS}
 ${METIS_LIBRARIES}
 )

@@ -200,7 +200,7 @@ int main(int argc, char* argv[])
 
     matvec_openmp(mesh, ebe, y, r);
 
-    //mesh->MeshVTKWriterInternalBinAppended(0, parts->get_nodal_part(), parts->get_elem_part(), mesh->get_mesh_coloring_internal(), NULL, NULL);
+    //mesh->MeshVTKWriterInternal(0, NULL, NULL, mesh->get_mesh_coloring_internal(), NULL, NULL);
 
     // delete [] velocity;
     // delete [] pressure;
