@@ -146,13 +146,14 @@ int main(int argc, char* argv[])
         CatalystInitialize(n_script, argv+3);
 #endif
 
-    //mesh->MeshReordering(RCM);
-    mesh->MeshColoring();
+    mesh->MeshReordering(RCM);
+    //mesh->MeshColoring();
 
-    //Mesh_partition_t* parts = new Mesh_partition_t;
+    Mesh_partition_t* parts = new Mesh_partition_t();
 
-    //parts->MeshPartitionerInternal(mesh, n_part);
-
+    parts->MeshPartitionerInternal(mesh, n_part);
+    parts->WritePartitionInternal(mesh);
+    
 //     double *velocity = new double[mesh->get_n_nodes()*3];
 //     float *pressure  = new float[mesh->get_n_nodes()];
 
@@ -177,37 +178,37 @@ int main(int argc, char* argv[])
         CatalystFinalize();
 #endif
 
-    unsigned int nelem = mesh->get_n_elements();
-    unsigned int nnodes = mesh->get_n_nodes();
-    unsigned int nconn = mesh->getElementConnSize(0);
-    Matrix ebe(nelem, nconn);
+    // unsigned int nelem = mesh->get_n_elements();
+    // unsigned int nnodes = mesh->get_n_nodes();
+    // unsigned int nconn = mesh->getElementConnSize(0);
+    // Matrix ebe(nelem, nconn);
     
-    double* y = new double[nnodes];
-    double* r = new double[nnodes];
+    // double* y = new double[nnodes];
+    // double* r = new double[nnodes];
 
-    std::fill(&y[0], &y[nnodes], 1.0);
+    // std::fill(&y[0], &y[nnodes], 1.0);
 
-    for(int i = 0 ; i < nelem ; i++)
-    {
-        for(int j = 0 ; j < nconn ; j++)
-        {
-            for(int k = 0 ; k < nconn ; k++)
-            {
-                ebe(i, j, k) = 1.0;
-            }
-        }
-    }
+    // for(int i = 0 ; i < nelem ; i++)
+    // {
+    //     for(int j = 0 ; j < nconn ; j++)
+    //     {
+    //         for(int k = 0 ; k < nconn ; k++)
+    //         {
+    //             ebe(i, j, k) = 1.0;
+    //         }
+    //     }
+    // }
 
-    matvec_openmp(mesh, ebe, y, r);
+    // matvec_openmp(mesh, ebe, y, r);
 
     //mesh->MeshVTKWriterInternal(0, NULL, NULL, mesh->get_mesh_coloring_internal(), NULL, NULL);
 
     // delete [] velocity;
     // delete [] pressure;
     delete mesh;
-    //delete parts;
-    delete [] y;
-    delete [] r;
+    delete parts;
+    // delete [] y;
+    // delete [] r;
 
     return 0;
 }

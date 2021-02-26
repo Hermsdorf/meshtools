@@ -9,9 +9,9 @@ include(CTest)
 enable_testing()
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
-set(CMAKE_C_COMPILER tau_cc.sh)
-set(CMAKE_CXX_COMPILER tau_cxx.sh)
-set(CMAKE_CXX_FLAGS "-fopenmp -O3")
+#set(CMAKE_C_COMPILER tau_cc.sh)
+#set(CMAKE_CXX_COMPILER tau_cxx.sh)
+set(CMAKE_CXX_FLAGS "-fopenmp -O3 -g")
 
 #find_package(MPI)
 find_package(METIS REQUIRED)

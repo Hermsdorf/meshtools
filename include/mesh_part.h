@@ -16,6 +16,7 @@ class Mesh_partition_t {
 
         void MeshPartitioner(Mesh* mesh, int nparts);
         void MeshPartitionerInternal(Mesh* mesh, int nparts);
+        void WritePartitionInternal(Mesh* mesh);
 
     private:
         int  n_partitions;  // Número de partições.

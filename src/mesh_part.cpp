@@ -1,4 +1,7 @@
 #include <iostream>
+#include <set>
+#include <fstream>
+#include <sstream>
 
 #include "metis.h"
 #include "mesh.h"
@@ -194,6 +197,151 @@ void Mesh_partition_t::MeshPartitioner(Mesh* mesh, int nparts)
         }
 
     }
+}
+
+void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
+{
+    std::map<int, std::set<int>> node_partition; // < no, particoes que o no participa >
+    std::vector<double> coord = mesh->getCoord();
+    std::vector<int> interface_nodes;
+    unsigned int nelem = mesh->get_n_elements();
+    unsigned int nnodes = mesh->get_n_nodes();
+    
+    for(int i = 0 ; i < this->n_partitions ; i++)
+    {
+        unsigned int elem_num = 0;
+        while(elem_num < nelem)
+        {
+            if(this->elem_part[elem_num] == i)  // se o elemento for da particao que estamos processando
+            {
+                unsigned int* conn = mesh->getElementConn(elem_num);
+                unsigned int connsize = mesh->getElementConnSize(elem_num);
+
+                for(int j = 0 ; j < connsize ; j++)
+                {
+                    int conn_node = conn[j];
+                    node_partition[conn_node].insert(i); // nó conn_node participa da particao i
+                }
+            }
+
+            elem_num++;
+        }
+    }
+    
+    std::map<int, std::set<int>>::iterator it_node;
+    for(it_node = node_partition.begin() ; it_node != node_partition.end() ; it_node++)
+    {
+        if(it_node->second.size() > 1)
+        {
+            interface_nodes.push_back(it_node->first);
+        }
+    }
+    
+
+    for(int i = 0 ; i < this->n_partitions ; i++)
+    {
+        std::ofstream fout;
+        //create an output string stream
+        std::ostringstream os;
+
+        os << i;
+
+        std::string str = mesh->getFilename();
+        str.insert(str.length() - 4, "_part" + os.str());
+
+        fout.open(str.c_str());
+
+        std::vector<unsigned int> coord_local;
+        std::vector<unsigned int> conn_local;
+        std::vector<unsigned int> offset_local;
+        std::vector<unsigned int> local_to_global;
+        std::vector<unsigned int> global_to_local;
+        global_to_local.resize(mesh->getConn().size());
+
+        int local_node = 0;
+        for(int j = 0 ; j < nnodes ; j++)
+        {
+            if(node_partition[j].count(i))
+            {
+                coord_local.push_back(coord[(j*3) + 0]); // x
+                coord_local.push_back(coord[(j*3) + 1]); // y
+                coord_local.push_back(coord[(j*3) + 2]); // z
+
+                local_to_global.push_back(j);
+                global_to_local.at(j) = local_node;
+                local_node++;
+            } // se o no esta presente na particao processada
+        } 
+
+        unsigned int elem_num = 0;
+        unsigned int offset = 0;
+        while(elem_num < nelem)
+        {
+            if(this->elem_part[elem_num] == i)  // se o elemento for da particao que estamos processando
+            {
+                unsigned int* conn = mesh->getElementConn(elem_num);
+                unsigned int connsize = mesh->getElementConnSize(elem_num);
+
+                for(int j = 0 ; j < connsize ; j++)
+                    conn_local.push_back(global_to_local[conn[j]]);
+                
+                offset_local.push_back(offset);
+                offset += connsize;
+            }
+
+            elem_num++;
+        }
+        offset_local.push_back(offset);
+
+
+        fout << "COORD_LOCAL: \n";
+        std::vector<unsigned int>::iterator coord_it;
+        for(coord_it = coord_local.begin() ; coord_it != coord_local.end() ; coord_it+=3)
+        {
+            fout << *coord_it << " " << *(coord_it + 1) << " " << *(coord_it + 2) << "\n";
+        }
+
+        fout << "\nCONN_LOCAL: \n";
+        std::vector<unsigned int>::iterator conn_it;
+        for(conn_it = conn_local.begin() ; conn_it != conn_local.end() ; conn_it++)
+        {
+            fout << *conn_it << " ";
+        }
+
+        fout << "\nOFFSET_LOCAL: \n";
+        std::vector<unsigned int>::iterator offset_it;
+        for(offset_it = offset_local.begin() ; offset_it != offset_local.end() ; offset_it++)
+        {
+            fout << *offset_it << " ";
+        }
+
+        fout << "\nLOCAL_TO_GLOBAL: \n";
+        std::vector<unsigned int>::iterator local_global_it;
+        for(local_global_it = local_to_global.begin() ; local_global_it != local_to_global.end() ; local_global_it++)
+        {
+            fout << *local_global_it << " ";
+        }
+        fout << "\n";
+
+
+        coord_local.clear();
+        conn_local.clear();
+        offset_local.clear();
+        local_to_global.clear();
+    }
+
+
+
+    // TESTE DO MAP - ok //
+    // for(auto it = node_partition.begin(); it != node_partition.end() ; it++)
+    // {
+    //     std::cout << "No: " << it->first << "    particoes: ";
+    //     for(auto it2 = it->second.begin() ; it2 != it->second.end() ; it2++)
+    //     {
+    //         std::cout << *it2 << ", ";
+    //     }
+    //     std::cout << "\n";
+    // }
 }
 
 
