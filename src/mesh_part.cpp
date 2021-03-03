@@ -201,9 +201,9 @@ void Mesh_partition_t::MeshPartitioner(Mesh* mesh, int nparts)
 
 void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
 {
-    std::map<int, std::set<int>> node_partition; // < no, particoes que o no participa >
+    std::map<unsigned int, std::set<unsigned int>> node_partition; // < no, particoes que o no participa >
     std::vector<double> coord = mesh->getCoord();
-    std::vector<int> interface_nodes;
+    std::vector<unsigned int> interface_nodes;
     unsigned int nelem = mesh->get_n_elements();
     unsigned int nnodes = mesh->get_n_nodes();
     
@@ -219,7 +219,7 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
 
                 for(int j = 0 ; j < connsize ; j++)
                 {
-                    int conn_node = conn[j];
+                    unsigned int conn_node = conn[j];
                     node_partition[conn_node].insert(i); // nó conn_node participa da particao i
                 }
             }
@@ -228,18 +228,17 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
         }
     }
     
-    std::map<int, std::set<int>>::iterator it_node;
+    std::map<unsigned int, std::set<unsigned int>>::iterator it_node;
     for(it_node = node_partition.begin() ; it_node != node_partition.end() ; it_node++)
     {
         if(it_node->second.size() > 1)
         {
             interface_nodes.push_back(it_node->first);
         }
-    }
-    
+    }    
 
-    std::vector<unsigned int> global_to_local;
-    global_to_local.resize(mesh->getConn().size());
+    // std::vector<unsigned int> global_to_local;
+    // global_to_local.resize(mesh->getConn().size());
 
     for(int i = 0 ; i < this->n_partitions ; i++)
     {
@@ -258,9 +257,11 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
         std::vector<unsigned int> conn_local;
         std::vector<unsigned int> offset_local;
         std::vector<unsigned int> local_to_global;
+        std::vector<unsigned int> global_to_local;
+        global_to_local.resize(mesh->getConn().size());
 
 
-        int local_node = 0;
+        unsigned int local_node = 0;
         for(int j = 0 ; j < nnodes ; j++)
         {
             if(node_partition[j].count(i))
@@ -294,6 +295,23 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
             elem_num++;
         }
         offset_local.push_back(offset);
+
+        std::map<unsigned int, std::set<unsigned int>> shared_nodes; // <particao p, lista de nos compartilhados entre particao p e particao i>
+        std::vector<unsigned int>::iterator it_interface;
+        std::set<unsigned int>::iterator it_node_set;
+        for(it_interface = interface_nodes.begin() ; it_interface != interface_nodes.end() ; it_interface++)
+        {
+            unsigned int node = *it_interface;
+            if(node_partition[node].count(i))
+            {
+                for(it_node_set = node_partition[node].begin() ; it_node_set != node_partition[node].end() ; it_node_set++)
+                {   
+                    unsigned int partition = *it_node_set;
+                    if(partition != i)
+                        shared_nodes[partition].insert(node);     
+                }
+            } // se o no, que ja eh de interface, for da particao que estamos processando
+        }
 
         fout << elem_num   << std::endl;
         fout << local_node << std::endl;
@@ -312,6 +330,7 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
         {
             fout << *conn_it << " ";
         }
+        fout << "\n";
 
         fout << "\nOFFSET_LOCAL: \n";
         std::vector<unsigned int>::iterator offset_it;
@@ -319,6 +338,7 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
         {
             fout << *offset_it << " ";
         }
+        fout << "\n";
 
         fout << "\nLOCAL_TO_GLOBAL: \n";
         std::vector<unsigned int>::iterator local_global_it;
@@ -327,40 +347,37 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
             fout << *local_global_it << " ";
         }
         fout << "\n";
-        // TODO: 
-        //fout << "\nSHARING NODES: \n";
-        //fout << <Part> <n_nodes shared> <list nodes>
 
-
+        fout << "\nSHARED NODES: \n";
+        for(auto it = shared_nodes.begin() ; it != shared_nodes.end() ; it++)
+        {
+            unsigned int partition = it->first;
+            if(partition != i)
+            {
+                fout << partition << " " << shared_nodes[partition].size() << " ";
+                for(auto it2 = shared_nodes[partition].begin() ; it2 != shared_nodes[partition].end() ; it2++)
+                    fout << *it2 << " ";
+                fout << "\n";
+            }
+        } // <Particao compartilhada> <n_nodes shared> <list nodes -> local_to_global>
+        
         coord_local.clear();
         conn_local.clear();
         offset_local.clear();
         local_to_global.clear();
+        global_to_local.clear();
 
         fout.close();
     }
-
-
-
-    // TESTE DO MAP - ok //
-    // for(auto it = node_partition.begin(); it != node_partition.end() ; it++)
-    // {
-    //     std::cout << "No: " << it->first << "    particoes: ";
-    //     for(auto it2 = it->second.begin() ; it2 != it->second.end() ; it2++)
-    //     {
-    //         std::cout << *it2 << ", ";
-    //     }
-    //     std::cout << "\n";
-    // }
 }
 
 
 
 void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
 {
-    std::map<int, std::set<int>> node_partition; // < no, particoes que o no participa >
+    std::map<unsigned int, std::set<unsigned int>> node_partition; // < no, particoes que o no participa >
     std::vector<double> coord = mesh->getCoord();
-    std::vector<int> interface_nodes;
+    std::vector<unsigned int> interface_nodes;
     unsigned int nelem = mesh->get_n_elements();
     unsigned int nnodes = mesh->get_n_nodes();
     
@@ -376,7 +393,7 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
 
                 for(int j = 0 ; j < connsize ; j++)
                 {
-                    int conn_node = conn[j];
+                    unsigned int conn_node = conn[j];
                     node_partition[conn_node].insert(i); // nó conn_node participa da particao i
                 }
             }
@@ -385,7 +402,7 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
         }
     }
     
-    std::map<int, std::set<int>>::iterator it_node;
+    std::map<unsigned int, std::set<unsigned int>>::iterator it_node;
     for(it_node = node_partition.begin() ; it_node != node_partition.end() ; it_node++)
     {
         if(it_node->second.size() > 1)
@@ -395,8 +412,8 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
     }
     
 
-    std::vector<unsigned int> global_to_local;
-    global_to_local.resize(mesh->getConn().size());
+    // std::vector<unsigned int> global_to_local;
+    // global_to_local.resize(mesh->getConn().size());
 
     for(int i = 0 ; i < this->n_partitions ; i++)
     {
@@ -415,6 +432,8 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
         std::vector<unsigned int> conn_local;
         std::vector<unsigned int> offset_local;
         std::vector<unsigned int> local_to_global;
+        std::vector<unsigned int> global_to_local;
+        global_to_local.resize(mesh->getConn().size());
 
 
         int local_node = 0;
@@ -452,14 +471,28 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
         }
         offset_local.push_back(offset);
 
-        //fout << elem_num   << std::endl;
-        //fout << local_node << std::endl;
-        //fout << conn_local.size()   << std::endl;
+        std::map<unsigned int, std::set<unsigned int>> shared_nodes; // <particao p, lista de nos compartilhados entre particao p e particao i>
+        std::vector<unsigned int>::iterator it_interface;
+        std::set<unsigned int>::iterator it_node_set;
+        for(it_interface = interface_nodes.begin() ; it_interface != interface_nodes.end() ; it_interface++)
+        {
+            unsigned int node = *it_interface;
+            if(node_partition[node].count(i))
+            {
+                for(it_node_set = node_partition[node].begin() ; it_node_set != node_partition[node].end() ; it_node_set++)
+                {   
+                    unsigned int partition = *it_node_set;
+                    if(partition != i)
+                        shared_nodes[partition].insert(node);     
+                }
+            } // se o no, que ja eh de interface, for da particao que estamos processando
+        }
+
         unsigned int conn_local_size = conn_local.size();
 
         fout.write((char*)&elem_num,sizeof(unsigned int));
         fout.write((char*)&local_node,sizeof(unsigned int));
-        fout.write((char*)&conn_local_size,sizeof(int));
+        fout.write((char*)&conn_local_size,sizeof(unsigned int));
 
         fout << "COORD_LOCAL: \n";
         fout.write((char*)&coord_local[0],coord_local.size()*sizeof(double));
@@ -473,14 +506,14 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
         fout << "\nLOCAL_TO_GLOBAL: \n";
         fout.write((char*)&local_to_global[0],local_to_global.size()*sizeof(unsigned int));
 
-        // TODO: 
-        //fout << "\nSHARING NODES: \n";
-        //fout << <Part> <n_nodes shared> <list nodes>
+        fout << "\nSHARED NODES: \n";
+        // TODO: ESCRITA EM BINARIO
 
         coord_local.clear();
         conn_local.clear();
         offset_local.clear();
         local_to_global.clear();
+        global_to_local.clear();
 
         fout.close();
     }
