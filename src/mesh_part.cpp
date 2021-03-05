@@ -201,6 +201,8 @@ void Mesh_partition_t::MeshPartitioner(Mesh* mesh, int nparts)
 
 void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
 {
+    // TODO: ESCREVER TIPO DOS ELEMENTOS
+    
     std::map<unsigned int, std::set<unsigned int>> node_partition; // < no, particoes que o no participa >
     std::vector<double> coord = mesh->getCoord();
     std::vector<unsigned int> interface_nodes;
@@ -237,11 +239,13 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
         }
     }    
 
-    // std::vector<unsigned int> global_to_local;
-    // global_to_local.resize(mesh->getConn().size());
+    std::vector<unsigned int> global_to_local;
+    
 
     for(int i = 0 ; i < this->n_partitions ; i++)
     {
+        global_to_local.resize(mesh->getConn().size());
+
         std::ofstream fout;
         //create an output string stream
         std::ostringstream os;
@@ -257,9 +261,6 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
         std::vector<unsigned int> conn_local;
         std::vector<unsigned int> offset_local;
         std::vector<unsigned int> local_to_global;
-        std::vector<unsigned int> global_to_local;
-        global_to_local.resize(mesh->getConn().size());
-
 
         unsigned int local_node = 0;
         for(int j = 0 ; j < nnodes ; j++)
@@ -349,6 +350,7 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
         fout << "\n";
 
         fout << "\nSHARED NODES: \n";
+        fout << shared_nodes.size() << "\n";
         for(auto it = shared_nodes.begin() ; it != shared_nodes.end() ; it++)
         {
             unsigned int partition = it->first;
@@ -356,7 +358,7 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
             {
                 fout << partition << " " << shared_nodes[partition].size() << " ";
                 for(auto it2 = shared_nodes[partition].begin() ; it2 != shared_nodes[partition].end() ; it2++)
-                    fout << *it2 << " ";
+                    fout << global_to_local[*it2] << " ";
                 fout << "\n";
             }
         } // <Particao compartilhada> <n_nodes shared> <list nodes -> local_to_global>
@@ -413,11 +415,12 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
     }
     
 
-    // std::vector<unsigned int> global_to_local;
-    // global_to_local.resize(mesh->getConn().size());
+    std::vector<unsigned int> global_to_local;
 
     for(int i = 0 ; i < this->n_partitions ; i++)
     {
+        global_to_local.resize(mesh->getConn().size());
+
         std::ofstream fout;
         //create an output string stream
         std::ostringstream os;
@@ -433,8 +436,6 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
         std::vector<unsigned int> conn_local;
         std::vector<unsigned int> offset_local;
         std::vector<unsigned int> local_to_global;
-        std::vector<unsigned int> global_to_local;
-        global_to_local.resize(mesh->getConn().size());
 
 
         int local_node = 0;
@@ -490,6 +491,7 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
         }
 
         std::vector<unsigned int> shared_out;
+        shared_out.push_back(shared_nodes.size()); // insere a quantidade de particoes que compartilham nos com a particao processada
         std::map<unsigned int, std::set<unsigned int>>::iterator it_shared;
         for(it_shared = shared_nodes.begin() ; it_shared != shared_nodes.end() ; it_shared++)
         {
@@ -497,7 +499,7 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
             shared_out.push_back(it_shared->second.size()); // n_nodes compartilhados
 
             for(it_node_set = it_shared->second.begin() ; it_node_set != it_shared->second.end() ; it_node_set++)
-                shared_out.push_back(*it_node_set); // no compartilhado
+                shared_out.push_back(global_to_local[*it_node_set]); // no compartilhado
         }
 
         unsigned int conn_local_size = conn_local.size();
