@@ -366,6 +366,7 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
         offset_local.clear();
         local_to_global.clear();
         global_to_local.clear();
+        shared_nodes.clear();
 
         fout.close();
     }
@@ -488,6 +489,17 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
             } // se o no, que ja eh de interface, for da particao que estamos processando
         }
 
+        std::vector<unsigned int> shared_out;
+        std::map<unsigned int, std::set<unsigned int>>::iterator it_shared;
+        for(it_shared = shared_nodes.begin() ; it_shared != shared_nodes.end() ; it_shared++)
+        {
+            shared_out.push_back(it_shared->first); // particao
+            shared_out.push_back(it_shared->second.size()); // n_nodes compartilhados
+
+            for(it_node_set = it_shared->second.begin() ; it_node_set != it_shared->second.end() ; it_node_set++)
+                shared_out.push_back(*it_node_set); // no compartilhado
+        }
+
         unsigned int conn_local_size = conn_local.size();
 
         fout.write((char*)&elem_num,sizeof(unsigned int));
@@ -507,13 +519,14 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
         fout.write((char*)&local_to_global[0],local_to_global.size()*sizeof(unsigned int));
 
         fout << "\nSHARED NODES: \n";
-        // TODO: ESCRITA EM BINARIO
+        fout.write((char*)&shared_out[0],shared_out.size()*sizeof(unsigned int));
 
         coord_local.clear();
         conn_local.clear();
         offset_local.clear();
         local_to_global.clear();
         global_to_local.clear();
+        shared_nodes.clear();
 
         fout.close();
     }
