@@ -8,10 +8,17 @@ class SharedNodes{
     public:
         SharedNodes();
         ~SharedNodes();
-        
+
+        unsigned int get_id_processador_vizinho();
+        unsigned int get_n_shared_nodes();
+        std::vector<unsigned int>& get_nodes();
+        void set_id_processador_vizinho(unsigned int id_processador_vizinho);
+        void set_n_shared_nodes(unsigned int n_shared_nodes);
+        void set_nodes(std::vector<unsigned int> nodes);
+
     private:
         unsigned int id_processador_vizinho;
-        unsigned int n_share_nodes;
+        unsigned int n_shared_nodes;
         std::vector<unsigned int> nodes; // lista de nos
 };
 
@@ -20,8 +27,15 @@ class ParallelMesh : public Mesh{
         ParallelMesh();
         ~ParallelMesh();
 
-        void readParallelMesh();
-        void readParallelMeshBin();
+        void readParallelMesh(const char* filename);
+        void readParallelMeshBin(const char* filename);
+
+        std::vector<unsigned int>& get_local_to_global();
+        int get_n_processadores_vizinhos();
+        std::vector<SharedNodes>& get_communication_map();
+        void set_local_to_global(std::vector<unsigned int> local_to_global);
+        void set_n_processadores_vizinhos(int n_processadores_vizinhos);
+        void set_communication_map(std::vector<SharedNodes> communication_map);
 
     private:
         std::vector<unsigned int> local_to_global;

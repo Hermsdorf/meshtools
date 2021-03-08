@@ -200,9 +200,7 @@ void Mesh_partition_t::MeshPartitioner(Mesh* mesh, int nparts)
 }
 
 void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
-{
-    // TODO: ESCREVER TIPO DOS ELEMENTOS
-    
+{   
     std::map<unsigned int, std::set<unsigned int>> node_partition; // < no, particoes que o no participa >
     std::vector<double> coord = mesh->getCoord();
     std::vector<unsigned int> interface_nodes;
@@ -260,7 +258,9 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
         std::vector<unsigned int> coord_local;
         std::vector<unsigned int> conn_local;
         std::vector<unsigned int> offset_local;
+        std::vector<unsigned short> type_local;
         std::vector<unsigned int> local_to_global;
+        
 
         unsigned int local_node = 0;
         for(int j = 0 ; j < nnodes ; j++)
@@ -278,6 +278,7 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
         } 
 
         unsigned int elem_num = 0;
+        unsigned int nelem_part = 0;
         unsigned int offset = 0;
         while(elem_num < nelem)
         {
@@ -290,7 +291,9 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
                     conn_local.push_back(global_to_local[conn[j]]);
                 
                 offset_local.push_back(offset);
+                type_local.push_back(mesh->getElementType(elem_num));
                 offset += connsize;
+                nelem_part++;
             }
 
             elem_num++;
@@ -314,9 +317,9 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
             } // se o no, que ja eh de interface, for da particao que estamos processando
         }
 
-        fout << elem_num   << std::endl;
+        fout << nelem_part   << std::endl;
         fout << local_node << std::endl;
-        fout << conn_local.size()   << std::endl;
+        fout << conn_local.size() << std::endl;
 
         fout << "COORD_LOCAL: \n";
         std::vector<unsigned int>::iterator coord_it;
@@ -338,6 +341,14 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
         for(offset_it = offset_local.begin() ; offset_it != offset_local.end() ; offset_it++)
         {
             fout << *offset_it << " ";
+        }
+        fout << "\n";
+
+        fout << "\nTYPE_LOCAL: \n";
+        std::vector<unsigned short>::iterator type_it;
+        for(type_it = type_local.begin() ; type_it != type_local.end() ; type_it++)
+        {
+            fout << *type_it << " ";
         }
         fout << "\n";
 
@@ -366,6 +377,7 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
         coord_local.clear();
         conn_local.clear();
         offset_local.clear();
+        type_local.clear();
         local_to_global.clear();
         global_to_local.clear();
         shared_nodes.clear();
@@ -435,6 +447,7 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
         std::vector<unsigned int> coord_local;
         std::vector<unsigned int> conn_local;
         std::vector<unsigned int> offset_local;
+        std::vector<unsigned short> type_local;
         std::vector<unsigned int> local_to_global;
 
 
@@ -466,6 +479,7 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
                     conn_local.push_back(global_to_local[conn[j]]);
                 
                 offset_local.push_back(offset);
+                type_local.push_back(mesh->getElementType(elem_num));
                 offset += connsize;
             }
 
@@ -517,6 +531,9 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
         fout << "\nOFFSET_LOCAL: \n";
         fout.write((char*)&offset_local[0],offset_local.size()*sizeof(unsigned int));
 
+        fout << "\nTYPE_LOCAL: \n";
+        fout.write((char*)&type_local[0],type_local.size()*sizeof(unsigned short));
+
         fout << "\nLOCAL_TO_GLOBAL: \n";
         fout.write((char*)&local_to_global[0],local_to_global.size()*sizeof(unsigned int));
 
@@ -526,6 +543,7 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
         coord_local.clear();
         conn_local.clear();
         offset_local.clear();
+        type_local.clear();
         local_to_global.clear();
         global_to_local.clear();
         shared_nodes.clear();

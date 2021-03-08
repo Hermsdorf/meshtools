@@ -152,7 +152,7 @@ int main(int argc, char* argv[])
     Mesh_partition_t* parts = new Mesh_partition_t();
 
     parts->MeshPartitionerInternal(mesh, n_part);
-    parts->WritePartitionInternal(mesh);
+    parts->WritePartitionInternalBin(mesh);
     
 //     double *velocity = new double[mesh->get_n_nodes()*3];
 //     float *pressure  = new float[mesh->get_n_nodes()];
