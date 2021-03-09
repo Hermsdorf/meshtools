@@ -114,7 +114,6 @@ void ParallelMesh::readParallelMesh(const char* filename)
     in >> nelem >> nnodes >> connsize;
     this->set_n_elements(nelem);
     this->set_n_nodes(nnodes);
-    this->getConn().resize(connsize);
 
     while(!in.eof())
     {
@@ -177,6 +176,7 @@ void ParallelMesh::readParallelMesh(const char* filename)
             {
                 unsigned int commsize;
                 in >> commsize;
+                this->communication_map.resize(commsize);
 
                 this->n_processadores_vizinhos = commsize;
 
@@ -226,7 +226,11 @@ void ParallelMesh::readParallelMeshBin(const char* filename)
     
     this->set_n_elements(nelem);
     this->set_n_nodes(nnodes);
-    this->getConn().resize(connsize);
+    conn.resize(connsize);
+    coord.resize(nnodes*3);
+    offset.resize(nelem+1);
+    type.resize(nelem);
+    local_to_global.resize(nnodes);
 
     while(!in.eof())
     {
@@ -262,7 +266,7 @@ void ParallelMesh::readParallelMeshBin(const char* filename)
             {
                 unsigned int commsize;
                 in.read((char*) &commsize, sizeof(unsigned int));
-
+                this->communication_map.resize(commsize);
                 this->n_processadores_vizinhos = commsize;
 
                 for(int i = 0 ; i < commsize ; i++)

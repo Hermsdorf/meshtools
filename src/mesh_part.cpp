@@ -255,7 +255,7 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
 
         fout.open(str.c_str());
 
-        std::vector<unsigned int> coord_local;
+        std::vector<double> coord_local;
         std::vector<unsigned int> conn_local;
         std::vector<unsigned int> offset_local;
         std::vector<unsigned short> type_local;
@@ -322,7 +322,7 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
         fout << conn_local.size() << std::endl;
 
         fout << "COORD_LOCAL: \n";
-        std::vector<unsigned int>::iterator coord_it;
+        std::vector<double>::iterator coord_it;
         for(coord_it = coord_local.begin() ; coord_it != coord_local.end() ; coord_it+=3)
         {
             fout << *coord_it << " " << *(coord_it + 1) << " " << *(coord_it + 2) << "\n";
@@ -391,7 +391,7 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
 void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
 {
     std::map<unsigned int, std::set<unsigned int>> node_partition; // < no, particoes que o no participa >
-    std::vector<double> coord = mesh->getCoord();
+    std::vector<double>& coord = mesh->getCoord();
     std::vector<unsigned int> interface_nodes;
     unsigned int nelem = mesh->get_n_elements();
     unsigned int nnodes = mesh->get_n_nodes();
@@ -444,7 +444,7 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
 
         fout.open(str.c_str(), std::ios::out | std::ios::binary);
 
-        std::vector<unsigned int> coord_local;
+        std::vector<double> coord_local;
         std::vector<unsigned int> conn_local;
         std::vector<unsigned int> offset_local;
         std::vector<unsigned short> type_local;
@@ -468,6 +468,7 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
 
         unsigned int elem_num = 0;
         unsigned int offset = 0;
+        unsigned int nelem_part = 0;
         while(elem_num < nelem)
         {
             if(this->elem_part[elem_num] == i)  // se o elemento for da particao que estamos processando
@@ -481,6 +482,7 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
                 offset_local.push_back(offset);
                 type_local.push_back(mesh->getElementType(elem_num));
                 offset += connsize;
+                nelem_part++;
             }
 
             elem_num++;
@@ -518,7 +520,7 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
 
         unsigned int conn_local_size = conn_local.size();
 
-        fout.write((char*)&elem_num,sizeof(unsigned int));
+        fout.write((char*)&nelem_part,sizeof(unsigned int));
         fout.write((char*)&local_node,sizeof(unsigned int));
         fout.write((char*)&conn_local_size,sizeof(unsigned int));
 
