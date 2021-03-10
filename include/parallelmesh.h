@@ -4,6 +4,7 @@
 #ifndef PARALLELMESH__H_
 #define PARALLELMESH__H_
 
+class ParallelMesh;
 class SharedNodes{
     public:
         SharedNodes();
@@ -15,6 +16,8 @@ class SharedNodes{
         void set_id_processador_vizinho(unsigned int id_processador_vizinho);
         void set_n_shared_nodes(unsigned int n_shared_nodes);
         void set_nodes(std::vector<unsigned int> nodes);
+
+        friend class ParallelMesh;
 
     private:
         unsigned int id_processador_vizinho;

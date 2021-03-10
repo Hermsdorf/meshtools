@@ -473,7 +473,7 @@ class Mesh {
          *     First-Fit Coloring.
         */
 
-    private:
+    protected:
         unsigned int n_face_elements;            // Numero de elementos de superficie.
         unsigned int n_elements;                 // Numero de elementos internos.
         unsigned int n_nodes;                    // Numero de nós.
