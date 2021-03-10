@@ -5,22 +5,20 @@
 
 ParallelMesh::ParallelMesh()
 {
-    this->set_n_elements(0);
-    this->set_n_nodes(0);
+    this->n_elements = 0;
+    this->n_nodes = 0;
 }
 
 ParallelMesh::~ParallelMesh()
 {
-    //this->~Mesh();
-
-    this->getConn().clear();
-    this->getCoord().clear();
-    this->getOffset().clear();
-    this->getType().clear();
-    this->get_physical_tag().clear();
-    this->get_physical_map().clear();
-    this->getFilename().clear();
-    delete [] this->get_mesh_coloring_internal();
+    this->conn.clear();
+    this->coord.clear();
+    this->offset.clear();
+    this->type.clear();
+    this->physical_tag.clear();
+    this->physical_map.clear();
+    this->filename.clear();
+    delete [] this->mesh_coloring_internal;
 }
 
 SharedNodes::SharedNodes()
@@ -82,7 +80,6 @@ unsigned int SharedNodes::get_n_shared_nodes()
 void SharedNodes::set_n_shared_nodes(unsigned int n_shared_nodes)
 {
     this->n_shared_nodes = n_shared_nodes;
-    this->nodes.resize( this->n_shared_nodes);
 }
 
 std::vector<unsigned int>& SharedNodes::get_nodes()
@@ -109,14 +106,10 @@ void ParallelMesh::readParallelMesh(const char* filename)
 
     unsigned int nelem, nnodes, connsize;
 
-    std::vector<unsigned int>& conn = this->getConn();
-    std::vector<double>& coord = this->getCoord();
-    std::vector<unsigned int>& offset = this-> getOffset();
-    std::vector<unsigned short>& type = this->getType();
 
     in >> nelem >> nnodes >> connsize;
-    this->set_n_elements(nelem);
-    this->set_n_nodes(nnodes);
+    this->n_elements = nelem;
+    this->n_nodes = nnodes;
 
     while(!in.eof())
     {
@@ -130,9 +123,9 @@ void ParallelMesh::readParallelMesh(const char* filename)
                     double x, y, z;
                     in >> x >> y >> z;
 
-                    coord.push_back(x);
-                    coord.push_back(y);
-                    coord.push_back(z);
+                    this->coord.push_back(x);
+                    this->coord.push_back(y);
+                    this->coord.push_back(z);
                 }
             } 
             else if(s.find("CONN_LOCAL: ") == 0)
@@ -142,7 +135,7 @@ void ParallelMesh::readParallelMesh(const char* filename)
                     unsigned int conn_i;
                     in >> conn_i;
 
-                    conn.push_back(conn_i);
+                    this->conn.push_back(conn_i);
                 }
             }
             else if(s.find("OFFSET_LOCAL: ") == 0)
@@ -152,7 +145,7 @@ void ParallelMesh::readParallelMesh(const char* filename)
                     unsigned int offset_i;
                     in >> offset_i;
 
-                    offset.push_back(offset_i);
+                    this->offset.push_back(offset_i);
                 }
             }
             else if(s.find("TYPE_LOCAL: ") == 0)
@@ -162,7 +155,7 @@ void ParallelMesh::readParallelMesh(const char* filename)
                     unsigned short type_i;
                     in >> type_i;
 
-                    type.push_back(type_i);
+                    this->type.push_back(type_i);
                 }
             }
             else if(s.find("LOCAL_TO_GLOBAL: ") == 0)
@@ -196,9 +189,13 @@ void ParallelMesh::readParallelMesh(const char* filename)
                     {
                         unsigned int node_i;
                         in >> node_i;
-                        this->communication_map[i].get_nodes().push_back(node_i);
+                        this->communication_map[i].nodes.push_back(node_i);
                     }
                 }
+            }
+            else
+            {
+                std::cout << "ERRO: Formato do arquivo invalido\n";
             }
         }
     }
@@ -218,22 +215,17 @@ void ParallelMesh::readParallelMeshBin(const char* filename)
 
     unsigned int nelem, nnodes, connsize;
 
-    std::vector<unsigned int>& conn = this->getConn();
-    std::vector<double>& coord = this->getCoord();
-    std::vector<unsigned int>& offset = this-> getOffset();
-    std::vector<unsigned short>& type = this->getType();
-
     in.read((char *) &nelem, sizeof(unsigned int));
     in.read((char *) &nnodes, sizeof(unsigned int));
     in.read((char *) &connsize, sizeof(unsigned int));
     
-    this->set_n_elements(nelem);
-    this->set_n_nodes(nnodes);
-    conn.resize(connsize);
-    coord.resize(nnodes*3);
-    offset.resize(nelem+1);
-    type.resize(nelem);
-    local_to_global.resize(nnodes);
+    this->n_elements = nelem;
+    this->n_nodes = nnodes;
+    this->conn.resize(connsize);
+    this->coord.resize(nnodes*3);
+    this->offset.resize(nelem+1);
+    this->type.resize(nelem);
+    this->local_to_global.resize(nnodes);
 
     while(!in.eof())
     {
@@ -242,28 +234,23 @@ void ParallelMesh::readParallelMeshBin(const char* filename)
         {
             if(s.find("COORD_LOCAL: ") == 0)
             {
-                //for(int i = 0 ; i < nnodes*3 ; i++)
-                    in.read((char*) &coord[0], nnodes*3*sizeof(double));
+                in.read((char*) &this->coord[0], nnodes*3*sizeof(double));
             } 
             else if(s.find("CONN_LOCAL: ") == 0)
             {
-                //for(int i = 0 ; i < connsize ; i++)
-                    in.read((char*) &conn[0], connsize*sizeof(unsigned int));
+                in.read((char*) &this->conn[0], connsize*sizeof(unsigned int));
             }
             else if(s.find("OFFSET_LOCAL: ") == 0)
             {
-                //for(int i = 0 ; i < nelem+1 ; i++)
-                    in.read((char*) &offset[0], (nelem+1)*sizeof(unsigned int));
+                in.read((char*) &this->offset[0], (nelem+1)*sizeof(unsigned int));
             }
             else if(s.find("TYPE_LOCAL: ") == 0)
             {
-                //for(int i = 0 ; i < nelem ; i++)
-                    in.read((char*) &type[0], nelem*sizeof(unsigned short));
+                in.read((char*) &this->type[0], nelem*sizeof(unsigned short));
             }
             else if(s.find("LOCAL_TO_GLOBAL: ") == 0)
             {
-                //for(int i = 0 ; i < nnodes ; i++)
-                    in.read((char*) &local_to_global[0], nnodes*sizeof(unsigned int));
+                in.read((char*) &this->local_to_global[0], nnodes*sizeof(unsigned int));
             }
             else if(s.find("SHARED NODES: ") == 0)
             {
@@ -283,20 +270,11 @@ void ParallelMesh::readParallelMeshBin(const char* filename)
                     this->communication_map[i].set_n_shared_nodes(n_shared_nodes_i);
                     in.read((char*) &this->communication_map[i].nodes[0], n_shared_nodes_i*sizeof(unsigned int));
 
-                    /*
-                    for(int j = 0 ; j < n_shared_nodes_i ; j++)
-                    {
-                        unsigned int node_i;
-                        in.read((char*) &node_i, sizeof(unsigned int));
-
-                        this->communication_map[i].get_nodes().push_back(node_i);
-                    }
-                    */
                 }
             }
             else
             {
-                // Arquivo invalido 
+                std::cout << "ERRO: Formato do arquivo invalido\n";
             }
         }
     }

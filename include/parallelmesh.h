@@ -20,7 +20,7 @@ class SharedNodes{
         friend class ParallelMesh;
 
     private:
-        unsigned int id_processador_vizinho;
+        unsigned int id_processador_vizinho;  // trocar para ingles
         unsigned int n_shared_nodes;
         std::vector<unsigned int> nodes; // lista de nos
 };
@@ -42,7 +42,7 @@ class ParallelMesh : public Mesh{
 
     private:
         std::vector<unsigned int> local_to_global;
-        int n_processadores_vizinhos;
+        int n_processadores_vizinhos; // trocar para ingles
         std::vector<SharedNodes> communication_map;
 };
 
