@@ -153,10 +153,10 @@ int main(int argc, char* argv[])
     Mesh_partition_t* parts = new Mesh_partition_t();
 
     parts->MeshPartitionerInternal(mesh, n_part);
-    parts->WritePartitionInternalBin(mesh);
+    parts->WritePartitionInternal(mesh);
 
     ParallelMesh* parallelmesh = new ParallelMesh();
-    parallelmesh->readParallelMeshBin("test_hex2d_part0.vtu");
+    parallelmesh->readParallelMesh("test_hex2d_part0.vtu");
     cout << "---- ParallelMesh ----\n";
     cout << "nelem = " << parallelmesh->get_n_elements() << "\n";
     cout << "nnodes = " << parallelmesh->get_n_nodes() << "\n";
