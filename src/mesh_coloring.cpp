@@ -698,9 +698,14 @@ unsigned int ColoringOpenMP_RokosOpt(Mesh* mesh)
 
     std::vector<unsigned int> U(ne); // vector com todos os vértices a serem coloridos
     std::vector<unsigned int> L; // vector com o vértices que tem de ser recoloridos
-
+    int n_threads = 1;
 #pragma omp parallel shared(U, L)
 {
+
+#ifdef _OPENMP
+    n_threads = omp_get_num_threads();
+#endif
+
     #pragma omp for nowait schedule(dynamic)
     for(unsigned int i = 0 ; i < ne ; i++)
     {
@@ -726,58 +731,61 @@ unsigned int ColoringOpenMP_RokosOpt(Mesh* mesh)
         elements_color[i] = color; // seguir a coloração com sentido à reordenação do grafo
     }
     
-    #pragma omp for schedule(dynamic)
-    for(int i = 0 ; i < ne ; i++)
-        U[i] = i;
-    
-    while(!U.empty())
+    if(n_threads > 1)
     {
-        std::vector<unsigned int>::iterator it;
         #pragma omp for schedule(dynamic)
-        for(it = U.begin() ; it != U.end() ; it++)
+        for(int i = 0 ; i < ne ; i++)
+            U[i] = i;
+        
+        while(!U.empty())
         {
-            unsigned int start = xadj[*it];
-            unsigned int end = xadj[(*it) + 1];
-
-            for(int j = start ; j < end ; j++)
+            std::vector<unsigned int>::iterator it;
+            #pragma omp for schedule(dynamic)
+            for(it = U.begin() ; it != U.end() ; it++)
             {
-                unsigned int elem_adj_it = adjncy[j];
-                if(elements_color[*it] == elements_color[elem_adj_it] && elem_adj_it > *it)
+                unsigned int start = xadj[*it];
+                unsigned int end = xadj[(*it) + 1];
+
+                for(int j = start ; j < end ; j++)
                 {
-                    unsigned int z = start;
-                    unsigned int color = 1;
-                    while(z < end)
+                    unsigned int elem_adj_it = adjncy[j];
+                    if(elements_color[*it] == elements_color[elem_adj_it] && elem_adj_it > *it)
                     {
-                        unsigned int elem_adj = adjncy[z];
-
-                        if(color == elements_color[elem_adj])
+                        unsigned int z = start;
+                        unsigned int color = 1;
+                        while(z < end)
                         {
-                            color++;
-                            z = start;
+                            unsigned int elem_adj = adjncy[z];
+
+                            if(color == elements_color[elem_adj])
+                            {
+                                color++;
+                                z = start;
+                            }
+                            else
+                                z++;
                         }
-                        else
-                            z++;
-                    }
 
-                    elements_color[*it] = color;
+                        elements_color[*it] = color;
 
-                    #pragma omp critical
-                    {
-                        L.push_back(*it); 
+                        #pragma omp critical
+                        {
+                            L.push_back(*it); 
+                        }
                     }
                 }
             }
-        }
 
-        #pragma omp single
-        U.clear();
-        
-        #pragma omp barrier
+            #pragma omp single
+            U.clear();
+            
+            #pragma omp barrier
 
-        #pragma omp single
-        {
-            U.swap(L);
-            L.clear();
+            #pragma omp single
+            {
+                U.swap(L);
+                L.clear();
+            }
         }
     }
 
@@ -788,7 +796,8 @@ unsigned int ColoringOpenMP_RokosOpt(Mesh* mesh)
                 n_colors = elements_color[i];
     }
 }
-    //CheckColoring(&xadj, &adjncy, &elements_color, ne);
+
+    CheckColoring(&xadj, &adjncy, &elements_color, ne);
 
     delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader 
                                                   // onde inicializa todo o vetor mesh_coloring_internal com -1.
