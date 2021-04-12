@@ -473,6 +473,12 @@ class Mesh {
          *     First-Fit Coloring.
         */
 
+        void MeshColoring_test();
+        /**
+         * * OBJETIVO:
+         *     Testar se a coloração calculada no algoritmo está correta.
+        */
+
     protected:
         unsigned int n_face_elements;            // Numero de elementos de superficie.
         unsigned int n_elements;                 // Numero de elementos internos.

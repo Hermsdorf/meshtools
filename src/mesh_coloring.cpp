@@ -4,7 +4,7 @@
 #include <map>
 
 #include "metis.h"
-
+#include "omp.h"
 #include "../include/mesh.h"
 
 void MeshToDualGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
@@ -57,7 +57,7 @@ void MeshToDualGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
     delete[] eptr;
 }
 
-void CheckColoring(idx_t** xadj, idx_t** adjncy, int** elements_color, int ne)
+void CheckColoring(idx_t** xadj, idx_t** adjncy, int** elements_color, int ne, int* error=NULL)
 {
     idx_t* xadj_aux = *xadj;
     idx_t* adjncy_aux = *adjncy;
@@ -72,7 +72,8 @@ void CheckColoring(idx_t** xadj, idx_t** adjncy, int** elements_color, int ne)
         {
             if(color[i] == color[adjncy_aux[j]])
             {
-                std::cout << "ERRO: ELEMENTOS ADJACENTES COM MESMA COR\n";
+                std::cout << "ERROR: ADJACENT ELEMENTS WITH THE SAME COLOR\n";
+                *error = 1;
                 break;
             }
         }
@@ -832,3 +833,19 @@ void Mesh::MeshColoring()
     delete [] new_conn;
     delete [] new_offset; 
 }
+
+void Mesh::MeshColoring_test()
+{
+    idx_t* xadj;
+    idx_t* adjncy;
+    int error = 0;
+    n_internal_colors = ColoringOpenMP_RokosOpt(this);
+    MeshToDualGraph(this, &xadj, &adjncy);
+    CheckColoring(&xadj, &adjncy, &this->mesh_coloring_internal, this->n_elements, &error);
+    
+    if(error != 1)
+    {
+        std::cout << "Coloring test mesh completed\n";
+    }
+}
+

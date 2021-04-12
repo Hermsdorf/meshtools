@@ -147,45 +147,45 @@ int main(int argc, char* argv[])
         CatalystInitialize(n_script, argv+3);
 #endif
 
-    mesh->MeshReordering(RCM);
-    //mesh->MeshColoring();
+    // mesh->MeshReordering(RCM);
+    // mesh->MeshColoring();
 
     Mesh_partition_t* parts = new Mesh_partition_t();
 
-    parts->MeshPartitionerInternal(mesh, n_part);
-    parts->WritePartitionInternal(mesh);
+    parts->MeshPartitioner(mesh, n_part);
+    // parts->WritePartitionInternal(mesh);
 
-    ParallelMesh* parallelmesh = new ParallelMesh();
-    parallelmesh->readParallelMesh("test_hex2d_part0.vtu");
-    cout << "---- ParallelMesh ----\n";
-    cout << "nelem = " << parallelmesh->get_n_elements() << "\n";
-    cout << "nnodes = " << parallelmesh->get_n_nodes() << "\n";
-    cout << "connsize = " << parallelmesh->getConn().size() << "\n";
-    cout << "Coord = ";
-    for(int i = 0 ; i < parallelmesh->getCoord().size() ; i++)
-        cout << parallelmesh->getCoord()[i] << " ";
-    cout << "\nConn = ";
-    for(int i = 0 ; i < parallelmesh->getConn().size() ; i++)
-        cout << parallelmesh->getConn()[i] << " ";
-    cout << "\nOffset = ";
-    for(int i = 0 ; i < parallelmesh->getOffset().size() ; i++)
-        cout << parallelmesh->getOffset()[i] << " ";
-    cout << "\nType = ";
-    for(int i = 0 ; i < parallelmesh->getType().size() ; i++)
-        cout << parallelmesh->getType()[i] << " ";
-    cout << "\nNumero part vizinhas = " << parallelmesh->get_n_processadores_vizinhos();
-    cout << "\nShared Nodes = \n";
-    for(auto it = parallelmesh->get_communication_map().begin() ; it !=  parallelmesh->get_communication_map().end() ; it++)
-    {
-        cout << "     part " << it->get_id_processador_vizinho();
-        cout << "         n_nodes: " << it->get_n_shared_nodes();
-        cout << "         nodes = ";
-        for(auto it2 = it->get_nodes().begin() ; it2 != it->get_nodes().end() ; it2++)
-            cout << *it2 << " ";
-        cout << "\n\n";
-    }
+    // ParallelMesh* parallelmesh = new ParallelMesh();
+    // parallelmesh->readParallelMesh("test_hex2d_part0.vtu");
+    // cout << "---- ParallelMesh ----\n";
+    // cout << "nelem = " << parallelmesh->get_n_elements() << "\n";
+    // cout << "nnodes = " << parallelmesh->get_n_nodes() << "\n";
+    // cout << "connsize = " << parallelmesh->getConn().size() << "\n";
+    // cout << "Coord = ";
+    // for(int i = 0 ; i < parallelmesh->getCoord().size() ; i++)
+    //     cout << parallelmesh->getCoord()[i] << " ";
+    // cout << "\nConn = ";
+    // for(int i = 0 ; i < parallelmesh->getConn().size() ; i++)
+    //     cout << parallelmesh->getConn()[i] << " ";
+    // cout << "\nOffset = ";
+    // for(int i = 0 ; i < parallelmesh->getOffset().size() ; i++)
+    //     cout << parallelmesh->getOffset()[i] << " ";
+    // cout << "\nType = ";
+    // for(int i = 0 ; i < parallelmesh->getType().size() ; i++)
+    //     cout << parallelmesh->getType()[i] << " ";
+    // cout << "\nNumero part vizinhas = " << parallelmesh->get_n_processadores_vizinhos();
+    // cout << "\nShared Nodes = \n";
+    // for(auto it = parallelmesh->get_communication_map().begin() ; it !=  parallelmesh->get_communication_map().end() ; it++)
+    // {
+    //     cout << "     part " << it->get_id_processador_vizinho();
+    //     cout << "         n_nodes: " << it->get_n_shared_nodes();
+    //     cout << "         nodes = ";
+    //     for(auto it2 = it->get_nodes().begin() ; it2 != it->get_nodes().end() ; it2++)
+    //         cout << *it2 << " ";
+    //     cout << "\n\n";
+    // }
     
-    delete parallelmesh;
+    // delete parallelmesh;
     
 //     double *velocity = new double[mesh->get_n_nodes()*3];
 //     float *pressure  = new float[mesh->get_n_nodes()];
