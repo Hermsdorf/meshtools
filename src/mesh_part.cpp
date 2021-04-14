@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 
+#include "mpi.h"
 #include "metis.h"
 #include "mesh.h"
 #include "mesh_part.h"
@@ -386,8 +387,6 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
     }
 }
 
-
-
 void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
 {
     std::map<unsigned int, std::set<unsigned int>> node_partition; // < no, particoes que o no participa >
@@ -552,9 +551,150 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
 
         fout.close();
     }
-
-
 }
+
+
+void Mesh_partition_t::PartitionInternalMPI(Mesh* mesh)
+{   
+    std::map<unsigned int, std::set<unsigned int>> node_partition; // < no, particoes que o no participa >
+    std::vector<double> coord = mesh->getCoord();
+    std::vector<unsigned int> interface_nodes;
+    unsigned int nelem = mesh->get_n_elements();
+    unsigned int nnodes = mesh->get_n_nodes();
+    
+    for(int i = 0 ; i < this->n_partitions ; i++)
+    {
+        unsigned int elem_num = 0;
+        while(elem_num < nelem)
+        {
+            if(this->elem_part[elem_num] == i)  // se o elemento for da particao que estamos processando
+            {
+                unsigned int* conn = mesh->getElementConn(elem_num);
+                unsigned int connsize = mesh->getElementConnSize(elem_num);
+
+                for(int j = 0 ; j < connsize ; j++)
+                {
+                    unsigned int conn_node = conn[j];
+                    node_partition[conn_node].insert(i); // nó conn_node participa da particao i
+                }
+            }
+            elem_num++;
+        }
+    }
+    
+    std::map<unsigned int, std::set<unsigned int>>::iterator it_node;
+    for(it_node = node_partition.begin() ; it_node != node_partition.end() ; it_node++)
+    {
+        if(it_node->second.size() > 1)
+        {
+            interface_nodes.push_back(it_node->first);
+        }
+    }    
+
+    std::vector<unsigned int> global_to_local;
+    
+
+    int size, rank;
+    MPI_Comm comm = MPI_COMM_WORLD;
+    MPI_Comm_size(comm, &size);
+    MPI_Comm_rank(comm, &rank);
+    for(int i = 0 ; i < this->n_partitions ; i++)
+    {
+        global_to_local.resize(mesh->getConn().size());
+
+        std::vector<double> coord_local;
+        std::vector<unsigned int> conn_local;
+        std::vector<unsigned int> offset_local;
+        std::vector<unsigned short> type_local;
+        std::vector<unsigned int> local_to_global;
+        
+        unsigned int local_node = 0;
+        for(int j = 0 ; j < nnodes ; j++)
+        {
+            if(node_partition[j].count(i))
+            {
+                coord_local.push_back(coord[(j*3) + 0]); // x
+                coord_local.push_back(coord[(j*3) + 1]); // y
+                coord_local.push_back(coord[(j*3) + 2]); // z
+
+                local_to_global.push_back(j);
+                global_to_local.at(j) = local_node;
+                local_node++;
+            } // se o no esta presente na particao processada
+        } 
+
+        unsigned int elem_num = 0;
+        unsigned int nelem_part = 0;
+        unsigned int offset = 0;
+        while(elem_num < nelem)
+        {
+            if(this->elem_part[elem_num] == i)  // se o elemento for da particao que estamos processando
+            {
+                unsigned int* conn = mesh->getElementConn(elem_num);
+                unsigned int connsize = mesh->getElementConnSize(elem_num);
+
+                for(int j = 0 ; j < connsize ; j++)
+                    conn_local.push_back(global_to_local[conn[j]]);
+                
+                offset_local.push_back(offset);
+                type_local.push_back(mesh->getElementType(elem_num));
+                offset += connsize;
+                nelem_part++;
+            }
+
+            elem_num++;
+        }
+        offset_local.push_back(offset);
+
+        std::map<unsigned int, std::set<unsigned int>> shared_nodes; // <particao p, lista de nos compartilhados entre particao p e particao i>
+        std::vector<unsigned int>::iterator it_interface;
+        std::set<unsigned int>::iterator it_node_set;
+        for(it_interface = interface_nodes.begin() ; it_interface != interface_nodes.end() ; it_interface++)
+        {
+            unsigned int node = *it_interface;
+            if(node_partition[node].count(i))
+            {
+                for(it_node_set = node_partition[node].begin() ; it_node_set != node_partition[node].end() ; it_node_set++)
+                {   
+                    unsigned int partition = *it_node_set;
+                    if(partition != i)
+                        shared_nodes[partition].insert(node);     
+                }
+            } // se o no, que ja eh de interface, for da particao que estamos processando
+        }
+
+        MPI_Status status;
+        if(rank == i)
+        {
+            MPI_Send(coord_local, coord_local.size(), MPI_DOUBLE, i, 0, comm);
+            MPI_Recv(coord_local, coord_local.size(), MPI_DOUBLE, 0, 0, comm, &status);
+
+            MPI_Send(conn_local, conn_local.size(), MPI_UNSIGNED, i, 0, comm);
+            MPI_Recv(conn_local, conn_local.size(), MPI_UNSIGNED, 0, 0, comm, &status);
+
+            MPI_Send(offset_local, offset_local.size(), MPI_UNSIGNED, i, 0, comm);
+            MPI_Recv(offset_local, offset_local.size(), MPI_UNSIGNED, 0, 0, comm, &status);
+
+            MPI_Send(type_local, type_local.size(), MPI_UNSIGNED_SHORT, i, 0, comm);
+            MPI_Recv(type_local, type_local.size(), MPI_UNSIGNED_SHORT, 0, 0, comm, &status);
+
+            MPI_Send(local_to_global, local_to_global.size(), MPI_UNSIGNED, i, 0, comm);
+            MPI_Recv(local_to_global, local_to_global.size(), MPI_UNSIGNED, 0, 0, comm, &status);
+
+            MPI_Send(shared_nodes, shared_nodes.size(), MPI_DOUBLE, i, 0, comm);
+            MPI_Recv(shared_nodes, shared_nodes.size(), MPI_DOUBLE, 0, 0, comm, &status);
+        } 
+        
+        coord_local.clear();
+        conn_local.clear();
+        offset_local.clear();
+        type_local.clear();
+        local_to_global.clear();
+        global_to_local.clear();
+        shared_nodes.clear();
+    }
+}
+
 
 
 

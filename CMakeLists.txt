@@ -13,7 +13,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 #set(CMAKE_CXX_COMPILER tau_cxx.sh)
 set(CMAKE_CXX_FLAGS "-fopenmp -g")
 
-#find_package(MPI)
+find_package(MPI)
 find_package(METIS REQUIRED)
 find_package(ParaView CONFIG COMPONENTS Catalyst PythonCatalyst)
 

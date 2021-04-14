@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cmath>
 
+#include "mpi.h"
 #include "mesh.h"
 #include "mesh_part.h"
 #include "alglin.h"
@@ -153,7 +154,10 @@ int main(int argc, char* argv[])
     Mesh_partition_t* parts = new Mesh_partition_t();
 
     parts->MeshPartitioner(mesh, n_part);
-    // parts->WritePartitionInternal(mesh);
+    
+    MPI_Init(NULL, NULL);
+    parts->PartitionInternalMPI(mesh);
+    MPI_Finalize();
 
     // ParallelMesh* parallelmesh = new ParallelMesh();
     // parallelmesh->readParallelMesh("test_hex2d_part0.vtu");
