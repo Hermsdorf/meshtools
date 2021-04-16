@@ -142,6 +142,7 @@ int main(int argc, char* argv[])
    
     int n_part = atoi(argv[2]);
 
+    MPI_Init(NULL, NULL);
     Mesh* mesh = new Mesh(argv[1]);
 
 #ifdef PARAVIEWCAT_FOUND
@@ -155,10 +156,8 @@ int main(int argc, char* argv[])
 
     parts->MeshPartitioner(mesh, n_part);
     
-    MPI_Init(NULL, NULL);
-    parts->PartitionInternalMPI(mesh);
-    MPI_Finalize();
-
+    ParallelMesh* pmesh = parts->PartitionerInternalMPI(mesh);
+    
     // ParallelMesh* parallelmesh = new ParallelMesh();
     // parallelmesh->readParallelMesh("test_hex2d_part0.vtu");
     // cout << "---- ParallelMesh ----\n";
@@ -247,6 +246,7 @@ int main(int argc, char* argv[])
     // delete [] y;
     // delete [] r;
 
+    MPI_Finalize();
     return 0;
 }
 

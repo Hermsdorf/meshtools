@@ -4,7 +4,6 @@
 #ifndef PARALLELMESH__H_
 #define PARALLELMESH__H_
 
-class ParallelMesh;
 class SharedNodes{
     public:
         SharedNodes();

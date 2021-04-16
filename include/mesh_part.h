@@ -2,6 +2,9 @@
 #define MESHPART_H
 
 #include <iostream>
+#include <set>
+
+#include "parallelmesh.h"
 
 class Mesh_partition_t {
     public:
@@ -16,9 +19,13 @@ class Mesh_partition_t {
 
         void MeshPartitioner(Mesh* mesh, int nparts);
         void MeshPartitionerInternal(Mesh* mesh, int nparts);
-        void WritePartitionInternal(Mesh* mesh);
-        void WritePartitionInternalBin(Mesh* mesh);
-        void PartitionInternalMPI(Mesh* mesh);
+        void WriteInternalPartition(Mesh* mesh);
+        void WriteInternalPartitionBin(Mesh* mesh);
+        ParallelMesh* PartitionerInternalMPI(Mesh* mesh);
+        void ProcessLocalArrays(std::vector<double> &coord_local, std::vector<unsigned int> &conn_local, std::vector<unsigned int> &offset_local,
+                                std::vector<unsigned short> &type_local, std::vector<unsigned int> &local_to_global, std::vector<unsigned int> &global_to_local,
+                                std::vector<unsigned int> &shared_out, std::map<unsigned int, std::set<unsigned int>> &node_partition, std::vector<unsigned int> &interface_nodes,
+                                Mesh* mesh, int i);
 
     private:
         int  n_partitions;  // Número de partições.

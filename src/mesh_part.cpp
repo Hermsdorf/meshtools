@@ -200,7 +200,7 @@ void Mesh_partition_t::MeshPartitioner(Mesh* mesh, int nparts)
     }
 }
 
-void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
+void Mesh_partition_t::WriteInternalPartition(Mesh* mesh)
 {   
     std::map<unsigned int, std::set<unsigned int>> node_partition; // < no, particoes que o no participa >
     std::vector<double> coord = mesh->getCoord();
@@ -387,7 +387,7 @@ void Mesh_partition_t::WritePartitionInternal(Mesh* mesh)
     }
 }
 
-void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
+void Mesh_partition_t::WriteInternalPartitionBin(Mesh* mesh)
 {
     std::map<unsigned int, std::set<unsigned int>> node_partition; // < no, particoes que o no participa >
     std::vector<double>& coord = mesh->getCoord();
@@ -553,8 +553,145 @@ void Mesh_partition_t::WritePartitionInternalBin(Mesh* mesh)
     }
 }
 
+void Mesh_partition_t::ProcessLocalArrays(std::vector<double> &coord_local, std::vector<unsigned int> &conn_local, std::vector<unsigned int> &offset_local,
+                        std::vector<unsigned short> &type_local, std::vector<unsigned int> &local_to_global, std::vector<unsigned int> &global_to_local,
+                        std::vector<unsigned int> &shared_out, std::map<unsigned int, std::set<unsigned int>> &node_partition, std::vector<unsigned int> &interface_nodes,
+                        Mesh* mesh, int i)
+{
+    std::vector<double> coord = mesh->getCoord();
+    int nnodes = mesh->get_n_nodes();
+    int nelem = mesh->get_n_elements();
+    global_to_local.resize(mesh->getConn().size());
 
-void Mesh_partition_t::PartitionInternalMPI(Mesh* mesh)
+    unsigned int local_node = 0;
+    for(int j = 0 ; j < nnodes ; j++)
+    {
+        if(node_partition[j].count(i))
+        {
+            coord_local.push_back(coord[(j*3) + 0]); // x
+            coord_local.push_back(coord[(j*3) + 1]); // y
+            coord_local.push_back(coord[(j*3) + 2]); // z
+
+            local_to_global.push_back(j);
+            global_to_local.at(j) = local_node;
+            local_node++;
+        } // se o no esta presente na particao processada
+    } 
+
+    unsigned int elem_num = 0;
+    unsigned int nelem_part = 0;
+    unsigned int offset = 0;
+    while(elem_num < nelem)
+    {
+        if(this->elem_part[elem_num] == i)  // se o elemento for da particao que estamos processando
+        {
+            unsigned int* conn = mesh->getElementConn(elem_num);
+            unsigned int connsize = mesh->getElementConnSize(elem_num);
+
+            for(int j = 0 ; j < connsize ; j++)
+                conn_local.push_back(global_to_local[conn[j]]);
+            
+            offset_local.push_back(offset);
+            type_local.push_back(mesh->getElementType(elem_num));
+            offset += connsize;
+            nelem_part++;
+        }
+
+        elem_num++;
+    }
+    offset_local.push_back(offset);
+
+    std::map<unsigned int, std::set<unsigned int>> shared_nodes; // <particao p, lista de nos compartilhados entre particao p e particao i>
+    std::vector<unsigned int>::iterator it_interface;
+    std::set<unsigned int>::iterator it_node_set;
+    for(it_interface = interface_nodes.begin() ; it_interface != interface_nodes.end() ; it_interface++)
+    {
+        unsigned int node = *it_interface;
+        if(node_partition[node].count(i))
+        {
+            for(it_node_set = node_partition[node].begin() ; it_node_set != node_partition[node].end() ; it_node_set++)
+            {   
+                unsigned int partition = *it_node_set;
+                if(partition != i)
+                    shared_nodes[partition].insert(node);     
+            }
+        } // se o no, que ja eh de interface, for da particao que estamos processando
+    }
+
+    shared_out.push_back(shared_nodes.size()); // insere a quantidade de particoes que compartilham nos com a particao processada
+    std::map<unsigned int, std::set<unsigned int>>::iterator it_shared;
+    for(it_shared = shared_nodes.begin() ; it_shared != shared_nodes.end() ; it_shared++)
+    {
+        shared_out.push_back(it_shared->first); // particao
+        shared_out.push_back(it_shared->second.size()); // n_nodes compartilhados
+
+        for(it_node_set = it_shared->second.begin() ; it_node_set != it_shared->second.end() ; it_node_set++)
+            shared_out.push_back(global_to_local[*it_node_set]); // no compartilhado
+    }
+
+    shared_nodes.clear();
+}
+
+void fillParallelMesh(ParallelMesh* pmesh, std::vector<double> &coord_local, std::vector<unsigned short> &type_local,
+                      std::vector<unsigned int> &conn_local, std::vector<unsigned int> &offset_local, 
+                      std::vector<unsigned int> &local_to_global, std::vector<unsigned int> &shared_out)
+{
+    pmesh->set_n_nodes(coord_local.size()/3);
+    pmesh->set_n_elements(type_local.size());
+    pmesh->setConn(conn_local);
+    pmesh->setCoord(coord_local);
+    pmesh->setOffset(offset_local);
+    pmesh->setType(type_local);
+    pmesh->set_local_to_global(local_to_global);
+
+    /* TESTES */
+
+    int size, rank;
+    MPI_Comm comm = MPI_COMM_WORLD;
+    MPI_Comm_size(comm, &size);
+    MPI_Comm_rank(comm, &rank);
+
+    std::cout << "Rank: " << rank << "\n";
+    for(int i = 0 ; i < coord_local.size() ; i+=3)
+    {
+        std::cout << coord_local[i] << " " << coord_local[i+1] << " " << coord_local[i+2] << "\n";
+    }
+
+    /* TESTE */
+
+    std::vector<SharedNodes> &communication_map = pmesh->get_communication_map();
+
+    unsigned int cont = 1;
+    unsigned int commsize = shared_out[0];
+    communication_map.resize(commsize);
+
+    pmesh->set_n_processadores_vizinhos(commsize);
+
+    for(int i = 0 ; i < commsize ; i++)
+    {
+        unsigned int id_processador_vizinho_i, n_shared_nodes_i;
+        id_processador_vizinho_i = shared_out[cont];
+        n_shared_nodes_i = shared_out[cont+1];
+        cont+=2;
+        
+        communication_map[i].set_id_processador_vizinho(id_processador_vizinho_i);
+        communication_map[i].set_n_shared_nodes(n_shared_nodes_i);
+
+        for(int j = 0 ; j < n_shared_nodes_i ; j++)
+        {
+            unsigned int node_i;
+            std::vector<unsigned int> &nodes = communication_map[i].get_nodes();
+
+            node_i = shared_out[cont];
+            nodes.push_back(node_i);
+
+            cont++;
+        }
+    }
+}
+
+
+ParallelMesh* Mesh_partition_t::PartitionerInternalMPI(Mesh* mesh)
 {   
     std::map<unsigned int, std::set<unsigned int>> node_partition; // < no, particoes que o no participa >
     std::vector<double> coord = mesh->getCoord();
@@ -593,106 +730,82 @@ void Mesh_partition_t::PartitionInternalMPI(Mesh* mesh)
 
     std::vector<unsigned int> global_to_local;
     
-
     int size, rank;
     MPI_Comm comm = MPI_COMM_WORLD;
     MPI_Comm_size(comm, &size);
     MPI_Comm_rank(comm, &rank);
-    for(int i = 0 ; i < this->n_partitions ; i++)
+    int array_sizes[6];
+
+    std::vector<double> coord_local;
+    std::vector<unsigned int> conn_local;
+    std::vector<unsigned int> offset_local;
+    std::vector<unsigned short> type_local;
+    std::vector<unsigned int> local_to_global;
+    std::vector<unsigned int> shared_out;
+
+    ParallelMesh* pmesh;
+
+    if(rank == 0)
     {
-        global_to_local.resize(mesh->getConn().size());
-
-        std::vector<double> coord_local;
-        std::vector<unsigned int> conn_local;
-        std::vector<unsigned int> offset_local;
-        std::vector<unsigned short> type_local;
-        std::vector<unsigned int> local_to_global;
-        
-        unsigned int local_node = 0;
-        for(int j = 0 ; j < nnodes ; j++)
+        for(int i = 0 ; i < this->n_partitions ; i++)
         {
-            if(node_partition[j].count(i))
+            ProcessLocalArrays(coord_local, conn_local, offset_local, type_local, local_to_global, 
+                               global_to_local, shared_out, node_partition, interface_nodes, mesh, i);
+
+            array_sizes[0] = coord_local.size();
+            array_sizes[1] = conn_local.size();
+            array_sizes[2] = offset_local.size();
+            array_sizes[3] = type_local.size();
+            array_sizes[4] = local_to_global.size();
+            array_sizes[5] = shared_out.size();
+
+            MPI_Send(array_sizes, 6, MPI_INT, i, 0, comm);
+
+            if(i != 0)
             {
-                coord_local.push_back(coord[(j*3) + 0]); // x
-                coord_local.push_back(coord[(j*3) + 1]); // y
-                coord_local.push_back(coord[(j*3) + 2]); // z
+                MPI_Send(&coord_local[0], coord_local.size(), MPI_DOUBLE, i, 0, comm);
+                MPI_Send(&conn_local[0], conn_local.size(), MPI_UNSIGNED, i, 0, comm);
+                MPI_Send(&offset_local[0], offset_local.size(), MPI_UNSIGNED, i, 0, comm);
+                MPI_Send(&type_local[0], type_local.size(), MPI_UNSIGNED_SHORT, i, 0, comm);
+                MPI_Send(&local_to_global[0], local_to_global.size(), MPI_UNSIGNED, i, 0, comm);
+                MPI_Send(&shared_out[0], shared_out.size(), MPI_UNSIGNED, i, 0, comm);
+            } else {
+                /** TODO: processar os vetores e transformar no parallelmesh em uma função (p/ rank 0)*/
 
-                local_to_global.push_back(j);
-                global_to_local.at(j) = local_node;
-                local_node++;
-            } // se o no esta presente na particao processada
-        } 
-
-        unsigned int elem_num = 0;
-        unsigned int nelem_part = 0;
-        unsigned int offset = 0;
-        while(elem_num < nelem)
-        {
-            if(this->elem_part[elem_num] == i)  // se o elemento for da particao que estamos processando
-            {
-                unsigned int* conn = mesh->getElementConn(elem_num);
-                unsigned int connsize = mesh->getElementConnSize(elem_num);
-
-                for(int j = 0 ; j < connsize ; j++)
-                    conn_local.push_back(global_to_local[conn[j]]);
-                
-                offset_local.push_back(offset);
-                type_local.push_back(mesh->getElementType(elem_num));
-                offset += connsize;
-                nelem_part++;
+                fillParallelMesh(pmesh, coord_local, type_local, conn_local, offset_local, local_to_global, shared_out);
             }
-
-            elem_num++;
+            
+            coord_local.clear();
+            conn_local.clear();
+            offset_local.clear();
+            type_local.clear();
+            local_to_global.clear();
+            global_to_local.clear();
         }
-        offset_local.push_back(offset);
+    } else {    
+        MPI_Status status;  
+        MPI_Recv(array_sizes, 6, MPI_INT, 0, 0, comm, &status);
 
-        std::map<unsigned int, std::set<unsigned int>> shared_nodes; // <particao p, lista de nos compartilhados entre particao p e particao i>
-        std::vector<unsigned int>::iterator it_interface;
-        std::set<unsigned int>::iterator it_node_set;
-        for(it_interface = interface_nodes.begin() ; it_interface != interface_nodes.end() ; it_interface++)
-        {
-            unsigned int node = *it_interface;
-            if(node_partition[node].count(i))
-            {
-                for(it_node_set = node_partition[node].begin() ; it_node_set != node_partition[node].end() ; it_node_set++)
-                {   
-                    unsigned int partition = *it_node_set;
-                    if(partition != i)
-                        shared_nodes[partition].insert(node);     
-                }
-            } // se o no, que ja eh de interface, for da particao que estamos processando
-        }
+        coord_local.resize(array_sizes[0]);
+        conn_local.resize(array_sizes[1]);
+        offset_local.resize(array_sizes[2]);
+        type_local.resize(array_sizes[3]);
+        local_to_global.resize(array_sizes[4]);
+        shared_out.resize(array_sizes[5]);
 
-        MPI_Status status;
-        if(rank == i)
-        {
-            MPI_Send(coord_local, coord_local.size(), MPI_DOUBLE, i, 0, comm);
-            MPI_Recv(coord_local, coord_local.size(), MPI_DOUBLE, 0, 0, comm, &status);
+        MPI_Recv(&coord_local[0], coord_local.size(), MPI_DOUBLE, 0, 0, comm, &status);
+        MPI_Recv(&conn_local[0], conn_local.size(), MPI_UNSIGNED, 0, 0, comm, &status);
+        MPI_Recv(&offset_local[0], offset_local.size(), MPI_UNSIGNED, 0, 0, comm, &status);
+        MPI_Recv(&type_local[0], type_local.size(), MPI_UNSIGNED_SHORT, 0, 0, comm, &status);
+        MPI_Recv(&local_to_global[0], local_to_global.size(), MPI_UNSIGNED, 0, 0, comm, &status);
+        MPI_Recv(&shared_out[0], shared_out.size(), MPI_UNSIGNED, 0, 0, comm, &status);
 
-            MPI_Send(conn_local, conn_local.size(), MPI_UNSIGNED, i, 0, comm);
-            MPI_Recv(conn_local, conn_local.size(), MPI_UNSIGNED, 0, 0, comm, &status);
+        /** TODO: processar os vetores e transformar no parallelmesh em uma função */
 
-            MPI_Send(offset_local, offset_local.size(), MPI_UNSIGNED, i, 0, comm);
-            MPI_Recv(offset_local, offset_local.size(), MPI_UNSIGNED, 0, 0, comm, &status);
-
-            MPI_Send(type_local, type_local.size(), MPI_UNSIGNED_SHORT, i, 0, comm);
-            MPI_Recv(type_local, type_local.size(), MPI_UNSIGNED_SHORT, 0, 0, comm, &status);
-
-            MPI_Send(local_to_global, local_to_global.size(), MPI_UNSIGNED, i, 0, comm);
-            MPI_Recv(local_to_global, local_to_global.size(), MPI_UNSIGNED, 0, 0, comm, &status);
-
-            MPI_Send(shared_nodes, shared_nodes.size(), MPI_DOUBLE, i, 0, comm);
-            MPI_Recv(shared_nodes, shared_nodes.size(), MPI_DOUBLE, 0, 0, comm, &status);
-        } 
-        
-        coord_local.clear();
-        conn_local.clear();
-        offset_local.clear();
-        type_local.clear();
-        local_to_global.clear();
-        global_to_local.clear();
-        shared_nodes.clear();
+        fillParallelMesh(pmesh, coord_local, type_local, conn_local, offset_local, local_to_global, shared_out);
     }
+
+    return pmesh;
 }
 
 
