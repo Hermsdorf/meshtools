@@ -7,6 +7,7 @@ ParallelMesh::ParallelMesh()
 {
     this->n_elements = 0;
     this->n_nodes = 0;
+    this->internal_mesh = false;
 }
 
 ParallelMesh::~ParallelMesh()
@@ -60,6 +61,16 @@ std::vector<SharedNodes>& ParallelMesh::get_communication_map()
 void ParallelMesh::set_communication_map(std::vector<SharedNodes> communication_map)
 {
     this->communication_map = communication_map;
+}
+
+bool ParallelMesh::get_internal_mesh()
+{
+    return this->internal_mesh;
+}
+
+void ParallelMesh::set_internal_mesh(bool internal_mesh)
+{
+    this->internal_mesh = internal_mesh;
 }
 
 unsigned int SharedNodes::get_id_processador_vizinho()
@@ -278,4 +289,9 @@ void ParallelMesh::readParallelMeshBin(const char* filename)
             }
         }
     }
+}
+
+void writeParallelMesh()
+{
+    
 }

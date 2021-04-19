@@ -127,10 +127,10 @@ void matvec_openmp(Mesh* mesh, Matrix& EBE, double* y, double* r)
 
 int main(int argc, char* argv[])
 {         
-    if(argc < 3)
+    if(argc < 2)
     {
         std::cout << "ERROR: WRONG EXECUTION\n";
-	    std::cout << "./meshtools filename.msh n_partitions [catalyst.py]\n";
+	    std::cout << "./meshtools filename.msh [catalyst.py]\n";
 
 	    return 0;
     }
@@ -140,24 +140,26 @@ int main(int argc, char* argv[])
     if(argc == 4)
         n_script = 1;
    
-    int n_part = atoi(argv[2]);
+    int n_parts;
 
     MPI_Init(NULL, NULL);
+    MPI_Comm_size(MPI_COMM_WORLD, &n_parts);
+    
     Mesh* mesh = new Mesh(argv[1]);
 
 #ifdef PARAVIEWCAT_FOUND
-        CatalystInitialize(n_script, argv+3);
+        CatalystInitialize(n_script, argv+2);
 #endif
 
-    // mesh->MeshReordering(RCM);
+    mesh->MeshReordering(RCM);
     // mesh->MeshColoring();
 
     Mesh_partition_t* parts = new Mesh_partition_t();
 
-    parts->MeshPartitioner(mesh, n_part);
+    parts->MeshPartitioner(mesh, n_parts);
     
-    ParallelMesh* pmesh = parts->PartitionerInternalMPI(mesh);
-    
+    ParallelMesh* pmesh = parts->PartitionerMPI(mesh);
+    delete pmesh;
     // ParallelMesh* parallelmesh = new ParallelMesh();
     // parallelmesh->readParallelMesh("test_hex2d_part0.vtu");
     // cout << "---- ParallelMesh ----\n";

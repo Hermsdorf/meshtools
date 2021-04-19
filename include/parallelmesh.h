@@ -31,6 +31,8 @@ class ParallelMesh : public Mesh{
 
         void readParallelMesh(const char* filename);
         void readParallelMeshBin(const char* filename);
+        void writeParallelMesh(); /** TODO: IMPLEMENTAR */
+        void writeInternalParallelMesh(); /** TODO: IMPLEMENTAR (?) */
 
         std::vector<unsigned int>& get_local_to_global();
         int get_n_processadores_vizinhos();
@@ -38,11 +40,14 @@ class ParallelMesh : public Mesh{
         void set_local_to_global(std::vector<unsigned int> local_to_global);
         void set_n_processadores_vizinhos(int n_processadores_vizinhos);
         void set_communication_map(std::vector<SharedNodes> communication_map);
+        bool get_internal_mesh();
+        void set_internal_mesh(bool internal_mesh);
 
     private:
         std::vector<unsigned int> local_to_global;
         int n_processadores_vizinhos; // trocar para ingles
         std::vector<SharedNodes> communication_map;
+        bool internal_mesh;
 };
 
 #endif // PARALLELMESH__H_
