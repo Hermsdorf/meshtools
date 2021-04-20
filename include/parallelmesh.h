@@ -31,8 +31,8 @@ class ParallelMesh : public Mesh{
 
         void readParallelMesh(const char* filename);
         void readParallelMeshBin(const char* filename);
-        void writeParallelMesh(); /** TODO: IMPLEMENTAR */
-        void writeInternalParallelMesh(); /** TODO: IMPLEMENTAR (?) */
+        void writeParallelMesh();
+        void writeParallelMeshBin();
 
         std::vector<unsigned int>& get_local_to_global();
         int get_n_processadores_vizinhos();

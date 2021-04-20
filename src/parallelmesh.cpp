@@ -295,3 +295,8 @@ void writeParallelMesh()
 {
     
 }
+
+void writeParallelMeshBin()
+{
+    
+}

@@ -1236,37 +1236,6 @@ ParallelMesh* Mesh_partition_t::PartitionerInternalMPI(Mesh* mesh)
                            global_to_local, shared_out, node_partition, interface_nodes, mesh, pmesh, 0);
         
         fillParallelMesh(pmesh, mesh, coord_local, type_local, conn_local, offset_local, local_to_global, shared_out);
-        
-        /* TESTE */
-        std::cout << "Rank: " << rank << "\n";
-        std::cout << "  coord: \n";
-        for(int i = 0 ; i < coord_local.size() ; i+=3)
-            std::cout << "    " <<  coord_local[i] << " " << coord_local[i+1] << " " << coord_local[i+2] << "\n";
-
-        std::cout << "  conn: \n";
-        for(int i = 0 ; i < offset_local.size()-1 ; i++)
-        {
-            int begin = offset_local[i];
-            int end = offset_local[i+1];
-
-            std::cout << "    elem " << i << ": ";
-            for(int j = begin ; j < end ; j++)
-                std::cout << conn_local[j] << " ";
-            std::cout << "\n";
-        }
-
-        std::cout << "  offset: \n    ";
-        for(int i = 0 ; i < offset_local.size() ; i++)
-            std::cout << offset_local[i] << " ";
-        std::cout << "\n";
-
-        std::cout << "  local_to_global: \n    ";
-        for(int i = 0 ; i < local_to_global.size() ; i++)
-            std::cout << local_to_global[i] << " ";
-        std::cout << "\n\n\n";
-
-        /* TESTE */
-
     } else {    
         MPI_Status status;  
         MPI_Recv(array_sizes, 6, MPI_INT, 0, 0, comm, &status);
@@ -1286,35 +1255,6 @@ ParallelMesh* Mesh_partition_t::PartitionerInternalMPI(Mesh* mesh)
         MPI_Recv(&shared_out[0], shared_out.size(), MPI_UNSIGNED, 0, 0, comm, &status);
 
         fillParallelMesh(pmesh, mesh, coord_local, type_local, conn_local, offset_local, local_to_global, shared_out);
-
-        /* TESTE */
-        std::cout << "Rank: " << rank << "\n";
-        std::cout << "  coord: \n";
-        for(int i = 0 ; i < coord_local.size() ; i+=3)
-            std::cout << "    " <<  coord_local[i] << " " << coord_local[i+1] << " " << coord_local[i+2] << "\n";
-
-        std::cout << "  conn: \n";
-        for(int i = 0 ; i < offset_local.size()-1 ; i++)
-        {
-            int begin = offset_local[i];
-            int end = offset_local[i+1];
-
-            std::cout << "    elem " << i << ": ";
-            for(int j = begin ; j < end ; j++)
-                std::cout << conn_local[j] << " ";
-            std::cout << "\n";
-        }
-
-        std::cout << "  offset: \n    ";
-        for(int i = 0 ; i < offset_local.size() ; i++)
-            std::cout << offset_local[i] << " ";
-        std::cout << "\n";
-
-        std::cout << "  local_to_global: \n    ";
-        for(int i = 0 ; i < local_to_global.size() ; i++)
-            std::cout << local_to_global[i] << " ";
-        std::cout << "\n\n\n";
-        /* TESTE */
     }
 
     return pmesh;
@@ -1429,37 +1369,6 @@ ParallelMesh* Mesh_partition_t::PartitionerMPI(Mesh* mesh)
                            global_to_local, shared_out, node_partition, interface_nodes, mesh, pmesh, 0);
         
         fillParallelMesh(pmesh, mesh, coord_local, type_local, conn_local, offset_local, local_to_global, shared_out);
-        
-        /* TESTE */
-        std::cout << "Rank: " << rank << "\n";
-        std::cout << "  coord: \n";
-        for(int i = 0 ; i < coord_local.size() ; i+=3)
-            std::cout << "    " <<  coord_local[i] << " " << coord_local[i+1] << " " << coord_local[i+2] << "\n";
-
-        std::cout << "  conn: \n";
-        for(int i = 0 ; i < offset_local.size()-1 ; i++)
-        {
-            int begin = offset_local[i];
-            int end = offset_local[i+1];
-
-            std::cout << "    elem " << i << ": ";
-            for(int j = begin ; j < end ; j++)
-                std::cout << conn_local[j] << " ";
-            std::cout << "\n";
-        }
-
-        std::cout << "  offset: \n    ";
-        for(int i = 0 ; i < offset_local.size() ; i++)
-            std::cout << offset_local[i] << " ";
-        std::cout << "\n";
-
-        std::cout << "  local_to_global: \n    ";
-        for(int i = 0 ; i < local_to_global.size() ; i++)
-            std::cout << local_to_global[i] << " ";
-        std::cout << "\n\n\n";
-
-        /* TESTE */
-
     } else {    
         MPI_Status status;  
         MPI_Recv(array_sizes, 6, MPI_INT, 0, 0, comm, &status);
@@ -1479,35 +1388,6 @@ ParallelMesh* Mesh_partition_t::PartitionerMPI(Mesh* mesh)
         MPI_Recv(&shared_out[0], shared_out.size(), MPI_UNSIGNED, 0, 0, comm, &status);
 
         fillParallelMesh(pmesh, mesh, coord_local, type_local, conn_local, offset_local, local_to_global, shared_out);
-
-        /* TESTE */
-        std::cout << "Rank: " << rank << "\n";
-        std::cout << "  coord: \n";
-        for(int i = 0 ; i < coord_local.size() ; i+=3)
-            std::cout << "    " <<  coord_local[i] << " " << coord_local[i+1] << " " << coord_local[i+2] << "\n";
-
-        std::cout << "  conn: \n";
-        for(int i = 0 ; i < offset_local.size()-1 ; i++)
-        {
-            int begin = offset_local[i];
-            int end = offset_local[i+1];
-
-            std::cout << "    elem " << i << ": ";
-            for(int j = begin ; j < end ; j++)
-                std::cout << conn_local[j] << " ";
-            std::cout << "\n";
-        }
-
-        std::cout << "  offset: \n    ";
-        for(int i = 0 ; i < offset_local.size() ; i++)
-            std::cout << offset_local[i] << " ";
-        std::cout << "\n";
-
-        std::cout << "  local_to_global: \n    ";
-        for(int i = 0 ; i < local_to_global.size() ; i++)
-            std::cout << local_to_global[i] << " ";
-        std::cout << "\n\n\n";
-        /* TESTE */
     }
 
     return pmesh;
