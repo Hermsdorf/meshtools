@@ -159,6 +159,7 @@ int main(int argc, char* argv[])
     parts->MeshPartitioner(mesh, n_parts);
     
     ParallelMesh* pmesh = parts->PartitionerMPI(mesh);
+    pmesh->writeParallelMesh(parts);
     delete pmesh;
 
 //     double *velocity = new double[mesh->get_n_nodes()*3];

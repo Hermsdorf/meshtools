@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 #include "parallelmesh.h"
 
@@ -291,12 +292,117 @@ void ParallelMesh::readParallelMeshBin(const char* filename)
     }
 }
 
-void writeParallelMesh()
+
+void ParallelMesh::writeParallelMesh(Mesh_partition_t* parts)
 {
-    
+    bool pmesh_is_internal = this->internal_mesh;
+    int rank, size;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    if(pmesh_is_internal)
+    {
+        MeshVTKWriterInternal(rank, parts->get_nodal_part(), parts->get_elem_part(), NULL, NULL, NULL);
+    }
+    else
+    {
+        MeshVTKWriter(rank, parts->get_nodal_part(), parts->get_elem_part(), NULL, NULL, NULL);
+    }
+
+    if(rank == 0)
+    {
+        std::cout << "Writing VTK internal elements parallel mesh rank " << rank << " ...\n";
+        std::ofstream fout;
+
+        std::string str(this->getFilename());
+        str.resize(str.length()-4);
+        str = str.append(".pvtu");
+        fout.open(str.c_str());
+
+        std::ostringstream os;
+
+        std::string str_aux(this->getFilename());
+
+        fout << "<VTKFile type=\"PUnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n";
+        fout << "\t<PUnstructuredGrid>\n";
+        for(int i = 0 ; i < size ; i++)
+        {
+            os << i ;
+            str_aux.insert(str_aux.length() - 4, "_" + os.str());
+
+            fout << "\t\t<PPointData>\n";
+            fout << "\t\t</PPointData>\n";
+            fout << "\t\t<PCellData>\n";
+            fout << "\t\t</PCelltData>\n";
+            fout << "\t\t<PPoints>\n";
+            fout << "\t\t\t<PDataArray type=\"Float64\" NumberOfComponents=\"3\"/>\n";
+            fout << "\t\t</PPoints>\n";
+            fout << "\t\t<Piece Source=\"" << str_aux << "\"/>\n";
+
+            os.clear();
+        }
+        fout << "\t</PUnstructuredGrid>\n";
+        fout << "</VTKFile>\n";
+
+        fout.close();
+        std::cout << "Writing completed successfully\n";
+    }
 }
 
-void writeParallelMeshBin()
+void ParallelMesh::writeParallelMeshBin(Mesh_partition_t* parts)
 {
-    
+    bool pmesh_is_internal = this->internal_mesh;
+    int rank, size;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    if(pmesh_is_internal)
+    {
+        MeshVTKWriterInternalBinAppended(rank, parts->get_nodal_part(), parts->get_elem_part(), NULL, NULL, NULL);
+    }
+    else
+    {
+        MeshVTKWriterBinAppended(rank, parts->get_nodal_part(), parts->get_elem_part(), NULL, NULL, NULL);
+    }
+
+    if(rank == 0)
+    {
+        std::cout << "Writing VTK boundary and internal elements parallel mesh rank " << rank << " ...\n";
+        std::ofstream fout;
+
+        std::string str(this->getFilename());
+        str.resize(str.length()-4);
+        str = str.append(".pvtu");
+        fout.open(str.c_str());
+
+        std::ostringstream os;
+
+        std::string str_aux(this->getFilename());
+
+        fout << "<VTKFile type=\"PUnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n";
+        fout << "\t<PUnstructuredGrid>\n";
+        for(int i = 0 ; i < size ; i++)
+        {
+            os << i ;
+            str_aux.insert(str_aux.length() - 4, "_" + os.str());
+
+            fout << "\t\t<PPointData>\n";
+            fout << "\t\t</PPointData>\n";
+            fout << "\t\t<PCellData>\n";
+            fout << "\t\t</PCelltData>\n";
+            fout << "\t\t<PPoints>\n";
+            fout << "\t\t\t<PDataArray type=\"Float64\" NumberOfComponents=\"3\"/>\n";
+            fout << "\t\t</PPoints>\n";
+            fout << "\t\t<Piece Source=\"" << str_aux << "\"/>\n";
+
+            os.clear();
+        }
+        fout << "\t</PUnstructuredGrid>\n";
+        fout << "</VTKFile>\n";
+
+        fout.close();
+        std::cout << "Writing completed successfully\n";
+    }
 }

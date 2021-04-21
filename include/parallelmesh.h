@@ -1,8 +1,10 @@
-#include <iostream>
-#include "mesh.h"
-
 #ifndef PARALLELMESH__H_
 #define PARALLELMESH__H_
+
+#include <iostream>
+
+#include "mesh.h"
+#include "mesh_part.h"
 
 class SharedNodes{
     public:
@@ -31,8 +33,8 @@ class ParallelMesh : public Mesh{
 
         void readParallelMesh(const char* filename);
         void readParallelMeshBin(const char* filename);
-        void writeParallelMesh();
-        void writeParallelMeshBin();
+        void writeParallelMesh(Mesh_partition_t* parts);
+        void writeParallelMeshBin(Mesh_partition_t* parts);
 
         std::vector<unsigned int>& get_local_to_global();
         int get_n_processadores_vizinhos();
