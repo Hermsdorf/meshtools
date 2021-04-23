@@ -428,21 +428,18 @@ void Mesh::MeshVTKWriterInternal(int timeStep, int* npart, int* epart, int* colo
     std::cout << "Writing VTK internal elements...\n";
     std::ofstream fout;
 
-    if(timeStep)
+    if(timeStep >= 0)
     {
-        //create an output string stream
-        std::ostringstream os ;
+        // std::string os;
+        // os = std::to_string(timeStep);
 
-        //throw the value into the string stream
-        os << timeStep ;
+        // std::string str = this->getFilename();
+        // str.insert(str.length() - 4, "_" + os);
 
-        std::string str = this->getFilename();
-        str.insert(str.length() - 4, "_" + os.str());
-
-        fout.open(str.c_str());
+        // fout.open(str.c_str());
     }
     else{
-            fout.open(this->getFilename().c_str());
+            fout.open(this->getFilename());
     }
 
     if(fout.is_open())
@@ -596,16 +593,13 @@ void Mesh::MeshVTKWriterInternalBinAppended(int timeStep, int* npart, int* epart
     const char *byte_order = BinaryBigEndian() ? "BigEndian" : "LittleEndian";
 
     std::string str = this->getFilename();
-    if(timeStep)
+    if(timeStep >= 0)
     {
+        std::string os;
+        os = std::to_string(timeStep);
 
-        //create an output string stream
-        std::ostringstream os ;
-
-        //throw the value into the string stream
-        os << timeStep ;
-
-        str.insert(str.length() - 4, "_" + os.str());
+        std::string str = this->getFilename();
+        str.insert(str.length() - 4, "_" + os);
     }
     fout = fopen(str.c_str(), "wb");
 
