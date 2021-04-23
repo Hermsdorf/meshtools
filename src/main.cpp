@@ -157,10 +157,9 @@ int main(int argc, char* argv[])
     Mesh_partition_t* parts = new Mesh_partition_t();
 
     parts->MeshPartitionerInternal(mesh, n_parts);
-    int* npart = parts->get_nodal_part();
-    int* epart = parts->get_elem_part();    
+
     ParallelMesh* pmesh = parts->PartitionerInternalMPI(mesh);
-    pmesh->writeParallelMesh(npart, epart);
+    pmesh->writeParallelMesh();
     delete pmesh;
 
 //     double *velocity = new double[mesh->get_n_nodes()*3];

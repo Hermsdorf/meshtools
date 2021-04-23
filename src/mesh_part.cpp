@@ -1200,6 +1200,7 @@ ParallelMesh* Mesh_partition_t::PartitionerInternalMPI(Mesh* mesh)
 
     ParallelMesh* pmesh = new ParallelMesh();
     pmesh->set_internal_mesh(true);
+    pmesh->setFilename(mesh->getFilename());
 
     if(rank == 0)
     {
@@ -1333,6 +1334,7 @@ ParallelMesh* Mesh_partition_t::PartitionerMPI(Mesh* mesh)
 
     ParallelMesh* pmesh = new ParallelMesh();
     pmesh->set_internal_mesh(false);
+    pmesh->setFilename(mesh->getFilename());
 
     if(rank == 0)
     {

@@ -293,118 +293,97 @@ void ParallelMesh::readParallelMeshBin(const char* filename)
     }
 }
 
-
-void ParallelMesh::writeParallelMesh(int* npart, int* epart)
+void writePvtu(ParallelMesh* pmesh)
 {
-    bool pmesh_is_internal = this->internal_mesh;
-    int rank, size;
+    std::cout << "Writing VTK parallel mesh...\n";
+    std::ofstream fout;
 
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    int size;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    if(pmesh_is_internal)
+    std::string str(pmesh->getFilename());
+    str.insert(str.length() - 3, "p"); // inserir "p" em ".vtu" -> ".pvtu"
+
+    fout.open(str.c_str());
+
+    std::ostringstream os;
+
+    std::string str_aux(pmesh->getFilename());
+
+    fout << "<VTKFile type=\"PUnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n";
+    fout << "\t<PUnstructuredGrid>\n";
+    for(int i = 0 ; i < size ; i++)
     {
-        MeshVTKWriterInternal(rank, npart, epart, NULL, NULL, NULL);
+        os << i ;
+        str_aux.insert(str_aux.length() - 4, "_" + os.str());
+
+        fout << "\t\t<PPointData>\n";
+        fout << "\t\t</PPointData>\n";
+        fout << "\t\t<PCellData>\n";
+        fout << "\t\t</PCelltData>\n";
+        fout << "\t\t<PPoints>\n";
+        fout << "\t\t\t<PDataArray type=\"Float64\" NumberOfComponents=\"3\"/>\n";
+        fout << "\t\t</PPoints>\n";
+        fout << "\t\t<Piece Source=\"" << str_aux << "\"/>\n";
+
+        os.clear();
     }
-    else
-    {
-        MeshVTKWriter(rank, npart, epart, NULL, NULL, NULL);
-    }
+    fout << "\t</PUnstructuredGrid>\n";
+    fout << "</VTKFile>\n";
 
-    if(rank == 0)
-    {
-        std::cout << "Writing VTK internal elements parallel mesh rank " << rank << " ...\n";
-        std::ofstream fout;
-        
-        std::string str(this->getFilename());
-        for(int i = 0 ; i < 4; i++)
-            str.pop_back(); // tirar ".vtu"
-
-        str = str.append(".pvtu");
-        fout.open(str.c_str());
-        std::string os;
-        std::string str_aux(this->getFilename());
-        
-
-        fout << "<VTKFile type=\"PUnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n";
-        fout << "\t<PUnstructuredGrid>\n";
-        for(int i = 0 ; i < size ; i++)
-        {
-            os = std::to_string(i) ;
-            str_aux.insert(str_aux.length() - 4, "_" + os);
-
-            fout << "\t\t<PPointData>\n";
-            fout << "\t\t</PPointData>\n";
-            fout << "\t\t<PCellData>\n";
-            fout << "\t\t</PCelltData>\n";
-            fout << "\t\t<PPoints>\n";
-            fout << "\t\t\t<PDataArray type=\"Float64\" NumberOfComponents=\"3\"/>\n";
-            fout << "\t\t</PPoints>\n";
-            fout << "\t\t<Piece Source=\"" << str_aux << "\"/>\n";
-        }
-        fout << "\t</PUnstructuredGrid>\n";
-        fout << "</VTKFile>\n";
-
-        fout.close();
-        std::cout << "Writing completed successfully\n";
-    }
+    fout.close();
+    std::cout << "Writing pvtu completed successfully\n";
 }
 
-void ParallelMesh::writeParallelMeshBin(int* npart, int* epart)
+void ParallelMesh::writeParallelMesh()
 {
     bool pmesh_is_internal = this->internal_mesh;
     int rank, size;
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+    int nnodes = this->get_n_nodes();
+    int nelem = pmesh_is_internal ? this->get_n_elements() : this->get_n_elements() + this->get_n_face_elements();
+    int* npart = new int[nnodes];
+    for(int i = 0 ; i < nnodes ; i++)
+        npart[i] = rank;
+
+    int* epart = new int[nelem];
+    for(int i = 0 ; i < nelem ; i++)
+        epart[i] = rank;
 
     if(pmesh_is_internal)
-    {
-        MeshVTKWriterInternalBinAppended(rank, npart, epart, NULL, NULL, NULL);
-    }
+        MeshVTKWriterInternal(rank, npart, epart, NULL, NULL, NULL);
     else
-    {
-        MeshVTKWriterBinAppended(rank, npart, epart, NULL, NULL, NULL);
-    }
+        MeshVTKWriter(rank, npart, epart, NULL, NULL, NULL);
 
     if(rank == 0)
-    {
-        std::cout << "Writing VTK boundary and internal elements parallel mesh rank " << rank << " ...\n";
-        std::ofstream fout;
+        writePvtu(this);
+}
 
-        std::string str(this->getFilename());
-        for(int i = 0 ; i < 4; i++)
-            str.pop_back(); // tirar ".vtu"
+void ParallelMesh::writeParallelMeshBin()
+{
+    bool pmesh_is_internal = this->internal_mesh;
+    int rank, size;
 
-        str = str.append(".pvtu");
-        fout.open(str.c_str());
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    int nnodes = this->get_n_nodes();
+    int nelem = pmesh_is_internal ? this->get_n_elements() : this->get_n_elements() + this->get_n_face_elements();
+    int* npart = new int[nnodes];
+    for(int i = 0 ; i < nnodes ; i++)
+        npart[i] = rank;
 
-        std::ostringstream os;
+    int* epart = new int[nelem];
+    for(int i = 0 ; i < nelem ; i++)
+        epart[i] = rank;
 
-        std::string str_aux(this->getFilename());
 
-        fout << "<VTKFile type=\"PUnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n";
-        fout << "\t<PUnstructuredGrid>\n";
-        for(int i = 0 ; i < size ; i++)
-        {
-            os << i ;
-            str_aux.insert(str_aux.length() - 4, "_" + os.str());
+    if(pmesh_is_internal)
+        MeshVTKWriterInternalBinAppended(rank, npart, epart, NULL, NULL, NULL);
+    else
+        MeshVTKWriterBinAppended(rank, npart, epart, NULL, NULL, NULL);
 
-            fout << "\t\t<PPointData>\n";
-            fout << "\t\t</PPointData>\n";
-            fout << "\t\t<PCellData>\n";
-            fout << "\t\t</PCelltData>\n";
-            fout << "\t\t<PPoints>\n";
-            fout << "\t\t\t<PDataArray type=\"Float64\" NumberOfComponents=\"3\"/>\n";
-            fout << "\t\t</PPoints>\n";
-            fout << "\t\t<Piece Source=\"" << str_aux << "\"/>\n";
-
-            os.clear();
-        }
-        fout << "\t</PUnstructuredGrid>\n";
-        fout << "</VTKFile>\n";
-
-        fout.close();
-        std::cout << "Writing completed successfully\n";
-    }
+    if(rank == 0)
+        writePvtu(this);
 }

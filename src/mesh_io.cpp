@@ -430,13 +430,13 @@ void Mesh::MeshVTKWriterInternal(int timeStep, int* npart, int* epart, int* colo
 
     if(timeStep >= 0)
     {
-        // std::string os;
-        // os = std::to_string(timeStep);
+        std::string os;
+        os = std::to_string(timeStep);
 
-        // std::string str = this->getFilename();
-        // str.insert(str.length() - 4, "_" + os);
+        std::string str = this->getFilename();
+        str.insert(str.length() - 4, "_" + os);
 
-        // fout.open(str.c_str());
+        fout.open(str.c_str());
     }
     else{
             fout.open(this->getFilename());
@@ -554,7 +554,7 @@ void Mesh::MeshVTKWriterInternal(int timeStep, int* npart, int* epart, int* colo
             if(i % 18 == 0 && i != 0)
                 fout << "\n\t\t\t\t\t";
 
-            fout << this->offset[i+1]- ofs << " ";
+            fout << this->offset[i+1] - ofs << " ";
         }
         fout << "\n\t\t\t\t</DataArray>\n";
         fout << "\t\t\t\t<DataArray type=\"Int32\" Name=\"types\" format=\"ascii\">\n";
