@@ -592,7 +592,6 @@ void Mesh::MeshVTKWriterInternalBinAppended(int timeStep, int* npart, int* epart
         std::string os;
         os = std::to_string(timeStep);
 
-        std::string str = this->getFilename();
         str.insert(str.length() - 4, "_" + os);
     }
     fout = fopen(str.c_str(), "wb");
@@ -762,7 +761,6 @@ void Mesh::MeshVTKWriterBinAppended(int timeStep, int* npart, int* epart, int* c
         std::string os;
         os = std::to_string(timeStep);
 
-        std::string str = this->getFilename();
         str.insert(str.length() - 4, "_" + os);
     }
     fout = fopen(str.c_str(), "wb");

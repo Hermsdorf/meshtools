@@ -288,7 +288,7 @@ void ParallelMesh::readParallelMeshBin(const char* filename)
     }
 }
 
-void writePvtu(ParallelMesh* pmesh) // ESCREVER COLORING NO PVTU
+void writePvtu(ParallelMesh* pmesh)
 {
     std::cout << "Writing VTK parallel mesh...\n";
     std::ofstream fout;
@@ -298,18 +298,19 @@ void writePvtu(ParallelMesh* pmesh) // ESCREVER COLORING NO PVTU
 
     std::string str(pmesh->getFilename());
     str.insert(str.length() - 3, "p"); // inserir "p" em ".vtu" -> ".pvtu"
-
     fout.open(str.c_str());
-
+    
     std::string os;
 
     std::string str_aux(pmesh->getFilename());
-
+    
     fout << "<VTKFile type=\"PUnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n";
     fout << "\t<PUnstructuredGrid>\n";
     for(int i = 0 ; i < size ; i++)
     {
         os = std::to_string(i);
+        int pos = str_aux.find_last_of('/');
+        str_aux.erase(0, pos+1);
         str_aux.insert(str_aux.length() - 4, "_" + os);
 
         fout << "\t\t<PPointData>\n";
@@ -317,6 +318,7 @@ void writePvtu(ParallelMesh* pmesh) // ESCREVER COLORING NO PVTU
         fout << "\t\t</PPointData>\n";
         fout << "\t\t<PCellData>\n";
         fout << "\t\t\t<PDataArray type=\"Int32\" Name=\"epart\"/>\n";
+        fout << "\t\t\t<PDataArray type=\"Int32\" Name=\"color\"/>\n";
         fout << "\t\t</PCellData>\n";
         fout << "\t\t<PPoints>\n";
         fout << "\t\t\t<PDataArray type=\"Float64\" NumberOfComponents=\"3\"/>\n";

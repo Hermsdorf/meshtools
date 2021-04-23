@@ -155,12 +155,12 @@ int main(int argc, char* argv[])
 
     Mesh_partition_t* parts = new Mesh_partition_t();
 
-    parts->MeshPartitioner(mesh, n_parts);
+    parts->MeshPartitionerInternal(mesh, n_parts);
 
-    ParallelMesh* pmesh = parts->PartitionerMPI(mesh);
+    ParallelMesh* pmesh = parts->PartitionerInternalMPI(mesh);
     pmesh->MeshColoring();
-    pmesh->writeParallelMesh(); // resolver pra binario
-    // testar numa malha grande
+    pmesh->writeParallelMesh(); 
+
     delete pmesh;
 
 //     double *velocity = new double[mesh->get_n_nodes()*3];
