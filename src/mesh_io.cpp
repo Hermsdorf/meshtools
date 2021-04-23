@@ -258,24 +258,18 @@ void Mesh::MeshVTKWriter(int timeStep, int *npart, int* epart, int* color, doubl
     std::cout << "Writing VTK boundary and internal elements...\n";
     std::ofstream fout;
 
-    if(timeStep)
+    if(timeStep >= 0)
     {
+        std::string os;
+        os = std::to_string(timeStep);
+
         std::string str = this->getFilename();
-
-        
-        //create an output string stream
-        std::ostringstream os ;
-
-        //throw the value into the string stream
-        os << timeStep ;
-
-
-        str.insert(str.length() - 4, "_" + os.str());
+        str.insert(str.length() - 4, "_" + os);
 
         fout.open(str.c_str());
     }
     else{
-            fout.open(this->getFilename().c_str());
+            fout.open(this->getFilename());
     }
 
     if(fout.is_open())

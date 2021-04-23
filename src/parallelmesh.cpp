@@ -306,7 +306,7 @@ void writePvtu(ParallelMesh* pmesh)
 
     fout.open(str.c_str());
 
-    std::ostringstream os;
+    std::string os;
 
     std::string str_aux(pmesh->getFilename());
 
@@ -314,8 +314,8 @@ void writePvtu(ParallelMesh* pmesh)
     fout << "\t<PUnstructuredGrid>\n";
     for(int i = 0 ; i < size ; i++)
     {
-        os << i ;
-        str_aux.insert(str_aux.length() - 4, "_" + os.str());
+        os = std::to_string(i);
+        str_aux.insert(str_aux.length() - 4, "_" + os);
 
         fout << "\t\t<PPointData>\n";
         fout << "\t\t</PPointData>\n";
@@ -326,7 +326,9 @@ void writePvtu(ParallelMesh* pmesh)
         fout << "\t\t</PPoints>\n";
         fout << "\t\t<Piece Source=\"" << str_aux << "\"/>\n";
 
+        str_aux.clear();
         os.clear();
+        str_aux = pmesh->getFilename();
     }
     fout << "\t</PUnstructuredGrid>\n";
     fout << "</VTKFile>\n";
@@ -343,7 +345,7 @@ void ParallelMesh::writeParallelMesh()
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     int nnodes = this->get_n_nodes();
-    int nelem = pmesh_is_internal ? this->get_n_elements() : this->get_n_elements() + this->get_n_face_elements();
+    int nelem = pmesh_is_internal ? this->get_n_elements() : (this->get_n_elements() + this->get_n_face_elements());
     int* npart = new int[nnodes];
     for(int i = 0 ; i < nnodes ; i++)
         npart[i] = rank;
@@ -359,6 +361,9 @@ void ParallelMesh::writeParallelMesh()
 
     if(rank == 0)
         writePvtu(this);
+
+    delete [] npart;
+    delete [] epart;
 }
 
 void ParallelMesh::writeParallelMeshBin()
@@ -369,7 +374,7 @@ void ParallelMesh::writeParallelMeshBin()
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     int nnodes = this->get_n_nodes();
-    int nelem = pmesh_is_internal ? this->get_n_elements() : this->get_n_elements() + this->get_n_face_elements();
+    int nelem = pmesh_is_internal ? this->get_n_elements() : (this->get_n_elements() + this->get_n_face_elements());
     int* npart = new int[nnodes];
     for(int i = 0 ; i < nnodes ; i++)
         npart[i] = rank;
@@ -386,4 +391,7 @@ void ParallelMesh::writeParallelMeshBin()
 
     if(rank == 0)
         writePvtu(this);
+
+    delete [] npart;
+    delete [] epart;
 }
