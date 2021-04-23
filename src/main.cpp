@@ -156,9 +156,9 @@ int main(int argc, char* argv[])
 
     Mesh_partition_t* parts = new Mesh_partition_t();
 
-    parts->MeshPartitionerInternal(mesh, n_parts);
+    parts->MeshPartitioner(mesh, n_parts);
 
-    ParallelMesh* pmesh = parts->PartitionerInternalMPI(mesh);
+    ParallelMesh* pmesh = parts->PartitionerMPI(mesh);
     pmesh->writeParallelMesh();
     delete pmesh;
 

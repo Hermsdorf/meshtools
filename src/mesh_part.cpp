@@ -1104,10 +1104,6 @@ void fillParallelMesh(ParallelMesh* pmesh, Mesh* mesh, std::vector<double> &coor
 {
     bool pmesh_is_internal = pmesh->get_internal_mesh();
     pmesh->set_n_nodes(coord_local.size()/3);
-    pmesh->set_n_elements(mesh->get_n_elements());
-
-    if(!pmesh_is_internal)
-        pmesh->set_n_face_elements(mesh->get_n_face_elements());
 
     pmesh->setConn(conn_local);
     pmesh->setCoord(coord_local);
@@ -1154,6 +1150,12 @@ ParallelMesh* Mesh_partition_t::PartitionerInternalMPI(Mesh* mesh)
     unsigned int nelem = mesh->get_n_elements();
     unsigned int nnodes = mesh->get_n_nodes();
     
+    ParallelMesh* pmesh = new ParallelMesh();
+    pmesh->set_internal_mesh(true);
+    pmesh->setFilename(mesh->getFilename());
+    pmesh->set_n_face_elements(0);
+    int nelem_part[this->n_partitions] = { 0 }; // [nelem_0, nelem_1, nelem_2, ...]
+    
     for(int i = 0 ; i < this->n_partitions ; i++)
     {
         unsigned int elem_num = 0;
@@ -1169,6 +1171,7 @@ ParallelMesh* Mesh_partition_t::PartitionerInternalMPI(Mesh* mesh)
                     unsigned int conn_node = conn[j];
                     node_partition[conn_node].insert(i); // nó conn_node participa da particao i
                 }
+                nelem_part[i]++;
             }
             elem_num++;
         }
@@ -1198,9 +1201,6 @@ ParallelMesh* Mesh_partition_t::PartitionerInternalMPI(Mesh* mesh)
     std::vector<unsigned int> local_to_global;
     std::vector<unsigned int> shared_out;
 
-    ParallelMesh* pmesh = new ParallelMesh();
-    pmesh->set_internal_mesh(true);
-    pmesh->setFilename(mesh->getFilename());
 
     if(rank == 0)
     {
@@ -1217,6 +1217,7 @@ ParallelMesh* Mesh_partition_t::PartitionerInternalMPI(Mesh* mesh)
             array_sizes[5] = shared_out.size();
 
             MPI_Send(array_sizes, 6, MPI_INT, i, 0, comm);
+            MPI_Send(&nelem_part[i], 1, MPI_INT, i, 0, comm);
 
             MPI_Send(&coord_local[0], coord_local.size(), MPI_DOUBLE, i, 0, comm);
             MPI_Send(&conn_local[0], conn_local.size(), MPI_UNSIGNED, i, 0, comm);
@@ -1233,13 +1234,19 @@ ParallelMesh* Mesh_partition_t::PartitionerInternalMPI(Mesh* mesh)
             global_to_local.clear();
         }
 
+        pmesh->set_n_elements(nelem_part[0]);
+
         ProcessLocalArrays(coord_local, conn_local, offset_local, type_local, local_to_global, 
                            global_to_local, shared_out, node_partition, interface_nodes, mesh, pmesh, 0);
         
         fillParallelMesh(pmesh, mesh, coord_local, type_local, conn_local, offset_local, local_to_global, shared_out);
     } else {    
+        int nelem_pmesh;
         MPI_Status status;  
         MPI_Recv(array_sizes, 6, MPI_INT, 0, 0, comm, &status);
+        MPI_Recv(&nelem_pmesh, 1, MPI_INT, 0, 0, comm, &status);
+
+        pmesh->set_n_elements(nelem_pmesh);
 
         coord_local.resize(array_sizes[0]);
         conn_local.resize(array_sizes[1]);
@@ -1268,11 +1275,17 @@ ParallelMesh* Mesh_partition_t::PartitionerMPI(Mesh* mesh)
     std::vector<unsigned int> interface_nodes;
     unsigned int nelem = mesh->get_n_elements();
     unsigned int nface_elem = mesh->get_n_face_elements();
-    unsigned int nnodes = mesh->get_n_nodes();
+    unsigned int nnodes = mesh->get_n_nodes(); 
+    int nelem_pmesh[this->n_partitions*2] = { 0 }; // [nsurfelem_0, nelem_0, nsurfelem_1, nelem_1, ...]
+
+    ParallelMesh* pmesh = new ParallelMesh();
+    pmesh->set_internal_mesh(false);
+    pmesh->setFilename(mesh->getFilename());
     
     for(int i = 0 ; i < this->n_partitions ; i++)
     {
         unsigned int elem_num = 0;
+        unsigned int nelem_part = 0;
         while(elem_num < nface_elem)
         {
             if(this->elem_part[elem_num] == i)  // se o elemento for da particao que estamos processando
@@ -1285,6 +1298,7 @@ ParallelMesh* Mesh_partition_t::PartitionerMPI(Mesh* mesh)
                     unsigned int conn_node = conn[j];
                     node_partition[conn_node].insert(i); // nó conn_node participa da particao i
                 }
+                nelem_pmesh[i*2]++; // nsurfelem_i
             }
             elem_num++;
         }
@@ -1303,6 +1317,8 @@ ParallelMesh* Mesh_partition_t::PartitionerMPI(Mesh* mesh)
                     unsigned int conn_node = conn[j];
                     node_partition[conn_node].insert(i); // nó conn_node participa da particao i
                 }
+
+                nelem_pmesh[(i*2) + 1]++; // nelem_i
             }
             elem_num++;
         }
@@ -1332,10 +1348,6 @@ ParallelMesh* Mesh_partition_t::PartitionerMPI(Mesh* mesh)
     std::vector<unsigned int> local_to_global;
     std::vector<unsigned int> shared_out;
 
-    ParallelMesh* pmesh = new ParallelMesh();
-    pmesh->set_internal_mesh(false);
-    pmesh->setFilename(mesh->getFilename());
-
     if(rank == 0)
     {
         for(int i = 1 ; i < this->n_partitions ; i++)
@@ -1350,7 +1362,12 @@ ParallelMesh* Mesh_partition_t::PartitionerMPI(Mesh* mesh)
             array_sizes[4] = local_to_global.size();
             array_sizes[5] = shared_out.size();
 
+            int nsurfelem_aux = nelem_pmesh[i*2];
+            int nelem_aux = nelem_pmesh[(i*2) + 1];
+
             MPI_Send(array_sizes, 6, MPI_INT, i, 0, comm);
+            MPI_Send(&nsurfelem_aux, 1, MPI_INT, i, 0, comm);
+            MPI_Send(&nelem_aux, 1, MPI_INT, i, 0, comm);
 
             MPI_Send(&coord_local[0], coord_local.size(), MPI_DOUBLE, i, 0, comm);
             MPI_Send(&conn_local[0], conn_local.size(), MPI_UNSIGNED, i, 0, comm);
@@ -1367,13 +1384,23 @@ ParallelMesh* Mesh_partition_t::PartitionerMPI(Mesh* mesh)
             global_to_local.clear();
         }
 
+        pmesh->set_n_face_elements(nelem_pmesh[0]);
+        pmesh->set_n_elements(nelem_pmesh[1]);
+
         ProcessLocalArrays(coord_local, conn_local, offset_local, type_local, local_to_global, 
                            global_to_local, shared_out, node_partition, interface_nodes, mesh, pmesh, 0);
         
         fillParallelMesh(pmesh, mesh, coord_local, type_local, conn_local, offset_local, local_to_global, shared_out);
     } else {    
+        int nelem_pmesh;
+        int nsurfelem_pmesh;
         MPI_Status status;  
         MPI_Recv(array_sizes, 6, MPI_INT, 0, 0, comm, &status);
+        MPI_Recv(&nsurfelem_pmesh, 1, MPI_INT, 0, 0, comm, &status);
+        MPI_Recv(&nelem_pmesh, 1, MPI_INT, 0, 0, comm, &status);
+
+        pmesh->set_n_face_elements(nsurfelem_pmesh);
+        pmesh->set_n_elements(nelem_pmesh);
 
         coord_local.resize(array_sizes[0]);
         conn_local.resize(array_sizes[1]);
