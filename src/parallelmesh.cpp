@@ -10,18 +10,13 @@ ParallelMesh::ParallelMesh()
     this->n_elements = 0;
     this->n_nodes = 0;
     this->internal_mesh = false;
+    this->mesh_coloring_internal = nullptr;
 }
 
 ParallelMesh::~ParallelMesh()
 {
-    this->conn.clear();
-    this->coord.clear();
-    this->offset.clear();
-    this->type.clear();
-    this->physical_tag.clear();
-    this->physical_map.clear();
-    this->filename.clear();
-    delete [] this->mesh_coloring_internal;
+    local_to_global.clear();
+    communication_map.clear();
 }
 
 SharedNodes::SharedNodes()
@@ -293,7 +288,7 @@ void ParallelMesh::readParallelMeshBin(const char* filename)
     }
 }
 
-void writePvtu(ParallelMesh* pmesh)
+void writePvtu(ParallelMesh* pmesh) // ESCREVER COLORING NO PVTU
 {
     std::cout << "Writing VTK parallel mesh...\n";
     std::ofstream fout;
@@ -318,9 +313,11 @@ void writePvtu(ParallelMesh* pmesh)
         str_aux.insert(str_aux.length() - 4, "_" + os);
 
         fout << "\t\t<PPointData>\n";
+        fout << "\t\t\t<PDataArray type=\"Int32\" Name=\"npart\"/>\n";
         fout << "\t\t</PPointData>\n";
         fout << "\t\t<PCellData>\n";
-        fout << "\t\t</PCelltData>\n";
+        fout << "\t\t\t<PDataArray type=\"Int32\" Name=\"epart\"/>\n";
+        fout << "\t\t</PCellData>\n";
         fout << "\t\t<PPoints>\n";
         fout << "\t\t\t<PDataArray type=\"Float64\" NumberOfComponents=\"3\"/>\n";
         fout << "\t\t</PPoints>\n";
@@ -355,9 +352,9 @@ void ParallelMesh::writeParallelMesh()
         epart[i] = rank;
 
     if(pmesh_is_internal)
-        MeshVTKWriterInternal(rank, npart, epart, NULL, NULL, NULL);
+        MeshVTKWriterInternal(rank, npart, epart, this->mesh_coloring_internal, NULL, NULL);
     else
-        MeshVTKWriter(rank, npart, epart, NULL, NULL, NULL);
+        MeshVTKWriter(rank, npart, epart, this->mesh_coloring_internal, NULL, NULL);
 
     if(rank == 0)
         writePvtu(this);
@@ -385,9 +382,9 @@ void ParallelMesh::writeParallelMeshBin()
 
 
     if(pmesh_is_internal)
-        MeshVTKWriterInternalBinAppended(rank, npart, epart, NULL, NULL, NULL);
+        MeshVTKWriterInternalBinAppended(rank, npart, epart, this->mesh_coloring_internal, NULL, NULL);
     else
-        MeshVTKWriterBinAppended(rank, npart, epart, NULL, NULL, NULL);
+        MeshVTKWriterBinAppended(rank, npart, epart, this->mesh_coloring_internal, NULL, NULL);
 
     if(rank == 0)
         writePvtu(this);

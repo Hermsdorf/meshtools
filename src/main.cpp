@@ -152,14 +152,15 @@ int main(int argc, char* argv[])
 #endif
 
     mesh->MeshReordering(RCM);
-    // mesh->MeshColoring();
 
     Mesh_partition_t* parts = new Mesh_partition_t();
 
     parts->MeshPartitioner(mesh, n_parts);
 
     ParallelMesh* pmesh = parts->PartitionerMPI(mesh);
-    pmesh->writeParallelMesh();
+    pmesh->MeshColoring();
+    pmesh->writeParallelMesh(); // resolver pra binario
+    // testar numa malha grande
     delete pmesh;
 
 //     double *velocity = new double[mesh->get_n_nodes()*3];

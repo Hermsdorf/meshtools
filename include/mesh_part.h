@@ -17,8 +17,27 @@ class Mesh_partition_t {
         void set_nodal_part(int* nodal_part);
         void set_elem_part(int* elem_part);
 
+        /**
+         * @brief 
+         * 
+         * @param mesh 
+         * @param nparts 
+         */
         void MeshPartitioner(Mesh* mesh, int nparts);
+
+        /**
+         * @brief 
+         * 
+         * @param mesh 
+         * @param nparts 
+         */
         void MeshPartitionerInternal(Mesh* mesh, int nparts);
+
+        /**
+         * @brief 
+         * 
+         * @param mesh 
+         */
         void WriteInternalPartition(Mesh* mesh);
         void WriteInternalPartitionBin(Mesh* mesh);
         void WritePartition(Mesh* mesh);

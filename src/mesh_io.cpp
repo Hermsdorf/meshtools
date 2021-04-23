@@ -757,16 +757,13 @@ void Mesh::MeshVTKWriterBinAppended(int timeStep, int* npart, int* epart, int* c
     const char *byte_order = BinaryBigEndian() ? "BigEndian" : "LittleEndian";
 
     std::string str = this->getFilename();
-    if(timeStep) 
+    if(timeStep >= 0) 
     {
+        std::string os;
+        os = std::to_string(timeStep);
 
-        //create an output string stream
-        std::ostringstream os ;
-
-        //throw the value into the string stream
-        os << timeStep ;
-    
-        str.insert(str.length() - 4, "_" + os.str());
+        std::string str = this->getFilename();
+        str.insert(str.length() - 4, "_" + os);
     }
     fout = fopen(str.c_str(), "wb");
 

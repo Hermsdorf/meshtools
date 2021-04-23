@@ -111,7 +111,8 @@ void UpdateMeshArrays(Mesh* mesh, unsigned int** new_conn, unsigned int** new_of
         mesh_coloringAux[mesh_coloring[i]-1]++;
     }
 
-    delete [] mesh->get_mesh_coloring_internal();
+    if(mesh->get_mesh_coloring_internal())
+        delete [] mesh->get_mesh_coloring_internal();
     mesh->set_mesh_coloring_internal(mesh_coloringAux);
 }
 
@@ -800,8 +801,9 @@ unsigned int ColoringOpenMP_RokosOpt(Mesh* mesh)
 
     CheckColoring(&xadj, &adjncy, &elements_color, ne);
 
-    delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader 
-                                                  // onde inicializa todo o vetor mesh_coloring_internal com -1.
+    if(mesh->get_mesh_coloring_internal())
+        delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader 
+                                                      // onde inicializa todo o vetor mesh_coloring_internal com -1.
     mesh->set_mesh_coloring_internal(elements_color);
 
     METIS_Free(xadj);
