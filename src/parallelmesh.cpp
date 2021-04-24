@@ -309,7 +309,7 @@ void writePvtu(ParallelMesh* pmesh)
     for(int i = 0 ; i < size ; i++)
     {
         os = std::to_string(i);
-        int pos = str_aux.find_last_of('/');
+        int pos = str_aux.find_last_of('/'); // caso a malha esteja em outro diretorio, deixar somente o nome da malha
         str_aux.erase(0, pos+1);
         str_aux.insert(str_aux.length() - 4, "_" + os);
 

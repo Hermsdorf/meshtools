@@ -158,8 +158,8 @@ int main(int argc, char* argv[])
     parts->MeshPartitionerInternal(mesh, n_parts);
 
     ParallelMesh* pmesh = parts->PartitionerInternalMPI(mesh);
-    pmesh->MeshColoring();
-    pmesh->writeParallelMesh(); 
+    mesh->MeshColoring();
+    //pmesh->writeParallelMesh(); 
 
     delete pmesh;
 
@@ -210,7 +210,7 @@ int main(int argc, char* argv[])
 
     // matvec_openmp(mesh, ebe, y, r);
 
-    //mesh->MeshVTKWriterInternal(0, NULL, NULL, mesh->get_mesh_coloring_internal(), NULL, NULL);
+    mesh->MeshVTKWriterInternal(0, NULL, NULL, mesh->get_mesh_coloring_internal(), NULL, NULL);
 
     // delete [] velocity;
     // delete [] pressure;
