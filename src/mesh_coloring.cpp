@@ -826,51 +826,55 @@ unsigned int ColoringAutoral(Mesh* mesh)
     unsigned int nelem_coloridos = 0;
     std::vector<unsigned int> conn_proibido;
 
+    std::map<unsigned int, unsigned int> elements_withoutcolor;
+    for(int i = 0 ; i < nelem ; i++)
+        elements_withoutcolor.insert({i, i+nsurf_elem});
+
     while(nelem_coloridos < nelem)
     {
-        for(int i = nsurf_elem ; i < ntotal_elem ; i++)
+        std::map<unsigned int, unsigned int>::iterator it;
+        for(it = elements_withoutcolor.begin() ; it != elements_withoutcolor.end() ; it++)
         {
-            int begin = offset[i];
-            int end = offset[i+1];
-            unsigned int elem = i - nsurf_elem;
+            int elem = it->first;
+            int pos_elem = it->second;
+            int begin = offset[pos_elem];
+            int end = offset[pos_elem + 1];
 
-            if(elements_color[elem] == -1)
+            unsigned int ultima_conn = 0;
+            if(conn_proibido.size() > 0)
+                ultima_conn = conn_proibido.back();
+
+            for(int j = begin ; j < end ; j++)
             {
-                unsigned int ultima_conn = 0;
-                if(conn_proibido.size() > 0)
-                    ultima_conn = conn_proibido.back();
+                unsigned int conn_j = conn[j];
 
-                for(int j = begin ; j < end ; j++)
+                std::vector<unsigned int>::iterator it;
+                it = std::find(conn_proibido.begin(), conn_proibido.end(), conn_j);
+                if(it == conn_proibido.end())
                 {
-                    unsigned int conn_j = conn[j];
+                    conn_proibido.push_back(conn_j);
 
-                    std::vector<unsigned int>::iterator it;
-                    it = std::find(conn_proibido.begin(), conn_proibido.end(), conn_j);
-                    if(it == conn_proibido.end())
+                    if(j == end-1)
                     {
-                        conn_proibido.push_back(conn_j);
-
-                        if(j == end-1)
+                        elements_color[elem] = color;
+                        nelem_coloridos++;
+                        elements_withoutcolor.erase(elem);
+                    } // se todas as conectividades do elemento nao sao proibidas, ele pode ser colorido
+                } // ou seja, se a conectividade nao eh proibida
+                else
+                {   
+                    if(conn_proibido.size() > 0)
+                    {
+                        unsigned int conn_apagar = conn_proibido.back();
+                        while(conn_apagar != ultima_conn)
                         {
-                            elements_color[elem] = color;
-                            nelem_coloridos++;
-                        } // se todas as conectividades do elemento nao sao proibidas, ele pode ser colorido
-                    } // ou seja, se a conectividade nao eh proibida
-                    else
-                    {   
-                        if(conn_proibido.size() > 0)
-                        {
-                            unsigned int conn_apagar = conn_proibido.back();
-                            while(conn_apagar != ultima_conn)
-                            {
-                                conn_proibido.pop_back();
-                                conn_apagar = conn_proibido.back();
-                            } // apagar todos os conn do elemento que pretendiamos colorir mas nao foi possivel colorir
-                        }
-                        break;
+                            conn_proibido.pop_back();
+                            conn_apagar = conn_proibido.back();
+                        } // apagar todos os conn do elemento que pretendiamos colorir mas nao foi possivel colorir
                     }
+                    break;
                 }
-            } // ou seja, elemento ainda sem cor
+            }
         }
         color++;
         conn_proibido.clear();
