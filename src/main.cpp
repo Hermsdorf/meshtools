@@ -151,17 +151,17 @@ int main(int argc, char* argv[])
         CatalystInitialize(n_script, argv+2);
 #endif
 
-    mesh->MeshReordering(RCM);
+    //mesh->MeshReordering(RCM);
 
-    Mesh_partition_t* parts = new Mesh_partition_t();
+    //Mesh_partition_t* parts = new Mesh_partition_t();
 
-    parts->MeshPartitionerInternal(mesh, n_parts);
+    //parts->MeshPartitionerInternal(mesh, n_parts);
 
-    ParallelMesh* pmesh = parts->PartitionerInternalMPI(mesh);
+    //ParallelMesh* pmesh = parts->PartitionerInternalMPI(mesh);
     mesh->MeshColoring();
     //pmesh->writeParallelMesh(); 
 
-    delete pmesh;
+    //delete pmesh;
 
 //     double *velocity = new double[mesh->get_n_nodes()*3];
 //     float *pressure  = new float[mesh->get_n_nodes()];
@@ -210,12 +210,12 @@ int main(int argc, char* argv[])
 
     // matvec_openmp(mesh, ebe, y, r);
 
-    mesh->MeshVTKWriterInternal(0, NULL, NULL, mesh->get_mesh_coloring_internal(), NULL, NULL);
+    //mesh->MeshVTKWriterInternal(0, NULL, NULL, mesh->get_mesh_coloring_internal(), NULL, NULL);
 
     // delete [] velocity;
     // delete [] pressure;
     delete mesh;
-    delete parts;
+    //delete parts;
     // delete [] y;
     // delete [] r;
 

@@ -821,7 +821,8 @@ unsigned int ColoringAutoral(Mesh* mesh)
     unsigned int ntotal_elem = nelem + nsurf_elem;
     int* elements_color = new int[nelem];
     std::fill(&elements_color[0], &elements_color[nelem], -1);
-    unsigned int color = 1;
+    
+    int color = 1;
     unsigned int nelem_coloridos = 0;
     std::vector<unsigned int> conn_proibido;
 
@@ -831,10 +832,14 @@ unsigned int ColoringAutoral(Mesh* mesh)
         {
             int begin = offset[i];
             int end = offset[i+1];
+            unsigned int elem = i - nsurf_elem;
 
-            if(elements_color[i-nsurf_elem] == -1)
+            if(elements_color[elem] == -1)
             {
-                std::vector<unsigned int>::iterator ultima_pos = conn_proibido.end(); // ultima_pos tem a ultima posicao atualizada no vector conn_proibido
+                unsigned int ultima_conn = 0;
+                if(conn_proibido.size() > 0)
+                    ultima_conn = conn_proibido.back();
+
                 for(int j = begin ; j < end ; j++)
                 {
                     unsigned int conn_j = conn[j];
@@ -847,42 +852,36 @@ unsigned int ColoringAutoral(Mesh* mesh)
 
                         if(j == end-1)
                         {
-                            elements_color[i] = color;
+                            elements_color[elem] = color;
                             nelem_coloridos++;
                         } // se todas as conectividades do elemento nao sao proibidas, ele pode ser colorido
                     } // ou seja, se a conectividade nao eh proibida
                     else
                     {   
-                        std::vector<unsigned int>::iterator conn_apagar = conn_proibido.end();
-                        
-                        while(conn_apagar != ultima_pos)
+                        if(conn_proibido.size() > 0)
                         {
-                            conn_apagar--;
-                            conn_proibido.pop_back();
-                        } // apagar todos os conn do elemento que pretendiamos colorir mas nao foi possivel colorir
+                            unsigned int conn_apagar = conn_proibido.back();
+                            while(conn_apagar != ultima_conn)
+                            {
+                                conn_proibido.pop_back();
+                                conn_apagar = conn_proibido.back();
+                            } // apagar todos os conn do elemento que pretendiamos colorir mas nao foi possivel colorir
+                        }
                         break;
                     }
                 }
             } // ou seja, elemento ainda sem cor
         }
-
         color++;
+        conn_proibido.clear();
     }
 
     if(mesh->get_mesh_coloring_internal())
         delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader 
                                                       // onde inicializa todo o vetor mesh_coloring_internal com -1.
     mesh->set_mesh_coloring_internal(elements_color);
-
-    int n_colors = 1;
-    for(int i = 0 ; i < nelem ; i++)
-    {
-        if(n_colors < elements_color[i])
-            n_colors = elements_color[i];
-    }
-
-    return n_colors;
-    // return color-1;
+    
+    return color-1;
 }
 
 void Mesh::MeshColoring()
@@ -893,7 +892,7 @@ void Mesh::MeshColoring()
     unsigned int* new_conn;
     unsigned int* new_offset;
 
-    // n_internal_colors = ColoringOpenMP_RokosOpt(this);
+    //n_internal_colors = ColoringOpenMP_RokosOpt(this);
     n_internal_colors = ColoringAutoral(this);
     CreateSort(this, sort_internal);
     ReorderElements(this, sort_internal, &new_conn, &new_offset);

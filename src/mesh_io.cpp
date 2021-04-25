@@ -511,7 +511,7 @@ void Mesh::MeshVTKWriterInternal(int timeStep, int* npart, int* epart, int* colo
                     fout << i+1 << " ";
                 }
             }
-            fout << "\t\t\t\t </DataArray> \n";
+            fout << "\n\t\t\t\t </DataArray> \n";
         }
         fout << "\t\t\t</CellData>\n";
         fout << "\t\t\t<Points>\n";
