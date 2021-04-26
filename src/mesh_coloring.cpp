@@ -826,6 +826,78 @@ unsigned int ColoringAutoral(Mesh* mesh)
     unsigned int nelem_coloridos = 0;
     std::vector<unsigned int> conn_proibido;
 
+    while(nelem_coloridos < nelem)
+    {
+        for(int i = nsurf_elem ; i < ntotal_elem ; i++)
+        {
+            int begin = offset[i];
+            int end = offset[i+1];
+            unsigned int elem = i - nsurf_elem;
+
+            if(elements_color[elem] == -1)
+            {
+                unsigned int ultima_conn = 0;
+                if(conn_proibido.size() > 0)
+                    ultima_conn = conn_proibido.back();
+
+                for(int j = begin ; j < end ; j++)
+                {
+                    unsigned int conn_j = conn[j];
+
+                    std::vector<unsigned int>::iterator it;
+                    it = std::find(conn_proibido.begin(), conn_proibido.end(), conn_j);
+                    if(it == conn_proibido.end())
+                    {
+                        conn_proibido.push_back(conn_j);
+
+                        if(j == end-1)
+                        {
+                            elements_color[elem] = color;
+                            nelem_coloridos++;
+                        } // se todas as conectividades do elemento nao sao proibidas, ele pode ser colorido
+                    } // ou seja, se a conectividade nao eh proibida
+                    else
+                    {   
+                        if(conn_proibido.size() > 0)
+                        {
+                            unsigned int conn_apagar = conn_proibido.back();
+                            while(conn_apagar != ultima_conn)
+                            {
+                                conn_proibido.pop_back();
+                                conn_apagar = conn_proibido.back();
+                            } // apagar todos os conn do elemento que pretendiamos colorir mas nao foi possivel colorir
+                        }
+                        break;
+                    }
+                }
+            } // ou seja, elemento ainda sem cor
+        }
+        color++;
+        conn_proibido.clear();
+    }
+
+    if(mesh->get_mesh_coloring_internal())
+        delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader 
+                                                      // onde inicializa todo o vetor mesh_coloring_internal com -1.
+    mesh->set_mesh_coloring_internal(elements_color);
+    
+    return color-1;
+}
+
+unsigned int ColoringAutoralOpt(Mesh* mesh)
+{
+    std::vector<unsigned int> conn = mesh->getConn();
+    std::vector<unsigned int> offset = mesh->getOffset();
+    unsigned int nelem = mesh->get_n_elements();
+    unsigned int nsurf_elem = mesh->get_n_face_elements();
+    unsigned int ntotal_elem = nelem + nsurf_elem;
+    int* elements_color = new int[nelem];
+    std::fill(&elements_color[0], &elements_color[nelem], -1);
+    
+    int color = 1;
+    unsigned int nelem_coloridos = 0;
+    std::vector<unsigned int> conn_proibido;
+
     std::map<unsigned int, unsigned int> elements_withoutcolor;
     for(int i = 0 ; i < nelem ; i++)
         elements_withoutcolor.insert({i, i+nsurf_elem});
