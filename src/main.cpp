@@ -141,27 +141,37 @@ int main(int argc, char* argv[])
         n_script = 1;
    
     int n_parts;
+    int my_rank;
 
     MPI_Init(NULL, NULL);
     MPI_Comm_size(MPI_COMM_WORLD, &n_parts);
-    
-    Mesh* mesh = new Mesh(argv[1]);
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+
+    Mesh* mesh = nullptr;
+    Mesh_partition_t* parts = nullptr;
+
+    if(my_rank == 0)
+    {
+        mesh = new Mesh(argv[1]);
 
 #ifdef PARAVIEWCAT_FOUND
         CatalystInitialize(n_script, argv+2);
 #endif
+        mesh->MeshReordering(RCM);
 
-    //mesh->MeshReordering(RCM);
+        parts = new Mesh_partition_t();
 
-    //Mesh_partition_t* parts = new Mesh_partition_t();
+        parts->MeshPartitionerInternal(mesh, n_parts);
+    }
 
-    //parts->MeshPartitionerInternal(mesh, n_parts);
+    ParallelMesh* pmesh = nullptr;
 
-    //ParallelMesh* pmesh = parts->PartitionerInternalMPI(mesh);
-    mesh->MeshColoring();
-    //pmesh->writeParallelMesh(); 
+    pmesh = parts->DistributedMeshInternal(mesh);
+    pmesh->MeshColoring();
 
-    //delete pmesh;
+    
+    if(mesh)  delete mesh;
+    if(parts) delete parts;
 
 //     double *velocity = new double[mesh->get_n_nodes()*3];
 //     float *pressure  = new float[mesh->get_n_nodes()];
@@ -214,8 +224,7 @@ int main(int argc, char* argv[])
 
     // delete [] velocity;
     // delete [] pressure;
-    delete mesh;
-    //delete parts;
+    if(pmesh) delete pmesh;
     // delete [] y;
     // delete [] r;
 

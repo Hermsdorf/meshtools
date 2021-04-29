@@ -810,7 +810,7 @@ unsigned int ColoringOpenMP_RokosOpt(Mesh* mesh)
     METIS_Free(adjncy);
 
     return n_colors;
-}
+} 
 
 unsigned int ColoringAutoral(Mesh* mesh)
 {
@@ -904,11 +904,11 @@ unsigned int ColoringAutoralOpt(Mesh* mesh)
 
     while(nelem_coloridos < nelem)
     {
-        std::map<unsigned int, unsigned int>::iterator it;
-        for(it = elements_withoutcolor.begin() ; it != elements_withoutcolor.end() ; it++)
+        std::map<unsigned int, unsigned int>::iterator it_cont;
+        for(it_cont = elements_withoutcolor.begin() ; it_cont != elements_withoutcolor.end() ; it_cont++)
         {
-            int elem = it->first;
-            int pos_elem = it->second;
+            int elem = it_cont->first;
+            int pos_elem = it_cont->second;
             int begin = offset[pos_elem];
             int end = offset[pos_elem + 1];
 
@@ -958,7 +958,7 @@ unsigned int ColoringAutoralOpt(Mesh* mesh)
     mesh->set_mesh_coloring_internal(elements_color);
     
     return color-1;
-}
+} // pensar em marcar o elemento e nao as conectividades
 
 void Mesh::MeshColoring()
 {
@@ -969,7 +969,7 @@ void Mesh::MeshColoring()
     unsigned int* new_offset;
 
     //n_internal_colors = ColoringOpenMP_RokosOpt(this);
-    n_internal_colors = ColoringAutoral(this);
+    n_internal_colors = ColoringAutoralOpt(this);
     CreateSort(this, sort_internal);
     ReorderElements(this, sort_internal, &new_conn, &new_offset);
     UpdateMeshArrays(this, &new_conn, &new_offset);

@@ -67,7 +67,7 @@ class Mesh_partition_t {
          * @param mesh 
          * @return ParallelMesh* 
          */
-        ParallelMesh* PartitionerInternalMPI(Mesh* mesh);
+        ParallelMesh* DistributedMeshInternal(Mesh* mesh);
 
         /**
          * @brief 
@@ -75,7 +75,7 @@ class Mesh_partition_t {
          * @param mesh 
          * @return ParallelMesh* 
          */
-        ParallelMesh* PartitionerMPI(Mesh* mesh);
+        ParallelMesh* DistributedMesh(Mesh* mesh);
 
         /**
          * @brief 
