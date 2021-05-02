@@ -1151,6 +1151,18 @@ ParallelMesh* Mesh_partition_t::DistributedMeshInternal(Mesh* mesh)
 
     int my_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    int size;
+    MPI_Comm comm = MPI_COMM_WORLD;
+    MPI_Comm_size(comm, &size);
+    int array_sizes[6];
+
+    std::vector<unsigned int> global_to_local;
+    std::vector<double> coord_local;
+    std::vector<unsigned int> conn_local;
+    std::vector<unsigned int> offset_local;
+    std::vector<unsigned short> type_local;
+    std::vector<unsigned int> local_to_global;
+    std::vector<unsigned int> shared_out;
 
     if(my_rank == 0)
     {
@@ -1193,21 +1205,6 @@ ParallelMesh* Mesh_partition_t::DistributedMeshInternal(Mesh* mesh)
             }
         }    
 
-        std::vector<unsigned int> global_to_local;
-        
-        int size;
-        MPI_Comm comm = MPI_COMM_WORLD;
-        MPI_Comm_size(comm, &size);
-        int array_sizes[6];
-
-        std::vector<double> coord_local;
-        std::vector<unsigned int> conn_local;
-        std::vector<unsigned int> offset_local;
-        std::vector<unsigned short> type_local;
-        std::vector<unsigned int> local_to_global;
-        std::vector<unsigned int> shared_out;
-
-
         for(int i = 1 ; i < this->n_partitions ; i++)
         {
             ProcessLocalArrays(coord_local, conn_local, offset_local, type_local, local_to_global, 
@@ -1246,6 +1243,7 @@ ParallelMesh* Mesh_partition_t::DistributedMeshInternal(Mesh* mesh)
         fillParallelMesh(pmesh, coord_local, type_local, conn_local, offset_local, local_to_global, shared_out);
     } else {    
         int nelem_pmesh;
+        int array_sizes[6];
         MPI_Status status;  
         MPI_Recv(array_sizes, 6, MPI_INT, 0, 0, comm, &status);
         MPI_Recv(&nelem_pmesh, 1, MPI_INT, 0, 0, comm, &status);
@@ -1280,6 +1278,18 @@ ParallelMesh* Mesh_partition_t::DistributedMesh(Mesh* mesh)
 
     int my_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    int size;
+    MPI_Comm comm = MPI_COMM_WORLD;
+    MPI_Comm_size(comm, &size);
+    int array_sizes[6];
+
+    std::vector<unsigned int> global_to_local;
+    std::vector<double> coord_local;
+    std::vector<unsigned int> conn_local;
+    std::vector<unsigned int> offset_local;
+    std::vector<unsigned short> type_local;
+    std::vector<unsigned int> local_to_global;
+    std::vector<unsigned int> shared_out;
 
     if(my_rank == 0)
     {
@@ -1342,20 +1352,6 @@ ParallelMesh* Mesh_partition_t::DistributedMesh(Mesh* mesh)
             }
         }    
 
-        std::vector<unsigned int> global_to_local;
-        
-        int size;
-        MPI_Comm comm = MPI_COMM_WORLD;
-        MPI_Comm_size(comm, &size);
-        int array_sizes[6];
-
-        std::vector<double> coord_local;
-        std::vector<unsigned int> conn_local;
-        std::vector<unsigned int> offset_local;
-        std::vector<unsigned short> type_local;
-        std::vector<unsigned int> local_to_global;
-        std::vector<unsigned int> shared_out;
-
         for(int i = 1 ; i < this->n_partitions ; i++)
         {
             ProcessLocalArrays(coord_local, conn_local, offset_local, type_local, local_to_global, 
@@ -1400,6 +1396,7 @@ ParallelMesh* Mesh_partition_t::DistributedMesh(Mesh* mesh)
     } else {    
         int nelem_pmesh;
         int nsurfelem_pmesh;
+        int array_sizes[6];
         MPI_Status status;  
         MPI_Recv(array_sizes, 6, MPI_INT, 0, 0, comm, &status);
         MPI_Recv(&nsurfelem_pmesh, 1, MPI_INT, 0, 0, comm, &status);

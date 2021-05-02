@@ -169,6 +169,8 @@ int main(int argc, char* argv[])
     pmesh = parts->DistributedMeshInternal(mesh);
     pmesh->MeshColoring();
 
+    pmesh->writeParallelMesh();
+
     
     if(mesh)  delete mesh;
     if(parts) delete parts;

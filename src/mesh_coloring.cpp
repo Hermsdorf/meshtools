@@ -892,21 +892,20 @@ unsigned int ColoringAutoralOpt(Mesh* mesh)
     unsigned int nsurf_elem = mesh->get_n_face_elements();
     unsigned int ntotal_elem = nelem + nsurf_elem;
     int* elements_color = new int[nelem];
-    std::fill(&elements_color[0], &elements_color[nelem], -1);
     
     int color = 1;
-    unsigned int nelem_coloridos = 0;
     std::vector<unsigned int> conn_proibido;
 
     std::map<unsigned int, unsigned int> elements_withoutcolor;
     for(int i = 0 ; i < nelem ; i++)
         elements_withoutcolor.insert({i, i+nsurf_elem});
 
-    while(nelem_coloridos < nelem)
+    std::map<unsigned int, unsigned int>::iterator it_cont;
+    while(!elements_withoutcolor.empty())
     {
-        std::map<unsigned int, unsigned int>::iterator it_cont;
-        for(it_cont = elements_withoutcolor.begin() ; it_cont != elements_withoutcolor.end() ; it_cont++)
+        for(it_cont = elements_withoutcolor.begin() ; it_cont != elements_withoutcolor.end() ;)
         {
+            bool it_incrementado = false;
             int elem = it_cont->first;
             int pos_elem = it_cont->second;
             int begin = offset[pos_elem];
@@ -929,8 +928,8 @@ unsigned int ColoringAutoralOpt(Mesh* mesh)
                     if(j == end-1)
                     {
                         elements_color[elem] = color;
-                        nelem_coloridos++;
-                        elements_withoutcolor.erase(elem);
+                        elements_withoutcolor.erase(it_cont++);
+                        it_incrementado = true;
                     } // se todas as conectividades do elemento nao sao proibidas, ele pode ser colorido
                 } // ou seja, se a conectividade nao eh proibida
                 else
@@ -947,6 +946,8 @@ unsigned int ColoringAutoralOpt(Mesh* mesh)
                     break;
                 }
             }
+            if(!it_incrementado)
+                it_cont++;
         }
         color++;
         conn_proibido.clear();
@@ -968,8 +969,8 @@ void Mesh::MeshColoring()
     unsigned int* new_conn;
     unsigned int* new_offset;
 
-    //n_internal_colors = ColoringOpenMP_RokosOpt(this);
-    n_internal_colors = ColoringAutoralOpt(this);
+    n_internal_colors = ColoringOpenMP_RokosOpt(this);
+    //n_internal_colors = ColoringAutoralOpt(this);
     CreateSort(this, sort_internal);
     ReorderElements(this, sort_internal, &new_conn, &new_offset);
     UpdateMeshArrays(this, &new_conn, &new_offset);
