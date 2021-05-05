@@ -1145,8 +1145,8 @@ void fillParallelMesh(ParallelMesh* pmesh, std::vector<double> &coord_local, std
 ParallelMesh* Mesh_partition_t::DistributedMeshInternal(Mesh* mesh)
 {   
     ParallelMesh* pmesh = new ParallelMesh();
+
     pmesh->set_internal_mesh(true);
-    pmesh->setFilename(mesh->getFilename());
     pmesh->set_n_face_elements(0);
 
     int my_rank;
@@ -1266,7 +1266,6 @@ ParallelMesh* Mesh_partition_t::DistributedMeshInternal(Mesh* mesh)
 
         fillParallelMesh(pmesh, coord_local, type_local, conn_local, offset_local, local_to_global, shared_out);
     }
-
     return pmesh;
 }
 

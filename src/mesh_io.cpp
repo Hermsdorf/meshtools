@@ -241,7 +241,6 @@ void Mesh::MeshGmshReader(const char* filename)
     
     std::string str(filename);
     str.resize(str.length()-4);
-    str = str.append(".vtu");
 
     this->filename = str;
 
@@ -264,7 +263,7 @@ void Mesh::MeshVTKWriter(int timeStep, int *npart, int* epart, int* color, doubl
         os = std::to_string(timeStep);
 
         std::string str = this->getFilename();
-        str.insert(str.length() - 4, "_" + os);
+        str.insert(str.length(), "_" + os + ".vtu");
 
         fout.open(str.c_str());
     }
@@ -428,7 +427,7 @@ void Mesh::MeshVTKWriterInternal(int timeStep, int* npart, int* epart, int* colo
         os = std::to_string(timeStep);
 
         std::string str = this->getFilename();
-        str.insert(str.length() - 4, "_" + os);
+        str.insert(str.length(), "_" + os + ".vtu");
 
         fout.open(str.c_str());
     }
@@ -592,7 +591,7 @@ void Mesh::MeshVTKWriterInternalBinAppended(int timeStep, int* npart, int* epart
         std::string os;
         os = std::to_string(timeStep);
 
-        str.insert(str.length() - 4, "_" + os);
+        str.insert(str.length(), "_" + os + ".vtu");
     }
     fout = fopen(str.c_str(), "wb");
 
@@ -761,7 +760,7 @@ void Mesh::MeshVTKWriterBinAppended(int timeStep, int* npart, int* epart, int* c
         std::string os;
         os = std::to_string(timeStep);
 
-        str.insert(str.length() - 4, "_" + os);
+        str.insert(str.length(), "_" + os + ".vtu");
     }
     fout = fopen(str.c_str(), "wb");
 

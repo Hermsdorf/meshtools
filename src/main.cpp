@@ -158,7 +158,7 @@ int main(int argc, char* argv[])
         CatalystInitialize(n_script, argv+2);
 #endif
         mesh->MeshReordering(RCM);
-
+        // mesh->MeshColoring(); // para os dados da tabela
         parts = new Mesh_partition_t();
 
         parts->MeshPartitionerInternal(mesh, n_parts);
@@ -167,6 +167,11 @@ int main(int argc, char* argv[])
     ParallelMesh* pmesh = nullptr;
 
     pmesh = parts->DistributedMeshInternal(mesh);
+
+    std::string str(argv[1]);
+    str.resize(str.length()-4);
+    pmesh->setFilename(str);
+    
     pmesh->MeshColoring();
 
     pmesh->writeParallelMesh();

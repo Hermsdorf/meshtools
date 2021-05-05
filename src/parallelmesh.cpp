@@ -297,7 +297,7 @@ void writePvtu(ParallelMesh* pmesh)
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     std::string str(pmesh->getFilename());
-    str.insert(str.length() - 3, "p"); // inserir "p" em ".vtu" -> ".pvtu"
+    str.insert(str.length(), ".pvtu"); // inserir "p" em ".vtu" -> ".pvtu"
     fout.open(str.c_str());
     
     std::string os;
@@ -311,7 +311,7 @@ void writePvtu(ParallelMesh* pmesh)
         os = std::to_string(i);
         int pos = str_aux.find_last_of('/'); // caso a malha esteja em outro diretorio, deixar somente o nome da malha
         str_aux.erase(0, pos+1);
-        str_aux.insert(str_aux.length() - 4, "_" + os);
+        str_aux.insert(str_aux.length(), "_" + os + ".vtu");
 
         fout << "\t\t<PPointData>\n";
         fout << "\t\t\t<PDataArray type=\"Int32\" Name=\"npart\"/>\n";
