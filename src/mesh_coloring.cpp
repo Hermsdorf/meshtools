@@ -799,8 +799,6 @@ unsigned int ColoringOpenMP_RokosOpt(Mesh* mesh)
     }
 }
 
-    CheckColoring(&xadj, &adjncy, &elements_color, ne);
-
     if(mesh->get_mesh_coloring_internal())
         delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader 
                                                       // onde inicializa todo o vetor mesh_coloring_internal com -1.
@@ -813,127 +811,50 @@ unsigned int ColoringOpenMP_RokosOpt(Mesh* mesh)
 } 
 
 unsigned int ColoringAutoral(Mesh* mesh)
-{
-    std::vector<unsigned int> conn = mesh->getConn();
-    std::vector<unsigned int> offset = mesh->getOffset();
-    unsigned int nelem = mesh->get_n_elements();
-    unsigned int nsurf_elem = mesh->get_n_face_elements();
-    unsigned int ntotal_elem = nelem + nsurf_elem;
-    int* elements_color = new int[nelem];
-
-    int color = 1;
-    std::vector<unsigned int> conn_proibido;
-
-    std::map<unsigned int, unsigned int> elements_withoutcolor;
-    for(int i = 0 ; i < nelem ; i++)
-        elements_withoutcolor.insert({i, i+nsurf_elem});
-
-    std::map<unsigned int, unsigned int>::iterator it_cont;
-    while(!elements_withoutcolor.empty())
-    {
-        for(it_cont = elements_withoutcolor.begin() ; it_cont != elements_withoutcolor.end() ;)
-        {
-            bool it_incrementado = false;
-            int elem = it_cont->first;
-            int pos_elem = it_cont->second;
-            int begin = offset[pos_elem];
-            int end = offset[pos_elem + 1];
-
-            unsigned int ultima_conn = 0;
-            if(conn_proibido.size() > 0)
-                ultima_conn = conn_proibido.back();
-
-            for(int j = begin ; j < end ; j++)
-            {
-                unsigned int conn_j = conn[j];
-
-                std::vector<unsigned int>::iterator it;
-                it = std::find(conn_proibido.begin(), conn_proibido.end(), conn_j);
-                if(it == conn_proibido.end())
-                {
-                    conn_proibido.push_back(conn_j);
-
-                    if(j == end-1)
-                    {
-                        elements_color[elem] = color;
-                        elements_withoutcolor.erase(it_cont++);
-                        it_incrementado = true;
-                    } // se todas as conectividades do elemento nao sao proibidas, ele pode ser colorido
-                } // ou seja, se a conectividade nao eh proibida
-                else
-                {   
-                    if(conn_proibido.size() > 0)
-                    {
-                        unsigned int conn_apagar = conn_proibido.back();
-                        while(conn_apagar != ultima_conn)
-                        {
-                            conn_proibido.pop_back();
-                            conn_apagar = conn_proibido.back();
-                        } // apagar todos os conn do elemento que pretendiamos colorir mas nao foi possivel colorir
-                    }
-                    break;
-                }
-            }
-            if(!it_incrementado)
-                it_cont++;
-        }
-        color++;
-        conn_proibido.clear();
-    }
-
-    if(mesh->get_mesh_coloring_internal())
-        delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader 
-                                                      // onde inicializa todo o vetor mesh_coloring_internal com -1.
-    mesh->set_mesh_coloring_internal(elements_color);
-
-    return color-1;
-} // pensar em marcar o elemento e nao as conectividades
-
-unsigned int ColoringAutoralOpt(Mesh* mesh) //* TODO: POR LIMITE DE ELEMENTOS POR COR, verificar se ta certo com checkColoring()
 { 
     std::vector<unsigned int> conn = mesh->getConn();
     std::vector<unsigned int> offset = mesh->getOffset();
     unsigned int nelem = mesh->get_n_elements();
     unsigned int nsurf_elem = mesh->get_n_face_elements();
-    unsigned int ntotal_elem = nelem + nsurf_elem;
     int* elements_color = new int[nelem];
+    int nelem_colored = 0;
+    for(int i = 0 ; i < nelem ; i++)
+        elements_color[i] = -1; // flag para elemento nao colorido
     
     int color = 1;
 
-    std::vector<unsigned int> elements_withoutcolor(nelem);
-    for(int i = 0 ; i < nelem ; i++)
-        elements_withoutcolor[i] = i;
-
     int ntotal_conn = conn.size();
-    int conn_proibido[ntotal_conn] = {0};
-    std::vector<unsigned int>::iterator it_cont;
-    while(!elements_withoutcolor.empty())
+    int* conn_proibido = new int [ntotal_conn];
+
+    #pragma omp parallel for
+    for(int i = 0 ; i < ntotal_conn ; i++)
+        conn_proibido[i] = 0;
+
+    while(nelem_colored < nelem) 
     {
-        for(it_cont = elements_withoutcolor.begin() ; it_cont != elements_withoutcolor.end() ;)
+        for(int iel = 0 ; iel < nelem ; iel++)
         {
-            unsigned int elem = *it_cont;
-            unsigned int* conn = mesh->getElementConn(elem);
-            unsigned int connsize = mesh->getElementConnSize(elem);
-
-            unsigned int sum = 0;
-            for(int i = 0 ; i < connsize ; i++)
-                sum += conn_proibido[conn[i]];
-
-            if(sum == 0)
+            if(elements_color[iel] == -1)
             {
-                elements_color[elem] = color;
-                elements_withoutcolor.erase(it_cont);
+                unsigned int* conn_elem = mesh->getElementConn(iel);
+                unsigned int connsize = mesh->getElementConnSize(iel);
 
+                unsigned int sum = 0;
                 for(int i = 0 ; i < connsize ; i++)
-                    conn_proibido[conn[i]] = 1; // conectividade proibida
-            } // nenhuma conectividade proibida, logo colore o elemento
-            else
-            {
-                it_cont++;
-            }
-        }
+                    sum += conn_proibido[conn_elem[i]];
 
+                if(sum == 0)
+                {
+                    elements_color[iel] = color;
+                    nelem_colored++;
+                    for(int i = 0 ; i < connsize ; i++)
+                        conn_proibido[conn_elem[i]] = 1; // conectividade proibida
+                } // nenhuma conectividade proibida, logo colore o elemento
+            } // se o elemento nao estiver colorido, tenta colorir
+        }
+        
         color++;
+        #pragma omp parallel for
         for(int i = 0 ; i < ntotal_conn ; i++)
             conn_proibido[i] = 0;
     }
@@ -942,7 +863,66 @@ unsigned int ColoringAutoralOpt(Mesh* mesh) //* TODO: POR LIMITE DE ELEMENTOS PO
         delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader 
                                                       // onde inicializa todo o vetor mesh_coloring_internal com -1.
     mesh->set_mesh_coloring_internal(elements_color);
+
+    delete [] conn_proibido;
+    return color-1;
+}
+
+unsigned int ColoringAutoralLimit(Mesh* mesh) //* TODO: POR LIMITE DE ELEMENTOS POR COR
+{ 
+    std::vector<unsigned int> conn = mesh->getConn();
+    std::vector<unsigned int> offset = mesh->getOffset();
+    unsigned int nelem = mesh->get_n_elements();
+    unsigned int nsurf_elem = mesh->get_n_face_elements();
+    int* elements_color = new int[nelem];
+    int nelem_colored = 0;
+    for(int i = 0 ; i < nelem ; i++)
+        elements_color[i] = -1; // flag para elemento nao colorido
     
+    int color = 1;
+
+    int ntotal_conn = conn.size();
+    int* conn_proibido = new int [ntotal_conn];
+
+    #pragma omp parallel for
+    for(int i = 0 ; i < ntotal_conn ; i++)
+        conn_proibido[i] = 0;
+
+    while(nelem_colored < nelem) 
+    {
+        for(int iel = 0 ; iel < nelem ; iel++)
+        {
+            if(elements_color[iel] == -1)
+            {
+                unsigned int* conn_elem = mesh->getElementConn(iel);
+                unsigned int connsize = mesh->getElementConnSize(iel);
+
+                unsigned int sum = 0;
+                for(int i = 0 ; i < connsize ; i++)
+                    sum += conn_proibido[conn_elem[i]];
+
+                if(sum == 0)
+                {
+                    elements_color[iel] = color;
+                    nelem_colored++;
+                    for(int i = 0 ; i < connsize ; i++)
+                        conn_proibido[conn_elem[i]] = 1; // conectividade proibida
+                } // nenhuma conectividade proibida, logo colore o elemento
+            } // se o elemento nao estiver colorido, tenta colorir
+        }
+        
+        color++;
+        #pragma omp parallel for
+        for(int i = 0 ; i < ntotal_conn ; i++)
+            conn_proibido[i] = 0;
+    }
+
+    if(mesh->get_mesh_coloring_internal())
+        delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader 
+                                                      // onde inicializa todo o vetor mesh_coloring_internal com -1.
+    mesh->set_mesh_coloring_internal(elements_color);
+
+    delete [] conn_proibido;
     return color-1;
 }
 
@@ -954,8 +934,8 @@ void Mesh::MeshColoring()
     unsigned int* new_conn;
     unsigned int* new_offset;
 
-    n_internal_colors = ColoringOpenMP_RokosOpt(this);
-    //n_internal_colors = ColoringAutoralOpt(this);
+    //n_internal_colors = ColoringOpenMP_RokosOpt(this);
+    n_internal_colors = ColoringAutoral(this);
     CreateSort(this, sort_internal);
     ReorderElements(this, sort_internal, &new_conn, &new_offset);
     UpdateMeshArrays(this, &new_conn, &new_offset);

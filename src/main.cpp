@@ -1,7 +1,7 @@
 #include <iostream>
 #include <cmath>
 
-#include "mpi.h"
+//#include "mpi.h"
 #include "mesh.h"
 #include "mesh_part.h"
 #include "alglin.h"
@@ -140,45 +140,45 @@ int main(int argc, char* argv[])
     if(argc == 4)
         n_script = 1;
    
-    int n_parts;
-    int my_rank;
+    // int n_parts;
+    // int my_rank;
 
-    MPI_Init(NULL, NULL);
-    MPI_Comm_size(MPI_COMM_WORLD, &n_parts);
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    // MPI_Init(NULL, NULL);
+    // MPI_Comm_size(MPI_COMM_WORLD, &n_parts);
+    // MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
     Mesh* mesh = nullptr;
-    Mesh_partition_t* parts = nullptr;
+    ///Mesh_partition_t* parts = nullptr;
 
-    if(my_rank == 0)
-    {
+    // if(my_rank == 0)
+    // {
         mesh = new Mesh(argv[1]);
 
 #ifdef PARAVIEWCAT_FOUND
         CatalystInitialize(n_script, argv+2);
 #endif
         mesh->MeshReordering(RCM);
-        // mesh->MeshColoring(); // para os dados da tabela
-        parts = new Mesh_partition_t();
+        mesh->MeshColoring(); // para os dados da tabela
+        //parts = new Mesh_partition_t();
 
-        parts->MeshPartitionerInternal(mesh, n_parts);
-    }
+        //parts->MeshPartitionerInternal(mesh, n_parts);
+    //}
 
-    ParallelMesh* pmesh = nullptr;
+    // ParallelMesh* pmesh = nullptr;
 
-    pmesh = parts->DistributedMeshInternal(mesh);
+    // pmesh = parts->DistributedMeshInternal(mesh);
 
-    std::string str(argv[1]);
-    str.resize(str.length()-4);
-    pmesh->setFilename(str);
+    // std::string str(argv[1]);
+    // str.resize(str.length()-4);
+    // pmesh->setFilename(str);
     
-    pmesh->MeshColoring();
+    //pmesh->MeshColoring();
 
-    pmesh->writeParallelMesh();
+    //pmesh->writeParallelMesh();
 
     
     if(mesh)  delete mesh;
-    if(parts) delete parts;
+    //if(parts) delete parts;
 
 //     double *velocity = new double[mesh->get_n_nodes()*3];
 //     float *pressure  = new float[mesh->get_n_nodes()];
@@ -231,11 +231,13 @@ int main(int argc, char* argv[])
 
     // delete [] velocity;
     // delete [] pressure;
-    if(pmesh) delete pmesh;
+
+    //if(pmesh) delete pmesh;
+
     // delete [] y;
     // delete [] r;
 
-    MPI_Finalize();
+    //MPI_Finalize();
     return 0;
 }
 
