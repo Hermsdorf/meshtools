@@ -868,7 +868,7 @@ unsigned int ColoringAutoral(Mesh* mesh)
     return color-1;
 }
 
-unsigned int ColoringAutoralLimit(Mesh* mesh) //* TODO: POR LIMITE DE ELEMENTOS POR COR
+unsigned int ColoringAutoralLimit(Mesh* mesh) 
 { 
     std::vector<unsigned int> conn = mesh->getConn();
     std::vector<unsigned int> offset = mesh->getOffset();
@@ -876,10 +876,13 @@ unsigned int ColoringAutoralLimit(Mesh* mesh) //* TODO: POR LIMITE DE ELEMENTOS 
     unsigned int nsurf_elem = mesh->get_n_face_elements();
     int* elements_color = new int[nelem];
     int nelem_colored = 0;
+
     for(int i = 0 ; i < nelem ; i++)
         elements_color[i] = -1; // flag para elemento nao colorido
     
     int color = 1;
+    unsigned int nelem_thiscolor = 0;
+    unsigned int max_nelem = 100000; // numero maximo de elementos por cor
 
     int ntotal_conn = conn.size();
     int* conn_proibido = new int [ntotal_conn];
@@ -890,6 +893,7 @@ unsigned int ColoringAutoralLimit(Mesh* mesh) //* TODO: POR LIMITE DE ELEMENTOS 
 
     while(nelem_colored < nelem) 
     {
+        bool nelem_reachlimit = false;
         for(int iel = 0 ; iel < nelem ; iel++)
         {
             if(elements_color[iel] == -1)
@@ -905,13 +909,24 @@ unsigned int ColoringAutoralLimit(Mesh* mesh) //* TODO: POR LIMITE DE ELEMENTOS 
                 {
                     elements_color[iel] = color;
                     nelem_colored++;
+                    nelem_thiscolor++;
+
+                    if(nelem_thiscolor == max_nelem)
+                    {
+                        color++;
+                        nelem_thiscolor = 0;
+                        nelem_reachlimit = true;
+                    }
+
                     for(int i = 0 ; i < connsize ; i++)
                         conn_proibido[conn_elem[i]] = 1; // conectividade proibida
                 } // nenhuma conectividade proibida, logo colore o elemento
             } // se o elemento nao estiver colorido, tenta colorir
         }
         
-        color++;
+        if(!nelem_reachlimit)
+            color++;
+            
         #pragma omp parallel for
         for(int i = 0 ; i < ntotal_conn ; i++)
             conn_proibido[i] = 0;
