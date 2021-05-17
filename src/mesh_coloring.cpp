@@ -818,21 +818,23 @@ unsigned int ColoringAutoral(Mesh* mesh)
     unsigned int nsurf_elem = mesh->get_n_face_elements();
     int* elements_color = new int[nelem];
     int nelem_colored = 0;
+    int n_nodes = mesh->get_n_nodes();
     for(int i = 0 ; i < nelem ; i++)
         elements_color[i] = -1; // flag para elemento nao colorido
     
     int color = 1;
 
-    int ntotal_conn = conn.size();
-    int* conn_proibido = new int [ntotal_conn];
+    // int ntotal_conn = conn.size();
+    int* conn_proibido = new int [n_nodes];
 
-    #pragma omp parallel for
-    for(int i = 0 ; i < ntotal_conn ; i++)
+    //#pragma omp parallel for  
+    for(int i = 0 ; i < n_nodes ; i++)
         conn_proibido[i] = 0;
 
+    int istart = 0;
     while(nelem_colored < nelem) 
     {
-        for(int iel = 0 ; iel < nelem ; iel++)
+        for(int iel = istart ; iel < nelem ; iel++)
         {
             if(elements_color[iel] == -1)
             {
@@ -847,6 +849,8 @@ unsigned int ColoringAutoral(Mesh* mesh)
                 {
                     elements_color[iel] = color;
                     nelem_colored++;
+                    if(iel == istart)
+                        istart++;
                     for(int i = 0 ; i < connsize ; i++)
                         conn_proibido[conn_elem[i]] = 1; // conectividade proibida
                 } // nenhuma conectividade proibida, logo colore o elemento
@@ -854,8 +858,8 @@ unsigned int ColoringAutoral(Mesh* mesh)
         }
         
         color++;
-        #pragma omp parallel for
-        for(int i = 0 ; i < ntotal_conn ; i++)
+        //#pragma omp parallel for
+        for(int i = 0 ; i < n_nodes ; i++)
             conn_proibido[i] = 0;
     }
 
@@ -876,33 +880,36 @@ unsigned int ColoringAutoralLimit(Mesh* mesh)
     unsigned int nsurf_elem = mesh->get_n_face_elements();
     int* elements_color = new int[nelem];
     int nelem_colored = 0;
+    int n_nodes = mesh->get_n_nodes();
 
     for(int i = 0 ; i < nelem ; i++)
         elements_color[i] = -1; // flag para elemento nao colorido
     
     int color = 1;
     unsigned int nelem_thiscolor = 0;
-    unsigned int max_nelem = 100000; // numero maximo de elementos por cor
+    unsigned int max_nelem = 4096; // numero maximo de elementos por cor
 
-    int ntotal_conn = conn.size();
-    int* conn_proibido = new int [ntotal_conn];
+    //int ntotal_conn    = conn.size();
+    // FIXME: o tamanho maxido do vetor é n_nodes.
+    int* conn_proibido = new int [n_nodes];
 
-    #pragma omp parallel for
-    for(int i = 0 ; i < ntotal_conn ; i++)
+    #pragma omp parallel for schedule (dynamic) 
+    for(int i = 0 ; i < n_nodes ; i++)
         conn_proibido[i] = 0;
 
+    int istart = 0;
     while(nelem_colored < nelem) 
     {
         bool nelem_reachlimit = false;
-        for(int iel = 0 ; iel < nelem ; iel++)
+        for(int iel = istart ; iel < nelem ; iel++)
         {
             if(elements_color[iel] == -1)
             {
                 unsigned int* conn_elem = mesh->getElementConn(iel);
-                unsigned int connsize = mesh->getElementConnSize(iel);
+                unsigned int connsize   = mesh->getElementConnSize(iel);
 
                 unsigned int sum = 0;
-                for(int i = 0 ; i < connsize ; i++)
+                for(int i = 0 ; i < connsize ; ++i)
                     sum += conn_proibido[conn_elem[i]];
 
                 if(sum == 0)
@@ -910,6 +917,7 @@ unsigned int ColoringAutoralLimit(Mesh* mesh)
                     elements_color[iel] = color;
                     nelem_colored++;
                     nelem_thiscolor++;
+                    if(iel == istart) istart++;
 
                     if(nelem_thiscolor == max_nelem)
                     {
@@ -927,8 +935,8 @@ unsigned int ColoringAutoralLimit(Mesh* mesh)
         if(!nelem_reachlimit)
             color++;
             
-        #pragma omp parallel for
-        for(int i = 0 ; i < ntotal_conn ; i++)
+       #pragma omp parallel for schedule (dynamic)
+        for(int i = 0 ; i < n_nodes ; i++)
             conn_proibido[i] = 0;
     }
 
@@ -949,8 +957,13 @@ void Mesh::MeshColoring()
     unsigned int* new_conn;
     unsigned int* new_offset;
 
+
+    //CHECK
     //n_internal_colors = ColoringOpenMP_RokosOpt(this);
     n_internal_colors = ColoringAutoral(this);
+  
+
+
     CreateSort(this, sort_internal);
     ReorderElements(this, sort_internal, &new_conn, &new_offset);
     UpdateMeshArrays(this, &new_conn, &new_offset);
