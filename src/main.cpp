@@ -158,7 +158,7 @@ int main(int argc, char* argv[])
         CatalystInitialize(n_script, argv+2);
 #endif
         mesh->MeshReordering(RCM);
-        mesh->MeshColoring(); // para os dados da tabela
+        mesh->MeshColoring();
         //parts = new Mesh_partition_t();
 
         //parts->MeshPartitionerInternal(mesh, n_parts);

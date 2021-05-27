@@ -810,7 +810,7 @@ unsigned int ColoringOpenMP_RokosOpt(Mesh* mesh)
     return n_colors;
 } 
 
-unsigned int ColoringAutoral(Mesh* mesh)
+unsigned int ColoringAutoralOpt(Mesh* mesh)
 { 
     std::vector<unsigned int> conn = mesh->getConn();
     std::vector<unsigned int> offset = mesh->getOffset();
@@ -824,17 +824,16 @@ unsigned int ColoringAutoral(Mesh* mesh)
     
     int color = 1;
 
-    // int ntotal_conn = conn.size();
     int* conn_proibido = new int [n_nodes];
 
-    //#pragma omp parallel for  
+    #pragma omp parallel for schedule (dynamic)
     for(int i = 0 ; i < n_nodes ; i++)
         conn_proibido[i] = 0;
 
     int istart = 0;
     while(nelem_colored < nelem) 
     {
-        for(int iel = istart ; iel < nelem ; iel++)
+        for(int iel = istart; iel < nelem ; iel++)
         {
             if(elements_color[iel] == -1)
             {
@@ -858,7 +857,8 @@ unsigned int ColoringAutoral(Mesh* mesh)
         }
         
         color++;
-        //#pragma omp parallel for
+
+        #pragma omp parallel for schedule (dynamic)
         for(int i = 0 ; i < n_nodes ; i++)
             conn_proibido[i] = 0;
     }
@@ -871,6 +871,67 @@ unsigned int ColoringAutoral(Mesh* mesh)
     delete [] conn_proibido;
     return color-1;
 }
+
+unsigned int ColoringAutoral(Mesh* mesh)
+{ 
+    std::vector<unsigned int> conn = mesh->getConn();
+    std::vector<unsigned int> offset = mesh->getOffset();
+    unsigned int nelem = mesh->get_n_elements();
+    unsigned int nsurf_elem = mesh->get_n_face_elements();
+    int* elements_color = new int[nelem];
+    int nelem_colored = 0;
+    int n_nodes = mesh->get_n_nodes();
+    for(int i = 0 ; i < nelem ; i++)
+        elements_color[i] = -1; // flag para elemento nao colorido
+    
+    int color = 1;
+
+    int* conn_proibido = new int [n_nodes];
+
+    #pragma omp parallel for schedule (dynamic)
+    for(int i = 0 ; i < n_nodes ; i++)
+        conn_proibido[i] = 0;
+
+    while(nelem_colored < nelem) 
+    {
+        for(int iel = 0; iel < nelem ; iel++)
+        {
+            if(elements_color[iel] == -1)
+            {
+                unsigned int* conn_elem = mesh->getElementConn(iel);
+                unsigned int connsize = mesh->getElementConnSize(iel);
+
+                unsigned int sum = 0;
+                for(int i = 0 ; i < connsize ; i++)
+                    sum += conn_proibido[conn_elem[i]];
+
+                if(sum == 0)
+                {
+                    elements_color[iel] = color;
+                    nelem_colored++;
+
+                    for(int i = 0 ; i < connsize ; i++)
+                        conn_proibido[conn_elem[i]] = 1; // conectividade proibida
+                } // nenhuma conectividade proibida, logo colore o elemento
+            } // se o elemento nao estiver colorido, tenta colorir
+        }
+        
+        color++;
+
+        #pragma omp parallel for schedule (dynamic)
+        for(int i = 0 ; i < n_nodes ; i++)
+            conn_proibido[i] = 0;
+    }
+
+    if(mesh->get_mesh_coloring_internal())
+        delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader 
+                                                      // onde inicializa todo o vetor mesh_coloring_internal com -1.
+    mesh->set_mesh_coloring_internal(elements_color);
+
+    delete [] conn_proibido;
+    return color-1;
+}
+
 
 unsigned int ColoringAutoralLimit(Mesh* mesh) 
 { 
@@ -887,10 +948,8 @@ unsigned int ColoringAutoralLimit(Mesh* mesh)
     
     int color = 1;
     unsigned int nelem_thiscolor = 0;
-    unsigned int max_nelem = 4096; // numero maximo de elementos por cor
+    unsigned int max_nelem = 2048; // numero maximo de elementos por cor
 
-    //int ntotal_conn    = conn.size();
-    // FIXME: o tamanho maxido do vetor é n_nodes.
     int* conn_proibido = new int [n_nodes];
 
     #pragma omp parallel for schedule (dynamic) 
@@ -915,6 +974,7 @@ unsigned int ColoringAutoralLimit(Mesh* mesh)
                 if(sum == 0)
                 {
                     elements_color[iel] = color;
+                    // fazer o sort aqui
                     nelem_colored++;
                     nelem_thiscolor++;
                     if(iel == istart) istart++;
@@ -959,11 +1019,9 @@ void Mesh::MeshColoring()
 
 
     //CHECK
-    //n_internal_colors = ColoringOpenMP_RokosOpt(this);
-    n_internal_colors = ColoringAutoral(this);
+    n_internal_colors = ColoringOpenMP_RokosOpt(this); // jogar CreateSort pra dentro
+    //n_internal_colors = ColoringAutoralLimit(this); // fazer o sort aqui dentro ColoringAutoralLimit(this, sort_internal)
   
-
-
     CreateSort(this, sort_internal);
     ReorderElements(this, sort_internal, &new_conn, &new_offset);
     UpdateMeshArrays(this, &new_conn, &new_offset);
@@ -972,6 +1030,7 @@ void Mesh::MeshColoring()
     for(int i = 0 ; i < n_internal_colors ; i++)
         std::cout << mesh_coloring_internal[i] << " ";
 
+    std::cout << "  # n colors: " << n_internal_colors << "\n";
     std::cout << "\nFinished mesh coloring...\n";
 
     delete [] sort_internal;

@@ -49,7 +49,7 @@ endif()
 
 target_link_libraries(meshtools 
 PRIVATE
-#MPI::MPI_C
+MPI::MPI_C
 ${ADDITIONAL_ITEMS}
 ${METIS_LIBRARIES}
 )
