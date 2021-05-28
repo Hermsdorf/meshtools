@@ -12,7 +12,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 #set(CMAKE_C_COMPILER tau_cc.sh)
 #set(CMAKE_CXX_COMPILER tau_cxx.sh)
 set(CMAKE_CXX_COMPILER mpicxx)
-set(CMAKE_CXX_FLAGS "-fopenmp -g")
+set(CMAKE_CXX_FLAGS "-fopenmp -g -O3")
 
 find_package(MPI)
 find_package(METIS REQUIRED)

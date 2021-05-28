@@ -933,7 +933,7 @@ unsigned int ColoringAutoral(Mesh* mesh)
 }
 
 
-unsigned int ColoringAutoralLimit(Mesh* mesh) 
+unsigned int ColoringAutoralLimit(Mesh* mesh, unsigned int* sort_internal) 
 { 
     std::vector<unsigned int> conn = mesh->getConn();
     std::vector<unsigned int> offset = mesh->getOffset();
@@ -948,7 +948,7 @@ unsigned int ColoringAutoralLimit(Mesh* mesh)
     
     int color = 1;
     unsigned int nelem_thiscolor = 0;
-    unsigned int max_nelem = 2048; // numero maximo de elementos por cor
+    unsigned int max_nelem = 4096; // numero maximo de elementos por cor
 
     int* conn_proibido = new int [n_nodes];
 
@@ -957,6 +957,7 @@ unsigned int ColoringAutoralLimit(Mesh* mesh)
         conn_proibido[i] = 0;
 
     int istart = 0;
+    int cont = 0;
     while(nelem_colored < nelem) 
     {
         bool nelem_reachlimit = false;
@@ -974,7 +975,9 @@ unsigned int ColoringAutoralLimit(Mesh* mesh)
                 if(sum == 0)
                 {
                     elements_color[iel] = color;
-                    // fazer o sort aqui
+                    sort_internal[cont] = iel;
+
+                    cont++;
                     nelem_colored++;
                     nelem_thiscolor++;
                     if(iel == istart) istart++;
@@ -1017,12 +1020,10 @@ void Mesh::MeshColoring()
     unsigned int* new_conn;
     unsigned int* new_offset;
 
+    //n_internal_colors = ColoringOpenMP_RokosOpt(this);
+    n_internal_colors = ColoringAutoralLimit(this, sort_internal);
 
-    //CHECK
-    n_internal_colors = ColoringOpenMP_RokosOpt(this); // jogar CreateSort pra dentro
-    //n_internal_colors = ColoringAutoralLimit(this); // fazer o sort aqui dentro ColoringAutoralLimit(this, sort_internal)
-  
-    CreateSort(this, sort_internal);
+    //CreateSort(this, sort_internal); // por enquanto usar caso nao seja ColoringAutoralLimit
     ReorderElements(this, sort_internal, &new_conn, &new_offset);
     UpdateMeshArrays(this, &new_conn, &new_offset);
 
@@ -1030,7 +1031,7 @@ void Mesh::MeshColoring()
     for(int i = 0 ; i < n_internal_colors ; i++)
         std::cout << mesh_coloring_internal[i] << " ";
 
-    std::cout << "  # n colors: " << n_internal_colors << "\n";
+    std::cout << "\n  # n colors: " << n_internal_colors << "\n";
     std::cout << "\nFinished mesh coloring...\n";
 
     delete [] sort_internal;
@@ -1043,6 +1044,7 @@ void Mesh::MeshColoring_test()
     idx_t* xadj;
     idx_t* adjncy;
     int error = 0;
+
     n_internal_colors = ColoringOpenMP_RokosOpt(this);
     MeshToDualGraph(this, &xadj, &adjncy);
     CheckColoring(&xadj, &adjncy, &this->mesh_coloring_internal, this->n_elements, &error);
