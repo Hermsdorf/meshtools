@@ -8,6 +8,7 @@
 typedef std::pair<int, std::string> physical_data_t;
 
 typedef enum {METIS_ND=0, RCM, FF} reorder_t;
+typedef enum {COLOR_DEFAULT=0, COLOR_DEFAULT_BLOCK, COLOR_ROKOS, COLOR_ROKOS_BLOCK} color_mode_t;
 
 class Mesh {
     public:
@@ -464,7 +465,7 @@ class Mesh {
          *                Recomendamos o algoritmo RCM.          
         */
 
-        void MeshColoring();
+        void MeshColoring(color_mode_t cmode=COLOR_DEFAULT_BLOCK, int block_size=4096);
         /**
          * * OBJETIVO:
          *     Coloração dos elementos internos para utilização em paralelismo com memória compartilada (OpenMP).

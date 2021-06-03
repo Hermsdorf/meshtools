@@ -1,6 +1,8 @@
 #include <iostream>
 #include <cmath>
 #include <unistd.h>
+#include <cstring>
+
 
 #include "meshtools_config.h"
 #include "mesh.h"
@@ -25,8 +27,17 @@ using namespace std;
 static void usage(const char *arg0)
 {
     cerr << "Usage: " << arg0 << " <options>" << endl;
-    cerr << "\t -h            : show help" << endl;
-    cerr << "\t -m <filename> : mesh filename (gmsh ascii v.2.2)> " << endl;
+    cerr << "\t -h                   : show help" << endl;
+    cerr << "\t -m <filename>        : where <filename> is the gmsh file name (gmsh ascii v.2.2)> " << endl;
+    cerr << "\t -c [color algorithm] : where [color algotihm] is the coloring algorithm. The options are: " << endl;
+    cerr <<"\t\t  greedy  : greedy serial version (default)" << endl;
+    cerr <<"\t\t  blocked : blocked serial version" << endl;
+    cerr <<"\t\t  rokos   : openmp greedy version " << endl;
+    cerr << "\t -b <block size> : where <block size> is block size used in the thge blocked coloring algorithm." << endl;
+    cerr << "\t -r [reordering algorithm] : where [reordering algotihm] is the nodal renumering algorithm. The options are: " << endl;
+    cerr <<"\t\t  rcm     : apply rcm (default) " << endl;
+    cerr <<"\t\t  nd      : apply nested disection algorithm " << endl;
+    cerr <<"\t\t  ff      : first touch algorithm" << endl;
     exit(-1);
 }
 
@@ -35,11 +46,17 @@ int main(int argc, char* argv[])
 {         
 
     int   opt;
-    char* gmsh_filename = 0; 
+    char* gmsh_filename    = 0; 
     bool  flg_catalyst     = false;
     bool  flg_gmsh         = false;
-    char* catalyst_script = 0;
-    
+    char* catalyst_script  = 0;
+    char* rorder_alg_name  = 0;
+    char* color_alg_name   = 0;
+    char* block_size_str;
+
+    reorder_t    reordering = RCM;
+    color_mode_t color_alg  = COLOR_DEFAULT_BLOCK;
+    int block_size          = 4096;
 
 #ifdef USE_MPI
     MPI_Init(argc, argv);
@@ -49,7 +66,7 @@ int main(int argc, char* argv[])
         usage(argv[0]);
     }
 
-    while( (opt = getopt(argc, argv, "hm:c:")) !=  -1 ) {
+    while( (opt = getopt(argc, argv, "hm:c:r:c:b:")) !=  -1 ) {
         switch ( opt ) {
             case 'h': /* help */
                 usage(argv[0]) ;
@@ -58,9 +75,30 @@ int main(int argc, char* argv[])
                 gmsh_filename = optarg ;
                 flg_gmsh      = true;
                 break ;
-            case 'c':
+            case 'v':
                 catalyst_script = optarg;
                 flg_catalyst    = true;
+                break;
+            case 'r':
+                rorder_alg_name = optarg;
+                if(strcmp(rorder_alg_name,"nd")==0)
+                    reordering = METIS_ND;
+                if(strcmp(rorder_alg_name,"ff")==0)
+                    reordering = FF;
+                break;
+            case 'c':
+                color_alg_name = optarg;
+                if(strcmp(color_alg_name,"greedy")==0)
+                    color_alg = COLOR_DEFAULT;
+                if(strcmp(color_alg_name,"blocked")==0)
+                    color_alg = COLOR_DEFAULT_BLOCK;
+                 if(strcmp(color_alg_name,"rokos")==0)
+                     color_alg = COLOR_ROKOS;
+                break;
+            case 'b':
+                block_size_str = optarg;
+                block_size = atoi(block_size_str);
+                break;
             default:
                 fprintf(stderr, "Opcao invalida ou faltando argumento: `%c'\n", optopt) ;
                 usage(argv[0]);
@@ -93,7 +131,7 @@ int main(int argc, char* argv[])
     if(processor_id == 0)
     {
         mesh = new Mesh(gmsh_filename);
-        mesh->MeshReordering(RCM);
+        mesh->MeshReordering(reordering);
     
         if(n_processors > 1 ) {
             parts = new Mesh_partition_t();
@@ -109,12 +147,12 @@ int main(int argc, char* argv[])
         str.resize(str.length()-4);
         pmesh = parts->DistributedMeshInternal(mesh);
         pmesh->setFilename(str);
-        pmesh->MeshColoring();
+        pmesh->MeshColoring(color_alg, block_size);
         pmesh->writeParallelMesh();
     }
     else
     {
-        mesh->MeshColoring();
+        mesh->MeshColoring(color_alg, block_size);
         mesh->MeshVTKWriterInternalBinAppended(0);
     }
 

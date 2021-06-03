@@ -9,8 +9,8 @@ include(CTest)
 enable_testing()
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
-set(CMAKE_CXX_COMPILER mpicxx)
-set(CMAKE_CXX_FLAGS "-fopenmp -g -O3")
+set(CMAKE_CXX_COMPILER icpc)
+set(CMAKE_CXX_FLAGS "-g -O1")
 
 find_package(METIS REQUIRED)
 
@@ -23,6 +23,7 @@ file(GLOB source_files
     )
 
 option(MPI_ENABLE "Enable MPI" OFF)
+option(OpenMP_ENABLE "Enable OpenMP" OFF)
 option(CATALYST_ENABLE "Enable Paraview Catalyst" OFF)
 
 if(MPI_ENABLE)
@@ -58,9 +59,11 @@ include_directories(include)
 
 add_executable(meshtools ${source_files})
 
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(meshtools PUBLIC OpenMP::OpenMP_CXX)
+if(OpenMP_ENABLE)
+   find_package(OpenMP)
+   if(OpenMP_CXX_FOUND)
+      target_link_libraries(meshtools PUBLIC OpenMP::OpenMP_CXX)
+   endif()
 endif()
 
 target_link_libraries(meshtools 
