@@ -33,11 +33,11 @@ static void usage(const char *arg0)
     cerr <<"\t\t  greedy  : greedy serial version (default)" << endl;
     cerr <<"\t\t  blocked : blocked serial version" << endl;
     cerr <<"\t\t  rokos   : openmp greedy version " << endl;
-    cerr << "\t -b <block size> : where <block size> is block size used in the thge blocked coloring algorithm." << endl;
-    cerr << "\t -r [reordering algorithm] : where [reordering algotihm] is the nodal renumering algorithm. The options are: " << endl;
-    cerr <<"\t\t  rcm     : apply rcm (default) " << endl;
-    cerr <<"\t\t  nd      : apply nested disection algorithm " << endl;
-    cerr <<"\t\t  ff      : first touch algorithm" << endl;
+    cerr << "\t -b <block size> : where <block size> is block size used in the the blocked version coloring algorithm." << endl;
+    cerr << "\t -r <reordering algorithm> : where [reordering algotihm] is the nodal renumering algorithm. The options are: " << endl;
+    cerr <<"\t\t  rcm       : apply rcm (default) " << endl;
+    cerr <<"\t\t  nd        : apply nested disection algorithm " << endl;
+    cerr <<"\t\t  first-fit : first touch algorithm" << endl;
     exit(-1);
 }
 
@@ -61,11 +61,15 @@ int main(int argc, char* argv[])
 #ifdef USE_MPI
     MPI_Init(argc, argv);
 #endif
-    if(argc < 2)
+
+    // Obrigatorio ter ao menos 3 argumentos:
+    // ./meshtools -m <filename>
+    if(argc < 3)
     {
         usage(argv[0]);
     }
 
+    // Trata os argumentos que são passados por linha de comando
     while( (opt = getopt(argc, argv, "hm:c:r:c:b:")) !=  -1 ) {
         switch ( opt ) {
             case 'h': /* help */
@@ -83,7 +87,7 @@ int main(int argc, char* argv[])
                 rorder_alg_name = optarg;
                 if(strcmp(rorder_alg_name,"nd")==0)
                     reordering = METIS_ND;
-                if(strcmp(rorder_alg_name,"ff")==0)
+                if(strcmp(rorder_alg_name,"first-fit")==0)
                     reordering = FF;
                 break;
             case 'c':
@@ -125,37 +129,53 @@ int main(int argc, char* argv[])
 #endif
 
     Mesh             *mesh  = nullptr;
-    Mesh_partition_t *parts = nullptr;
     ParallelMesh     *pmesh = nullptr;
+    Mesh_partition_t *parts = new Mesh_partition_t();
 
     if(processor_id == 0)
     {
+        // Rodando serial ou em paralelo o processo mestre
+        // irá ler a malha. 
         mesh = new Mesh(gmsh_filename);
+
+        // Aplica a reordenação nodal considerando o algoritmo
+        // escolhido pelo usuário
         mesh->MeshReordering(reordering);
     
+        // Se houver mais um processo, o processo mestre irá
+        // particionar a malha
         if(n_processors > 1 ) {
-            parts = new Mesh_partition_t();
             parts->MeshPartitionerInternal(mesh, n_processors);
         }
     }
 
     if(n_processors > 1 ) 
     {
-        parts->DistributedMeshInternal(mesh);
+        // Malha gerada pelo processo mestre é distribuida
+        // para os demais processos. 
+        pmesh = parts->DistributedMeshInternal(mesh, processor_id, n_processors);
 
         std::string str(gmsh_filename);
         str.resize(str.length()-4);
-        pmesh = parts->DistributedMeshInternal(mesh);
         pmesh->setFilename(str);
+
+        // Aplica em cada partição a coloração
         pmesh->MeshColoring(color_alg, block_size);
+
+        //Escreve partição na arquivo 
         pmesh->writeParallelMesh();
     }
     else
     {
+        // Em caso de execução em serial, aplica a coloração 
+        // em toda a malha
         mesh->MeshColoring(color_alg, block_size);
+
+        // Escreve a malha em arquivo.
         mesh->MeshVTKWriterInternalBinAppended(0);
     }
 
+    // Desaloca as estruturas criadas.
     if(mesh)  delete mesh;
     if(parts) delete parts;
     if(pmesh) delete pmesh;

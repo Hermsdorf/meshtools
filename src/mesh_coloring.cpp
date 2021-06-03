@@ -126,7 +126,7 @@ void ReorderElements(Mesh* mesh, unsigned int* sort, unsigned int** new_conn, un
 
     *new_conn   = new unsigned int [mesh->getOffset().back() - elem_offset[0]];
     *new_offset = new unsigned int [ne + 1];
-    
+
     unsigned int count_conn = 0;
     unsigned int count_offset = 1;
 
@@ -210,125 +210,127 @@ void DecreasingAdj(Mesh* mesh, idx_t** xadj, idx_t** adjncy, int** sequence)
     std::cout << "  Adjacencies calculated succesfully\n";
 }
 
-unsigned int ColoringReordLimit(Mesh* mesh)
-{
-    idx_t* xadj;
-    idx_t* adjncy;
-    unsigned int ne = mesh->get_n_elements();
-    int* elements_color = new int[ne];
-    int* sequence = new int[ne];
-    unsigned int n_colors = 1;                         // Número total de cores da malha.
-    unsigned int max_n_elements = 30000;               // Número máximo de elementos por cor.
-    std::vector<unsigned int> n_elements_color(n_colors, 0); // Vector responsável por contar quantos elementos tem por cor. 
+// TODO: Remover esse codigo quando fazer o merge do branch MPI no master
+// 
+// unsigned int ColoringReordLimit(Mesh* mesh)
+// {
+//     idx_t* xadj;
+//     idx_t* adjncy;
+//     unsigned int ne = mesh->get_n_elements();
+//     int* elements_color = new int[ne];
+//     int* sequence = new int[ne];
+//     unsigned int n_colors = 1;                         // Número total de cores da malha.
+//     unsigned int max_n_elements = 30000;               // Número máximo de elementos por cor.
+//     std::vector<unsigned int> n_elements_color(n_colors, 0); // Vector responsável por contar quantos elementos tem por cor. 
 
-    MeshToDualGraph(mesh, &xadj, &adjncy);
+//     MeshToDualGraph(mesh, &xadj, &adjncy);
 
-    DecreasingAdj(mesh, &xadj, &adjncy, &sequence);  
+//     DecreasingAdj(mesh, &xadj, &adjncy, &sequence);  
 
-    std::fill(&elements_color[0], &elements_color[ne], -1); // Flag para elemento sem cor.
+//     std::fill(&elements_color[0], &elements_color[ne], -1); // Flag para elemento sem cor.
 
-    for(unsigned int i = 0 ; i < ne ; i++)
-    {
-        unsigned int start = xadj[sequence[i]];
-        unsigned int end = xadj[sequence[i]+1];
+//     for(unsigned int i = 0 ; i < ne ; i++)
+//     {
+//         unsigned int start = xadj[sequence[i]];
+//         unsigned int end = xadj[sequence[i]+1];
 
-        unsigned int color = 1;  // Possível cor para o elemento i.
-        unsigned int j = start;
+//         unsigned int color = 1;  // Possível cor para o elemento i.
+//         unsigned int j = start;
 
-        while(j < end)
-        {
-            unsigned int elem_adj = adjncy[j];
+//         while(j < end)
+//         {
+//             unsigned int elem_adj = adjncy[j];
 
-            if(elements_color[elem_adj] == color || n_elements_color[color-1] >= max_n_elements)
-            {
-                color++;
-                j = start;
-            }
-            else
-                j++;
+//             if(elements_color[elem_adj] == color || n_elements_color[color-1] >= max_n_elements)
+//             {
+//                 color++;
+//                 j = start;
+//             }
+//             else
+//                 j++;
 
-        } // Verificamos as cores dos elementos adjacentes ao elemento i, 
-          // ao final color vai ter a coloração correta para o elemento i
-          // sendo ela menor cor possível dentre as cores dos elementos adjacentes.
+//         } // Verificamos as cores dos elementos adjacentes ao elemento i, 
+//           // ao final color vai ter a coloração correta para o elemento i
+//           // sendo ela menor cor possível dentre as cores dos elementos adjacentes.
 
-        elements_color[sequence[i]] = color;
+//         elements_color[sequence[i]] = color;
 
-        if(color > n_colors)
-        {
-            n_colors = color;
-            n_elements_color.resize(n_colors+1, 0); // porque n_colors+1 (?)
-        }
+//         if(color > n_colors)
+//         {
+//             n_colors = color;
+//             n_elements_color.resize(n_colors+1, 0); // porque n_colors+1 (?)
+//         }
         
-        n_elements_color[color-1]++;
-    }
+//         n_elements_color[color-1]++;
+//     }
 
-    n_elements_color.clear();
-    delete [] sequence;
-    delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader 
-                                                  // onde inicializa todo o vetor mesh_coloring_internal com -1.
-    mesh->set_mesh_coloring_internal(elements_color);
+//     n_elements_color.clear();
+//     delete [] sequence;
+//     delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader 
+//                                                   // onde inicializa todo o vetor mesh_coloring_internal com -1.
+//     mesh->set_mesh_coloring_internal(elements_color);
 
-    METIS_Free(xadj);
-    METIS_Free(adjncy);
+//     METIS_Free(xadj);
+//     METIS_Free(adjncy);
 
-    return n_colors;
-}
+//     return n_colors;
+// }
 
-unsigned int ColoringReord(Mesh* mesh)
-{
-    idx_t* xadj;
-    idx_t* adjncy;
+// unsigned int ColoringReord(Mesh* mesh)
+// {
+//     idx_t* xadj;
+//     idx_t* adjncy;
 
-    unsigned int ne = mesh->get_n_elements();
-    int* elements_color = new int[ne];
-    unsigned int n_colors = 1;                // Número total de cores da malha.
-    int* sequence = new int [ne];
+//     unsigned int ne = mesh->get_n_elements();
+//     int* elements_color = new int[ne];
+//     unsigned int n_colors = 1;                // Número total de cores da malha.
+//     int* sequence = new int [ne];
     
-    MeshToDualGraph(mesh, &xadj, &adjncy);
+//     MeshToDualGraph(mesh, &xadj, &adjncy);
 
-    DecreasingAdj(mesh, &xadj, &adjncy, &sequence);        
+//     DecreasingAdj(mesh, &xadj, &adjncy, &sequence);        
 
-    std::fill(&elements_color[0], &elements_color[ne], -1);  // Flag para elemento sem cor.
+//     std::fill(&elements_color[0], &elements_color[ne], -1);  // Flag para elemento sem cor.
 
-    for(unsigned int i = 0 ; i < ne ; i++)
-    {
-        unsigned int start = xadj[sequence[i]];
-        unsigned int end = xadj[sequence[i]+1];
+//     for(unsigned int i = 0 ; i < ne ; i++)
+//     {
+//         unsigned int start = xadj[sequence[i]];
+//         unsigned int end = xadj[sequence[i]+1];
 
-        unsigned int color = 1;  // Possível cor para o elemento i.
-        unsigned int j = start;
+//         unsigned int color = 1;  // Possível cor para o elemento i.
+//         unsigned int j = start;
 
-        while(j < end)
-        {
-            unsigned int elem_adj = adjncy[j];
+//         while(j < end)
+//         {
+//             unsigned int elem_adj = adjncy[j];
 
-            if(elements_color[elem_adj] == color)
-            {
-                color++;
-                j = start;
-            }
-            else
-                j++;
-        } // Verificamos as cores dos elementos adjacentes ao elemento i, 
-          // ao final color vai ter a coloração correta para o elemento i
-          // sendo ela menor cor possível dentre as cores dos elementos adjacentes.
+//             if(elements_color[elem_adj] == color)
+//             {
+//                 color++;
+//                 j = start;
+//             }
+//             else
+//                 j++;
+//         } // Verificamos as cores dos elementos adjacentes ao elemento i, 
+//           // ao final color vai ter a coloração correta para o elemento i
+//           // sendo ela menor cor possível dentre as cores dos elementos adjacentes.
         
-        elements_color[sequence[i]] = color; // seguir a coloração com sentido à reordenação do grafo
+//         elements_color[sequence[i]] = color; // seguir a coloração com sentido à reordenação do grafo
 
-        if(color > n_colors)
-            n_colors = color;
-    }
+//         if(color > n_colors)
+//             n_colors = color;
+//     }
 
-    delete [] sequence;
-    delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader 
-                                                  // onde inicializa todo o vetor mesh_coloring_internal com -1.
-    mesh->set_mesh_coloring_internal(elements_color);
+//     delete [] sequence;
+//     delete [] mesh->get_mesh_coloring_internal(); // delete do new feito na função MeshGmshReader 
+//                                                   // onde inicializa todo o vetor mesh_coloring_internal com -1.
+//     mesh->set_mesh_coloring_internal(elements_color);
 
-    METIS_Free(xadj);
-    METIS_Free(adjncy);
+//     METIS_Free(xadj);
+//     METIS_Free(adjncy);
 
-    return n_colors;
-}
+//     return n_colors;
+// }
 
 // unsigned int Coloring(Mesh* mesh)
 // {
@@ -832,8 +834,6 @@ unsigned int ColoringAutoralOpt(Mesh* mesh, unsigned int *sort_internal)
     
     int color = 1;
 
-
-
     //std::fill(&conn_proibido[0], &conn_proibido[n_nodes], 0);
     std::memset(conn_proibido,0, n_nodes*sizeof(int));
 
@@ -844,7 +844,7 @@ unsigned int ColoringAutoralOpt(Mesh* mesh, unsigned int *sort_internal)
     int istart = 0;
     while(nelem_colored < nelem) 
     {
-        for(int iel = istart; iel < nelem ; iel++)
+        for(int iel = istart; iel < nelem ; ++iel)
         {
             if(elements_color[iel] == -1)
             {
@@ -852,7 +852,7 @@ unsigned int ColoringAutoralOpt(Mesh* mesh, unsigned int *sort_internal)
                 unsigned int connsize = mesh->getElementConnSize(iel);
 
                 unsigned int sum = 0;
-                for(int i = 0 ; i < connsize ; i++)
+                for(int i = 0 ; i < connsize ; ++i)
                     sum += conn_proibido[conn_elem[i]];
 
                 if(sum == 0)
@@ -862,7 +862,7 @@ unsigned int ColoringAutoralOpt(Mesh* mesh, unsigned int *sort_internal)
                     nelem_colored++;
                     if(iel == istart)
                         istart++;
-                    for(int i = 0 ; i < connsize ; i++)
+                    for(int i = 0 ; i < connsize ; ++i)
                         conn_proibido[conn_elem[i]] = 1; // conectividade proibida
                 } // nenhuma conectividade proibida, logo colore o elemento
             } // se o elemento nao estiver colorido, tenta colorir
@@ -904,7 +904,7 @@ unsigned int ColoringAutoral(Mesh* mesh, unsigned int* sort_internal)
 
     while(nelem_colored < nelem) 
     {
-        for(int iel = 0; iel < nelem ; iel++)
+        for(int iel = 0; iel < nelem ; ++iel)
         {
             if(elements_color[iel] == -1)
             {
@@ -912,7 +912,7 @@ unsigned int ColoringAutoral(Mesh* mesh, unsigned int* sort_internal)
                 unsigned int connsize = mesh->getElementConnSize(iel);
 
                 unsigned int sum = 0;
-                for(int i = 0 ; i < connsize ; i++)
+                for(int i = 0 ; i < connsize ; ++i)
                     sum += conn_proibido[conn_elem[i]];
 
                 if(sum == 0)
@@ -957,7 +957,7 @@ unsigned int ColoringAutoralLimit(Mesh* mesh, unsigned int* sort_internal, int b
     int color                    = 1;
     unsigned int nelem_thiscolor = 0;
     unsigned int max_nelem       = block_size; // numero maximo de elementos por cor
-    int* conn_proibido = new int [n_nodes];
+    int* conn_proibido           = new int [n_nodes];
 
     std::memset(elements_color, -1, nelem*sizeof(int));
    
@@ -973,12 +973,13 @@ unsigned int ColoringAutoralLimit(Mesh* mesh, unsigned int* sort_internal, int b
     //     conn_proibido[i] = 0;
 
     int istart = 0;
-    int cont = 0;
+    //int cont = 0;
     while(nelem_colored < nelem) 
     {
         bool nelem_reachlimit = false;
-        for(int iel = istart ; iel < nelem ; iel++)
+        for(int iel = istart ; iel < nelem ; ++iel)
         {
+            // se o elemento nao estiver colorido, tenta colorir
             if(elements_color[iel] == -1)
             {
                 unsigned int* conn_elem = mesh->getElementConn(iel);
@@ -988,12 +989,13 @@ unsigned int ColoringAutoralLimit(Mesh* mesh, unsigned int* sort_internal, int b
                 for(int i = 0 ; i < connsize ; ++i)
                     sum += conn_proibido[conn_elem[i]];
 
+                // nenhuma conectividade proibida, logo colore o elemento
                 if(sum == 0)
                 {
                     elements_color[iel] = color;
-                    sort_internal[cont] = iel;
+                    sort_internal[nelem_colored] = iel;
 
-                    cont++;
+                    //cont++;
                     nelem_colored++;
                     nelem_thiscolor++;
                     if(iel == istart) istart++;
@@ -1007,8 +1009,8 @@ unsigned int ColoringAutoralLimit(Mesh* mesh, unsigned int* sort_internal, int b
 
                     for(int i = 0 ; i < connsize ; i++)
                         conn_proibido[conn_elem[i]] = 1; // conectividade proibida
-                } // nenhuma conectividade proibida, logo colore o elemento
-            } // se o elemento nao estiver colorido, tenta colorir
+                } 
+            } 
         }
         
         if(!nelem_reachlimit)
@@ -1056,7 +1058,6 @@ void Mesh::MeshColoring(color_mode_t color_mode, int block_size)
         break;
     }
 
-    //CreateSort(this, sort_internal); // por enquanto usar caso nao seja ColoringAutoralLimit
     ReorderElements(this, sort_internal, &new_conn, &new_offset);
     UpdateMeshArrays(this, &new_conn, &new_offset);
 

@@ -67,7 +67,7 @@ class Mesh_partition_t {
          * @param mesh 
          * @return ParallelMesh* 
          */
-        ParallelMesh* DistributedMeshInternal(Mesh* mesh);
+        ParallelMesh* DistributedMeshInternal(Mesh* mesh, int processor_id=0, int n_processor=1);
 
         /**
          * @brief 
@@ -75,7 +75,7 @@ class Mesh_partition_t {
          * @param mesh 
          * @return ParallelMesh* 
          */
-        ParallelMesh* DistributedMesh(Mesh* mesh);
+        ParallelMesh* DistributedMesh(Mesh* mesh, int processor_id=0, int n_processor=1);
 
         /**
          * @brief 

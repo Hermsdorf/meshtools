@@ -3,10 +3,14 @@
 #include <fstream>
 #include <sstream>
 
-//#include "mpi.h"
+
 #include "metis.h"
 #include "mesh.h"
 #include "mesh_part.h"
+
+#ifdef USE_MPI
+#include "mpi.h"
+#endif
 
 Mesh_partition_t::Mesh_partition_t() 
 {
@@ -1142,287 +1146,288 @@ void fillParallelMesh(ParallelMesh* pmesh, std::vector<double> &coord_local, std
     }
 }
 
-// ParallelMesh* Mesh_partition_t::DistributedMeshInternal(Mesh* mesh)
-// {   
-//     ParallelMesh* pmesh = new ParallelMesh();
+ParallelMesh* Mesh_partition_t::DistributedMeshInternal(Mesh* mesh, int processor_id, int n_processors)
+{   
 
-//     pmesh->set_internal_mesh(true);
-//     pmesh->set_n_face_elements(0);
+#ifdef USE_MPI
+    ParallelMesh* pmesh = new ParallelMesh();
 
-//     int my_rank;
-//     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-//     int size;
-//     MPI_Comm comm = MPI_COMM_WORLD;
-//     MPI_Comm_size(comm, &size);
-//     int array_sizes[6];
+    pmesh->set_internal_mesh(true);
+    pmesh->set_n_face_elements(0);
 
-//     std::vector<unsigned int> global_to_local;
-//     std::vector<double> coord_local;
-//     std::vector<unsigned int> conn_local;
-//     std::vector<unsigned int> offset_local;
-//     std::vector<unsigned short> type_local;
-//     std::vector<unsigned int> local_to_global;
-//     std::vector<unsigned int> shared_out;
+    int array_sizes[6];
 
-//     if(my_rank == 0)
-//     {
-//         std::map<unsigned int, std::set<unsigned int>> node_partition; // < no, particoes que o no participa >
-//         std::vector<double> coord = mesh->getCoord();
-//         std::vector<unsigned int> interface_nodes;
-//         unsigned int nelem = mesh->get_n_elements();
-//         unsigned int nnodes = mesh->get_n_nodes();
+    std::vector<unsigned int> global_to_local;
+    std::vector<double> coord_local;
+    std::vector<unsigned int> conn_local;
+    std::vector<unsigned int> offset_local;
+    std::vector<unsigned short> type_local;
+    std::vector<unsigned int> local_to_global;
+    std::vector<unsigned int> shared_out;
+
+    if(processor_id == 0)
+    {
+        std::map<unsigned int, std::set<unsigned int>> node_partition; // < no, particoes que o no participa >
+        std::vector<double> coord = mesh->getCoord();
+        std::vector<unsigned int> interface_nodes;
+        unsigned int nelem = mesh->get_n_elements();
+        unsigned int nnodes = mesh->get_n_nodes();
         
 
-//         int nelem_part[this->n_partitions] = { 0 }; // [nelem_0, nelem_1, nelem_2, ...]
+        int nelem_part[this->n_partitions] = { 0 }; // [nelem_0, nelem_1, nelem_2, ...]
         
-//         for(int i = 0 ; i < this->n_partitions ; i++)
-//         {
-//             unsigned int elem_num = 0;
-//             while(elem_num < nelem)
-//             {
-//                 if(this->elem_part[elem_num] == i)  // se o elemento for da particao que estamos processando
-//                 {
-//                     unsigned int* conn = mesh->getElementConn(elem_num);
-//                     unsigned int connsize = mesh->getElementConnSize(elem_num);
+        for(int i = 0 ; i < this->n_partitions ; i++)
+        {
+            unsigned int elem_num = 0;
+            while(elem_num < nelem)
+            {
+                if(this->elem_part[elem_num] == i)  // se o elemento for da particao que estamos processando
+                {
+                    unsigned int* conn = mesh->getElementConn(elem_num);
+                    unsigned int connsize = mesh->getElementConnSize(elem_num);
 
-//                     for(int j = 0 ; j < connsize ; j++)
-//                     {
-//                         unsigned int conn_node = conn[j];
-//                         node_partition[conn_node].insert(i); // nó conn_node participa da particao i
-//                     }
-//                     nelem_part[i]++;
-//                 }
-//                 elem_num++;
-//             }
-//         }
+                    for(int j = 0 ; j < connsize ; j++)
+                    {
+                        unsigned int conn_node = conn[j];
+                        node_partition[conn_node].insert(i); // nó conn_node participa da particao i
+                    }
+                    nelem_part[i]++;
+                }
+                elem_num++;
+            }
+        }
         
-//         std::map<unsigned int, std::set<unsigned int>>::iterator it_node;
-//         for(it_node = node_partition.begin() ; it_node != node_partition.end() ; it_node++)
-//         {
-//             if(it_node->second.size() > 1)
-//             {
-//                 interface_nodes.push_back(it_node->first);
-//             }
-//         }    
+        std::map<unsigned int, std::set<unsigned int>>::iterator it_node;
+        for(it_node = node_partition.begin() ; it_node != node_partition.end() ; it_node++)
+        {
+            if(it_node->second.size() > 1)
+            {
+                interface_nodes.push_back(it_node->first);
+            }
+        }    
 
-//         for(int i = 1 ; i < this->n_partitions ; i++)
-//         {
-//             ProcessLocalArrays(coord_local, conn_local, offset_local, type_local, local_to_global, 
-//                                global_to_local, shared_out, node_partition, interface_nodes, mesh, pmesh, i);
+        for(int i = 1 ; i < this->n_partitions ; i++)
+        {
+            ProcessLocalArrays(coord_local, conn_local, offset_local, type_local, local_to_global, 
+                               global_to_local, shared_out, node_partition, interface_nodes, mesh, pmesh, i);
 
-//             array_sizes[0] = coord_local.size();
-//             array_sizes[1] = conn_local.size();
-//             array_sizes[2] = offset_local.size();
-//             array_sizes[3] = type_local.size();
-//             array_sizes[4] = local_to_global.size();
-//             array_sizes[5] = shared_out.size();
+            array_sizes[0] = coord_local.size();
+            array_sizes[1] = conn_local.size();
+            array_sizes[2] = offset_local.size();
+            array_sizes[3] = type_local.size();
+            array_sizes[4] = local_to_global.size();
+            array_sizes[5] = shared_out.size();
 
-//             MPI_Send(array_sizes, 6, MPI_INT, i, 0, comm);
-//             MPI_Send(&nelem_part[i], 1, MPI_INT, i, 0, comm);
+            MPI_Send(array_sizes, 6, MPI_INT, i, 0, comm);
+            MPI_Send(&nelem_part[i], 1, MPI_INT, i, 0, comm);
 
-//             MPI_Send(&coord_local[0], coord_local.size(), MPI_DOUBLE, i, 0, comm);
-//             MPI_Send(&conn_local[0], conn_local.size(), MPI_UNSIGNED, i, 0, comm);
-//             MPI_Send(&offset_local[0], offset_local.size(), MPI_UNSIGNED, i, 0, comm);
-//             MPI_Send(&type_local[0], type_local.size(), MPI_UNSIGNED_SHORT, i, 0, comm);
-//             MPI_Send(&local_to_global[0], local_to_global.size(), MPI_UNSIGNED, i, 0, comm);
-//             MPI_Send(&shared_out[0], shared_out.size(), MPI_UNSIGNED, i, 0, comm);
+            MPI_Send(&coord_local[0], coord_local.size(), MPI_DOUBLE, i, 0, comm);
+            MPI_Send(&conn_local[0], conn_local.size(), MPI_UNSIGNED, i, 0, comm);
+            MPI_Send(&offset_local[0], offset_local.size(), MPI_UNSIGNED, i, 0, comm);
+            MPI_Send(&type_local[0], type_local.size(), MPI_UNSIGNED_SHORT, i, 0, comm);
+            MPI_Send(&local_to_global[0], local_to_global.size(), MPI_UNSIGNED, i, 0, comm);
+            MPI_Send(&shared_out[0], shared_out.size(), MPI_UNSIGNED, i, 0, comm);
  
-//             coord_local.clear();
-//             conn_local.clear();
-//             offset_local.clear();
-//             type_local.clear();
-//             local_to_global.clear();
-//             global_to_local.clear();
-//         }
+            coord_local.clear();
+            conn_local.clear();
+            offset_local.clear();
+            type_local.clear();
+            local_to_global.clear();
+            global_to_local.clear();
+        }
 
-//         pmesh->set_n_elements(nelem_part[0]);
+        pmesh->set_n_elements(nelem_part[0]);
 
-//         ProcessLocalArrays(coord_local, conn_local, offset_local, type_local, local_to_global, 
-//                            global_to_local, shared_out, node_partition, interface_nodes, mesh, pmesh, 0);
+        ProcessLocalArrays(coord_local, conn_local, offset_local, type_local, local_to_global, 
+                           global_to_local, shared_out, node_partition, interface_nodes, mesh, pmesh, 0);
         
-//         fillParallelMesh(pmesh, coord_local, type_local, conn_local, offset_local, local_to_global, shared_out);
-//     } else {    
-//         int nelem_pmesh;
-//         int array_sizes[6];
-//         MPI_Status status;  
-//         MPI_Recv(array_sizes, 6, MPI_INT, 0, 0, comm, &status);
-//         MPI_Recv(&nelem_pmesh, 1, MPI_INT, 0, 0, comm, &status);
+        fillParallelMesh(pmesh, coord_local, type_local, conn_local, offset_local, local_to_global, shared_out);
+    } else {    
+        int nelem_pmesh;
+        int array_sizes[6];
+        MPI_Status status;  
+        MPI_Recv(array_sizes, 6, MPI_INT, 0, 0, comm, &status);
+        MPI_Recv(&nelem_pmesh, 1, MPI_INT, 0, 0, comm, &status);
 
-//         pmesh->set_n_elements(nelem_pmesh);
+        pmesh->set_n_elements(nelem_pmesh);
 
-//         coord_local.resize(array_sizes[0]);
-//         conn_local.resize(array_sizes[1]);
-//         offset_local.resize(array_sizes[2]);
-//         type_local.resize(array_sizes[3]);
-//         local_to_global.resize(array_sizes[4]);
-//         shared_out.resize(array_sizes[5]);
+        coord_local.resize(array_sizes[0]);
+        conn_local.resize(array_sizes[1]);
+        offset_local.resize(array_sizes[2]);
+        type_local.resize(array_sizes[3]);
+        local_to_global.resize(array_sizes[4]);
+        shared_out.resize(array_sizes[5]);
 
-//         MPI_Recv(&coord_local[0], coord_local.size(), MPI_DOUBLE, 0, 0, comm, &status);
-//         MPI_Recv(&conn_local[0], conn_local.size(), MPI_UNSIGNED, 0, 0, comm, &status);
-//         MPI_Recv(&offset_local[0], offset_local.size(), MPI_UNSIGNED, 0, 0, comm, &status);
-//         MPI_Recv(&type_local[0], type_local.size(), MPI_UNSIGNED_SHORT, 0, 0, comm, &status);
-//         MPI_Recv(&local_to_global[0], local_to_global.size(), MPI_UNSIGNED, 0, 0, comm, &status);
-//         MPI_Recv(&shared_out[0], shared_out.size(), MPI_UNSIGNED, 0, 0, comm, &status);
+        MPI_Recv(&coord_local[0], coord_local.size(), MPI_DOUBLE, 0, 0, comm, &status);
+        MPI_Recv(&conn_local[0], conn_local.size(), MPI_UNSIGNED, 0, 0, comm, &status);
+        MPI_Recv(&offset_local[0], offset_local.size(), MPI_UNSIGNED, 0, 0, comm, &status);
+        MPI_Recv(&type_local[0], type_local.size(), MPI_UNSIGNED_SHORT, 0, 0, comm, &status);
+        MPI_Recv(&local_to_global[0], local_to_global.size(), MPI_UNSIGNED, 0, 0, comm, &status);
+        MPI_Recv(&shared_out[0], shared_out.size(), MPI_UNSIGNED, 0, 0, comm, &status);
 
-//         fillParallelMesh(pmesh, coord_local, type_local, conn_local, offset_local, local_to_global, shared_out);
-//     }
-//     return pmesh;
-// }
+        fillParallelMesh(pmesh, coord_local, type_local, conn_local, offset_local, local_to_global, shared_out);
+    }
+    return pmesh;
+#else
+    return nullptr;
+#endif
 
-// ParallelMesh* Mesh_partition_t::DistributedMesh(Mesh* mesh)
-// {   
-//     ParallelMesh* pmesh = new ParallelMesh();
-//     pmesh->set_internal_mesh(false);
-//     pmesh->setFilename(mesh->getFilename());
+}
 
-//     int my_rank;
-//     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-//     int size;
-//     MPI_Comm comm = MPI_COMM_WORLD;
-//     MPI_Comm_size(comm, &size);
-//     int array_sizes[6];
+ParallelMesh* Mesh_partition_t::DistributedMesh(Mesh* mesh, int processor_id, int n_processors)
+{   
 
-//     std::vector<unsigned int> global_to_local;
-//     std::vector<double> coord_local;
-//     std::vector<unsigned int> conn_local;
-//     std::vector<unsigned int> offset_local;
-//     std::vector<unsigned short> type_local;
-//     std::vector<unsigned int> local_to_global;
-//     std::vector<unsigned int> shared_out;
+#ifdef USE_MPI
+    ParallelMesh* pmesh = new ParallelMesh();
+    pmesh->set_internal_mesh(false);
+    pmesh->setFilename(mesh->getFilename());
 
-//     if(my_rank == 0)
-//     {
-//         std::map<unsigned int, std::set<unsigned int>> node_partition; // < no, particoes que o no participa >
-//         std::vector<double> coord = mesh->getCoord();
-//         std::vector<unsigned int> interface_nodes;
-//         unsigned int nelem = mesh->get_n_elements();
-//         unsigned int nface_elem = mesh->get_n_face_elements();
-//         unsigned int nnodes = mesh->get_n_nodes(); 
-//         int nelem_pmesh[this->n_partitions*2] = { 0 }; // [nsurfelem_0, nelem_0, nsurfelem_1, nelem_1, ...]
+    int array_sizes[6];
 
-//         for(int i = 0 ; i < this->n_partitions ; i++)
-//         {
-//             unsigned int elem_num = 0;
-//             unsigned int nelem_part = 0;
-//             while(elem_num < nface_elem)
-//             {
-//                 if(this->elem_part[elem_num] == i)  // se o elemento for da particao que estamos processando
-//                 {
-//                     unsigned int* conn = mesh->getSurfaceElementConn(elem_num);
-//                     unsigned int connsize = mesh->getSurfaceElementConnSize(elem_num);
+    std::vector<unsigned int> global_to_local;
+    std::vector<double> coord_local;
+    std::vector<unsigned int> conn_local;
+    std::vector<unsigned int> offset_local;
+    std::vector<unsigned short> type_local;
+    std::vector<unsigned int> local_to_global;
+    std::vector<unsigned int> shared_out;
 
-//                     for(int j = 0 ; j < connsize ; j++)
-//                     {
-//                         unsigned int conn_node = conn[j];
-//                         node_partition[conn_node].insert(i); // nó conn_node participa da particao i
-//                     }
-//                     nelem_pmesh[i*2]++; // nsurfelem_i
-//                 }
-//                 elem_num++;
-//             }
+    if(processor_id == 0)
+    {
+        std::map<unsigned int, std::set<unsigned int>> node_partition; // < no, particoes que o no participa >
+        std::vector<double> coord   = mesh->getCoord();
+        std::vector<unsigned int> interface_nodes;    
+        unsigned int nelem          = mesh->get_n_elements();
+        unsigned int nface_elem     = mesh->get_n_face_elements();
+        unsigned int nnodes         = mesh->get_n_nodes(); 
+        int nelem_pmesh[this->n_partitions*2] = { 0 }; // [nsurfelem_0, nelem_0, nsurfelem_1, nelem_1, ...]
 
-//             elem_num = 0;
+        for(int i = 0 ; i < this->n_partitions ; i++)
+        {
+            unsigned int elem_num = 0;
+            unsigned int nelem_part = 0;
+            while(elem_num < nface_elem)
+            {
+                if(this->elem_part[elem_num] == i)  // se o elemento for da particao que estamos processando
+                {
+                    unsigned int* conn = mesh->getSurfaceElementConn(elem_num);
+                    unsigned int connsize = mesh->getSurfaceElementConnSize(elem_num);
 
-//             while(elem_num < nelem)
-//             {
-//                 if(this->elem_part[elem_num + nface_elem] == i)  // se o elemento for da particao que estamos processando
-//                 {
-//                     unsigned int* conn = mesh->getElementConn(elem_num);
-//                     unsigned int connsize = mesh->getElementConnSize(elem_num);
+                    for(int j = 0 ; j < connsize ; j++)
+                    {
+                        unsigned int conn_node = conn[j];
+                        node_partition[conn_node].insert(i); // nó conn_node participa da particao i
+                    }
+                    nelem_pmesh[i*2]++; // nsurfelem_i
+                }
+                elem_num++;
+            }
 
-//                     for(int j = 0 ; j < connsize ; j++)
-//                     {
-//                         unsigned int conn_node = conn[j];
-//                         node_partition[conn_node].insert(i); // nó conn_node participa da particao i
-//                     }
+            elem_num = 0;
 
-//                     nelem_pmesh[(i*2) + 1]++; // nelem_i
-//                 }
-//                 elem_num++;
-//             }
-//         }
+            while(elem_num < nelem)
+            {
+                if(this->elem_part[elem_num + nface_elem] == i)  // se o elemento for da particao que estamos processando
+                {
+                    unsigned int* conn = mesh->getElementConn(elem_num);
+                    unsigned int connsize = mesh->getElementConnSize(elem_num);
+
+                    for(int j = 0 ; j < connsize ; j++)
+                    {
+                        unsigned int conn_node = conn[j];
+                        node_partition[conn_node].insert(i); // nó conn_node participa da particao i
+                    }
+
+                    nelem_pmesh[(i*2) + 1]++; // nelem_i
+                }
+                elem_num++;
+            }
+        }
         
-//         std::map<unsigned int, std::set<unsigned int>>::iterator it_node;
-//         for(it_node = node_partition.begin() ; it_node != node_partition.end() ; it_node++)
-//         {
-//             if(it_node->second.size() > 1)
-//             {
-//                 interface_nodes.push_back(it_node->first);
-//             }
-//         }    
+        std::map<unsigned int, std::set<unsigned int>>::iterator it_node;
+        for(it_node = node_partition.begin() ; it_node != node_partition.end() ; it_node++)
+        {
+            if(it_node->second.size() > 1)
+            {
+                interface_nodes.push_back(it_node->first);
+            }
+        }    
 
-//         for(int i = 1 ; i < this->n_partitions ; i++)
-//         {
-//             ProcessLocalArrays(coord_local, conn_local, offset_local, type_local, local_to_global, 
-//                                global_to_local, shared_out, node_partition, interface_nodes, mesh, pmesh, i);
+        for(int i = 1 ; i < this->n_partitions ; i++)
+        {
+            ProcessLocalArrays(coord_local, conn_local, offset_local, type_local, local_to_global, 
+                               global_to_local, shared_out, node_partition, interface_nodes, mesh, pmesh, i);
 
-//             array_sizes[0] = coord_local.size();
-//             array_sizes[1] = conn_local.size();
-//             array_sizes[2] = offset_local.size();
-//             array_sizes[3] = type_local.size();
-//             array_sizes[4] = local_to_global.size();
-//             array_sizes[5] = shared_out.size();
+            array_sizes[0] = coord_local.size();
+            array_sizes[1] = conn_local.size();
+            array_sizes[2] = offset_local.size();
+            array_sizes[3] = type_local.size();
+            array_sizes[4] = local_to_global.size();
+            array_sizes[5] = shared_out.size();
 
-//             int nsurfelem_aux = nelem_pmesh[i*2];
-//             int nelem_aux = nelem_pmesh[(i*2) + 1];
+            int nsurfelem_aux = nelem_pmesh[i*2];
+            int nelem_aux = nelem_pmesh[(i*2) + 1];
 
-//             MPI_Send(array_sizes, 6, MPI_INT, i, 0, comm);
-//             MPI_Send(&nsurfelem_aux, 1, MPI_INT, i, 0, comm);
-//             MPI_Send(&nelem_aux, 1, MPI_INT, i, 0, comm);
+            MPI_Send(array_sizes, 6, MPI_INT, i, 0, comm);
+            MPI_Send(&nsurfelem_aux, 1, MPI_INT, i, 0, comm);
+            MPI_Send(&nelem_aux, 1, MPI_INT, i, 0, comm);
 
-//             MPI_Send(&coord_local[0], coord_local.size(), MPI_DOUBLE, i, 0, comm);
-//             MPI_Send(&conn_local[0], conn_local.size(), MPI_UNSIGNED, i, 0, comm);
-//             MPI_Send(&offset_local[0], offset_local.size(), MPI_UNSIGNED, i, 0, comm);
-//             MPI_Send(&type_local[0], type_local.size(), MPI_UNSIGNED_SHORT, i, 0, comm);
-//             MPI_Send(&local_to_global[0], local_to_global.size(), MPI_UNSIGNED, i, 0, comm);
-//             MPI_Send(&shared_out[0], shared_out.size(), MPI_UNSIGNED, i, 0, comm);
+            MPI_Send(&coord_local[0], coord_local.size(), MPI_DOUBLE, i, 0, comm);
+            MPI_Send(&conn_local[0], conn_local.size(), MPI_UNSIGNED, i, 0, comm);
+            MPI_Send(&offset_local[0], offset_local.size(), MPI_UNSIGNED, i, 0, comm);
+            MPI_Send(&type_local[0], type_local.size(), MPI_UNSIGNED_SHORT, i, 0, comm);
+            MPI_Send(&local_to_global[0], local_to_global.size(), MPI_UNSIGNED, i, 0, comm);
+            MPI_Send(&shared_out[0], shared_out.size(), MPI_UNSIGNED, i, 0, comm);
  
-//             coord_local.clear();
-//             conn_local.clear();
-//             offset_local.clear();
-//             type_local.clear();
-//             local_to_global.clear();
-//             global_to_local.clear();
-//         }
+            coord_local.clear();
+            conn_local.clear();
+            offset_local.clear();
+            type_local.clear();
+            local_to_global.clear();
+            global_to_local.clear();
+        }
 
-//         pmesh->set_n_face_elements(nelem_pmesh[0]);
-//         pmesh->set_n_elements(nelem_pmesh[1]);
+        pmesh->set_n_face_elements(nelem_pmesh[0]);
+        pmesh->set_n_elements(nelem_pmesh[1]);
 
-//         ProcessLocalArrays(coord_local, conn_local, offset_local, type_local, local_to_global, 
-//                            global_to_local, shared_out, node_partition, interface_nodes, mesh, pmesh, 0);
+        ProcessLocalArrays(coord_local, conn_local, offset_local, type_local, local_to_global, 
+                           global_to_local, shared_out, node_partition, interface_nodes, mesh, pmesh, 0);
         
-//         fillParallelMesh(pmesh, coord_local, type_local, conn_local, offset_local, local_to_global, shared_out);
-//     } else {    
-//         int nelem_pmesh;
-//         int nsurfelem_pmesh;
-//         int array_sizes[6];
-//         MPI_Status status;  
-//         MPI_Recv(array_sizes, 6, MPI_INT, 0, 0, comm, &status);
-//         MPI_Recv(&nsurfelem_pmesh, 1, MPI_INT, 0, 0, comm, &status);
-//         MPI_Recv(&nelem_pmesh, 1, MPI_INT, 0, 0, comm, &status);
+        fillParallelMesh(pmesh, coord_local, type_local, conn_local, offset_local, local_to_global, shared_out);
+    } else {    
+        int nelem_pmesh;
+        int nsurfelem_pmesh;
+        int array_sizes[6];
+        MPI_Status status;  
+        MPI_Recv(array_sizes, 6, MPI_INT, 0, 0, comm, &status);
+        MPI_Recv(&nsurfelem_pmesh, 1, MPI_INT, 0, 0, comm, &status);
+        MPI_Recv(&nelem_pmesh, 1, MPI_INT, 0, 0, comm, &status);
 
-//         pmesh->set_n_face_elements(nsurfelem_pmesh);
-//         pmesh->set_n_elements(nelem_pmesh);
+        pmesh->set_n_face_elements(nsurfelem_pmesh);
+        pmesh->set_n_elements(nelem_pmesh);
 
-//         coord_local.resize(array_sizes[0]);
-//         conn_local.resize(array_sizes[1]);
-//         offset_local.resize(array_sizes[2]);
-//         type_local.resize(array_sizes[3]);
-//         local_to_global.resize(array_sizes[4]);
-//         shared_out.resize(array_sizes[5]);
+        coord_local.resize(array_sizes[0]);
+        conn_local.resize(array_sizes[1]);
+        offset_local.resize(array_sizes[2]);
+        type_local.resize(array_sizes[3]);
+        local_to_global.resize(array_sizes[4]);
+        shared_out.resize(array_sizes[5]);
 
-//         MPI_Recv(&coord_local[0], coord_local.size(), MPI_DOUBLE, 0, 0, comm, &status);
-//         MPI_Recv(&conn_local[0], conn_local.size(), MPI_UNSIGNED, 0, 0, comm, &status);
-//         MPI_Recv(&offset_local[0], offset_local.size(), MPI_UNSIGNED, 0, 0, comm, &status);
-//         MPI_Recv(&type_local[0], type_local.size(), MPI_UNSIGNED_SHORT, 0, 0, comm, &status);
-//         MPI_Recv(&local_to_global[0], local_to_global.size(), MPI_UNSIGNED, 0, 0, comm, &status);
-//         MPI_Recv(&shared_out[0], shared_out.size(), MPI_UNSIGNED, 0, 0, comm, &status);
+        MPI_Recv(&coord_local[0], coord_local.size(), MPI_DOUBLE, 0, 0, comm, &status);
+        MPI_Recv(&conn_local[0], conn_local.size(), MPI_UNSIGNED, 0, 0, comm, &status);
+        MPI_Recv(&offset_local[0], offset_local.size(), MPI_UNSIGNED, 0, 0, comm, &status);
+        MPI_Recv(&type_local[0], type_local.size(), MPI_UNSIGNED_SHORT, 0, 0, comm, &status);
+        MPI_Recv(&local_to_global[0], local_to_global.size(), MPI_UNSIGNED, 0, 0, comm, &status);
+        MPI_Recv(&shared_out[0], shared_out.size(), MPI_UNSIGNED, 0, 0, comm, &status);
 
-//         fillParallelMesh(pmesh, coord_local, type_local, conn_local, offset_local, local_to_global, shared_out);
-//     }
+        fillParallelMesh(pmesh, coord_local, type_local, conn_local, offset_local, local_to_global, shared_out);
+    }
 
-//     return pmesh;
-// }
+    return pmesh;
+#else
+    return nullptr;
+#endif
+}
 
 
 
