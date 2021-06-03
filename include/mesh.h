@@ -396,7 +396,7 @@ class Mesh {
          * @param filename Variável do tipo const char* com o nome do arquivo de entrada extensão msh.
         */
 
-        void MeshVTKWriter(int timeStep, int *npart, int* epart, int* color, double* velocity, float* pressure);
+        void MeshVTKWriter(int timeStep=0, int *npart=NULL, int* epart=NULL, int* color=NULL, double* velocity=NULL, float* pressure=NULL);
         /**
          * * OBJETIVO:
          *     Escrita da malha completa, com elementos internos e de superfície, no formato VTK.
@@ -410,7 +410,7 @@ class Mesh {
          * @param velocity Array do tipo double com informações das velocidades da malha.
          * @param pressure Array do tipo float com informações das pressões da malha.
         */
-        void MeshVTKWriterInternal(int timeStep, int *nparts, int *epart, int* color, double* velocity, float* pressure);
+        void MeshVTKWriterInternal(int timeStep=0, int *nparts=NULL, int *epart=NULL, int* color=NULL, double* velocity=NULL, float* pressure=NULL);
         /**
          * * OBJETIVO:
          *     Escrita da malha somente com elementos internos no formato VTK.
@@ -425,7 +425,7 @@ class Mesh {
          * @param pressure Array do tipo float com informações das pressões da malha.
         */
 
-        void MeshVTKWriterBinAppended(int timeStep, int* npart, int* epart, int* color, double* velocity, float* pressure);
+        void MeshVTKWriterBinAppended(int timeStep=0, int* npart=NULL, int* epart=NULL, int* color=NULL, double* velocity=NULL, float* pressure=NULL);
         /**
          * * OBJETIVO:
          *     Escrita da malha completa em binário, com elementos internos e de superfície, no formato VTK.
@@ -439,7 +439,7 @@ class Mesh {
          * @param velocity Array do tipo double com informações das velocidades da malha.
          * @param pressure Array do tipo float com informações das pressões da malha.
         */
-        void MeshVTKWriterInternalBinAppended(int timeStep, int* npart, int* epart, int* color, double* velocity, float* pressure);
+        void MeshVTKWriterInternalBinAppended(int timeStep=0, int* npart=NULL, int* epart=NULL, int* color=NULL, double* velocity=NULL, float* pressure=NULL);
         /**
          * * OBJETIVO:
          *     Escrita da malha em binário somente com elementos internos no formato VTK.

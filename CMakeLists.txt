@@ -9,14 +9,11 @@ include(CTest)
 enable_testing()
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
-#set(CMAKE_C_COMPILER tau_cc.sh)
-#set(CMAKE_CXX_COMPILER tau_cxx.sh)
 set(CMAKE_CXX_COMPILER mpicxx)
 set(CMAKE_CXX_FLAGS "-fopenmp -g -O3")
 
-find_package(MPI)
 find_package(METIS REQUIRED)
-find_package(ParaView CONFIG COMPONENTS Catalyst PythonCatalyst)
+
 
 file(GLOB source_files
             "*.h"
@@ -25,14 +22,33 @@ file(GLOB source_files
             "include/*.h"
     )
 
-if (${ParaView_FOUND})
-   MESSAGE(STATUS "Found ParaView Catalyst.")
-   set(ADDITIONAL_ITEMS ParaView::Catalyst ParaView::PythonCatalyst VTK::CommonDataModel)
-   add_definitions(-DPARAVIEWCAT_FOUND=1)
-else (${ParaView_FOUND})
+option(MPI_ENABLE "Enable MPI" OFF)
+option(CATALYST_ENABLE "Enable Paraview Catalyst" OFF)
+
+if(MPI_ENABLE)
+   find_package(MPI)
+   if(MPI_FOUND)
+      target_link_libraries(meshtools PUBLIC MPI::C)
+   endif()
+   set(USE_MPI 1)
+endif()
+
+if(CATALYST_ENABLE)
+   find_package(ParaView CONFIG COMPONENTS Catalyst PythonCatalyst)
+   if (${ParaView_FOUND})
+      MESSAGE(STATUS "Found ParaView Catalyst.")
+      set(ADDITIONAL_ITEMS ParaView::Catalyst ParaView::PythonCatalyst VTK::CommonDataModel)
+      set(USE_CATALYST 1)
+   else (${ParaView_FOUND})
+      list(FILTER source_files EXCLUDE REGEX "include/FEAdaptor.h")
+      list(FILTER source_files EXCLUDE REGEX "src/FEAdaptor.cpp")
+   endif (${ParaView_FOUND})
+else()
    list(FILTER source_files EXCLUDE REGEX "include/FEAdaptor.h")
    list(FILTER source_files EXCLUDE REGEX "src/FEAdaptor.cpp")
-endif (${ParaView_FOUND})
+endif()
+
+configure_file(meshtools_config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/include/meshtools_config.h @ONLY)
 
 # Finding Depedencies
 # Looking for Metis Library
@@ -49,7 +65,6 @@ endif()
 
 target_link_libraries(meshtools 
 PRIVATE
-MPI::MPI_C
 ${ADDITIONAL_ITEMS}
 ${METIS_LIBRARIES}
 )

@@ -1,244 +1,137 @@
 #include <iostream>
 #include <cmath>
+#include <unistd.h>
 
-//#include "mpi.h"
+#include "meshtools_config.h"
 #include "mesh.h"
 #include "mesh_part.h"
 #include "alglin.h"
 #include "parallelmesh.h"
 
-using namespace std;
+#if USE_MPI
+#include "mpi.h"
+#endif
 
 #ifdef _OPENMP
     #include <omp.h>
 #endif
 
-#ifdef PARAVIEWCAT_FOUND
-   #include "FEAdaptor.h"
+#ifdef USE_CATALYST
+#include "FEAdaptor.h"
 #endif
 
-void UpdateAttr(int n, double time, Mesh* mesh, double** v, float** p)
+using namespace std;
+
+static void usage(const char *arg0)
 {
-    float variable_a = 0.02;
-    float variable_v = 0.01;
-
-    std::vector<double> coordAux = mesh->getCoord();
-    for(int i = 0; i < n; i++)
-    {   
-
-        double x = coordAux[i*3];
-        double y = coordAux[i*3+1];
-
-        (*v)[i*3]    = (-1)*std::cos(variable_a*M_PI*x)*std::sin(variable_a*M_PI*y)*std::exp(-2*variable_a*variable_a*M_PI*M_PI*time*variable_v);
-        (*v)[i*3+1]  = std::sin(variable_a*M_PI*x)*std::cos(variable_a*M_PI*y)*std::exp(-2*variable_a*variable_a*M_PI*M_PI*time*variable_v);
-        (*v)[i*3+2]  = 0;
-        (*p)[i]      = -0.25*(std::cos(2*variable_a*M_PI*x)+std::cos(2*variable_a*M_PI*y))*std::exp(-4*variable_a*variable_a*M_PI*M_PI*time*variable_v);
-    }
-}
-
-void matvec_ebe(Mesh* mesh, Matrix& EBE, double* y, double* r)
-{
-    unsigned int nnodes = mesh->get_n_nodes();
-    unsigned int nelem = mesh->get_n_elements();
-    double y_local[8];
-    double r_local[8];
-    
-    std::fill(&r[0], &r[nnodes], 0.0);
-
-    for(int iel = 0 ; iel < nelem ; iel++ )
-    {
-        unsigned int* conn = mesh->getElementConn(iel);
-        unsigned int connsize = mesh->getElementConnSize(iel);
-
-        for(int i = 0 ; i < connsize ; i++)
-        {
-            unsigned int no = conn[i];
-            y_local[i] = y[no];
-        }
-
-        std::fill(&r_local[0], &r_local[connsize], 0.0);
-
-        for(int i = 0 ; i < connsize ; i++)
-        {
-            for(int j = 0 ; j < connsize ; j++)
-            {
-                r_local[i] += EBE(iel, i, j)*y_local[j];
-            }
-        }
-
-        for(int i = 0 ; i < connsize ; i++)
-        {
-            unsigned int no = conn[i];
-            r[no] += r_local[i];
-        }
-    }
-}
-
-void matvec_openmp(Mesh* mesh, Matrix& EBE, double* y, double* r)
-{
-    unsigned int nnodes = mesh->get_n_nodes();
-    unsigned int nelem = mesh->get_n_elements();
-    double y_local[8];
-    double r_local[8];
-    
-    std::fill(&r[0], &r[nnodes], 0.0);
-    
-    unsigned int ncolors = mesh->get_n_internal_colors();
-    int* elem_color = mesh->get_mesh_coloring_internal();
-
-    unsigned int begin = 0;
-    unsigned int end;
-    for(int k = 0 ; k < ncolors; k++)
-    {
-        end = begin + elem_color[k];
-
-        #pragma omp parallel for private(y_local, r_local)
-        for(int iel = begin ; iel < end ; iel++)
-        {
-            unsigned int* conn = mesh->getElementConn(iel);
-            unsigned int connsize = mesh->getElementConnSize(iel);
-
-            for(int i = 0 ; i < connsize ; i++)
-            {
-                unsigned int no = conn[i];
-                y_local[i] = y[no];
-            }
-
-            std::fill(&r_local[0], &r_local[connsize], 0.0);
-
-            for(int i = 0 ; i < connsize ; i++)
-            {
-                for(int j = 0 ; j < connsize ; j++)
-                {
-                    r_local[i] += EBE(iel, i, j)*y_local[j];
-                }
-            }
-
-            for(int i = 0 ; i < connsize ; i++)
-            {
-                unsigned int no = conn[i];
-                r[no] += r_local[i];
-            }
-        }
-        begin += elem_color[k];
-    }
+    cerr << "Usage: " << arg0 << " <options>" << endl;
+    cerr << "\t -h            : show help" << endl;
+    cerr << "\t -m <filename> : mesh filename (gmsh ascii v.2.2)> " << endl;
+    exit(-1);
 }
 
 
 int main(int argc, char* argv[])
 {         
+
+    int   opt;
+    char* gmsh_filename = 0; 
+    bool  flg_catalyst     = false;
+    bool  flg_gmsh         = false;
+    char* catalyst_script = 0;
+    
+
+#ifdef USE_MPI
+    MPI_Init(argc, argv);
+#endif
     if(argc < 2)
     {
-        std::cout << "ERROR: WRONG EXECUTION\n";
-	    std::cout << "./meshtools filename.msh [catalyst.py]\n";
-
-	    return 0;
+        usage(argv[0]);
     }
 
+    while( (opt = getopt(argc, argv, "hm:c:")) !=  -1 ) {
+        switch ( opt ) {
+            case 'h': /* help */
+                usage(argv[0]) ;
+                break ;
+            case 'm': /* flag -m */
+                gmsh_filename = optarg ;
+                flg_gmsh      = true;
+                break ;
+            case 'c':
+                catalyst_script = optarg;
+                flg_catalyst    = true;
+            default:
+                fprintf(stderr, "Opcao invalida ou faltando argumento: `%c'\n", optopt) ;
+                usage(argv[0]);
+                return -1 ;
+        }
+    }
 
-    int n_script = 0;
-    if(argc == 4)
-        n_script = 1;
-   
-    // int n_parts;
-    // int my_rank;
+    if(!flg_gmsh)
+    {
+        usage(argv[0]);
+    }
 
-    // MPI_Init(NULL, NULL);
-    // MPI_Comm_size(MPI_COMM_WORLD, &n_parts);
-    // MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    int n_processors = 1;
+    int processor_id = 0;
 
-    Mesh* mesh = nullptr;
-    ///Mesh_partition_t* parts = nullptr;
-
-    // if(my_rank == 0)
-    // {
-        mesh = new Mesh(argv[1]);
-
-#ifdef PARAVIEWCAT_FOUND
-        CatalystInitialize(n_script, argv+2);
+#ifdef USE_MPI
+    MPI_Init(NULL, NULL);
+    MPI_Comm_size(MPI_COMM_WORLD, &n_processors);
+    MPI_Comm_rank(MPI_COMM_WORLD, &processor_id);
 #endif
+
+#ifdef USE_CATALYST
+    CatalystInitialize(1, catalyst_script);
+#endif
+
+    Mesh             *mesh  = nullptr;
+    Mesh_partition_t *parts = nullptr;
+    ParallelMesh     *pmesh = nullptr;
+
+    if(processor_id == 0)
+    {
+        mesh = new Mesh(gmsh_filename);
         mesh->MeshReordering(RCM);
+    
+        if(n_processors > 1 ) {
+            parts = new Mesh_partition_t();
+            parts->MeshPartitionerInternal(mesh, n_processors);
+        }
+    }
+
+    if(n_processors > 1 ) 
+    {
+        parts->DistributedMeshInternal(mesh);
+
+        std::string str(gmsh_filename);
+        str.resize(str.length()-4);
+        pmesh = parts->DistributedMeshInternal(mesh);
+        pmesh->setFilename(str);
+        pmesh->MeshColoring();
+        pmesh->writeParallelMesh();
+    }
+    else
+    {
         mesh->MeshColoring();
-        //parts = new Mesh_partition_t();
+        mesh->MeshVTKWriterInternalBinAppended(0);
+    }
 
-        //parts->MeshPartitionerInternal(mesh, n_parts);
-    //}
-
-    // ParallelMesh* pmesh = nullptr;
-
-    // pmesh = parts->DistributedMeshInternal(mesh);
-
-    // std::string str(argv[1]);
-    // str.resize(str.length()-4);
-    // pmesh->setFilename(str);
-    
-    //pmesh->MeshColoring();
-
-    //pmesh->writeParallelMesh();
-
-    
     if(mesh)  delete mesh;
-    //if(parts) delete parts;
+    if(parts) delete parts;
+    if(pmesh) delete pmesh;
 
-//     double *velocity = new double[mesh->get_n_nodes()*3];
-//     float *pressure  = new float[mesh->get_n_nodes()];
-
-//     double time      = 0.0;
-//     double max_time  = 1.0;calc
-//     double dt        = 0.05; 
-//     int timeStep = 1;
-//     while(time < max_time)
-//     {
-//         UpdateAttr(mesh->get_n_nodes(), time, mesh, &velocity, &pressure);
-
-// #ifdef PARAVIEWCAT_FOUND
-             //CatalystCoProcess(mesh, velocity, pressure,time,timeStep, 0);
-// #endif
-         //mesh->MeshVTKWriterInternalBinAppended(timeStep, parts->get_nodal_part(), parts->get_elem_part(), mesh->get_mesh_coloring_internal(), velocity, pressure);
-
-//         time += dt;
-//         timeStep++;
-//     }
-
-#ifdef PARAVIEWCAT_FOUND
-        CatalystFinalize();
+#ifdef USE_CATALYST
+    CatalystFinalize();
 #endif
 
-    // unsigned int nelem = mesh->get_n_elements();
-    // unsigned int nnodes = mesh->get_n_nodes();
-    // unsigned int nconn = mesh->getElementConnSize(0);
-    // Matrix ebe(nelem, nconn);
-    
-    // double* y = new double[nnodes];
-    // double* r = new double[nnodes];
+#ifdef USE_MPI
+    MPI_Finalize();
+#endif
 
-    // std::fill(&y[0], &y[nnodes], 1.0);
-
-    // for(int i = 0 ; i < nelem ; i++)
-    // {
-    //     for(int j = 0 ; j < nconn ; j++)
-    //     {
-    //         for(int k = 0 ; k < nconn ; k++)
-    //         {
-    //             ebe(i, j, k) = 1.0;
-    //         }
-    //     }
-    // }
-
-    // matvec_openmp(mesh, ebe, y, r);
-
-    //mesh->MeshVTKWriterInternal(0, NULL, NULL, mesh->get_mesh_coloring_internal(), NULL, NULL);
-
-    // delete [] velocity;
-    // delete [] pressure;
-
-    //if(pmesh) delete pmesh;
-
-    // delete [] y;
-    // delete [] r;
-
-    //MPI_Finalize();
     return 0;
+
 }
 
 

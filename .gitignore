@@ -15,3 +15,5 @@ tempos/
 tempos_forkjoin/
 tempos_forkjoin.zip
 script.sh
+*.msh 
+

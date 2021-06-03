@@ -1,5 +1,8 @@
-#include <iostream>
 
+
+#include "meshtools_config.h"
+
+#include <iostream>
 #include <vtkCPDataDescription.h>
 #include <vtkCPInputDataDescription.h>
 #include <vtkCPProcessor.h>
