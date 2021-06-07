@@ -9,8 +9,8 @@ include(CTest)
 enable_testing()
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
-set(CMAKE_CXX_COMPILER icpc)
-set(CMAKE_CXX_FLAGS "-g -O1")
+set(CMAKE_CXX_COMPILER g++)
+set(CMAKE_CXX_FLAGS "-g -fopenmp -O2")
 
 find_package(METIS REQUIRED)
 
@@ -20,6 +20,7 @@ file(GLOB source_files
             "*.cpp"
             "src/*.cpp"
             "include/*.h"
+            "test/finite_element_kernel/*.cpp"
     )
 
 option(MPI_ENABLE "Enable MPI" OFF)
@@ -56,6 +57,7 @@ configure_file(meshtools_config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/include/meshtoo
 
 include_directories(${METIS_INCLUDE_DIRS})
 include_directories(include)
+include_directories(test/finite_element_kernel)
 
 add_executable(meshtools ${source_files})
 

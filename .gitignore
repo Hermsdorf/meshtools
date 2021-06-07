@@ -4,6 +4,8 @@ meshtools
 src/rcm.o
 src/mesh_reorder.o
 src/mesh_part.o
+src/*.o
+src/*~
 .vscode/settings.json
 .vscode/c_cpp_properties.json
 build

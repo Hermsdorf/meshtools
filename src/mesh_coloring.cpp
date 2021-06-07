@@ -91,12 +91,16 @@ void UpdateMeshArrays(Mesh* mesh, unsigned int** new_conn, unsigned int** new_of
 
     unsigned int* start_elem_offset = mesh->getElementOffset(0);
     unsigned int* end_elem_offset = mesh->getElementOffset(ne);
+    int loopsize = nfe + ne;
 
-    for(unsigned int i = nfe, j = 0 ; i <= nfe + ne ; i++, j++)
+
+    for(unsigned int i = nfe, j = 0 ; i <= loopsize ; i++, j++)
     {
         unsigned int value = (*new_offset)[j];
         mesh->setOffsetPosition(value, i);
     }
+
+
     for(unsigned int i = start_elem_offset[0], j = 0 ; i < end_elem_offset[0] ; i++, j++)
     {
         unsigned int value = (*new_conn)[j];
@@ -1061,12 +1065,14 @@ void Mesh::MeshColoring(color_mode_t color_mode, int block_size)
     ReorderElements(this, sort_internal, &new_conn, &new_offset);
     UpdateMeshArrays(this, &new_conn, &new_offset);
 
+#ifdef DEBUG
     std::cout << "  # elements per color: \n";
     for(int i = 0 ; i < n_internal_colors ; i++) {
         std::cout.width(8);
         std::cout << mesh_coloring_internal[i];
         if((i+1)%12==0) std::cout << std::endl;
     }
+#endif
     std::cout << "\n  # n colors: " << n_internal_colors << "\n";
     std::cout << "\nFinished mesh coloring...\n";
 

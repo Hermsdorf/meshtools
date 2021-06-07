@@ -131,10 +131,11 @@ void ApplyReorderMesh(Mesh *mesh, int *perm, int *iperm)
     newCoord.resize(mesh->getCoord().size());
     std::cout << "  Applying reordering...\n";
 
-#pragma omp parallel for
+//#pragma omp parallel for
+#pragma ivdep
     for (unsigned int i = 0; i < mesh->get_n_nodes(); i++)
     {
-            newCoord[3 * i] = coordAux[3 * perm[i]];
+            newCoord[3 * i]      = coordAux[3 * perm[i]];
             newCoord[(3 * i) + 1] = coordAux[(3 * perm[i]) + 1];
             newCoord[(3 * i) + 2] = coordAux[(3 * perm[i]) + 2];
     }
@@ -147,7 +148,8 @@ void ApplyReorderMesh(Mesh *mesh, int *perm, int *iperm)
     unsigned int connSize = mesh->getConn().size();
     newConn.resize(connSize);
 
-#pragma omp parallel for
+//#pragma omp parallel for
+#pragma ivdep
     for (unsigned int i = 0; i < connSize; i++)
     {
         newConn[i] = iperm[connAux[i]];
