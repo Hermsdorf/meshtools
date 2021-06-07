@@ -10,7 +10,7 @@ enable_testing()
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 set(CMAKE_CXX_COMPILER g++)
-set(CMAKE_CXX_FLAGS "-g -fopenmp -O2")
+set(CMAKE_CXX_FLAGS "-g -fopenmp -O3")
 
 find_package(METIS REQUIRED)
 

@@ -18,7 +18,7 @@ namespace FiniteElementKernels
         return new double[n_elements*nDim1];
     }
 
-    double &at(double *global_matrix, int iel, int i_no, int j_no)
+    inline double& at(double *global_matrix, int iel, int i_no, int j_no)
     {
         return global_matrix[iel*nDim1 + i_no*nDim2 + j_no];
     }
@@ -52,19 +52,19 @@ namespace FiniteElementKernels
         {
 
             unsigned int *conn   = mesh.getElementConn(i_el);
-            element_n_nodes      = mesh.getElementConnSize(i_el);
+            //element_n_nodes      = mesh.getElementConnSize(i_el);
             
             for(int i_no = 0; i_no < element_n_nodes; ++i_no)
             {
                 int i_gid = conn[i_no];
 
-                Fe[i_no]  += 1.0; 
+                Fe[i_no]  = 1.0; 
 
                 for(int j_no = 0; j_no < element_n_nodes; ++j_no)
                 {
                      int j_gid = conn[j_no];
 
-                     Ke[i_no][j_no] += 1.0;
+                     Ke[i_no][j_no] = 1.0;
                 }
 
                 LocalToGlobalEBE(i_el,element_n_nodes,conn,&Ke[0][0],A_EBE,Fe,b);
@@ -92,16 +92,22 @@ namespace FiniteElementKernels
             int blocksize = coloring[c];
 
 #pragma ivdep             
-#pragma omp for 
+#pragma omp for
             for(int i_el = start; i_el < (start+blocksize); i_el++)
             {
 
                 unsigned int *conn            = mesh.getElementConn(i_el);
-                element_n_nodes      = mesh.getElementConnSize(i_el);
+                //element_n_nodes      = mesh.getElementConnSize(i_el);
+
+                // Obter a função de interpolaçao para o elementos
+                // No pontos de integração
                 
                 for(int i_no = 0; i_no < element_n_nodes; ++i_no)
                 {
                     int i_gid = conn[i_no];
+
+                    // Obter a contribuição local do lado-direito do
+                    // sistema
 
                     Fe[i_no]  += 1.0; 
 
@@ -109,9 +115,13 @@ namespace FiniteElementKernels
                     {
                         int j_gid = conn[j_no];
 
+                        // Obter a contribuição local do lado-esquerdo do
+                        // sistema
                         Ke[i_no][j_no] += 1.0;
                     }
 
+                    // Adicionar a contribuição local do elemento no sistema
+                    // global
                     LocalToGlobalEBE(i_el,element_n_nodes,conn,&Ke[0][0],A_EBE,Fe,b);
 
                 }
@@ -135,11 +145,15 @@ void run(Mesh& mesh)
 
     
     high_resolution_clock::time_point t1 = high_resolution_clock::now();
+
     AssemblyOpenMP(mesh,A_ebe,b);
+
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
+
     duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
 
     std::cout << "Assembly CPU Time: " << time_span.count() << " seconds.";
+    
     std::cout << std::endl;
 
     delete [] A_ebe;

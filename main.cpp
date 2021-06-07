@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
     }
 
     // Trata os argumentos que são passados por linha de comando
-    while( (opt = getopt(argc, argv, "hm:c:r:c:b:")) !=  -1 ) {
+    while( (opt = getopt(argc, argv, "hm:c:r:v:b:")) !=  -1 ) {
         switch ( opt ) {
             case 'h': /* help */
                 usage(argv[0]) ;
@@ -168,7 +168,7 @@ int main(int argc, char* argv[])
         FiniteElementKernels::run(*pmesh);
 
         //Escreve partição na arquivo 
-        pmesh->writeParallelMesh();
+        //pmesh->writeParallelMesh();
     }
     else
     {
@@ -177,8 +177,7 @@ int main(int argc, char* argv[])
         mesh->MeshColoring(color_alg, block_size);
 
         // Escreve a malha em arquivo.
-        mesh->MeshVTKWriterInternalBinAppended(0);
-
+        //mesh->MeshVTKWriterInternalBinAppended(0);
         FiniteElementKernels::run(*mesh);
 
     }
