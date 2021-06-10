@@ -52,6 +52,7 @@ int main(int argc, char* argv[])
     char* gmsh_filename    = 0; 
     bool  flg_catalyst     = false;
     bool  flg_gmsh         = false;
+    bool  flg_reorder      = false;
     char* catalyst_script  = 0;
     char* rorder_alg_name  = 0;
     char* color_alg_name   = 0;
@@ -88,6 +89,7 @@ int main(int argc, char* argv[])
                 break;
             case 'r':
                 rorder_alg_name = optarg;
+                flg_reorder = true;
                 if(strcmp(rorder_alg_name,"nd")==0)
                     reordering = METIS_ND;
                 if(strcmp(rorder_alg_name,"first-fit")==0)
@@ -143,7 +145,8 @@ int main(int argc, char* argv[])
 
         // Aplica a reordenação nodal considerando o algoritmo
         // escolhido pelo usuário
-        mesh->MeshReordering(reordering);
+        if(flg_reorder)
+            mesh->MeshReordering(reordering);
     
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha
