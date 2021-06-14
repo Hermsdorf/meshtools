@@ -579,7 +579,7 @@ bool BinaryBigEndian(void)
 
 void Mesh::MeshVTKWriterInternalBinAppended(int timeStep, int* npart, int* epart, int* color, double* velocity, float* pressure)
 {
-    std::cout << "Writing VTK internal elements...\n";
+    std::cout << "Writing in binary VTK internal elements...\n";
     
     std::FILE*         fout;
     unsigned int boffset = 0; /* Offset into binary file */
@@ -748,7 +748,7 @@ void Mesh::MeshVTKWriterInternalBinAppended(int timeStep, int* npart, int* epart
 
 void Mesh::MeshVTKWriterBinAppended(int timeStep, int* npart, int* epart, int* color, double* velocity, float* pressure)
 {
-    std::cout << "Writing VTK boundary and internal elements...\n";
+    std::cout << "Writing in binary VTK boundary and internal elements...\n";
     
     std::FILE*         fout;
     unsigned int boffset = 0; /* Offset into binary file */
@@ -907,6 +907,24 @@ void Mesh::MeshVTKWriterBinAppended(int timeStep, int* npart, int* epart, int* c
     }
 }
 
+void Mesh::MeshVTKWriting(write_t writing)
+{
+    switch (writing)
+    {
+        case INTERNAL_BIN:
+            MeshVTKWriterInternalBinAppended(0, NULL, NULL, this->get_mesh_coloring_internal(),  NULL, NULL);
+            break;
+        case INTERNAL:
+            MeshVTKWriterInternal(0, NULL, NULL, this->get_mesh_coloring_internal(),  NULL, NULL);
+            break;
+        case BOUND_INTERNAL_BIN:
+            MeshVTKWriterBinAppended(0, NULL, NULL, this->get_mesh_coloring_internal(),  NULL, NULL);
+            break;
+        case BOUND_INTERNAL: 
+            MeshVTKWriter(0, NULL, NULL, this->get_mesh_coloring_internal(),  NULL, NULL);
+            break;
+    }
+}
 
 
 

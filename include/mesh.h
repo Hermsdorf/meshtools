@@ -9,6 +9,7 @@ typedef std::pair<int, std::string> physical_data_t;
 
 typedef enum {METIS_ND=0, RCM, FF} reorder_t;
 typedef enum {COLOR_DEFAULT=0, COLOR_DEFAULT_BLOCK, COLOR_ROKOS, COLOR_ROKOS_BLOCK} color_mode_t;
+typedef enum {INTERNAL_BIN=0, INTERNAL, BOUND_INTERNAL_BIN, BOUND_INTERNAL} write_t;
 
 class Mesh {
     public:
@@ -479,6 +480,8 @@ class Mesh {
          * * OBJETIVO:
          *     Testar se a coloração calculada no algoritmo está correta.
         */
+
+       void MeshVTKWriting(write_t writing);
 
     protected:
         unsigned int n_face_elements;            // Numero de elementos de superficie.

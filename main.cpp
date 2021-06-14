@@ -41,6 +41,11 @@ static void usage(const char *arg0)
     cerr <<"\t\t  rcm       : apply rcm (default) " << endl;
     cerr <<"\t\t  nd        : apply nested disection algorithm " << endl;
     cerr <<"\t\t  first-fit : first touch algorithm" << endl;
+    cerr <<"\t  -w <write vtk mesh> : where [vtk type] is the way to write the mesh in vtk file. The options are: " << endl;
+    cerr <<"\t\t  boundinternal   : write the mesh with boundary and internal elements " << endl;
+    cerr <<"\t\t  boundinternal_b : write the mesh file in binary with boundary and internal elements " << endl;
+    cerr <<"\t\t  internal        : write the mesh with just internal elements " << endl;
+    cerr <<"\t\t  internal_b      : write the mesh file in binary with just internal elements " << endl;
     exit(-1);
 }
 
@@ -53,13 +58,16 @@ int main(int argc, char* argv[])
     bool  flg_catalyst     = false;
     bool  flg_gmsh         = false;
     bool  flg_reorder      = false;
+    bool  flg_write        = false;
     char* catalyst_script  = 0;
     char* rorder_alg_name  = 0;
     char* color_alg_name   = 0;
+    char* write_alg_name   = 0;
     char* block_size_str;
 
     reorder_t    reordering = RCM;
     color_mode_t color_alg  = COLOR_DEFAULT_BLOCK;
+    write_t      writing    = INTERNAL_BIN;
     int block_size          = 4096;
 
 #ifdef USE_MPI
@@ -74,7 +82,7 @@ int main(int argc, char* argv[])
     }
 
     // Trata os argumentos que são passados por linha de comando
-    while( (opt = getopt(argc, argv, "hm:c:r:v:b:")) !=  -1 ) {
+    while( (opt = getopt(argc, argv, "hm:c:r:v:b:w:")) !=  -1 ) {
         switch ( opt ) {
             case 'h': /* help */
                 usage(argv[0]) ;
@@ -107,6 +115,18 @@ int main(int argc, char* argv[])
             case 'b':
                 block_size_str = optarg;
                 block_size = atoi(block_size_str);
+                break;
+            case 'w':
+                flg_write = true;
+                write_alg_name = optarg;
+                if(strcmp(write_alg_name,"boundinternal")==0)
+                    writing = BOUND_INTERNAL;
+                if(strcmp(write_alg_name,"boundinternal_b")==0)
+                    writing = BOUND_INTERNAL_BIN;
+                if(strcmp(write_alg_name,"internal")==0)
+                    writing = INTERNAL;
+                if(strcmp(write_alg_name,"internal_b")==0)
+                    writing = INTERNAL_BIN;
                 break;
             default:
                 fprintf(stderr, "Opcao invalida ou faltando argumento: `%c'\n", optopt) ;
@@ -180,7 +200,9 @@ int main(int argc, char* argv[])
         mesh->MeshColoring(color_alg, block_size);
 
         // Escreve a malha em arquivo.
-        //mesh->MeshVTKWriterInternalBinAppended(0);
+        if(flg_write)
+            mesh->MeshVTKWriting(writing);
+
         FiniteElementKernels::run(*mesh);
 
     }
@@ -201,7 +223,6 @@ int main(int argc, char* argv[])
     return 0;
 
 }
-
 
 
 
