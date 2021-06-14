@@ -907,21 +907,21 @@ void Mesh::MeshVTKWriterBinAppended(int timeStep, int* npart, int* epart, int* c
     }
 }
 
-void Mesh::MeshVTKWriting(write_t writing)
+void Mesh::MeshVTKWriting(write_t writing, int* npart, int* epart)
 {
     switch (writing)
     {
         case INTERNAL_BIN:
-            MeshVTKWriterInternalBinAppended(0, NULL, NULL, this->get_mesh_coloring_internal(),  NULL, NULL);
+            MeshVTKWriterInternalBinAppended(0, npart, epart, this->get_mesh_coloring_internal(),  NULL, NULL);
             break;
         case INTERNAL:
-            MeshVTKWriterInternal(0, NULL, NULL, this->get_mesh_coloring_internal(),  NULL, NULL);
+            MeshVTKWriterInternal(0, npart, epart, this->get_mesh_coloring_internal(),  NULL, NULL);
             break;
         case BOUND_INTERNAL_BIN:
-            MeshVTKWriterBinAppended(0, NULL, NULL, this->get_mesh_coloring_internal(),  NULL, NULL);
+            MeshVTKWriterBinAppended(0, npart, epart, this->get_mesh_coloring_internal(),  NULL, NULL);
             break;
         case BOUND_INTERNAL: 
-            MeshVTKWriter(0, NULL, NULL, this->get_mesh_coloring_internal(),  NULL, NULL);
+            MeshVTKWriter(0, npart, epart, this->get_mesh_coloring_internal(),  NULL, NULL);
             break;
     }
 }

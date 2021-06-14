@@ -481,7 +481,7 @@ class Mesh {
          *     Testar se a coloração calculada no algoritmo está correta.
         */
 
-       void MeshVTKWriting(write_t writing);
+       void MeshVTKWriting(write_t writing, int* npart, int* epart);
 
     protected:
         unsigned int n_face_elements;            // Numero de elementos de superficie.

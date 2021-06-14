@@ -201,7 +201,7 @@ int main(int argc, char* argv[])
 
         // Escreve a malha em arquivo.
         if(flg_write)
-            mesh->MeshVTKWriting(writing);
+            mesh->MeshVTKWriting(writing, parts->get_nodal_part(), parts->get_elem_part());
 
         FiniteElementKernels::run(*mesh);
 
