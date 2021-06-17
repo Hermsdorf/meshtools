@@ -40,12 +40,11 @@ static void usage(const char *arg0)
     cerr << "\t -r <reordering algorithm> : where [reordering algotihm] is the nodal renumering algorithm. The options are: " << endl;
     cerr <<"\t\t  rcm       : apply rcm (default) " << endl;
     cerr <<"\t\t  nd        : apply nested disection algorithm " << endl;
-    cerr <<"\t\t  first-fit : first touch algorithm" << endl;
-    cerr <<"\t  -w <write vtk mesh> : where [vtk type] is the way to write the mesh in vtk file. The options are: " << endl;
-    cerr <<"\t\t  boundinternal   : write the mesh with boundary and internal elements " << endl;
-    cerr <<"\t\t  boundinternal_b : write the mesh file in binary with boundary and internal elements " << endl;
-    cerr <<"\t\t  internal        : write the mesh with just internal elements " << endl;
-    cerr <<"\t\t  internal_b      : write the mesh file in binary with just internal elements " << endl;
+    cerr <<"\t\t  natural   : first touch algorithm" << endl;
+    cerr <<"\t\t  none      : keep gmsh ordering " << endl;    
+    cerr <<"\t  -w <vtk write_mode> : where [vtk type] is the way to write the mesh in vtk file. The options are: " << endl;
+    cerr <<"\t\t  ascii             : write ascii files  " << endl;
+    cerr <<"\t\t  binary            : write binary files " << endl;
     exit(-1);
 }
 
@@ -100,8 +99,10 @@ int main(int argc, char* argv[])
                 flg_reorder = true;
                 if(strcmp(rorder_alg_name,"nd")==0)
                     reordering = METIS_ND;
-                if(strcmp(rorder_alg_name,"first-fit")==0)
+                if(strcmp(rorder_alg_name,"natural")==0)
                     reordering = FF;
+                if(strcmp(rorder_alg_name,"none")==0)
+                    flg_reorder = false;
                 break;
             case 'c':
                 color_alg_name = optarg;
