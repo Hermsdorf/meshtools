@@ -120,14 +120,10 @@ int main(int argc, char* argv[])
             case 'w':
                 flg_write = true;
                 write_alg_name = optarg;
-                if(strcmp(write_alg_name,"boundinternal")==0)
-                    writing = BOUND_INTERNAL;
-                if(strcmp(write_alg_name,"boundinternal_b")==0)
-                    writing = BOUND_INTERNAL_BIN;
-                if(strcmp(write_alg_name,"internal")==0)
-                    writing = INTERNAL;
-                if(strcmp(write_alg_name,"internal_b")==0)
-                    writing = INTERNAL_BIN;
+                if(strcmp(write_alg_name,"binary")==0)
+                    writing = BINARY;
+                if(strcmp(write_alg_name,"ascii")==0)
+                    writing = ASCII;
                 break;
             default:
                 fprintf(stderr, "Opcao invalida ou faltando argumento: `%c'\n", optopt) ;
@@ -202,7 +198,7 @@ int main(int argc, char* argv[])
 
         // Escreve a malha em arquivo.
         if(flg_write)
-            mesh->MeshVTKWriting(writing, parts->get_nodal_part(), parts->get_elem_part());
+            mesh->MeshVTKWriting(writing);
 
         FiniteElementKernels::run(*mesh);
 
