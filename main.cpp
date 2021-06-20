@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
 
     reorder_t    reordering = RCM;
     color_mode_t color_alg  = COLOR_DEFAULT_BLOCK;
-    write_t      writing    = INTERNAL_BIN;
+    write_t      writing    = BINARY;
     int block_size          = 4096;
 
 #ifdef USE_MPI
