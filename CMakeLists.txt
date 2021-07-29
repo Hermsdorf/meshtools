@@ -23,14 +23,17 @@ file(GLOB source_files
             "test/finite_element_kernel/*.cpp"
     )
 
-option(MPI_ENABLE "Enable MPI" OFF)
-option(OpenMP_ENABLE "Enable OpenMP" OFF)
+add_executable(meshtools ${source_files})
+
+option(MPI_ENABLE "Enable MPI" ON)
+option(OpenMP_ENABLE "Enable OpenMP" ON)
 option(CATALYST_ENABLE "Enable Paraview Catalyst" OFF)
 
 if(MPI_ENABLE)
    find_package(MPI)
    if(MPI_FOUND)
-      target_link_libraries(meshtools PUBLIC MPI::C)
+	   include_directories(meshtools ${MPI_C_INCLUDE_PATH})
+	   target_link_libraries(meshtools PUBLIC MPI::MPI_C MPI::MPI_CXX)
    endif()
    set(USE_MPI 1)
 endif()
@@ -58,8 +61,6 @@ configure_file(meshtools_config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/include/meshtoo
 include_directories(${METIS_INCLUDE_DIRS})
 include_directories(include)
 include_directories(test/finite_element_kernel)
-
-add_executable(meshtools ${source_files})
 
 if(OpenMP_ENABLE)
    find_package(OpenMP)

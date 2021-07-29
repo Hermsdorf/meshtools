@@ -3,6 +3,7 @@
 #include "meshtools_config.h"
 
 #include <iostream>
+#ifdef USE_CATALYST
 #include <vtkCPDataDescription.h>
 #include <vtkCPInputDataDescription.h>
 #include <vtkCPProcessor.h>
@@ -169,3 +170,5 @@ void CatalystCoProcess(Mesh *mesh, double *velocityData, float *pressureData, do
     Processor->CoProcess(dataDescription.GetPointer());
   }
 }
+
+#endif

@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
     int block_size          = 4096;
 
 #ifdef USE_MPI
-    MPI_Init(argc, argv);
+    MPI_Init(&argc, &argv);
 #endif
 
     // Obrigatorio ter ao menos 3 argumentos:
