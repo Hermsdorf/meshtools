@@ -8,7 +8,7 @@
 #include "mesh.h"
 #include "mesh_part.h"
 #include "alglin.h"
-#include "parallelmesh.h"
+#include "parallel_mesh.h"
 
 
 #include "finite_element_kernels.h"
@@ -45,7 +45,7 @@ static void usage(const char *arg0)
     cerr <<"\t  -w <vtk write_mode> : where [vtk type] is the way to write the mesh in vtk file. The options are: " << endl;
     cerr <<"\t\t  ascii             : write ascii files  " << endl;
     cerr <<"\t\t  binary            : write binary files " << endl;
-    exit(-1);
+    
 }
 
 
@@ -68,12 +68,22 @@ int main(int argc, char* argv[])
     color_mode_t color_alg  = COLOR_DEFAULT_BLOCK;
     write_t      writing    = BINARY;
     int block_size          = 4096;
+    int n_processors = 1;
+    int processor_id = 0;
+#ifdef USE_MPI
+    MPI_Init(NULL, NULL);
+    MPI_Comm_size(MPI_COMM_WORLD, &n_processors);
+    MPI_Comm_rank(MPI_COMM_WORLD, &processor_id);
+#endif
 
     // Obrigatorio ter ao menos 3 argumentos:
     // ./meshtools -m <filename>
     if(argc < 3)
     {
-        usage(argv[0]);
+        if(processor_id==0) usage(argv[0]);
+        MPI_Finalize();
+        return -1;
+        
     }
 
     // Trata os argumentos que são passados por linha de comando
@@ -136,17 +146,11 @@ int main(int argc, char* argv[])
 
     if(!flg_gmsh)
     {
-        usage(argv[0]);
+        if(processor_id==0) usage(argv[0]);
+        MPI_Finalize();
+        return -1;
     }
 
-    int n_processors = 1;
-    int processor_id = 0;
-
-#ifdef USE_MPI
-    MPI_Init(NULL, NULL);
-    MPI_Comm_size(MPI_COMM_WORLD, &n_processors);
-    MPI_Comm_rank(MPI_COMM_WORLD, &processor_id);
-#endif
 
 #ifdef USE_CATALYST
     CatalystInitialize(1, catalyst_script);
@@ -183,13 +187,16 @@ int main(int argc, char* argv[])
         str.resize(str.length()-4);
         pmesh->setFilename(str);
 
+        
+        //pmesh->writeParallelMesh();
+
         // Aplica em cada partição a coloração
         pmesh->MeshColoring(color_alg, block_size);
 
-        FiniteElementKernels::run(*pmesh);
+        //FiniteElementKernels::run(*pmesh);
 
         //Escreve partição na arquivo 
-        //pmesh->writeParallelMesh();
+        pmesh->writeParallelMesh();
     }
     else
     {

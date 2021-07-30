@@ -23,6 +23,8 @@ class SharedNodes{
         unsigned int id_processador_vizinho;  // trocar para ingles
         unsigned int n_shared_nodes;
         std::vector<unsigned int> nodes; // lista de nos
+
+        
 };
 
 class ParallelMesh : public Mesh{
@@ -49,6 +51,8 @@ class ParallelMesh : public Mesh{
         int n_processadores_vizinhos; // trocar para ingles
         std::vector<SharedNodes> communication_map;
         bool internal_mesh;
+
+        void writePvtu();
 };
 
 #endif // PARALLELMESH__H_

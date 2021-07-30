@@ -4,7 +4,7 @@
 #include <iostream>
 #include <set>
 
-#include "parallelmesh.h"
+#include "parallel_mesh.h"
 
 class Mesh_partition_t {
     public:

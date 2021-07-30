@@ -2,8 +2,11 @@
 #include <fstream>
 #include <sstream>
 
-//#include "mpi.h"
-#include "parallelmesh.h"
+#include <mpi.h>
+
+#include "meshtools_config.h"
+#include "parallel_mesh.h"
+
 
 ParallelMesh::ParallelMesh()
 {
@@ -288,82 +291,186 @@ void ParallelMesh::readParallelMeshBin(const char* filename)
     }
 }
 
-// void writePvtu(ParallelMesh* pmesh)
-// {
-//     std::cout << "Writing VTK parallel mesh...\n";
-//     std::ofstream fout;
+#ifdef USE_HDF5
+void ParallelMesh::readParallelMeshHDF5(const char* filename)
+{
+    this->setFilename(filename);
+    std::ifstream in(filename, std::ios::binary);
+    std::string s;
 
-//     int size;
-//     MPI_Comm_size(MPI_COMM_WORLD, &size);
+    hid_t       file, filetype, memtype, space, dset;/* Handles */
+    herr_t      status;
+    hsize_t     dims[1];
 
-//     std::string str(pmesh->getFilename());
-//     str.insert(str.length(), ".pvtu"); // inserir "p" em ".vtu" -> ".pvtu"
-//     fout.open(str.c_str());
+    file = H5Fopen (FILE, H5F_ACC_RDONLY, H5P_DEFAULT);
+
+    unsigned int nelem, nnodes, connsize;
+
+
+    // readign attribute data
+
+     dset = H5Dopen(file,"attributes");
+     
+
+    //in.read((char *) &nelem, sizeof(unsigned int));
+    //in.read((char *) &nnodes, sizeof(unsigned int));
+    //in.read((char *) &connsize, sizeof(unsigned int));
+    dset = H5Dopen (file, "coordinates", H5P_DEFAULT);
+
+    /*
+     * Get the datatype and its dimensions.
+     */
+    filetype = H5Dget_type (dset);
+    ndims    = H5Tget_array_dims (filetype, 3);
+
+    /*
+     * Get dataspace and allocate memory for read buffer.  This is a
+     * three dimensional dataset when the array datatype is included so
+     * the dynamic allocation must be done in steps.
+     */
+    space = H5Dget_space (dset);
+    ndims = H5Sget_simple_extent_dims (space, dims, NULL);
     
-//     std::string os;
+    this->n_nodes = nnodes;
 
-//     std::string str_aux(pmesh->getFilename());
+
+
+    this->conn.resize(connsize);
+    this->coord.resize(nnodes*3);
+    this->offset.resize(nelem+1);
+    this->type.resize(nelem);
+    this->local_to_global.resize(nnodes);
+
+    while(!in.eof())
+    {
+        std::getline(in, s);
+        if(in)
+        {
+            if(s.find("COORD_LOCAL: ") == 0)
+            {
+                in.read((char*) &this->coord[0], nnodes*3*sizeof(double));
+            } 
+            else if(s.find("CONN_LOCAL: ") == 0)
+            {
+                in.read((char*) &this->conn[0], connsize*sizeof(unsigned int));
+            }
+            else if(s.find("OFFSET_LOCAL: ") == 0)
+            {
+                in.read((char*) &this->offset[0], (nelem+1)*sizeof(unsigned int));
+            }
+            else if(s.find("TYPE_LOCAL: ") == 0)
+            {
+                in.read((char*) &this->type[0], nelem*sizeof(unsigned short));
+            }
+            else if(s.find("LOCAL_TO_GLOBAL: ") == 0)
+            {
+                in.read((char*) &this->local_to_global[0], nnodes*sizeof(unsigned int));
+            }
+            else if(s.find("SHARED NODES: ") == 0)
+            {
+                unsigned int commsize;
+                in.read((char*) &commsize, sizeof(unsigned int));
+                this->communication_map.resize(commsize);
+                this->n_processadores_vizinhos = commsize;
+
+                for(int i = 0 ; i < commsize ; i++)
+                {
+                    unsigned int id_processador_vizinho_i, n_shared_nodes_i;
+
+                    in.read((char*) &id_processador_vizinho_i, sizeof(unsigned int));
+                    in.read((char*) &n_shared_nodes_i, sizeof(unsigned int));
+                    
+                    this->communication_map[i].set_id_processador_vizinho(id_processador_vizinho_i);
+                    this->communication_map[i].set_n_shared_nodes(n_shared_nodes_i);
+                    in.read((char*) &this->communication_map[i].nodes[0], n_shared_nodes_i*sizeof(unsigned int));
+
+                }
+            }
+            else
+            {
+                std::cout << "ERRO: Formato do arquivo invalido\n";
+            }
+        }
+    }
+}
+#endif
+
+void ParallelMesh::writePvtu()
+{
+    std::cout << "Writing VTK parallel mesh...\n";
+    std::ofstream fout;
+
+    int size;
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    std::string str(this->getFilename());
+    str.insert(str.length(), ".pvtu"); // inserir "p" em ".vtu" -> ".pvtu"
+    fout.open(str.c_str());
     
-//     fout << "<VTKFile type=\"PUnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n";
-//     fout << "\t<PUnstructuredGrid>\n";
-//     for(int i = 0 ; i < size ; i++)
-//     {
-//         os = std::to_string(i);
-//         int pos = str_aux.find_last_of('/'); // caso a malha esteja em outro diretorio, deixar somente o nome da malha
-//         str_aux.erase(0, pos+1);
-//         str_aux.insert(str_aux.length(), "_" + os + ".vtu");
+    std::string os;
 
-//         fout << "\t\t<PPointData>\n";
-//         fout << "\t\t\t<PDataArray type=\"Int32\" Name=\"npart\"/>\n";
-//         fout << "\t\t</PPointData>\n";
-//         fout << "\t\t<PCellData>\n";
-//         fout << "\t\t\t<PDataArray type=\"Int32\" Name=\"epart\"/>\n";
-//         fout << "\t\t\t<PDataArray type=\"Int32\" Name=\"color\"/>\n";
-//         fout << "\t\t</PCellData>\n";
-//         fout << "\t\t<PPoints>\n";
-//         fout << "\t\t\t<PDataArray type=\"Float64\" NumberOfComponents=\"3\"/>\n";
-//         fout << "\t\t</PPoints>\n";
-//         fout << "\t\t<Piece Source=\"" << str_aux << "\"/>\n";
+    std::string str_aux(this->getFilename());
+    
+    fout << "<VTKFile type=\"PUnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n";
+    fout << "\t<PUnstructuredGrid>\n";
+    for(int i = 0 ; i < size ; i++)
+    {
+        os = std::to_string(i);
+        int pos = str_aux.find_last_of('/'); // caso a malha esteja em outro diretorio, deixar somente o nome da malha
+        str_aux.erase(0, pos+1);
+        str_aux.insert(str_aux.length(), "_" + os + ".vtu");
 
-//         str_aux.clear();
-//         os.clear();
-//         str_aux = pmesh->getFilename();
-//     }
-//     fout << "\t</PUnstructuredGrid>\n";
-//     fout << "</VTKFile>\n";
+        fout << "\t\t<PPointData>\n";
+        fout << "\t\t\t<PDataArray type=\"Int32\" Name=\"npart\"/>\n";
+        fout << "\t\t</PPointData>\n";
+        fout << "\t\t<PCellData>\n";
+        fout << "\t\t\t<PDataArray type=\"Int32\" Name=\"epart\"/>\n";
+        fout << "\t\t\t<PDataArray type=\"Int32\" Name=\"color\"/>\n";
+        fout << "\t\t</PCellData>\n";
+        fout << "\t\t<PPoints>\n";
+        fout << "\t\t\t<PDataArray type=\"Float64\" NumberOfComponents=\"3\"/>\n";
+        fout << "\t\t</PPoints>\n";
+        fout << "\t\t<Piece Source=\"" << str_aux << "\"/>\n";
 
-//     fout.close();
-//     std::cout << "Writing pvtu completed successfully\n";
-// }
+        str_aux.clear();
+        os.clear();
+        str_aux = this->getFilename();
+    }
+    fout << "\t</PUnstructuredGrid>\n";
+    fout << "</VTKFile>\n";
 
-// void ParallelMesh::writeParallelMesh()
-// {
-//     bool pmesh_is_internal = this->internal_mesh;
-//     int rank, size;
+    fout.close();
+    std::cout << "Writing pvtu completed successfully\n";
+}
 
-//     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-//     MPI_Comm_size(MPI_COMM_WORLD, &size);
-//     int nnodes = this->get_n_nodes();
-//     int nelem = pmesh_is_internal ? this->get_n_elements() : (this->get_n_elements() + this->get_n_face_elements());
-//     int* npart = new int[nnodes];
-//     for(int i = 0 ; i < nnodes ; i++)
-//         npart[i] = rank;
+void ParallelMesh::writeParallelMesh()
+{
+    bool pmesh_is_internal = this->internal_mesh;
+    int rank, size;
 
-//     int* epart = new int[nelem];
-//     for(int i = 0 ; i < nelem ; i++)
-//         epart[i] = rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    int nnodes = this->get_n_nodes();
+    int nelem = pmesh_is_internal ? this->get_n_elements() : (this->get_n_elements() + this->get_n_face_elements());
+    int* npart = new int[nnodes];
+    for(int i = 0 ; i < nnodes ; i++)
+        npart[i] = rank;
 
-//     if(pmesh_is_internal)
-//         MeshVTKWriterInternal(rank, npart, epart, this->mesh_coloring_internal, NULL, NULL);
-//     else
-//         MeshVTKWriter(rank, npart, epart, this->mesh_coloring_internal, NULL, NULL);
+    int* epart = new int[nelem];
+    for(int i = 0 ; i < nelem ; i++)
+        epart[i] = rank;
 
-//     if(rank == 0)
-//         writePvtu(this);
+    if(pmesh_is_internal)
+        MeshVTKWriterInternal(rank, npart, epart, this->mesh_coloring_internal, NULL, NULL);
+    else
+        MeshVTKWriter(rank, npart, epart, this->mesh_coloring_internal, NULL, NULL);
 
-//     delete [] npart;
-//     delete [] epart;
-// }
+    if(rank == 0)
+        this->writePvtu();
+
+    delete [] npart;
+    delete [] epart;
+}
 
 // void ParallelMesh::writeParallelMeshBin()
 // {

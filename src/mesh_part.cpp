@@ -3,7 +3,7 @@
 #include <fstream>
 #include <sstream>
 
-
+#include "meshtools_config.h"
 #include "metis.h"
 #include "mesh.h"
 #include "mesh_part.h"
@@ -1114,6 +1114,8 @@ void fillParallelMesh(ParallelMesh* pmesh, std::vector<double> &coord_local, std
     pmesh->setOffset(offset_local);
     pmesh->setType(type_local);
     pmesh->set_local_to_global(local_to_global);
+    if(pmesh->get_mesh_coloring_internal()==nullptr)
+        pmesh->set_mesh_coloring_internal(new int[pmesh->get_n_elements()]);
 
     std::vector<SharedNodes> &communication_map = pmesh->get_communication_map();
 
@@ -1218,15 +1220,15 @@ ParallelMesh* Mesh_partition_t::DistributedMeshInternal(Mesh* mesh, int processo
             array_sizes[4] = local_to_global.size();
             array_sizes[5] = shared_out.size();
 
-            MPI_Send(array_sizes, 6, MPI_INT, i, 0, comm);
-            MPI_Send(&nelem_part[i], 1, MPI_INT, i, 0, comm);
+            MPI_Send(array_sizes, 6, MPI_INT, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&nelem_part[i], 1, MPI_INT, i, 0, MPI_COMM_WORLD);
 
-            MPI_Send(&coord_local[0], coord_local.size(), MPI_DOUBLE, i, 0, comm);
-            MPI_Send(&conn_local[0], conn_local.size(), MPI_UNSIGNED, i, 0, comm);
-            MPI_Send(&offset_local[0], offset_local.size(), MPI_UNSIGNED, i, 0, comm);
-            MPI_Send(&type_local[0], type_local.size(), MPI_UNSIGNED_SHORT, i, 0, comm);
-            MPI_Send(&local_to_global[0], local_to_global.size(), MPI_UNSIGNED, i, 0, comm);
-            MPI_Send(&shared_out[0], shared_out.size(), MPI_UNSIGNED, i, 0, comm);
+            MPI_Send(&coord_local[0], coord_local.size(), MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&conn_local[0], conn_local.size(), MPI_UNSIGNED, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&offset_local[0], offset_local.size(), MPI_UNSIGNED, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&type_local[0], type_local.size(), MPI_UNSIGNED_SHORT, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&local_to_global[0], local_to_global.size(), MPI_UNSIGNED, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&shared_out[0], shared_out.size(), MPI_UNSIGNED, i, 0, MPI_COMM_WORLD);
  
             coord_local.clear();
             conn_local.clear();
@@ -1246,8 +1248,8 @@ ParallelMesh* Mesh_partition_t::DistributedMeshInternal(Mesh* mesh, int processo
         int nelem_pmesh;
         int array_sizes[6];
         MPI_Status status;  
-        MPI_Recv(array_sizes, 6, MPI_INT, 0, 0, comm, &status);
-        MPI_Recv(&nelem_pmesh, 1, MPI_INT, 0, 0, comm, &status);
+        MPI_Recv(array_sizes, 6, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&nelem_pmesh, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
 
         pmesh->set_n_elements(nelem_pmesh);
 
@@ -1258,12 +1260,12 @@ ParallelMesh* Mesh_partition_t::DistributedMeshInternal(Mesh* mesh, int processo
         local_to_global.resize(array_sizes[4]);
         shared_out.resize(array_sizes[5]);
 
-        MPI_Recv(&coord_local[0], coord_local.size(), MPI_DOUBLE, 0, 0, comm, &status);
-        MPI_Recv(&conn_local[0], conn_local.size(), MPI_UNSIGNED, 0, 0, comm, &status);
-        MPI_Recv(&offset_local[0], offset_local.size(), MPI_UNSIGNED, 0, 0, comm, &status);
-        MPI_Recv(&type_local[0], type_local.size(), MPI_UNSIGNED_SHORT, 0, 0, comm, &status);
-        MPI_Recv(&local_to_global[0], local_to_global.size(), MPI_UNSIGNED, 0, 0, comm, &status);
-        MPI_Recv(&shared_out[0], shared_out.size(), MPI_UNSIGNED, 0, 0, comm, &status);
+        MPI_Recv(&coord_local[0], coord_local.size(), MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&conn_local[0], conn_local.size(), MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&offset_local[0], offset_local.size(), MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&type_local[0], type_local.size(), MPI_UNSIGNED_SHORT, 0, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&local_to_global[0], local_to_global.size(), MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&shared_out[0], shared_out.size(), MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &status);
 
         fillParallelMesh(pmesh, coord_local, type_local, conn_local, offset_local, local_to_global, shared_out);
     }
@@ -1368,16 +1370,16 @@ ParallelMesh* Mesh_partition_t::DistributedMesh(Mesh* mesh, int processor_id, in
             int nsurfelem_aux = nelem_pmesh[i*2];
             int nelem_aux = nelem_pmesh[(i*2) + 1];
 
-            MPI_Send(array_sizes, 6, MPI_INT, i, 0, comm);
-            MPI_Send(&nsurfelem_aux, 1, MPI_INT, i, 0, comm);
-            MPI_Send(&nelem_aux, 1, MPI_INT, i, 0, comm);
+            MPI_Send(array_sizes, 6, MPI_INT, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&nsurfelem_aux, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&nelem_aux, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
 
-            MPI_Send(&coord_local[0], coord_local.size(), MPI_DOUBLE, i, 0, comm);
-            MPI_Send(&conn_local[0], conn_local.size(), MPI_UNSIGNED, i, 0, comm);
-            MPI_Send(&offset_local[0], offset_local.size(), MPI_UNSIGNED, i, 0, comm);
-            MPI_Send(&type_local[0], type_local.size(), MPI_UNSIGNED_SHORT, i, 0, comm);
-            MPI_Send(&local_to_global[0], local_to_global.size(), MPI_UNSIGNED, i, 0, comm);
-            MPI_Send(&shared_out[0], shared_out.size(), MPI_UNSIGNED, i, 0, comm);
+            MPI_Send(&coord_local[0], coord_local.size(), MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&conn_local[0], conn_local.size(), MPI_UNSIGNED, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&offset_local[0], offset_local.size(), MPI_UNSIGNED, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&type_local[0], type_local.size(), MPI_UNSIGNED_SHORT, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&local_to_global[0], local_to_global.size(), MPI_UNSIGNED, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&shared_out[0], shared_out.size(), MPI_UNSIGNED, i, 0, MPI_COMM_WORLD);
  
             coord_local.clear();
             conn_local.clear();
@@ -1399,9 +1401,9 @@ ParallelMesh* Mesh_partition_t::DistributedMesh(Mesh* mesh, int processor_id, in
         int nsurfelem_pmesh;
         int array_sizes[6];
         MPI_Status status;  
-        MPI_Recv(array_sizes, 6, MPI_INT, 0, 0, comm, &status);
-        MPI_Recv(&nsurfelem_pmesh, 1, MPI_INT, 0, 0, comm, &status);
-        MPI_Recv(&nelem_pmesh, 1, MPI_INT, 0, 0, comm, &status);
+        MPI_Recv(array_sizes, 6, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&nsurfelem_pmesh, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&nelem_pmesh, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
 
         pmesh->set_n_face_elements(nsurfelem_pmesh);
         pmesh->set_n_elements(nelem_pmesh);
@@ -1413,12 +1415,12 @@ ParallelMesh* Mesh_partition_t::DistributedMesh(Mesh* mesh, int processor_id, in
         local_to_global.resize(array_sizes[4]);
         shared_out.resize(array_sizes[5]);
 
-        MPI_Recv(&coord_local[0], coord_local.size(), MPI_DOUBLE, 0, 0, comm, &status);
-        MPI_Recv(&conn_local[0], conn_local.size(), MPI_UNSIGNED, 0, 0, comm, &status);
-        MPI_Recv(&offset_local[0], offset_local.size(), MPI_UNSIGNED, 0, 0, comm, &status);
-        MPI_Recv(&type_local[0], type_local.size(), MPI_UNSIGNED_SHORT, 0, 0, comm, &status);
-        MPI_Recv(&local_to_global[0], local_to_global.size(), MPI_UNSIGNED, 0, 0, comm, &status);
-        MPI_Recv(&shared_out[0], shared_out.size(), MPI_UNSIGNED, 0, 0, comm, &status);
+        MPI_Recv(&coord_local[0], coord_local.size(), MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&conn_local[0], conn_local.size(), MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&offset_local[0], offset_local.size(), MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&type_local[0], type_local.size(), MPI_UNSIGNED_SHORT, 0, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&local_to_global[0], local_to_global.size(), MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&shared_out[0], shared_out.size(), MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &status);
 
         fillParallelMesh(pmesh, coord_local, type_local, conn_local, offset_local, local_to_global, shared_out);
     }
