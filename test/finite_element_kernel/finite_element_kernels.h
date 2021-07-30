@@ -10,7 +10,6 @@ void Assembly(Mesh& mesh, double *A_EBE, double *b);
 void AssemblyOpenMP(Mesh& mesh);
 
 void run(Mesh& mesh);
-
 }
 
 

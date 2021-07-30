@@ -14,7 +14,7 @@
 #include "finite_element_kernels.h"
 
 #if USE_MPI
-#include "mpi.h"
+    #include "mpi.h"
 #endif
 
 #ifdef _OPENMP
@@ -22,7 +22,7 @@
 #endif
 
 #ifdef USE_CATALYST
-#include "FEAdaptor.h"
+    #include "FEAdaptor.h"
 #endif
 
 using namespace std;
@@ -69,10 +69,6 @@ int main(int argc, char* argv[])
     write_t      writing    = BINARY;
     int block_size          = 4096;
 
-#ifdef USE_MPI
-    MPI_Init(&argc, &argv);
-#endif
-
     // Obrigatorio ter ao menos 3 argumentos:
     // ./meshtools -m <filename>
     if(argc < 3)
@@ -97,12 +93,18 @@ int main(int argc, char* argv[])
             case 'r':
                 rorder_alg_name = optarg;
                 flg_reorder = true;
-                if(strcmp(rorder_alg_name,"nd")==0)
+                if(strcmp(rorder_alg_name,"nd")==0){
                     reordering = METIS_ND;
-                if(strcmp(rorder_alg_name,"natural")==0)
+                    cout << "Metis Nested-Dissection reordering algorithm selected.\n";
+                }
+                if(strcmp(rorder_alg_name,"natural")==0){
                     reordering = FF;
-                if(strcmp(rorder_alg_name,"none")==0)
+                    cout << "First Touch reordering algorithm selected.\n";
+                }
+                if(strcmp(rorder_alg_name,"none")==0){
                     flg_reorder = false;
+                    cout << "Original Gmsh ordering selected.\n";
+                }
                 break;
             case 'c':
                 color_alg_name = optarg;
@@ -177,7 +179,6 @@ int main(int argc, char* argv[])
         // Malha gerada pelo processo mestre é distribuida
         // para os demais processos. 
         pmesh = parts->DistributedMeshInternal(mesh, processor_id, n_processors);
-
         std::string str(gmsh_filename);
         str.resize(str.length()-4);
         pmesh->setFilename(str);

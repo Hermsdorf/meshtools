@@ -1048,16 +1048,20 @@ void Mesh::MeshColoring(color_mode_t color_mode, int block_size)
     switch (color_mode)
     {
     case COLOR_DEFAULT:
+        std::cout << "  Applying Greedy algorithm...\n";
         this->n_internal_colors = ColoringAutoralOpt(this, sort_internal);
         break;
     case COLOR_DEFAULT_BLOCK:
+        std::cout << "  Applying Blocked algorithm with "<< block_size << " elements per color...\n";
         this->n_internal_colors = ColoringAutoralLimit(this, sort_internal, block_size);
         break;
     case COLOR_ROKOS:
+        std::cout << "  Applying Rokos algorithm...\n";
         this->n_internal_colors = ColoringOpenMP_RokosOpt(this);
         CreateSort(this, sort_internal);
         break;
     default:
+        std::cout << "  Applying Blocked algorithm with "<< block_size << " elements per color...\n";
         this->n_internal_colors = ColoringAutoralLimit(this, sort_internal, block_size);
         break;
     }
