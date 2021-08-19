@@ -241,7 +241,6 @@ void Mesh::MeshGmshReader(const char* filename)
     
     std::string str(filename);
     str.resize(str.length()-4);
-    str = str.append(".vtu");
 
     this->filename = str;
 
@@ -258,24 +257,18 @@ void Mesh::MeshVTKWriter(int timeStep, int *npart, int* epart, int* color, doubl
     std::cout << "Writing VTK boundary and internal elements...\n";
     std::ofstream fout;
 
-    if(timeStep)
+    if(timeStep >= 0)
     {
+        std::string os;
+        os = std::to_string(timeStep);
+
         std::string str = this->getFilename();
-
-        
-        //create an output string stream
-        std::ostringstream os ;
-
-        //throw the value into the string stream
-        os << timeStep ;
-
-
-        str.insert(str.length() - 4, "_" + os.str());
+        str.insert(str.length(), "_" + os + ".vtu");
 
         fout.open(str.c_str());
     }
     else{
-            fout.open(this->getFilename().c_str());
+            fout.open(this->getFilename());
     }
 
     if(fout.is_open())
@@ -428,21 +421,18 @@ void Mesh::MeshVTKWriterInternal(int timeStep, int* npart, int* epart, int* colo
     std::cout << "Writing VTK internal elements...\n";
     std::ofstream fout;
 
-    if(timeStep)
+    if(timeStep >= 0)
     {
-        //create an output string stream
-        std::ostringstream os ;
-
-        //throw the value into the string stream
-        os << timeStep ;
+        std::string os;
+        os = std::to_string(timeStep);
 
         std::string str = this->getFilename();
-        str.insert(str.length() - 4, "_" + os.str());
+        str.insert(str.length(), "_" + os + ".vtu");
 
         fout.open(str.c_str());
     }
     else{
-            fout.open(this->getFilename().c_str());
+            fout.open(this->getFilename());
     }
 
     if(fout.is_open())
@@ -520,7 +510,7 @@ void Mesh::MeshVTKWriterInternal(int timeStep, int* npart, int* epart, int* colo
                     fout << i+1 << " ";
                 }
             }
-            fout << "\t\t\t\t </DataArray> \n";
+            fout << "\n\t\t\t\t </DataArray> \n";
         }
         fout << "\t\t\t</CellData>\n";
         fout << "\t\t\t<Points>\n";
@@ -557,7 +547,7 @@ void Mesh::MeshVTKWriterInternal(int timeStep, int* npart, int* epart, int* colo
             if(i % 18 == 0 && i != 0)
                 fout << "\n\t\t\t\t\t";
 
-            fout << this->offset[i+1]- ofs << " ";
+            fout << this->offset[i+1] - ofs << " ";
         }
         fout << "\n\t\t\t\t</DataArray>\n";
         fout << "\t\t\t\t<DataArray type=\"Int32\" Name=\"types\" format=\"ascii\">\n";
@@ -589,23 +579,19 @@ bool BinaryBigEndian(void)
 
 void Mesh::MeshVTKWriterInternalBinAppended(int timeStep, int* npart, int* epart, int* color, double* velocity, float* pressure)
 {
-    std::cout << "Writing VTK internal elements...\n";
+    std::cout << "Writing in binary VTK internal elements...\n";
     
     std::FILE*         fout;
     unsigned int boffset = 0; /* Offset into binary file */
     const char *byte_order = BinaryBigEndian() ? "BigEndian" : "LittleEndian";
 
     std::string str = this->getFilename();
-    if(timeStep)
+    if(timeStep >= 0)
     {
+        std::string os;
+        os = std::to_string(timeStep);
 
-        //create an output string stream
-        std::ostringstream os ;
-
-        //throw the value into the string stream
-        os << timeStep ;
-
-        str.insert(str.length() - 4, "_" + os.str());
+        str.insert(str.length(), "_" + os + ".vtu");
     }
     fout = fopen(str.c_str(), "wb");
 
@@ -762,23 +748,19 @@ void Mesh::MeshVTKWriterInternalBinAppended(int timeStep, int* npart, int* epart
 
 void Mesh::MeshVTKWriterBinAppended(int timeStep, int* npart, int* epart, int* color, double* velocity, float* pressure)
 {
-    std::cout << "Writing VTK boundary and internal elements...\n";
+    std::cout << "Writing in binary VTK boundary and internal elements...\n";
     
     std::FILE*         fout;
     unsigned int boffset = 0; /* Offset into binary file */
     const char *byte_order = BinaryBigEndian() ? "BigEndian" : "LittleEndian";
 
     std::string str = this->getFilename();
-    if(timeStep) 
+    if(timeStep >= 0) 
     {
+        std::string os;
+        os = std::to_string(timeStep);
 
-        //create an output string stream
-        std::ostringstream os ;
-
-        //throw the value into the string stream
-        os << timeStep ;
-    
-        str.insert(str.length() - 4, "_" + os.str());
+        str.insert(str.length(), "_" + os + ".vtu");
     }
     fout = fopen(str.c_str(), "wb");
 
@@ -925,6 +907,18 @@ void Mesh::MeshVTKWriterBinAppended(int timeStep, int* npart, int* epart, int* c
     }
 }
 
+void Mesh::MeshVTKWriting(write_t writing)
+{
+    switch (writing)
+    {
+        case BINARY:
+            MeshVTKWriterInternalBinAppended(0, NULL, NULL, this->get_mesh_coloring_internal(),  NULL, NULL);
+            break;
+        case ASCII:
+            MeshVTKWriterInternal(0, NULL, NULL, this->get_mesh_coloring_internal(),  NULL, NULL);
+            break;
+    }
+}
 
 
 

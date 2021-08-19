@@ -2,6 +2,9 @@
 #define FEADAPTOR_HEADER
 
 #include "mesh.h"
+#include "meshtools_config.h"
+
+#ifdef USE_CATALYST
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,5 +17,6 @@ void CatalystCoProcess(Mesh* mesh, double* velocityData, float* pressureData, do
   unsigned int timeStep, int lastTimeStep);
 #ifdef __cplusplus
 }
+#endif
 #endif
 #endif

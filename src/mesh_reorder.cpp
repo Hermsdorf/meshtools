@@ -131,10 +131,11 @@ void ApplyReorderMesh(Mesh *mesh, int *perm, int *iperm)
     newCoord.resize(mesh->getCoord().size());
     std::cout << "  Applying reordering...\n";
 
-#pragma omp parallel for
+//#pragma omp parallel for
+#pragma ivdep
     for (unsigned int i = 0; i < mesh->get_n_nodes(); i++)
     {
-            newCoord[3 * i] = coordAux[3 * perm[i]];
+            newCoord[3 * i]      = coordAux[3 * perm[i]];
             newCoord[(3 * i) + 1] = coordAux[(3 * perm[i]) + 1];
             newCoord[(3 * i) + 2] = coordAux[(3 * perm[i]) + 2];
     }
@@ -147,7 +148,8 @@ void ApplyReorderMesh(Mesh *mesh, int *perm, int *iperm)
     unsigned int connSize = mesh->getConn().size();
     newConn.resize(connSize);
 
-#pragma omp parallel for
+//#pragma omp parallel for
+#pragma ivdep
     for (unsigned int i = 0; i < connSize; i++)
     {
         newConn[i] = iperm[connAux[i]];
@@ -252,24 +254,26 @@ void MeshReorderingMETIS(Mesh *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int 
 
 void MeshReorderingFirstTouch(Mesh *mesh, int *perm, int *iperm)
 {
-    std::vector<unsigned int> &connAux = mesh->getConn();
+    
 #pragma omp parallel for
     for (unsigned int i = 0; i < mesh->get_n_nodes(); i++)
         perm[i] = -1;
 
+
     unsigned int counter = 0;
-
-
-    for (unsigned int i = 0; i < mesh->get_n_elements(); i++)
+    for (unsigned int iel = 0; iel < mesh->get_n_elements(); ++iel)
     {
-        unsigned int iel = mesh->get_n_face_elements() + i;
 
-        for (unsigned int eno = mesh->getOffset()[iel]; eno < mesh->getOffset()[iel + 1]; eno++)
+        unsigned int *conn    = mesh->getElementConn(iel);
+        unsigned int connSize = mesh->getElementConnSize(iel);
+
+        for (unsigned int i = 0; i < connSize; ++i)
         {
-            if (perm[connAux[eno]] == -1)
+            unsigned int inode = conn[i];
+            if (perm[inode] == -1)
             {
-                perm[connAux[eno]] = counter;
-                iperm[counter] = connAux[eno];
+                perm[inode]    = counter;
+                iperm[counter] = inode  ;
                 counter++;
             }
         }
@@ -278,15 +282,8 @@ void MeshReorderingFirstTouch(Mesh *mesh, int *perm, int *iperm)
 
 void Mesh::MeshReordering(reorder_t reorder = RCM)
 {
-    idx_t *xadj;
-    idx_t *adjncy;
-
-
-    //std::unique_ptr<int[]> perm_ptr = std::make_unique<int[]>(this->n_nodes);
-    //std::unique_ptr<int[]> iperm_ptr = std::make_unique<int[]>(this->n_nodes);
-
-    //int *perm = perm_ptr.get();
-    //int *iperm = iperm_ptr.get();
+    idx_t *xadj   = nullptr;
+    idx_t *adjncy = nullptr;
 
     int *perm  =  new int[this->n_nodes];
     int *iperm =  new int[this->n_nodes];
@@ -294,25 +291,25 @@ void Mesh::MeshReordering(reorder_t reorder = RCM)
     std::cout << "Starting mesh reordering...\n";
     switch (reorder)
     {
-    case FF:
-        MeshReorderingFirstTouch(this, perm, iperm);
-        ApplyReorderMesh(this, perm, iperm);
-        break;
-    case METIS_ND:
-        MeshToGraph(this, &xadj, &adjncy);
-        MeshReorderingMETIS(this, xadj, adjncy, perm, iperm);
-        ApplyReorderMesh(this, perm, iperm);
-        break;
-    default:
-        MeshToRCMGraph(this, &xadj, &adjncy);
-        MeshReorderingRCM(this, xadj, adjncy, perm, iperm);
-        ApplyReorderMesh(this, perm, iperm);
-        break;
+        case FF:
+            MeshReorderingFirstTouch(this, perm, iperm);
+            ApplyReorderMesh(this, perm, iperm);
+            break;
+        case METIS_ND:
+            MeshToGraph(this, &xadj, &adjncy);
+            MeshReorderingMETIS(this, xadj, adjncy, perm, iperm);
+            ApplyReorderMesh(this, perm, iperm);
+            break;
+        default:
+            MeshToRCMGraph(this, &xadj, &adjncy);
+            MeshReorderingRCM(this, xadj, adjncy, perm, iperm);
+            ApplyReorderMesh(this, perm, iperm);
+            break;
     }
     std::cout << "Finished mesh reordering...\n";
 
-    METIS_Free(xadj);
-    METIS_Free(adjncy);
+    if(xadj)   METIS_Free(xadj);
+    if(adjncy) METIS_Free(adjncy);
 
     delete [] perm;
     delete [] iperm;

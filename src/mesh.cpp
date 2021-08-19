@@ -10,6 +10,7 @@ Mesh::Mesh()
     this->n_elements = 0;
     this->n_nodes = 0; 
     this->dim = 0;
+    this->mesh_coloring_internal = nullptr;
 }
 
 Mesh::Mesh(const char* filename)
@@ -18,7 +19,7 @@ Mesh::Mesh(const char* filename)
     this->n_elements = 0;
     this->n_nodes = 0; 
     this->dim = 0;
-
+    this->mesh_coloring_internal = nullptr;
     MeshGmshReader(filename);
 }
 
@@ -31,7 +32,9 @@ Mesh::~Mesh()
     this->physical_tag.clear();
     this->physical_map.clear();
     this->filename.clear();
-    delete [] this->mesh_coloring_internal;
+
+    if(this->mesh_coloring_internal)
+        delete [] this->mesh_coloring_internal;
 }
 
 unsigned int Mesh::get_n_face_elements()
@@ -111,6 +114,7 @@ unsigned short Mesh::getSurfaceElementType(unsigned int element_num)
 
 void Mesh::setCoord(std::vector<double> coord)
 {
+ 
     this->coord = coord;
 }
 
