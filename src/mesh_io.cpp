@@ -63,13 +63,13 @@ void Mesh::MeshGmshReader(const char* filename)
 
     int format=0, size=0;
     double version = 1.0;
+    bool binary_file = false;
     std::string s;
 
     int dim_count[4] = {0};
 
-  
-
     std::ifstream in(filename);
+    FILE* in_bin = fopen(filename, "rb");
 
     if(!in.is_open())
     {
@@ -79,7 +79,7 @@ void Mesh::MeshGmshReader(const char* filename)
 
     std::cout << "Reading file " << filename << "\n";
 
-    while(!in.eof())
+    while(!in.eof() && in_bin != EOF)
     {
         // Try to read something.  This may set EOF!
         std::getline(in, s);
@@ -89,6 +89,7 @@ void Mesh::MeshGmshReader(const char* filename)
             if(s.find("$MeshFormat") == 0)
             {
                 in >> version >> format >> size;
+
                 if(version != 2.2)
                 {  
                     std::cout << "ERRO: VERSAO .MSH NAO SUPORTADA\n";
@@ -100,12 +101,13 @@ void Mesh::MeshGmshReader(const char* filename)
                 
                 if(format)
                 {
-                    std::cout << "ERRO: FORMATO NAO SUPORTADO\n";
-                    std::cout << "Formato suportado: ASCII \n";
                     in.close();
-                    delete this;
-                    exit(1);
+
+                    binary_file = true;
                 }
+                else
+                    fclose(in_bin);
+
             }
             // Read and process the "PhysicalNames" section.
             else if (s.find("$PhysicalNames") == 0)
@@ -129,23 +131,39 @@ void Mesh::MeshGmshReader(const char* filename)
             else if(s.find("$Nodes") == 0) 
             {
                 unsigned int num_nodes = 0;
+
                 in >> num_nodes;
                 this->n_nodes = num_nodes;
 
                 this->coord.resize(num_nodes*3);
 
                 int node_id;
-                double x,y,z;
-                for(unsigned int i = 0; i < num_nodes; i++) {
-                    in >> node_id >> x >> y >> z;
-                    this->coord[(i*3)+0] = x;
-                    this->coord[(i*3)+1] = y;
-                    this->coord[(i*3)+2] = z;
+                if(binary_file)
+                {                    
+                    for(unsigned int i = 0; i < num_nodes; i++){
+                        fread(&node_id, sizeof(int), 1, in_bin);
+
+                        double xyz[3]; // node_i_x, node_i_y, node_i_z
+                        fread(xyz, sizeof(double), 3, in_bin);
+
+                        this->coord[(i*3)+0] = xyz[0]; // x coordinate
+                        this->coord[(i*3)+1] = xyz[1]; // y coordinate
+                        this->coord[(i*3)+2] = xyz[2]; // z coordinate
+                    }
+                }
+                else
+                {
+                    double x,y,z;
+                    for(unsigned int i = 0; i < num_nodes; i++) {
+                        in >> node_id >> x >> y >> z;
+                        this->coord[(i*3)+0] = x;
+                        this->coord[(i*3)+1] = y;
+                        this->coord[(i*3)+2] = z;
+                    }
                 }
 
                 // read the $ENDNOD delimiter
                 std::getline(in, s);
-
             }
 
             else if (s.find("$Elements")==0)
@@ -161,55 +179,118 @@ void Mesh::MeshGmshReader(const char* filename)
                 this->type.resize(num_elem);
                 this->offset[0] = 0;
 
-                int iel = 0;
-                for(int i = 0; i < num_elem; i++)
+                if(binary_file)
                 {
-                    int id, type, physical=1, elementary=1, nnodes=0, ntags, elem_dim;
+                    int elem_count = 0;
 
-                    in >> id >> type >> ntags;
+                    // while is there element-header-binary
+                    while(true)
+                    {
+                        int header[3]; // elm_type, num_elm_follow, num_tags
+                        fread(header, sizeof(int), 3, in_bin);
+
+                        int elm_type = header[0];
+                        int num_elm_follow = header[1];
+                        int ntags = header[2];
+
+                        for(unsigned int i = 0; i < num_elm_follow; i++)
+                        {
+                            this->type[elem_count] = GmshToVTKType(elm_type);
+                            int nnodes   = getGmshElemNNodes(elm_type);
+                            int elem_dim = getGmshElemTypeDim(elm_type);
+
+                            int arr_size = 3 + nnodes;
+                            int data[arr_size]; // num_i, physical, elementary, node_i_1, ... node_i_x
+                            fread(data, sizeof(int), arr_size, in_bin);
+
+                            if(nnodes < 0 )
+                            {
+                                std::cout << "\nERROR: ELEMENT TYPE " << elm_type << " INVALID\n";
+                                in.close();
+                                delete this;
+                                exit(1);
+                            }
+
+                            dim_count[elem_dim]++;
+
+                            for(int j = 0; j < ntags; j++)
+                            {
+                                if(j == 0)
+                                    this->physical_tag[elem_count] = data[1];
+#ifdef DEBUG_
+                                std::cout << physical << " ";
+#endif
+                            }
+
+                            int arr_shift = 3; // shift num_i, physical and elementary values
+                            for (unsigned int j=0; j<nnodes; j++)
+                            {
+                                this->conn.push_back(data[arr_shift + j] - 1);
+#ifdef DEBUG_
+                                std::cout << node_id << " ";
+#endif
+                            }
+
+                            this->offset[elem_count+1] =  this->offset[elem_count] + nnodes;
+
+                            elem_count++;
+                        }
+
+                        if(elem_count == num_elem)
+                            break;
+                    }
+                }
+                else
+                {
+                    for(int i = 0; i < num_elem; i++)
+                    {
+                        int id, type, physical=1, elementary=1, nnodes=0, ntags, elem_dim;
+
+                        in >> id >> type >> ntags;
 #ifdef DEBUG_                   
-                   std::cout << id << "  " << type << "  " << ntags << " ";
+                        std::cout << id << "  " << type << "  " << ntags << " ";
 #endif
 
-                    this->type[i] = GmshToVTKType(type);
+                        this->type[i] = GmshToVTKType(type);
 
-                    nnodes   = getGmshElemNNodes(type);
-                    elem_dim = getGmshElemTypeDim(type);
+                        nnodes   = getGmshElemNNodes(type);
+                        elem_dim = getGmshElemTypeDim(type);
 
-                    if(nnodes < 0 )
-                    {
-                        std::cout << "ERRO: TIPO DO ELEMENTO " << type << " INVALIDO";
-                        in.close();
-                        delete this;
-                        exit(1);
-                    }
+                        if(nnodes < 0 )
+                        {
+                            std::cout << "\nERROR: ELEMENT TYPE " << type << " INVALID\n";
+                            in.close();
+                            delete this;
+                            exit(1);
+                        }
 
-                    dim_count[elem_dim]++;
+                        dim_count[elem_dim]++;
 
-                    for(int j = 0; j < ntags; j++)
-                    {
-                        in >> physical;
-                        if(j == 0)
-                            this->physical_tag[i] = physical;
+                        for(int j = 0; j < ntags; j++)
+                        {
+                            in >> physical;
+                            if(j == 0)
+                                this->physical_tag[i] = physical;
 #ifdef DEBUG_
-                        std::cout << physical << " ";
+                            std::cout << physical << " ";
 #endif
-                    }
+                        }
 
-                    for (unsigned int j=0; j<nnodes; j++)
-                    {
-                        in >> node_id;
-                        this->conn.push_back(node_id-1);
+                        for (unsigned int j=0; j<nnodes; j++)
+                        {
+                            in >> node_id;
+                            this->conn.push_back(node_id-1);
 #ifdef DEBUG_
-                        std::cout << node_id << " ";
+                            std::cout << node_id << " ";
 #endif
-                    }
+                        }
 
-                    this->offset[i+1] =  this->offset[i] + nnodes;
+                        this->offset[i+1] =  this->offset[i] + nnodes;
 #ifdef DEBUG_
-                    std::cout << "\n";
-                    std::cout << "OFFSET: " << this->offset[i+1] << " TYPE: "<< this->type[i] << "\n";
+                        std::cout << "\n";
+                        std::cout << "OFFSET: " << this->offset[i+1] << " TYPE: "<< this->type[i] << "\n";
 #endif                   
+                    }
                 }
 
                 // read the $ENDELM delimiter
