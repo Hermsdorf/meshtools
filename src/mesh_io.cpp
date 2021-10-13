@@ -69,7 +69,6 @@ void Mesh::MeshGmshReader(const char* filename)
     int dim_count[4] = {0};
 
     std::ifstream in(filename);
-    FILE* in_bin = fopen(filename, "rb");
 
     if(!in.is_open())
     {
@@ -79,11 +78,11 @@ void Mesh::MeshGmshReader(const char* filename)
 
     std::cout << "Reading file " << filename << "\n";
 
-    while(!in.eof() && in_bin != EOF)
+    while(!in.eof())
     {
         // Try to read something.  This may set EOF!
         std::getline(in, s);
-        if (in)
+        if(in)
         {
             // Process s...
             if(s.find("$MeshFormat") == 0)
@@ -98,15 +97,15 @@ void Mesh::MeshGmshReader(const char* filename)
                     delete this;
                     exit(1);
                 }
-                
+
+                // If its a binary file it is necessary to close the ifstream object and reopen in binary mode
                 if(format)
                 {
                     in.close();
-
                     binary_file = true;
+
+                    in = std::ifstream(filename, std::ios::binary);
                 }
-                else
-                    fclose(in_bin);
 
             }
             // Read and process the "PhysicalNames" section.
@@ -125,7 +124,6 @@ void Mesh::MeshGmshReader(const char* filename)
                     in >> phy_dim >> phy_id >> phy_name;
 
                     this->physical_map[phy_id] = std::make_pair(phy_dim, phy_name);
-                    
                 }
             }
             else if(s.find("$Nodes") == 0) 
@@ -138,22 +136,27 @@ void Mesh::MeshGmshReader(const char* filename)
                 this->coord.resize(num_nodes*3);
 
                 int node_id;
+                double x,y,z;
                 if(binary_file)
-                {                    
+                {               
+                    char* buffer;     
                     for(unsigned int i = 0; i < num_nodes; i++){
-                        fread(&node_id, sizeof(int), 1, in_bin);
+                        read(in, buffer, 1); // reading node_id
+                        read(in, buffer, 3); // reading node_i_x, node_i_y and node_i_z
+                        std::cout << buffer << "\n";
+                        std::exit(1);
 
-                        double xyz[3]; // node_i_x, node_i_y, node_i_z
-                        fread(xyz, sizeof(double), 3, in_bin);
+                        x = atof(buffer[0]);
+                        y = atof(buffer[1]);
+                        z = atof(buffer[2]);
 
-                        this->coord[(i*3)+0] = xyz[0]; // x coordinate
-                        this->coord[(i*3)+1] = xyz[1]; // y coordinate
-                        this->coord[(i*3)+2] = xyz[2]; // z coordinate
+                        this->coord[(i*3)+0] = x;
+                        this->coord[(i*3)+1] = y;
+                        this->coord[(i*3)+2] = z;
                     }
                 }
                 else
-                {
-                    double x,y,z;
+                { 
                     for(unsigned int i = 0; i < num_nodes; i++) {
                         in >> node_id >> x >> y >> z;
                         this->coord[(i*3)+0] = x;
@@ -187,7 +190,7 @@ void Mesh::MeshGmshReader(const char* filename)
                     while(true)
                     {
                         int header[3]; // elm_type, num_elm_follow, num_tags
-                        fread(header, sizeof(int), 3, in_bin);
+                        //std::ifstream::read(header, sizeof(int), 3, in_bin);
 
                         int elm_type = header[0];
                         int num_elm_follow = header[1];
@@ -201,7 +204,7 @@ void Mesh::MeshGmshReader(const char* filename)
 
                             int arr_size = 3 + nnodes;
                             int data[arr_size]; // num_i, physical, elementary, node_i_1, ... node_i_x
-                            fread(data, sizeof(int), arr_size, in_bin);
+                            //ifstream::read(data, sizeof(int), arr_size, in_bin);
 
                             if(nnodes < 0 )
                             {
