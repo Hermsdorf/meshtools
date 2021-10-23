@@ -136,11 +136,10 @@ void Mesh::MeshGmshReader(const char* filename)
                 this->coord.resize(num_nodes*3);
 
                 int node_id;
-                double xyz[3];
-                double x, y, z;
 
                 if(binary_file)
                 {   
+                    double xyz[3];
                     int current_pos = in.tellg();
                     in.seekg(current_pos+1); // i dont know why but it is necessary to get one position ahead of the file to get the correct data
 
@@ -155,6 +154,7 @@ void Mesh::MeshGmshReader(const char* filename)
                 }
                 else
                 { 
+                    double x, y, z;
                     for(unsigned int i = 0; i < num_nodes; i++) {
                         in >> node_id >> x >> y >> z;
                         this->coord[(i*3)+0] = x;
@@ -217,14 +217,7 @@ void Mesh::MeshGmshReader(const char* filename)
 
                             dim_count[elem_dim]++;
 
-                            for(int j = 0; j < ntags; j++)
-                            {
-                                if(j == 0)
-                                    this->physical_tag[elem_count] = data[1];
-#ifdef DEBUG_
-                                std::cout << physical << " ";
-#endif
-                            }
+                            this->physical_tag[elem_count] = data[1];
 
                             int arr_shift = 3; // shift num_i, physical and elementary values
                             for (unsigned int j=0; j<nnodes; j++)
@@ -317,7 +310,6 @@ void Mesh::MeshGmshReader(const char* filename)
     {
         this->n_elements      = dim_count[1];
     }
-    
     
     this->mesh_coloring_internal = new int [this->n_elements];
 
