@@ -143,6 +143,11 @@ void Mesh::setType(std::vector<unsigned short> type)
     this->type = type;
 }
 
+void Mesh::setTypePosition(unsigned short value, unsigned int position)
+{
+    this->type[position] = value;
+}
+
 void Mesh::set_physical_tag(std::vector<int> physical_tag)
 {
     this->physical_tag = physical_tag;

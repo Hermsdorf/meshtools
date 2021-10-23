@@ -308,6 +308,16 @@ class Mesh {
          * @param type Vector do tipo unsigned short com as novas informações de tipos dos elementos da malha.
         */
 
+       void setTypePosition(unsigned short value, unsigned int position);
+        /**
+         * * OBJETIVO:
+         *     Alterar o vector type com o valor e a posição passados por argumento.
+         * 
+         * * PARAMETROS:
+         * @param value Variável do tipo unsigned int indicando o valor a substituir.
+         * @param position Variável do tipo unsigned int indicando a posição a substituir o valor da variável value.
+        */
+
         void set_physical_tag(std::vector<int> physical_tag);
         /**
          * * OBJETIVO:
