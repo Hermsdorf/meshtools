@@ -98,20 +98,20 @@ void Mesh::MeshGmshReader(const char* filename)
                     exit(1);
                 }
 
-                // If its a binary file it is necessary to close the ifstream object and reopen in binary mode
                 if(format)
                 {
+                    int current_position = in.tellg(); // saving last position readed from in fstream
                     in.close();
-                    binary_file = true;
 
+                    binary_file = true;
                     in = std::ifstream(filename, std::ios::binary);
+                    in.seekg(current_position); // continue from the same position that was reading fstream file
                 }
 
             }
             // Read and process the "PhysicalNames" section.
             else if (s.find("$PhysicalNames") == 0)
             {
-
                 // Read in the number of physical groups to expect in the file.
                 unsigned int num_physical_groups = 0;
                 in >> num_physical_groups;
@@ -136,23 +136,21 @@ void Mesh::MeshGmshReader(const char* filename)
                 this->coord.resize(num_nodes*3);
 
                 int node_id;
-                double x,y,z;
+                double xyz[3];
+                double x, y, z;
+
                 if(binary_file)
-                {               
-                    char* buffer;     
+                {   
+                    int current_pos = in.tellg();
+                    in.seekg(current_pos+1); // i dont know why but it is necessary to get one position ahead of the file to get the correct data
+
                     for(unsigned int i = 0; i < num_nodes; i++){
-                        read(in, buffer, 1); // reading node_id
-                        read(in, buffer, 3); // reading node_i_x, node_i_y and node_i_z
-                        std::cout << buffer << "\n";
-                        std::exit(1);
+                        in.read((char*)&node_id, sizeof(int)); // reading node_id
+                        in.read((char*)xyz, 3*sizeof(double)); // reading node_i_x, node_i_y and node_i_z
 
-                        x = atof(buffer[0]);
-                        y = atof(buffer[1]);
-                        z = atof(buffer[2]);
-
-                        this->coord[(i*3)+0] = x;
-                        this->coord[(i*3)+1] = y;
-                        this->coord[(i*3)+2] = z;
+                        this->coord[(i*3)+0] = xyz[0];
+                        this->coord[(i*3)+1] = xyz[1];
+                        this->coord[(i*3)+2] = xyz[2];
                     }
                 }
                 else
@@ -184,13 +182,16 @@ void Mesh::MeshGmshReader(const char* filename)
 
                 if(binary_file)
                 {
+                    int current_pos = in.tellg();
+                    in.seekg(current_pos+1); // i dont know why but it is necessary to get one position ahead of the file to get the correct data
+
                     int elem_count = 0;
 
                     // while is there element-header-binary
                     while(true)
                     {
                         int header[3]; // elm_type, num_elm_follow, num_tags
-                        //std::ifstream::read(header, sizeof(int), 3, in_bin);
+                        in.read((char*)header, 3*sizeof(int));
 
                         int elm_type = header[0];
                         int num_elm_follow = header[1];
@@ -204,7 +205,7 @@ void Mesh::MeshGmshReader(const char* filename)
 
                             int arr_size = 3 + nnodes;
                             int data[arr_size]; // num_i, physical, elementary, node_i_1, ... node_i_x
-                            //ifstream::read(data, sizeof(int), arr_size, in_bin);
+                            in.read((char*)data, arr_size*sizeof(int));
 
                             if(nnodes < 0 )
                             {
