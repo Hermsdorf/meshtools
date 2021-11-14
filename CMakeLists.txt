@@ -15,7 +15,7 @@ set(CMAKE_CXX_FLAGS "-g -fopenmp -O3")
 find_package(METIS REQUIRED)
 
 
-file(GLOB source_files
+file(GLOB source_files_exec
             "*.h"
             "*.cpp"
             "src/*.cpp"
@@ -23,11 +23,24 @@ file(GLOB source_files
             "test/finite_element_kernel/*.cpp"
     )
 
-add_executable(meshtools ${source_files})
+file(GLOB source_files_lib
+         "*.h"
+         "src/mesh_*.cpp"
+         "src/parallel_mesh.cpp"
+         "include/mesh_*.h"
+         "src/parallel_mesh.h"
+    )
 
+option(BUILD_SHARED_LIB "Build MeshTools as a shared library" OFF)
 option(MPI_ENABLE "Enable MPI" ON)
 option(OpenMP_ENABLE "Enable OpenMP" ON)
 option(CATALYST_ENABLE "Enable Paraview Catalyst" OFF)
+
+if(BUILD_SHARED_LIB)
+   add_library(meshtools SHARED ${source_files_lib})
+else()
+   add_executable(meshtools ${source_files_exec})
+endif()
 
 if(MPI_ENABLE)
    find_package(MPI)
