@@ -12,35 +12,15 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 set(CMAKE_CXX_COMPILER g++)
 set(CMAKE_CXX_FLAGS "-g -fopenmp -O3")
 
-find_package(METIS REQUIRED)
+option(MPI_ENABLE       "Enable MPI" ON)
+option(OpenMP_ENABLE    "Enable OpenMP" ON)
+option(CATALYST_ENABLE  "Enable Paraview Catalyst" OFF)
+add_subdirectory(lib)
 
+file(GLOB source_files_exec "main.cpp")
 
-file(GLOB source_files_exec
-            "*.h"
-            "*.cpp"
-            "src/*.cpp"
-            "include/*.h"
-            "test/finite_element_kernel/*.cpp"
-    )
+add_executable(meshtools ${source_files_exec})
 
-file(GLOB source_files_lib
-         "*.h"
-         "src/mesh_*.cpp"
-         "src/parallel_mesh.cpp"
-         "include/mesh_*.h"
-         "src/parallel_mesh.h"
-    )
-
-option(BUILD_SHARED_LIB "Build MeshTools as a shared library" OFF)
-option(MPI_ENABLE "Enable MPI" ON)
-option(OpenMP_ENABLE "Enable OpenMP" ON)
-option(CATALYST_ENABLE "Enable Paraview Catalyst" OFF)
-
-if(BUILD_SHARED_LIB)
-   add_library(meshtools SHARED ${source_files_lib})
-else()
-   add_executable(meshtools ${source_files_exec})
-endif()
 
 if(MPI_ENABLE)
    find_package(MPI)
@@ -66,14 +46,13 @@ else()
    list(FILTER source_files EXCLUDE REGEX "src/FEAdaptor.cpp")
 endif()
 
-configure_file(meshtools_config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/include/meshtools_config.h @ONLY)
+#configure_file(meshtools_config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/include/meshtools_config.h @ONLY)
 
 # Finding Depedencies
 # Looking for Metis Library
 
 include_directories(${METIS_INCLUDE_DIRS})
-include_directories(include)
-include_directories(test/finite_element_kernel)
+include_directories(lib/include)
 
 if(OpenMP_ENABLE)
    find_package(OpenMP)
@@ -84,6 +63,7 @@ endif()
 
 target_link_libraries(meshtools 
 PRIVATE
+meshtoolslib
 ${ADDITIONAL_ITEMS}
 ${METIS_LIBRARIES}
 )
