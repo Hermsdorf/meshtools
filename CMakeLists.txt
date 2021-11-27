@@ -15,6 +15,9 @@ set(CMAKE_CXX_FLAGS "-g -fopenmp -O3")
 option(MPI_ENABLE       "Enable MPI" ON)
 option(OpenMP_ENABLE    "Enable OpenMP" ON)
 option(CATALYST_ENABLE  "Enable Paraview Catalyst" OFF)
+
+find_package(METIS REQUIRED)
+
 add_subdirectory(lib)
 
 file(GLOB source_files_exec "main.cpp")

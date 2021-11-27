@@ -3,25 +3,12 @@
 #include <unistd.h>
 #include <cstring>
 
-
-#include "meshtools_config.h"
+#include "meshtools.h"
 #include "mesh.h"
 #include "mesh_part.h"
 #include "alglin.h"
 #include "parallel_mesh.h"
 
-
-#if USE_MPI
-#include "mpi.h"
-#endif
-
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
-#ifdef USE_CATALYST
-    #include "FEAdaptor.h"
-#endif
 
 using namespace std;
 
@@ -68,20 +55,17 @@ int main(int argc, char* argv[])
     int block_size          = 4096;
     int n_processors = 1;
     int processor_id = 0;
-#ifdef USE_MPI
-    MPI_Init(NULL, NULL);
-    MPI_Comm_size(MPI_COMM_WORLD, &n_processors);
-    MPI_Comm_rank(MPI_COMM_WORLD, &processor_id);
-#endif
+
+    MeshTools::Init(argc,argv);
 
     // Obrigatorio ter ao menos 3 argumentos:
     // ./meshtools -m <filename>
     if(argc < 3)
     {
-        if(processor_id==0) usage(argv[0]);
-        MPI_Finalize();
-        return -1;
-        
+        if(MeshTools::processor_id==0) 
+            usage(argv[0]);
+        MeshTools::Finalize();
+        return 0;
     }
 
     // Trata os argumentos que são passados por linha de comando
@@ -144,21 +128,17 @@ int main(int argc, char* argv[])
 
     if(!flg_gmsh)
     {
-        if(processor_id==0) usage(argv[0]);
-        MPI_Finalize();
-        return -1;
+        if(MeshTools::processor_id==0) 
+            usage(argv[0]);
+        MeshTools::Finalize();
+        return 0;
     }
-
-
-#ifdef USE_CATALYST
-    CatalystInitialize(1, catalyst_script);
-#endif
 
     Mesh             *mesh  = nullptr;
     ParallelMesh     *pmesh = nullptr;
     Mesh_partition_t *parts = new Mesh_partition_t();
 
-    if(processor_id == 0)
+    if(MeshTools::processor_id == 0)
     {
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha. 
@@ -171,12 +151,12 @@ int main(int argc, char* argv[])
     
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha
-        if(n_processors > 1 ) {
-            parts->MeshPartitionerInternal(mesh, n_processors);
+        if(MeshTools::n_processors > 1 ) {
+            parts->MeshPartitionerInternal(mesh, MeshTools::n_processors);
         }
     }
 
-    if(n_processors > 1 ) 
+    if(MeshTools::n_processors > 1 ) 
     {
         // Malha gerada pelo processo mestre é distribuida
         // para os demais processos. 
@@ -212,13 +192,7 @@ int main(int argc, char* argv[])
     if(parts) delete parts;
     if(pmesh) delete pmesh;
 
-#ifdef USE_CATALYST
-    CatalystFinalize();
-#endif
-
-#ifdef USE_MPI
-    MPI_Finalize();
-#endif
+    MeshTools::Finalize();
 
     return 0;
 

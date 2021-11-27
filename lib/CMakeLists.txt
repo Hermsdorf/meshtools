@@ -1,5 +1,5 @@
 
-find_package(METIS REQUIRED)
+
 
 file(GLOB source_files_lib
          "include/*.h"
@@ -16,8 +16,9 @@ if(MPI_ENABLE)
    find_package(MPI)
    if(MPI_FOUND)
 	   include_directories(meshtoolslib ${MPI_C_INCLUDE_PATH})
+      set(USE_MPI 0)
    endif()
-   set(USE_MPI 1)
+   
 endif()
 
 if(CATALYST_ENABLE)
