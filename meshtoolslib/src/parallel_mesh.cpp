@@ -2,11 +2,8 @@
 #include <fstream>
 #include <sstream>
 
-#include <mpi.h>
-
-#include "meshtools_config.h"
+#include "meshtools.h"
 #include "parallel_mesh.h"
-
 
 ParallelMesh::ParallelMesh()
 {
@@ -400,9 +397,8 @@ void ParallelMesh::writePvtu()
     std::cout << "Writing VTK parallel mesh...\n";
     std::ofstream fout;
 
-    int size;
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-
+    int size = MeshTools::n_processors;
+    
     std::string str(this->getFilename());
     str.insert(str.length(), ".pvtu"); // inserir "p" em ".vtu" -> ".pvtu"
     fout.open(str.c_str());
@@ -448,8 +444,9 @@ void ParallelMesh::writeParallelMesh()
     bool pmesh_is_internal = this->internal_mesh;
     int rank, size;
 
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    rank = MeshTools::processor_id;
+    size = MeshTools::n_processors;
+
     int nnodes = this->get_n_nodes();
     int nelem = pmesh_is_internal ? this->get_n_elements() : (this->get_n_elements() + this->get_n_face_elements());
     int* npart = new int[nnodes];

@@ -63,11 +63,10 @@ void Mesh::MeshGmshReader(const char* filename)
 
     int format=0, size=0;
     double version = 1.0;
+    bool binary_file = false;
     std::string s;
 
     int dim_count[4] = {0};
-
-  
 
     std::ifstream in(filename);
 
@@ -83,12 +82,13 @@ void Mesh::MeshGmshReader(const char* filename)
     {
         // Try to read something.  This may set EOF!
         std::getline(in, s);
-        if (in)
+        if(in)
         {
             // Process s...
             if(s.find("$MeshFormat") == 0)
             {
                 in >> version >> format >> size;
+
                 if(version != 2.2)
                 {  
                     std::cout << "ERRO: VERSAO .MSH NAO SUPORTADA\n";
@@ -97,20 +97,21 @@ void Mesh::MeshGmshReader(const char* filename)
                     delete this;
                     exit(1);
                 }
-                
+
                 if(format)
                 {
-                    std::cout << "ERRO: FORMATO NAO SUPORTADO\n";
-                    std::cout << "Formato suportado: ASCII \n";
+                    int current_position = in.tellg(); // saving last position readed from in fstream
                     in.close();
-                    delete this;
-                    exit(1);
+
+                    binary_file = true;
+                    in = std::ifstream(filename, std::ios::binary);
+                    in.seekg(current_position); // continue from the same position that was reading fstream file
                 }
+
             }
             // Read and process the "PhysicalNames" section.
             else if (s.find("$PhysicalNames") == 0)
             {
-
                 // Read in the number of physical groups to expect in the file.
                 unsigned int num_physical_groups = 0;
                 in >> num_physical_groups;
@@ -123,29 +124,47 @@ void Mesh::MeshGmshReader(const char* filename)
                     in >> phy_dim >> phy_id >> phy_name;
 
                     this->physical_map[phy_id] = std::make_pair(phy_dim, phy_name);
-                    
                 }
             }
             else if(s.find("$Nodes") == 0) 
             {
                 unsigned int num_nodes = 0;
+
                 in >> num_nodes;
                 this->n_nodes = num_nodes;
 
                 this->coord.resize(num_nodes*3);
 
                 int node_id;
-                double x,y,z;
-                for(unsigned int i = 0; i < num_nodes; i++) {
-                    in >> node_id >> x >> y >> z;
-                    this->coord[(i*3)+0] = x;
-                    this->coord[(i*3)+1] = y;
-                    this->coord[(i*3)+2] = z;
+
+                if(binary_file)
+                {   
+                    double xyz[3];
+                    int current_pos = in.tellg();
+                    in.seekg(current_pos+1); // i dont know why but it is necessary to get one position ahead of the file to get the correct data
+
+                    for(unsigned int i = 0; i < num_nodes; i++){
+                        in.read((char*)&node_id, sizeof(int)); // reading node_id
+                        in.read((char*)xyz, 3*sizeof(double)); // reading node_i_x, node_i_y and node_i_z
+
+                        this->coord[(i*3)+0] = xyz[0];
+                        this->coord[(i*3)+1] = xyz[1];
+                        this->coord[(i*3)+2] = xyz[2];
+                    }
+                }
+                else
+                { 
+                    double x, y, z;
+                    for(unsigned int i = 0; i < num_nodes; i++) {
+                        in >> node_id >> x >> y >> z;
+                        this->coord[(i*3)+0] = x;
+                        this->coord[(i*3)+1] = y;
+                        this->coord[(i*3)+2] = z;
+                    }
                 }
 
                 // read the $ENDNOD delimiter
                 std::getline(in, s);
-
             }
 
             else if (s.find("$Elements")==0)
@@ -161,55 +180,114 @@ void Mesh::MeshGmshReader(const char* filename)
                 this->type.resize(num_elem);
                 this->offset[0] = 0;
 
-                int iel = 0;
-                for(int i = 0; i < num_elem; i++)
+                if(binary_file)
                 {
-                    int id, type, physical=1, elementary=1, nnodes=0, ntags, elem_dim;
+                    int current_pos = in.tellg();
+                    in.seekg(current_pos+1); // i dont know why but it is necessary to get one position ahead of the file to get the correct data
 
-                    in >> id >> type >> ntags;
+                    int elem_count = 0;
+
+                    // while is there element-header-binary
+                    while(true)
+                    {
+                        int header[3]; // elm_type, num_elm_follow, num_tags
+                        in.read((char*)header, 3*sizeof(int));
+
+                        int elm_type = header[0];
+                        int num_elm_follow = header[1];
+                        int ntags = header[2];
+
+                        for(unsigned int i = 0; i < num_elm_follow; i++)
+                        {
+                            this->type[elem_count] = GmshToVTKType(elm_type);
+                            int nnodes   = getGmshElemNNodes(elm_type);
+                            int elem_dim = getGmshElemTypeDim(elm_type);
+
+                            int arr_size = 3 + nnodes;
+                            int data[arr_size]; // num_i, physical, elementary, node_i_1, ... node_i_x
+                            in.read((char*)data, arr_size*sizeof(int));
+
+                            if(nnodes < 0 )
+                            {
+                                std::cout << "\nERROR: ELEMENT TYPE " << elm_type << " INVALID\n";
+                                in.close();
+                                delete this;
+                                exit(1);
+                            }
+
+                            dim_count[elem_dim]++;
+
+                            this->physical_tag[elem_count] = data[1];
+
+                            int arr_shift = 3; // shift num_i, physical and elementary values
+                            for (unsigned int j=0; j<nnodes; j++)
+                            {
+                                this->conn.push_back(data[arr_shift + j] - 1);
+#ifdef DEBUG_
+                                std::cout << node_id << " ";
+#endif
+                            }
+
+                            this->offset[elem_count+1] =  this->offset[elem_count] + nnodes;
+
+                            elem_count++;
+                        }
+
+                        if(elem_count == num_elem)
+                            break;
+                    }
+                }
+                else
+                {
+                    for(int i = 0; i < num_elem; i++)
+                    {
+                        int id, type, physical=1, elementary=1, nnodes=0, ntags, elem_dim;
+
+                        in >> id >> type >> ntags;
 #ifdef DEBUG_                   
-                   std::cout << id << "  " << type << "  " << ntags << " ";
+                        std::cout << id << "  " << type << "  " << ntags << " ";
 #endif
 
-                    this->type[i] = GmshToVTKType(type);
+                        this->type[i] = GmshToVTKType(type);
 
-                    nnodes   = getGmshElemNNodes(type);
-                    elem_dim = getGmshElemTypeDim(type);
+                        nnodes   = getGmshElemNNodes(type);
+                        elem_dim = getGmshElemTypeDim(type);
 
-                    if(nnodes < 0 )
-                    {
-                        std::cout << "ERRO: TIPO DO ELEMENTO " << type << " INVALIDO";
-                        in.close();
-                        delete this;
-                        exit(1);
-                    }
+                        if(nnodes < 0 )
+                        {
+                            std::cout << "\nERROR: ELEMENT TYPE " << type << " INVALID\n";
+                            in.close();
+                            delete this;
+                            exit(1);
+                        }
 
-                    dim_count[elem_dim]++;
+                        dim_count[elem_dim]++;
 
-                    for(int j = 0; j < ntags; j++)
-                    {
-                        in >> physical;
-                        if(j == 0)
-                            this->physical_tag[i] = physical;
+                        for(int j = 0; j < ntags; j++)
+                        {
+                            in >> physical;
+                            if(j == 0)
+                                this->physical_tag[i] = physical;
 #ifdef DEBUG_
-                        std::cout << physical << " ";
+                            std::cout << physical << " ";
 #endif
-                    }
+                        }
 
-                    for (unsigned int j=0; j<nnodes; j++)
-                    {
-                        in >> node_id;
-                        this->conn.push_back(node_id-1);
+                        for (unsigned int j=0; j<nnodes; j++)
+                        {
+                            in >> node_id;
+                            this->conn.push_back(node_id-1);
 #ifdef DEBUG_
-                        std::cout << node_id << " ";
+                            std::cout << node_id << " ";
 #endif
-                    }
+                        }
 
-                    this->offset[i+1] =  this->offset[i] + nnodes;
+                        this->offset[i+1] =  this->offset[i] + nnodes;
 #ifdef DEBUG_
-                    std::cout << "\n";
-                    std::cout << "OFFSET: " << this->offset[i+1] << " TYPE: "<< this->type[i] << "\n";
+                        std::cout << "\n";
+                        std::cout << "OFFSET: " << this->offset[i+1] << " TYPE: "<< this->type[i] << "\n";
 #endif                   
+                    }
                 }
 
                 // read the $ENDELM delimiter
@@ -232,7 +310,6 @@ void Mesh::MeshGmshReader(const char* filename)
     {
         this->n_elements      = dim_count[1];
     }
-    
     
     this->mesh_coloring_internal = new int [this->n_elements];
 

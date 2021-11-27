@@ -252,7 +252,7 @@ class Mesh {
          *     Variável do tipo unsigned short com o tipo do elemento de superfície desejado.
         */
 
-        void setCoord(std::vector<double> coord);
+        void setCoord(std::vector<double> &coord);
         /**
          * * OBJETIVO:
          *     Alterar o vector coord da malha.
@@ -261,7 +261,7 @@ class Mesh {
          * @param coord Vector do tipo double com as novas informações de coordenadas dos nós da malha.
         */
 
-        void setConn(std::vector<unsigned int> conn);
+        void setConn(std::vector<unsigned int> &conn);
         /**
          * * OBJETIVO:
          *     Alterar o vector conn da malha.
@@ -280,7 +280,7 @@ class Mesh {
          * @param position Variável do tipo unsigned int indicando a posição a substituir o valor da variável value.
         */
 
-        void setOffset(std::vector<unsigned int> offset);
+        void setOffset(std::vector<unsigned int> &offset);
         /**
          * * OBJETIVO:
          *     Alterar o vector offset da malha.
@@ -299,7 +299,7 @@ class Mesh {
          * @param position Variável do tipo unsigned int indicando a posição a substituir o valor da variável value.
         */
 
-        void setType(std::vector<unsigned short> type);
+        void setType(std::vector<unsigned short> &type);
         /**
          * * OBJETIVO:
          *     Alterar o vector de tipos dos elementos da malha.
@@ -308,7 +308,17 @@ class Mesh {
          * @param type Vector do tipo unsigned short com as novas informações de tipos dos elementos da malha.
         */
 
-        void set_physical_tag(std::vector<int> physical_tag);
+       void setTypePosition(unsigned short value, unsigned int position);
+        /**
+         * * OBJETIVO:
+         *     Alterar o vector type com o valor e a posição passados por argumento.
+         * 
+         * * PARAMETROS:
+         * @param value Variável do tipo unsigned int indicando o valor a substituir.
+         * @param position Variável do tipo unsigned int indicando a posição a substituir o valor da variável value.
+        */
+
+        void set_physical_tag(std::vector<int> &physical_tag);
         /**
          * * OBJETIVO:
          *     Alterar o vector de phyisical tag da malha.
@@ -335,7 +345,7 @@ class Mesh {
          * @param n_internal_colors Variável do tipo unsigned int com o novo número a ser atualizado de cores internas da malha.
         */
 
-        void set_physical_map(std::map<int, physical_data_t> physical_map);
+        void set_physical_map(std::map<int, physical_data_t> &physical_map);
         /**
          * * OBJETIVO:
          *     Alterar o mapeamento dos grupos físicos da malha.

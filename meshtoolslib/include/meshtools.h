@@ -3,8 +3,16 @@
 
 #include "meshtools_config.h"
 
-#ifdef USE_MPI
+#if USE_MPI
 #include "mpi.h"
+#endif
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
+#ifdef USE_CATALYST
+    #include "FEAdaptor.h"
 #endif
 
 namespace MeshTools 

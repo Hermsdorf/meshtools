@@ -112,15 +112,18 @@ unsigned short Mesh::getSurfaceElementType(unsigned int element_num)
     return this->type[element_num];
 } 
 
-void Mesh::setCoord(std::vector<double> coord)
+void Mesh::setCoord(std::vector<double> &coord)
 {
- 
-    this->coord = coord;
+    this->coord.resize(coord.size());
+    std::copy(coord.begin(),coord.end(), this->coord.begin());
+    //this->coord = coord;
 }
 
-void Mesh::setConn(std::vector<unsigned int> conn)
+void Mesh::setConn(std::vector<unsigned int> &conn)
 {
-    this->conn = conn;
+    //this->conn = conn;
+    this->conn.resize(conn.size());
+    std::copy(conn.begin(),conn.end(), this->conn.begin());
 }
 
 void Mesh::setConnPosition(unsigned int value, unsigned int position)
@@ -128,9 +131,11 @@ void Mesh::setConnPosition(unsigned int value, unsigned int position)
     this->conn[position] = value;
 }
 
-void Mesh::setOffset(std::vector<unsigned int> offset)
+void Mesh::setOffset(std::vector<unsigned int> &offset)
 {
-    this->offset = offset;
+    this->offset.resize(offset.size());
+    std::copy(offset.begin(), offset.end(), this->offset.begin());
+    //this->offset = offset;
 }
 
 void Mesh::setOffsetPosition(unsigned int value, unsigned int position)
@@ -138,14 +143,24 @@ void Mesh::setOffsetPosition(unsigned int value, unsigned int position)
     this->offset[position] = value;
 }
 
-void Mesh::setType(std::vector<unsigned short> type)
+void Mesh::setType(std::vector<unsigned short> &type)
 {
-    this->type = type;
+    //this->type = type;
+    this->type.resize(type.size());
+    std::copy(type.begin(), type.end(), this->type.begin());
+    
 }
 
-void Mesh::set_physical_tag(std::vector<int> physical_tag)
+void Mesh::setTypePosition(unsigned short value, unsigned int position)
 {
-    this->physical_tag = physical_tag;
+    this->type[position] = value;
+}
+
+void Mesh::set_physical_tag(std::vector<int> &physical_tag)
+{
+    //this->physical_tag = physical_tag;
+    this->physical_tag.resize(physical_tag.size());
+    std::copy(physical_tag.begin(), physical_tag.end(), this->physical_tag.begin());
 }
 
 void Mesh::set_mesh_coloring_internal(int* mesh_coloring_internal)
@@ -158,9 +173,12 @@ void Mesh::set_n_internal_colors(unsigned int n_internal_colors)
     this->n_internal_colors = n_internal_colors;
 }
 
-void Mesh::set_physical_map(std::map<int, physical_data_t> physical_map)
+void Mesh::set_physical_map(std::map<int, physical_data_t> &physical_map)
 {
     this->physical_map = physical_map;
+    //physical_map.
+    //this->physical_map.resize(physical_map.size());
+    //std::copy(physical_map.begin(), physical_map.end(), this->physical_map.begin());
 }
 
 void Mesh::set_n_face_elements(unsigned int n_face_elements)
