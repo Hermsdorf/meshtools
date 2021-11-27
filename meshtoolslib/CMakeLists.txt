@@ -1,16 +1,11 @@
 
 
-
 file(GLOB source_files_lib
          "include/*.h"
          "src/*.cpp"
     )
 
-
 add_library(meshtoolslib SHARED ${source_files_lib})
-
-include_directories(${METIS_INCLUDE_DIRS})
-include_directories(include)
 
 if(MPI_ENABLE)
    find_package(MPI)
@@ -36,7 +31,7 @@ else()
    list(FILTER source_files_lib EXCLUDE REGEX "src/FEAdaptor.cpp")
 endif()
 
-configure_file(meshtools_config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/include/meshtools_config.h @ONLY)
+configure_file(meshtools_config.h.in ${CMAKE_SOURCE_DIR}/meshtoolslib/include/meshtools_config.h @ONLY)
 
 
 
