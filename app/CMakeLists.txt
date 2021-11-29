@@ -1,10 +1,15 @@
 
-   file(GLOB source_files_exec "main.cpp")
-   add_executable(meshtools ${source_files_exec})
+   
+   add_executable(meshtools meshtools_app.cpp)
+   add_executable(femtools femtools_app.cpp)
+
 
    if(MPI_ENABLE)
       find_package(MPI)
       if(MPI_FOUND)
+         include_directories(meshtools ${MPI_C_INCLUDE_PATH})
+         target_link_libraries(meshtools PUBLIC MPI::MPI_C MPI::MPI_CXX)
+
          include_directories(meshtools ${MPI_C_INCLUDE_PATH})
          target_link_libraries(meshtools PUBLIC MPI::MPI_C MPI::MPI_CXX)
       endif()
@@ -32,10 +37,18 @@
       find_package(OpenMP)
       if(OpenMP_CXX_FOUND)
          target_link_libraries(meshtools PUBLIC OpenMP::OpenMP_CXX)
+         target_link_libraries(femtools PUBLIC OpenMP::OpenMP_CXX)
       endif()
    endif()
 
    target_link_libraries(meshtools 
+   PRIVATE
+   meshtoolslib
+   ${ADDITIONAL_ITEMS}
+   ${METIS_LIBRARIES}
+   )
+
+   target_link_libraries(femtools 
    PRIVATE
    meshtoolslib
    ${ADDITIONAL_ITEMS}
