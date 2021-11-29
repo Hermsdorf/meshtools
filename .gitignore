@@ -17,7 +17,6 @@ tempos/
 tempos_forkjoin/
 tempos_forkjoin.zip
 script.sh
-*.msh 
 msh/*.msh 
 include/meshtools_config.h
 .local
