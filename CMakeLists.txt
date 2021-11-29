@@ -6,6 +6,8 @@ project(meshtools)
 include(CTest)
 enable_testing()
 
+
+
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 
 set(CMAKE_CXX_COMPILER g++)
@@ -17,6 +19,7 @@ option(OpenMP_ENABLE    "Enable OpenMP" ON)
 option(CATALYST_ENABLE  "Enable Paraview Catalyst" OFF)
 
 find_package(METIS REQUIRED)
+find_package(PETSc)
 
 include_directories(${METIS_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/meshtoolslib/include)
