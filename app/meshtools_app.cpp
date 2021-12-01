@@ -9,7 +9,7 @@
 #include "alglin.h"
 #include "parallel_mesh.h"
 
-//#include "petsc.h"
+#include "petsc.h"
 
 using namespace std;
 

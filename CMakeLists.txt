@@ -21,6 +21,8 @@ option(CATALYST_ENABLE  "Enable Paraview Catalyst" OFF)
 find_package(METIS REQUIRED)
 find_package(PETSc)
 
+include_directories(${PETSC_INCLUDES})
+add_definitions(${PETSC_DEFINITIONS})
 include_directories(${METIS_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/meshtoolslib/include)
 
