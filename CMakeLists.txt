@@ -19,10 +19,24 @@ option(OpenMP_ENABLE    "Enable OpenMP" ON)
 option(CATALYST_ENABLE  "Enable Paraview Catalyst" OFF)
 
 find_package(METIS REQUIRED)
-find_package(PETSc)
 
-include_directories(${PETSC_INCLUDES})
-add_definitions(${PETSC_DEFINITIONS})
+
+include(FindPkgConfig)
+
+if(DEFINED ENV{PETSC_DIR})
+  set (ENV{PKG_CONFIG_PATH} "$ENV{PETSC_DIR}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+  pkg_search_module(PETSc REQUIRED PETSc>3.10)
+  if(PETSc_FOUND)
+     message(STATUS "PETSc ${PETSc_VERSION} was found!")
+     message(STATUS "PETSc_INCLUDE: ${PETSc_INCLUDE_DIRS} ")
+     message(STATUS "PETSc_LIBRARIES: ${PETSc_LINK_LIBRARIES} ")
+  endif()
+else()
+  message(STATUS "PETSc was not founded! Please define PETSc_DIR var!!")
+endif()
+
+#include_directories(${PETSC_INCLUDES})
+#add_definitions(${PETSC_DEFINITIONS})
 include_directories(${METIS_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/meshtoolslib/include)
 
