@@ -1,7 +1,12 @@
 
-   
+
    add_executable(meshtools meshtools_app.cpp)
    add_executable(femtools femtools_app.cpp)
+
+
+   if(PETSc_FOUND)
+       include_directories(${PETSc_INCLUDE_DIRS})
+   endif()
 
 
    if(MPI_ENABLE)
@@ -10,8 +15,8 @@
          include_directories(meshtools ${MPI_C_INCLUDE_PATH})
          target_link_libraries(meshtools PUBLIC MPI::MPI_C MPI::MPI_CXX)
 
-         include_directories(meshtools ${MPI_C_INCLUDE_PATH})
-         target_link_libraries(meshtools PUBLIC MPI::MPI_C MPI::MPI_CXX)
+         include_directories(femtools ${MPI_C_INCLUDE_PATH})
+         target_link_libraries(femtools PUBLIC MPI::MPI_C MPI::MPI_CXX)
       endif()
       set(USE_MPI 1)
    endif()
@@ -53,4 +58,5 @@
    meshtoolslib
    ${ADDITIONAL_ITEMS}
    ${METIS_LIBRARIES}
+   ${PETSc_LINK_LIBRARIES}
    )
