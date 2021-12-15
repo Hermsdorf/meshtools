@@ -21,6 +21,8 @@ int main(int argc, char* argv[])
 
     MPI_Comm_size(PETSC_COMM_WORLD,&size);
     MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
+
+    // testing some vec methods
     if(rank == 0)
     {
         ierr = VecCreateMPI(PETSC_COMM_WORLD, 3, vector_size, &v); CHKERRQ(ierr); // creating a vector with local size 3 and global size 8
@@ -39,16 +41,32 @@ int main(int argc, char* argv[])
     VecAssemblyEnd(v);
 
 
-    VecView(v, v_view);
+    //VecView(v, v_view);
     
-    ISCreateGeneral(PETSC_COMM_WORLD, vector_size, v, PETSC_COPY_VALUES, &is);
+    // testing index set
+    // indices has each position of the array to every processor
+    // indices = [0, 3, 9, 12] -> processor 1 has elements on input 0th to 2th element,
+    //                            processor 2 has elements 3th to 8th element,
+    //                            processor 3 has elements 9th to 12th element
 
-    /*
-          Print the index set to stdout
-    */
+    // to use IS it is necessary pass the input and the indices to mapping all elements
+    PetscInt indices[] = {0, 3, 9, 12}, n = 5;
+    PetscInt input[] = {10, 20}, *output, m = 5;
+    
+    ISCreateGeneral(PETSC_COMM_SELF,n,indices,PETSC_COPY_VALUES,&is);
+
     ISView(is,PETSC_VIEWER_STDOUT_SELF);
 
+    ISLocalToGlobalMapping mapping;
 
+    // at the beginning it is necessary to create and set options of the mapping
+    ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD,1,n,indices,PETSC_COPY_VALUES,&mapping);
+    ISLocalToGlobalMappingSetFromOptions(mapping);
+
+    // after it is necessary to apply 
+    ISLocalToGlobalMappingApply(mapping, m, input, output);
+    PetscIntView(m, output, PETSC_VIEWER_STDOUT_WORLD);
+    
     ierr = VecDestroy(&v);
     ierr = PetscFinalize();CHKERRQ(ierr);
     return 0;
