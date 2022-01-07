@@ -1,16 +1,10 @@
 #include "petsc.h"
 
 #include "meshtools.h"
-<<<<<<< HEAD
 #include "mesh.h"
 #include "mesh_part.h"
 #include "alglin.h"
 #include "parallel_mesh.h"
-=======
-#include <iostream>
-
-using namespace std;
->>>>>>> 55040cdb09f98f5e548219cba67afb505e6952e2
 
 static char help[] = "Empty Problem\n\n";
 
@@ -21,14 +15,8 @@ int main(int argc, char* argv[])
     PetscViewer v_view;
     IS is; // index set
     ierr = PetscInitialize(&argc,&argv,nullptr,help); CHKERRQ(ierr);
-<<<<<<< HEAD
-
-    Mesh             *mesh  = nullptr;
-    ParallelMesh     *pmesh = nullptr;
     Mesh_partition_t *parts = new Mesh_partition_t();
     
-    int processor_id = 0;
-    int n_processors = 0;
 
     MPI_Comm_rank(PETSC_COMM_WORLD,&processor_id );
     MPI_Comm_size(PETSC_COMM_WORLD,&n_processors );
@@ -94,21 +82,9 @@ int main(int argc, char* argv[])
     Mat A;
     // CSR Matriz Esparsa
     //MatCreateAIJ(PETSC_COMM_WORLD, PETSC_DECIDE,PETSC_DECIDE,pmesh->get_n_nodes(),pmesh->get_n_nodes(),10,NULL, 10, NULL, &A);
-=======
->>>>>>> 55040cdb09f98f5e548219cba67afb505e6952e2
-
-    int size, rank;
-    PetscInt i = 3;
+/*
     PetscInt vector_size = 8;
-    PetscReal value = 3.14;
-
-    MPI_Comm_size(PETSC_COMM_WORLD,&size);
-    MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
-
-    // testing some vec methods
     if(rank == 0)
-    {
-        ierr = VecCreateMPI(PETSC_COMM_WORLD, 3, vector_size, &v); CHKERRQ(ierr); // creating a vector with local size 3 and global size 8
     }
     else{
         if(rank == 1){
@@ -145,15 +121,8 @@ int main(int argc, char* argv[])
     // at the beginning it is necessary to create and set options of the mapping
     ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD,1,n,indices,PETSC_COPY_VALUES,&mapping);
     ISLocalToGlobalMappingSetFromOptions(mapping);
+*/
 
-<<<<<<< HEAD
-=======
-    // after it is necessary to apply 
-    ISLocalToGlobalMappingApply(mapping, m, input, output);
-    PetscIntView(m, output, PETSC_VIEWER_STDOUT_WORLD);
-    
-    ierr = VecDestroy(&v);
->>>>>>> 55040cdb09f98f5e548219cba67afb505e6952e2
     ierr = PetscFinalize();CHKERRQ(ierr);
     return 0;
 }
