@@ -41,22 +41,22 @@ int main(int argc, char* argv[])
         }
     }
 
-    if(MeshTools::n_processors > 1 ) 
+    if(n_processors > 1 ) 
     {
         // Malha gerada pelo processo mestre é distribuida
         // para os demais processos. 
-        pmesh = parts->DistributedMeshInternal(mesh, processor_id, n_processors);
+        pmesh = parts->DistributedMeshInternal(mesh, processor_id, n_processors); //* nao ta retornando certo
     }
+    std::cout << pmesh->get_n_nodes() << '\n';
     // Criar o Sistema de Equações
-    //
-    auto &gindices = pmesh->get_local_to_global();
+    // auto &gindices = pmesh->get_local_to_global();
 
     // Objetivo criar ym sistema de equações:
     // MATRIZ A
     // Vetores b,x
 
-    Vec x;                                  // numero de nos totais
-    VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, pmesh->get_n_nodes(), &x);
+    // Vec x;                                  // numero de nos totais
+    // VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, pmesh->get_n_nodes(), &x);
     
     //Intervalo dos indices globais em cada processo
     // PetscInt rstart, rend;
