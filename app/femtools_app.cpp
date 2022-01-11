@@ -45,24 +45,31 @@ int main(int argc, char* argv[])
     {
         // Malha gerada pelo processo mestre é distribuida
         // para os demais processos. 
-        pmesh = parts->DistributedMeshInternal(mesh, processor_id, n_processors); //* nao ta retornando certo
+        pmesh = parts->DistributedMeshInternal(mesh, processor_id, n_processors);
     }
-    std::cout << pmesh->get_n_nodes() << '\n';
+
+    // get_n_nodes() retorna o numero de nos no pmesh
+    std::cout << "rank " << processor_id << " nnodes " << pmesh->get_n_nodes() << '\n';
     // Criar o Sistema de Equações
-    // auto &gindices = pmesh->get_local_to_global();
+    std::vector<unsigned int> &gindices = pmesh->get_local_to_global();
+
+    for(int i = 0 ; i < gindices.size() ; i++)
+    {
+        std::cout << "rank " << processor_id << "  " << gindices[i] << "\n";
+    }
 
     // Objetivo criar ym sistema de equações:
     // MATRIZ A
     // Vetores b,x
 
-    // Vec x;                                  // numero de nos totais
-    // VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, pmesh->get_n_nodes(), &x);
+    Vec x;                                  // numero de nos totais
+    VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, pmesh->get_n_nodes(), &x);
     
-    //Intervalo dos indices globais em cada processo
-    // PetscInt rstart, rend;
-    // VecGetOwnershipRange(x, &rstart, &rend);
+    // Intervalo dos indices globais em cada processo
+    PetscInt rstart, rend;
+    VecGetOwnershipRange(x, &rstart, &rend);
 
-    //std::cout << "processor ID " << processor_id << "Interval [" << rstart <<","<<rend <<"]\n" << std::flush;
+    std::cout << "processor ID " << processor_id << "Interval [" << rstart <<","<<rend <<"]\n" << std::flush;
 
     // Prencher o vetor:
     // for(int i = 0; i < pmesh->get_n_elements(); i++)
