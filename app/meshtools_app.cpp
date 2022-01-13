@@ -56,15 +56,22 @@ int main(int argc, char* argv[])
     int n_processors = 1;
     int processor_id = 0;
 
-    MeshTools::Init(argc,argv);
+    //MeshTools::Init(argc,argv);
+#ifdef USE_MPI
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &n_processors);
+    MPI_Comm_rank(MPI_COMM_WORLD, &processor_id);
+#endif
 
     // Obrigatorio ter ao menos 3 argumentos:
     // ./meshtools -m <filename>
     if(argc < 3)
     {
-        if(MeshTools::processor_id==0) 
+        if(processor_id==0) 
             usage(argv[0]);
-        MeshTools::Finalize();
+#ifdef USE_MPI
+        MPI_Finalize();
+#endif 
         return 0;
     }
 
@@ -128,9 +135,11 @@ int main(int argc, char* argv[])
 
     if(!flg_gmsh)
     {
-        if(MeshTools::processor_id==0) 
+        if(processor_id==0) 
             usage(argv[0]);
-        MeshTools::Finalize();
+#ifdef USE_MPI
+        MPI_Finalize();
+#endif 
         return 0;
     }
 
@@ -138,7 +147,7 @@ int main(int argc, char* argv[])
     ParallelMesh     *pmesh = nullptr;
     Mesh_partition_t *parts = new Mesh_partition_t();
 
-    if(MeshTools::processor_id == 0)
+    if(processor_id == 0)
     {
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha. 
@@ -151,12 +160,12 @@ int main(int argc, char* argv[])
     
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha
-        if(MeshTools::n_processors > 1 ) {
-            parts->MeshPartitionerInternal(mesh, MeshTools::n_processors);
+        if(n_processors > 1 ) {
+            parts->MeshPartitionerInternal(mesh,n_processors);
         }
     }
 
-    if(MeshTools::n_processors > 1 ) 
+    if(n_processors > 1 ) 
     {
         // Malha gerada pelo processo mestre é distribuida
         // para os demais processos. 
@@ -166,9 +175,7 @@ int main(int argc, char* argv[])
         pmesh->setFilename(str);
 
         // Aplica em cada partição a coloração
-        pmesh->MeshColoring(color_alg, block_size);
-
-        //FiniteElementKernels::run(*pmesh);
+        //pmesh->MeshColoring(color_alg, block_size);
 
         //Escreve partição na arquivo 
         pmesh->writeParallelMesh();
@@ -192,7 +199,9 @@ int main(int argc, char* argv[])
     if(parts) delete parts;
     if(pmesh) delete pmesh;
 
-    MeshTools::Finalize();
+#ifdef USE_MPI
+    MPI_Finalize();
+#endif 
 
     return 0;
 

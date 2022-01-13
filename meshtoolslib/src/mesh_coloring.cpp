@@ -525,6 +525,10 @@ void Mesh::MeshColoring(color_mode_t color_mode, int block_size)
     unsigned int* new_offset;
     unsigned short* new_type;
 
+    if(this->mesh_coloring_internal == nullptr) 
+        this->mesh_coloring_internal = new int[n_elements];
+    std::fill(this->mesh_coloring_internal,this->mesh_coloring_internal+n_elements, -1);
+    
     switch (color_mode)
     {
     case COLOR_DEFAULT:

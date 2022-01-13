@@ -7,10 +7,11 @@ using namespace std;
 Mesh::Mesh()
 {
     this->n_face_elements = 0;
-    this->n_elements = 0;
-    this->n_nodes = 0; 
-    this->dim = 0;
+    this->n_elements      = 0;
+    this->n_nodes         = 0; 
+    this->dim             = 0;
     this->mesh_coloring_internal = nullptr;
+    this->n_internal_colors = 0;
 }
 
 Mesh::Mesh(const char* filename)
@@ -20,6 +21,7 @@ Mesh::Mesh(const char* filename)
     this->n_nodes = 0; 
     this->dim = 0;
     this->mesh_coloring_internal = nullptr;
+    this->n_internal_colors = 0;
     MeshGmshReader(filename);
 }
 

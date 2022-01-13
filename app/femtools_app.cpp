@@ -14,12 +14,13 @@ int main(int argc, char* argv[])
     Vec v;
     PetscViewer v_view;
     IS is; // index set
-    ierr = PetscInitialize(&argc,&argv,nullptr,help); CHKERRQ(ierr);
+    
     Mesh_partition_t *parts = new Mesh_partition_t();
     int processor_id, n_processors;
     Mesh* mesh;
     ParallelMesh* pmesh;
-    
+
+    ierr = PetscInitialize(&argc,&argv,nullptr,help); CHKERRQ(ierr);
     MPI_Comm_rank(PETSC_COMM_WORLD,&processor_id);
     MPI_Comm_size(PETSC_COMM_WORLD,&n_processors);
 
@@ -27,7 +28,7 @@ int main(int argc, char* argv[])
     {
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha. 
-        mesh = new Mesh("/home/guilherme/local/app/meshtools/msh/quad.msh");
+        mesh = new Mesh(argv[1]);
 
         // Aplica a reordenação nodal considerando o algoritmo
         // escolhido pelo usuário
@@ -46,6 +47,13 @@ int main(int argc, char* argv[])
         // Malha gerada pelo processo mestre é distribuida
         // para os demais processos. 
         pmesh = parts->DistributedMeshInternal(mesh, processor_id, n_processors);
+
+        std::string str(argv[1]);
+        str.resize(str.length()-4);
+        pmesh->setFilename(str);
+
+        //Escreve partição na arquivo 
+        pmesh->writeParallelMesh();
     }
 
     // get_n_nodes() retorna o numero de nos no pmesh
@@ -62,14 +70,14 @@ int main(int argc, char* argv[])
     // MATRIZ A
     // Vetores b,x
 
-    Vec x;                                  // numero de nos totais
-    VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, pmesh->get_n_nodes(), &x);
+    // Vec x;                                  // numero de nos totais
+    // VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, pmesh->get_n_nodes(), &x);
     
-    // Intervalo dos indices globais em cada processo
-    PetscInt rstart, rend;
-    VecGetOwnershipRange(x, &rstart, &rend);
+    // // Intervalo dos indices globais em cada processo
+    // PetscInt rstart, rend;
+    // VecGetOwnershipRange(x, &rstart, &rend);
 
-    std::cout << "processor ID " << processor_id << "Interval [" << rstart <<","<<rend <<"]\n" << std::flush;
+    // std::cout << "processor ID " << processor_id << "Interval [" << rstart <<","<<rend <<"]\n" << std::flush;
 
     // Prencher o vetor:
     // for(int i = 0; i < pmesh->get_n_elements(); i++)

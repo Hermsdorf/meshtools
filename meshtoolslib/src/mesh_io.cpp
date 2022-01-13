@@ -311,11 +311,7 @@ void Mesh::MeshGmshReader(const char* filename)
         this->n_elements      = dim_count[1];
     }
     
-    this->mesh_coloring_internal = new int [this->n_elements];
 
-    std::fill(&this->mesh_coloring_internal[0], &this->mesh_coloring_internal[n_elements], -1);
-
-    
     std::string str(filename);
     str.resize(str.length()-4);
 
@@ -411,7 +407,7 @@ void Mesh::MeshVTKWriter(int timeStep, int *npart, int* epart, int* color, doubl
             fout << std::endl;
             fout << "\t\t\t\t </DataArray>\n";
         }
-        if(color)
+        if(this->n_internal_colors != 0)
         {
             fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"Color\" format=\"ascii\">\n";
             fout << "\t\t\t\t\t";
@@ -573,7 +569,7 @@ void Mesh::MeshVTKWriterInternal(int timeStep, int* npart, int* epart, int* colo
             }
             fout << "\n\t\t\t\t </DataArray> \n";
         }
-        if(color)
+        if(this->n_internal_colors != 0 )
         {
             fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"Color\" format=\"ascii\">\n";
             fout << "\t\t\t\t\t";

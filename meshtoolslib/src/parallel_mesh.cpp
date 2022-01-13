@@ -11,7 +11,16 @@ ParallelMesh::ParallelMesh()
     this->n_nodes = 0;
     this->internal_mesh = false;
     this->mesh_coloring_internal = nullptr;
+    this->processor_id = 0;
+    this->n_processors = 1;
+#ifdef USE_MPI
+    MPI_Comm_size(MPI_COMM_WORLD, &this->n_processors);
+    MPI_Comm_rank(MPI_COMM_WORLD, &this->processor_id);
+#endif
+
 }
+
+
 
 ParallelMesh::~ParallelMesh()
 {
@@ -397,7 +406,7 @@ void ParallelMesh::writePvtu()
     std::cout << "Writing VTK parallel mesh...\n";
     std::ofstream fout;
 
-    int size = MeshTools::n_processors;
+    int size = n_processors;
     
     std::string str(this->getFilename());
     str.insert(str.length(), ".pvtu"); // inserir "p" em ".vtu" -> ".pvtu"
@@ -421,7 +430,8 @@ void ParallelMesh::writePvtu()
         fout << "\t\t</PPointData>\n";
         fout << "\t\t<PCellData>\n";
         fout << "\t\t\t<PDataArray type=\"Int32\" Name=\"epart\"/>\n";
-        fout << "\t\t\t<PDataArray type=\"Int32\" Name=\"color\"/>\n";
+        if(this->n_internal_colors != 0) 
+            fout << "\t\t\t<PDataArray type=\"Int32\" Name=\"color\"/>\n";
         fout << "\t\t</PCellData>\n";
         fout << "\t\t<PPoints>\n";
         fout << "\t\t\t<PDataArray type=\"Float64\" NumberOfComponents=\"3\"/>\n";
@@ -441,14 +451,12 @@ void ParallelMesh::writePvtu()
 
 void ParallelMesh::writeParallelMesh()
 {
-    bool pmesh_is_internal = this->internal_mesh;
     int rank, size;
-
-    rank = MeshTools::processor_id;
-    size = MeshTools::n_processors;
+    rank = processor_id;
+    size = n_processors;
 
     int nnodes = this->get_n_nodes();
-    int nelem = pmesh_is_internal ? this->get_n_elements() : (this->get_n_elements() + this->get_n_face_elements());
+    int nelem  = this->get_n_elements();
     int* npart = new int[nnodes];
     for(int i = 0 ; i < nnodes ; i++)
         npart[i] = rank;
@@ -457,11 +465,8 @@ void ParallelMesh::writeParallelMesh()
     for(int i = 0 ; i < nelem ; i++)
         epart[i] = rank;
 
-    if(pmesh_is_internal)
-        MeshVTKWriterInternal(rank, npart, epart, this->mesh_coloring_internal, NULL, NULL);
-    else
-        MeshVTKWriter(rank, npart, epart, this->mesh_coloring_internal, NULL, NULL);
-
+    MeshVTKWriterInternal(rank, npart, epart, this->mesh_coloring_internal, NULL, NULL);
+   
     if(rank == 0)
         this->writePvtu();
 

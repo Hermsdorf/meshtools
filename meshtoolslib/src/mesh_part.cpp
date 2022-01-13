@@ -91,15 +91,17 @@ void Mesh_partition_t::MeshPartitionerInternal(Mesh* mesh, int nparts)
         real_t *tpwgts  = 0;
         idx_t options[METIS_NOPTIONS];
         idx_t  objval   = 0;
+        idx_t n_common  = 1;
 
         METIS_SetDefaultOptions(options);
 
         //idx_t *epart, idx t *npart
-        options[METIS_OPTION_PTYPE]     = METIS_PTYPE_KWAY;
-        options[METIS_OPTION_OBJTYPE]   = METIS_OBJTYPE_CUT;
+        //options[METIS_OPTION_PTYPE]     = METIS_PTYPE_KWAY;
+        //options[METIS_OPTION_OBJTYPE]   = METIS_OBJTYPE_CUT;
         options[METIS_OPTION_NUMBERING] = 0;
 
         int metis_return = METIS_PartMeshNodal(ne,nn,eptr,eind,vwgt,vsize, &nparts, tpwgts, options, &objval, this->elem_part, this->nodal_part);
+        //int metis_return = METIS_PartMeshDual(ne,nn,eptr,eind,vwgt,vsize,&n_common, &nparts, tpwgts, options, &objval, this->elem_part, this->nodal_part);
         if (metis_return == METIS_OK)
         {
                 std::cout << "Successfully partitioned\n";
@@ -126,6 +128,17 @@ void Mesh_partition_t::MeshPartitionerInternal(Mesh* mesh, int nparts)
             }
         }
 
+/*
+        for(int i =0; i < nelem; i++)
+        {
+            std::cout << "METIS ELEM " << i << " PART " << elem_part[i] << std::endl;
+        }
+
+        for(int i =0; i < nnodes; i++)
+        {
+            std::cout << "METIS NODE " << i << " PART " << nodal_part[i] << std::endl;
+        }
+*/
         delete [] eptr;
     }
 }

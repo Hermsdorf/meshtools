@@ -51,7 +51,9 @@ class ParallelMesh : public Mesh{
         int n_processadores_vizinhos; // trocar para ingles
         std::vector<SharedNodes> communication_map;
         bool internal_mesh;
-
+        int processor_id;
+        int n_processors;
+        
         void writePvtu();
 };
 
