@@ -57,41 +57,64 @@ int main(int argc, char* argv[])
     }
 
     // get_n_nodes() retorna o numero de nos no pmesh
-    std::cout << "rank " << processor_id << " nnodes " << pmesh->get_n_nodes() << '\n';
+    std::cout << "rank " << processor_id << " nnodes " << pmesh->get_n_nodes() << "  nelements " << pmesh->get_n_elements() << '\n';
     // Criar o Sistema de Equações
     std::vector<unsigned int> &gindices = pmesh->get_local_to_global();
 
-    for(int i = 0 ; i < gindices.size() ; i++)
-    {
-        std::cout << "rank " << processor_id << "  " << gindices[i] << "\n";
-    }
+    // for(int i = 0 ; i < gindices.size() ; i++)
+    // {
+    //     std::cout << "rank " << processor_id << "   " << i <<  " ->> " << gindices[i] << "\n";
+    // }
 
     // Objetivo criar ym sistema de equações:
     // MATRIZ A
     // Vetores b,x
 
-    // Vec x;                                  // numero de nos totais
-    // VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, pmesh->get_n_nodes(), &x);
+    Vec x;                                  // numero de nos totais
+    VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, pmesh->get_n_nodes(), &x);
     
     // // Intervalo dos indices globais em cada processo
-    // PetscInt rstart, rend;
-    // VecGetOwnershipRange(x, &rstart, &rend);
+    PetscInt rstart, rend;
+    VecGetOwnershipRange(x, &rstart, &rend);
 
-    // std::cout << "processor ID " << processor_id << "Interval [" << rstart <<","<<rend <<"]\n" << std::flush;
+    std::cout << "processor ID " << processor_id << " Interval [" << rstart <<","<<rend <<"]\n" << std::flush;
+
+    int total_nodes;
+    if(processor_id == 0)
+    {
+        int nnodes = pmesh->get_n_nodes();
+        int nnodes_otherrank;
+        MPI_Send(&nnodes, 1, MPI_INT, 0, 0, PETSC_COMM_WORLD);
+        MPI_Recv(&nnodes_otherrank, 1, MPI_INT, 0, 0, PETSC_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        total_nodes = nnodes + nnodes_otherrank;
+    }
+    else
+    {
+        int nnodes = pmesh->get_n_nodes();
+        int nnodes_otherrank;
+        MPI_Send(&nnodes, 1, MPI_INT, 1, 0, PETSC_COMM_WORLD);
+        MPI_Recv(&nnodes_otherrank, 1, MPI_INT, 1, 0, PETSC_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        total_nodes = nnodes + nnodes_otherrank;
+    }
+
+
+    VecView(x, v_view);
 
     // Prencher o vetor:
-    // for(int i = 0; i < pmesh->get_n_elements(); i++)
-    // {
-    //     unsigned int  csize = pmesh->getElementConnSize(i);
-    //     unsigned int* conn = pmesh->getElementConn(i);
-    //     for(int j = 0; j < csize; j++)
-    //         VecSetValue(x,gindices[conn[j]], 1.0, ADD_VALUES);
-    // }
+    for(int i = 0; i < pmesh->get_n_elements(); i++)
+    {
+        unsigned int  csize = pmesh->getElementConnSize(i);
+        unsigned int* conn = pmesh->getElementConn(i);
+        for(int j = 0; j < csize; j++)
+            VecSetValue(x,gindices[conn[j]], 1, ADD_VALUES);
+    }
 
-    //VecAssemblyBegin(x);
-    //VecAssemblyEnd(x);
+    VecAssemblyBegin(x);
+    VecAssemblyEnd(x);
 
-    //VecView(x, v_view);
+    VecView(x, v_view);
 
 
     //Mat A;
