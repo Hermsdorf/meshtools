@@ -29,6 +29,30 @@ int main(int argc, char* argv[])
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha. 
         mesh = new Mesh(argv[1]);
+        
+        std::cout << "MESH\n";
+        std::cout << "  nodes: \n    ";
+        std::vector<double> coord = mesh->getCoord();
+        for(int i = 0 ; i < coord.size() ; i++)
+        {
+            std::cout << coord[i] << " ";
+            if((i+1)%3 == 0)
+                std::cout << "\n    ";
+        }        
+
+        std::cout << "\n  elems: \n";
+        unsigned int nelem = mesh->get_n_elements();
+        unsigned int* conn;
+        unsigned int connsize;
+        for(int i = 0 ; i < nelem ; i++)
+        {
+            conn = mesh->getElementConn(i);
+            connsize = mesh->getElementConnSize(i);
+            std::cout << "   elem " << i+1 << ": ";
+            for(int j = 0 ; j < connsize ; j++)
+                std::cout << conn[j] << " ";
+            std::cout << "\n";
+        }
 
         // Aplica a reordenação nodal considerando o algoritmo
         // escolhido pelo usuário
@@ -56,8 +80,38 @@ int main(int argc, char* argv[])
         pmesh->writeParallelMesh();
     }
 
+    std::cout << "\nPMESH " << processor_id << "\n";
+    std::cout << "  nodes: \n    ";
+    std::vector<double> coord = pmesh->getCoord();
+    for(int i = 0 ; i < coord.size() ; i++)
+    {
+        std::cout << coord[i] << " ";
+        if((i+1)%3 == 0)
+            std::cout << "\n    ";
+    }
+        
+    std::cout << "\n  local to global: ";
+    std::vector<unsigned int> ltg = pmesh->get_local_to_global();
+    for(int i = 0 ; i < ltg.size() ; i++)
+        std::cout << ltg[i] << " ";
+    
+
+    std::cout << "\n  elems: \n";
+    unsigned int nelem = pmesh->get_n_elements();
+    unsigned int* conn;
+    unsigned int connsize;
+    for(int i = 0 ; i < nelem ; i++)
+    {
+        conn = pmesh->getElementConn(i);
+        connsize = pmesh->getElementConnSize(i);
+        std::cout << "   elem " << i+1 << ": ";
+        for(int j = 0 ; j < connsize ; j++)
+            std::cout << conn[j] << " ";
+        std::cout << "\n";
+    }
+
     // get_n_nodes() retorna o numero de nos no pmesh
-    std::cout << "rank " << processor_id << " nnodes " << pmesh->get_n_nodes() << "  nelements " << pmesh->get_n_elements() << '\n';
+    //std::cout << "rank " << processor_id << " nnodes " << pmesh->get_n_nodes() << "  nelements " << pmesh->get_n_elements() << '\n';
     // Criar o Sistema de Equações
     std::vector<unsigned int> &gindices = pmesh->get_local_to_global();
 
@@ -73,7 +127,7 @@ int main(int argc, char* argv[])
     Vec x;                                  // numero de nos totais
     VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, pmesh->get_n_nodes(), &x);
     
-    // // Intervalo dos indices globais em cada processo
+    // Intervalo dos indices globais em cada processo
     PetscInt rstart, rend;
     VecGetOwnershipRange(x, &rstart, &rend);
 
