@@ -1136,7 +1136,7 @@ void fillParallelMesh(ParallelMesh* pmesh, std::vector<double> &coord_local, std
     unsigned int commsize = shared_out[0];
     communication_map.resize(commsize);
 
-    pmesh->set_n_processadores_vizinhos(commsize);
+    pmesh->set_n_neighbor_processors(commsize);
 
     for(int i = 0 ; i < commsize ; i++)
     {
@@ -1145,7 +1145,7 @@ void fillParallelMesh(ParallelMesh* pmesh, std::vector<double> &coord_local, std
         n_shared_nodes_i = shared_out[cont+1];
         cont+=2;
         
-        communication_map[i].set_id_processador_vizinho(id_processador_vizinho_i);
+        communication_map[i].set_id_neighbor_process(id_processador_vizinho_i);
         communication_map[i].set_n_shared_nodes(n_shared_nodes_i);
 
         for(int j = 0 ; j < n_shared_nodes_i ; j++)
@@ -1180,13 +1180,15 @@ ParallelMesh* Mesh_partition_t::DistributedMeshInternal(Mesh* mesh, int processo
     std::vector<unsigned int> local_to_global;
     std::vector<unsigned int> shared_out;
 
+    unsigned int nelem      = mesh->get_n_elements();
+    unsigned int nface_elem = 0; // As we are going to distribute a internal mesh, n face elements is going to be zero
+    unsigned int nnodes     = mesh->get_n_nodes();
+
     if(processor_id == 0)
     {
         std::map<unsigned int, std::set<unsigned int>> node_partition; // < no, particoes que o no participa >
         std::vector<double> coord = mesh->getCoord();
         std::vector<unsigned int> interface_nodes;
-        unsigned int nelem = mesh->get_n_elements();
-        unsigned int nnodes = mesh->get_n_nodes();
         
 
         int nelem_part[this->n_partitions] = { 0 }; // [nelem_0, nelem_1, nelem_2, ...]
@@ -1235,6 +1237,9 @@ ParallelMesh* Mesh_partition_t::DistributedMeshInternal(Mesh* mesh, int processo
 
             MPI_Send(array_sizes, 6, MPI_INT, i, 0, MPI_COMM_WORLD);
             MPI_Send(&nelem_part[i], 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&nelem, 1, MPI_UNSIGNED, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&nface_elem, 1, MPI_UNSIGNED, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&nnodes, 1, MPI_UNSIGNED, i, 0, MPI_COMM_WORLD);
 
             MPI_Send(&coord_local[0], coord_local.size(), MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
             MPI_Send(&conn_local[0], conn_local.size(), MPI_UNSIGNED, i, 0, MPI_COMM_WORLD);
@@ -1252,6 +1257,9 @@ ParallelMesh* Mesh_partition_t::DistributedMeshInternal(Mesh* mesh, int processo
         }
 
         pmesh->set_n_elements(nelem_part[0]);
+        pmesh->set_n_global_elements(nelem + nface_elem);
+        pmesh->set_n_global_internal_elements(nelem);
+        pmesh->set_n_global_nodes(nnodes);
 
         ProcessLocalArrays(coord_local, conn_local, offset_local, type_local, local_to_global, 
                            global_to_local, shared_out, node_partition, interface_nodes, mesh, pmesh, 0);
@@ -1263,8 +1271,14 @@ ParallelMesh* Mesh_partition_t::DistributedMeshInternal(Mesh* mesh, int processo
         MPI_Status status;  
         MPI_Recv(array_sizes, 6, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
         MPI_Recv(&nelem_pmesh, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&nelem, 1, MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&nface_elem, 1, MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&nnodes, 1, MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &status);
 
         pmesh->set_n_elements(nelem_pmesh);
+        pmesh->set_n_global_elements(nelem + nface_elem);
+        pmesh->set_n_global_internal_elements(nelem);
+        pmesh->set_n_global_nodes(nnodes);
 
         coord_local.resize(array_sizes[0]);
         conn_local.resize(array_sizes[1]);
@@ -1307,14 +1321,15 @@ ParallelMesh* Mesh_partition_t::DistributedMesh(Mesh* mesh, int processor_id, in
     std::vector<unsigned int> local_to_global;
     std::vector<unsigned int> shared_out;
 
+    unsigned int nelem          = mesh->get_n_elements();
+    unsigned int nface_elem     = mesh->get_n_face_elements();
+    unsigned int nnodes         = mesh->get_n_nodes(); 
+
     if(processor_id == 0)
     {
         std::map<unsigned int, std::set<unsigned int>> node_partition; // < no, particoes que o no participa >
         std::vector<double> coord   = mesh->getCoord();
         std::vector<unsigned int> interface_nodes;    
-        unsigned int nelem          = mesh->get_n_elements();
-        unsigned int nface_elem     = mesh->get_n_face_elements();
-        unsigned int nnodes         = mesh->get_n_nodes(); 
         int nelem_pmesh[this->n_partitions*2] = { 0 }; // [nsurfelem_0, nelem_0, nsurfelem_1, nelem_1, ...]
 
         for(int i = 0 ; i < this->n_partitions ; i++)
@@ -1386,6 +1401,9 @@ ParallelMesh* Mesh_partition_t::DistributedMesh(Mesh* mesh, int processor_id, in
             MPI_Send(array_sizes, 6, MPI_INT, i, 0, MPI_COMM_WORLD);
             MPI_Send(&nsurfelem_aux, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
             MPI_Send(&nelem_aux, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&nelem, 1, MPI_UNSIGNED, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&nface_elem, 1, MPI_UNSIGNED, i, 0, MPI_COMM_WORLD);
+            MPI_Send(&nnodes, 1, MPI_UNSIGNED, i, 0, MPI_COMM_WORLD);
 
             MPI_Send(&coord_local[0], coord_local.size(), MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
             MPI_Send(&conn_local[0], conn_local.size(), MPI_UNSIGNED, i, 0, MPI_COMM_WORLD);
@@ -1417,9 +1435,15 @@ ParallelMesh* Mesh_partition_t::DistributedMesh(Mesh* mesh, int processor_id, in
         MPI_Recv(array_sizes, 6, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
         MPI_Recv(&nsurfelem_pmesh, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
         MPI_Recv(&nelem_pmesh, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&nelem, 1, MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&nface_elem, 1, MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &status);
+        MPI_Recv(&nnodes, 1, MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &status);
 
         pmesh->set_n_face_elements(nsurfelem_pmesh);
         pmesh->set_n_elements(nelem_pmesh);
+        pmesh->set_n_global_elements(nelem + nface_elem);
+        pmesh->set_n_global_internal_elements(nelem);
+        pmesh->set_n_global_nodes(nnodes);
 
         coord_local.resize(array_sizes[0]);
         conn_local.resize(array_sizes[1]);

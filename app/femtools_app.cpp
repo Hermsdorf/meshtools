@@ -124,6 +124,10 @@ int main(int argc, char* argv[])
     // MATRIZ A
     // Vetores b,x
 
+    std::cout << "\nN GLOBAL NODES " << pmesh->get_n_global_nodes();
+    std::cout << "\nN GLOBAL ELEMENTS " << pmesh->get_n_global_elements();
+    std::cout << "\nN GLOBAL INTERNAL ELEMENTS " << pmesh->get_n_global_internal_elements();
+
     Vec x;                                  // numero de nos totais
     VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, pmesh->get_n_nodes(), &x);
     

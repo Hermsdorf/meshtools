@@ -10,19 +10,19 @@ class SharedNodes{
         SharedNodes();
         ~SharedNodes();
 
-        unsigned int get_id_processador_vizinho();
+        unsigned int get_id_neighbor_process();
         unsigned int get_n_shared_nodes();
         std::vector<unsigned int>& get_nodes();
-        void set_id_processador_vizinho(unsigned int id_processador_vizinho);
+        void set_id_neighbor_process(unsigned int id_neighbor_process);
         void set_n_shared_nodes(unsigned int n_shared_nodes);
         void set_nodes(std::vector<unsigned int> nodes);
 
         friend class ParallelMesh;
 
     private:
-        unsigned int id_processador_vizinho;  // trocar para ingles
+        unsigned int id_neighbor_process;
         unsigned int n_shared_nodes;
-        std::vector<unsigned int> nodes; // lista de nos
+        std::vector<unsigned int> nodes; // nodes list
 
         
 };
@@ -38,21 +38,30 @@ class ParallelMesh : public Mesh{
         void writeParallelMeshBin();
 
         std::vector<unsigned int>& get_local_to_global();
-        int get_n_processadores_vizinhos();
+        int get_n_neighbor_processors();
         std::vector<SharedNodes>& get_communication_map();
         void set_local_to_global(std::vector<unsigned int> local_to_global);
-        void set_n_processadores_vizinhos(int n_processadores_vizinhos);
+        void set_n_neighbor_processors(int n_neighbor_processors);
         void set_communication_map(std::vector<SharedNodes> communication_map);
         bool get_internal_mesh();
         void set_internal_mesh(bool internal_mesh);
+        unsigned int get_n_global_nodes();
+        void set_n_global_nodes(unsigned int n_global_nodes);
+        unsigned int get_n_global_elements();
+        void set_n_global_elements(unsigned int n_global_elements);
+        unsigned int get_n_global_internal_elements();
+        void set_n_global_internal_elements(unsigned int n_global_internal_elements);
 
     private:
         std::vector<unsigned int> local_to_global;
-        int n_processadores_vizinhos; // trocar para ingles
+        int n_neighbor_processors;
         std::vector<SharedNodes> communication_map;
         bool internal_mesh;
         int processor_id;
         int n_processors;
+        unsigned int n_global_nodes;
+        unsigned int n_global_elements;
+        unsigned int n_global_internal_elements;
         
         void writePvtu();
 };

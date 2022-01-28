@@ -13,6 +13,9 @@ ParallelMesh::ParallelMesh()
     this->mesh_coloring_internal = nullptr;
     this->processor_id = 0;
     this->n_processors = 1;
+    this->n_global_elements = 0;
+    this->n_global_internal_elements = 0;
+    this->n_global_nodes = 0;
 #ifdef USE_MPI
     MPI_Comm_size(MPI_COMM_WORLD, &this->n_processors);
     MPI_Comm_rank(MPI_COMM_WORLD, &this->processor_id);
@@ -31,7 +34,7 @@ ParallelMesh::~ParallelMesh()
 SharedNodes::SharedNodes()
 {
     this->n_shared_nodes = 0;
-    this->id_processador_vizinho = 0;
+    this->id_neighbor_process = 0;
 }
 
 SharedNodes::~SharedNodes()
@@ -49,14 +52,14 @@ void ParallelMesh::set_local_to_global(std::vector<unsigned int> local_to_global
     this->local_to_global = local_to_global;
 }
 
-int ParallelMesh::get_n_processadores_vizinhos()
+int ParallelMesh::get_n_neighbor_processors()
 {
-    return this->n_processadores_vizinhos;
+    return this->n_neighbor_processors;
 }
 
-void ParallelMesh::set_n_processadores_vizinhos(int n_processadores_vizinhos)
+void ParallelMesh::set_n_neighbor_processors(int n_neighbor_processors)
 {
-    this->n_processadores_vizinhos = n_processadores_vizinhos;
+    this->n_neighbor_processors = n_neighbor_processors;
 }
 
 std::vector<SharedNodes>& ParallelMesh::get_communication_map()
@@ -79,14 +82,14 @@ void ParallelMesh::set_internal_mesh(bool internal_mesh)
     this->internal_mesh = internal_mesh;
 }
 
-unsigned int SharedNodes::get_id_processador_vizinho()
+unsigned int SharedNodes::get_id_neighbor_process()
 {
-    return this->id_processador_vizinho;
+    return this->id_neighbor_process;
 }
 
-void SharedNodes::set_id_processador_vizinho(unsigned int id_processador_vizinho)
+void SharedNodes::set_id_neighbor_process(unsigned int id_neighbor_process)
 {
-    this->id_processador_vizinho = id_processador_vizinho;
+    this->id_neighbor_process = id_neighbor_process;
 }
 
 unsigned int SharedNodes::get_n_shared_nodes()
@@ -107,6 +110,36 @@ std::vector<unsigned int>& SharedNodes::get_nodes()
 void SharedNodes::set_nodes(std::vector<unsigned int> nodes)
 {
     this->nodes = nodes;
+}
+
+unsigned int ParallelMesh::get_n_global_nodes()
+{
+    return this->n_global_nodes;
+}
+
+void ParallelMesh::set_n_global_nodes(unsigned int n_global_nodes)
+{
+    this->n_global_nodes = n_global_nodes;
+}
+
+unsigned int ParallelMesh::get_n_global_elements()
+{
+    return this->n_global_elements;
+}
+
+void ParallelMesh::set_n_global_elements(unsigned int n_global_elements)
+{
+    this->n_global_elements = n_global_elements;
+}
+
+unsigned int ParallelMesh::get_n_global_internal_elements()
+{
+    return this->n_global_internal_elements;
+}
+
+void ParallelMesh::set_n_global_internal_elements(unsigned int n_global_internal_elements)
+{
+    this->n_global_internal_elements = n_global_internal_elements;
 }
 
 void ParallelMesh::readParallelMesh(const char* filename)
@@ -191,15 +224,15 @@ void ParallelMesh::readParallelMesh(const char* filename)
                 in >> commsize;
                 this->communication_map.resize(commsize);
 
-                this->n_processadores_vizinhos = commsize;
+                this->n_neighbor_processors = commsize;
 
                 for(int i = 0 ; i < commsize ; i++)
                 {
-                    unsigned int id_processador_vizinho_i, n_shared_nodes_i;
-                    in >> id_processador_vizinho_i >> n_shared_nodes_i;
+                    unsigned int id_neighbor_process_i, n_shared_nodes_i;
+                    in >> id_neighbor_process_i >> n_shared_nodes_i;
 
                     
-                    this->communication_map[i].set_id_processador_vizinho(id_processador_vizinho_i);
+                    this->communication_map[i].set_id_neighbor_process(id_neighbor_process_i);
                     this->communication_map[i].set_n_shared_nodes(n_shared_nodes_i);
 
                     for(int j = 0 ; j < n_shared_nodes_i ; j++)
@@ -274,16 +307,16 @@ void ParallelMesh::readParallelMeshBin(const char* filename)
                 unsigned int commsize;
                 in.read((char*) &commsize, sizeof(unsigned int));
                 this->communication_map.resize(commsize);
-                this->n_processadores_vizinhos = commsize;
+                this->n_neighbor_processors = commsize;
 
                 for(int i = 0 ; i < commsize ; i++)
                 {
-                    unsigned int id_processador_vizinho_i, n_shared_nodes_i;
+                    unsigned int id_neighbor_process_i, n_shared_nodes_i;
 
-                    in.read((char*) &id_processador_vizinho_i, sizeof(unsigned int));
+                    in.read((char*) &id_neighbor_process_i, sizeof(unsigned int));
                     in.read((char*) &n_shared_nodes_i, sizeof(unsigned int));
                     
-                    this->communication_map[i].set_id_processador_vizinho(id_processador_vizinho_i);
+                    this->communication_map[i].set_id_neighbor_process(id_neighbor_process_i);
                     this->communication_map[i].set_n_shared_nodes(n_shared_nodes_i);
                     in.read((char*) &this->communication_map[i].nodes[0], n_shared_nodes_i*sizeof(unsigned int));
 
@@ -377,16 +410,16 @@ void ParallelMesh::readParallelMeshHDF5(const char* filename)
                 unsigned int commsize;
                 in.read((char*) &commsize, sizeof(unsigned int));
                 this->communication_map.resize(commsize);
-                this->n_processadores_vizinhos = commsize;
+                this->n_neighbor_processors = commsize;
 
                 for(int i = 0 ; i < commsize ; i++)
                 {
-                    unsigned int id_processador_vizinho_i, n_shared_nodes_i;
+                    unsigned int id_neighbor_process_i, n_shared_nodes_i;
 
-                    in.read((char*) &id_processador_vizinho_i, sizeof(unsigned int));
+                    in.read((char*) &id_neighbor_process_i, sizeof(unsigned int));
                     in.read((char*) &n_shared_nodes_i, sizeof(unsigned int));
                     
-                    this->communication_map[i].set_id_processador_vizinho(id_processador_vizinho_i);
+                    this->communication_map[i].set_id_neighbor_process(id_neighbor_process_i);
                     this->communication_map[i].set_n_shared_nodes(n_shared_nodes_i);
                     in.read((char*) &this->communication_map[i].nodes[0], n_shared_nodes_i*sizeof(unsigned int));
 
