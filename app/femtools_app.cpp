@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 {
     PetscErrorCode ierr;
     Vec v;
-    PetscViewer v_view;
+    PetscViewer v_view, m_view;
     IS is; // index set
     
     Mesh_partition_t *parts = new Mesh_partition_t();
@@ -30,34 +30,34 @@ int main(int argc, char* argv[])
         // irá ler a malha. 
         mesh = new Mesh(argv[1]);
         
-        std::cout << "MESH\n";
-        std::cout << "  nodes: \n    ";
-        std::vector<double> coord = mesh->getCoord();
-        for(int i = 0 ; i < coord.size() ; i++)
-        {
-            std::cout << coord[i] << " ";
-            if((i+1)%3 == 0)
-                std::cout << "\n    ";
-        }        
+        // std::cout << "MESH\n";
+        // std::cout << "  nodes: \n    ";
+        // std::vector<double> coord = mesh->getCoord();
+        // for(int i = 0 ; i < coord.size() ; i++)
+        // {
+        //     std::cout << coord[i] << " ";
+        //     if((i+1)%3 == 0)
+        //         std::cout << "\n    ";
+        // }        
 
-        std::cout << "\n  elems: \n";
-        unsigned int nelem = mesh->get_n_elements();
-        unsigned int* conn;
-        unsigned int connsize;
-        for(int i = 0 ; i < nelem ; i++)
-        {
-            conn = mesh->getElementConn(i);
-            connsize = mesh->getElementConnSize(i);
-            std::cout << "   elem " << i+1 << ": ";
-            for(int j = 0 ; j < connsize ; j++)
-                std::cout << conn[j] << " ";
-            std::cout << "\n";
-        }
+        // std::cout << "\n  elems: \n";
+        // unsigned int nelem = mesh->get_n_elements();
+        // unsigned int* conn;
+        // unsigned int connsize;
+        // for(int i = 0 ; i < nelem ; i++)
+        // {
+        //     conn = mesh->getElementConn(i);
+        //     connsize = mesh->getElementConnSize(i);
+        //     std::cout << "   elem " << i+1 << ": ";
+        //     for(int j = 0 ; j < connsize ; j++)
+        //         std::cout << conn[j] << " ";
+        //     std::cout << "\n";
+        // }
 
         // Aplica a reordenação nodal considerando o algoritmo
         // escolhido pelo usuário
     
-        mesh->MeshReordering(RCM);
+        //mesh->MeshReordering(RCM);
     
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha
@@ -80,35 +80,35 @@ int main(int argc, char* argv[])
         pmesh->writeParallelMesh();
     }
 
-    std::cout << "\nPMESH " << processor_id << "\n";
-    std::cout << "  nodes: \n    ";
-    std::vector<double> coord = pmesh->getCoord();
-    for(int i = 0 ; i < coord.size() ; i++)
-    {
-        std::cout << coord[i] << " ";
-        if((i+1)%3 == 0)
-            std::cout << "\n    ";
-    }
+    // std::cout << "\nPMESH " << processor_id << "\n";
+    // std::cout << "  nodes: \n    ";
+    // std::vector<double> coord = pmesh->getCoord();
+    // for(int i = 0 ; i < coord.size() ; i++)
+    // {
+    //     std::cout << coord[i] << " ";
+    //     if((i+1)%3 == 0)
+    //         std::cout << "\n    ";
+    // }
         
-    std::cout << "\n  local to global: ";
-    std::vector<unsigned int> ltg = pmesh->get_local_to_global();
-    for(int i = 0 ; i < ltg.size() ; i++)
-        std::cout << ltg[i] << " ";
+    // std::cout << "\n  local to global: ";
+    // std::vector<unsigned int> ltg = pmesh->get_local_to_global();
+    // for(int i = 0 ; i < ltg.size() ; i++)
+    //     std::cout << ltg[i] << " ";
     
 
-    std::cout << "\n  elems: \n";
-    unsigned int nelem = pmesh->get_n_elements();
-    unsigned int* conn;
-    unsigned int connsize;
-    for(int i = 0 ; i < nelem ; i++)
-    {
-        conn = pmesh->getElementConn(i);
-        connsize = pmesh->getElementConnSize(i);
-        std::cout << "   elem " << i+1 << ": ";
-        for(int j = 0 ; j < connsize ; j++)
-            std::cout << conn[j] << " ";
-        std::cout << "\n";
-    }
+    // std::cout << "\n  elems: \n";
+    // unsigned int nelem = pmesh->get_n_elements();
+    // unsigned int* conn;
+    // unsigned int connsize;
+    // for(int i = 0 ; i < nelem ; i++)
+    // {
+    //     conn = pmesh->getElementConn(i);
+    //     connsize = pmesh->getElementConnSize(i);
+    //     std::cout << "   elem " << i+1 << ": ";
+    //     for(int j = 0 ; j < connsize ; j++)
+    //         std::cout << conn[j] << " ";
+    //     std::cout << "\n";
+    // }
 
     // get_n_nodes() retorna o numero de nos no pmesh
     //std::cout << "rank " << processor_id << " nnodes " << pmesh->get_n_nodes() << "  nelements " << pmesh->get_n_elements() << '\n';
@@ -124,12 +124,12 @@ int main(int argc, char* argv[])
     // MATRIZ A
     // Vetores b,x
 
-    std::cout << "\nN GLOBAL NODES " << pmesh->get_n_global_nodes();
-    std::cout << "\nN GLOBAL ELEMENTS " << pmesh->get_n_global_elements();
-    std::cout << "\nN GLOBAL INTERNAL ELEMENTS " << pmesh->get_n_global_internal_elements();
+    // std::cout << "\nN GLOBAL NODES " << pmesh->get_n_global_nodes();
+    // std::cout << "\nN GLOBAL ELEMENTS " << pmesh->get_n_global_elements();
+    // std::cout << "\nN GLOBAL INTERNAL ELEMENTS " << pmesh->get_n_global_internal_elements() << "\n";
 
     Vec x;                                  // numero de nos totais
-    VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, pmesh->get_n_nodes(), &x);
+    VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, pmesh->get_n_global_nodes(), &x);
     
     // Intervalo dos indices globais em cada processo
     PetscInt rstart, rend;
@@ -137,28 +137,7 @@ int main(int argc, char* argv[])
 
     std::cout << "processor ID " << processor_id << " Interval [" << rstart <<","<<rend <<"]\n" << std::flush;
 
-    int total_nodes;
-    if(processor_id == 0)
-    {
-        int nnodes = pmesh->get_n_nodes();
-        int nnodes_otherrank;
-        MPI_Send(&nnodes, 1, MPI_INT, 0, 0, PETSC_COMM_WORLD);
-        MPI_Recv(&nnodes_otherrank, 1, MPI_INT, 0, 0, PETSC_COMM_WORLD, MPI_STATUS_IGNORE);
-
-        total_nodes = nnodes + nnodes_otherrank;
-    }
-    else
-    {
-        int nnodes = pmesh->get_n_nodes();
-        int nnodes_otherrank;
-        MPI_Send(&nnodes, 1, MPI_INT, 1, 0, PETSC_COMM_WORLD);
-        MPI_Recv(&nnodes_otherrank, 1, MPI_INT, 1, 0, PETSC_COMM_WORLD, MPI_STATUS_IGNORE);
-
-        total_nodes = nnodes + nnodes_otherrank;
-    }
-
-
-    VecView(x, v_view);
+    //VecView(x, v_view);
 
     // Prencher o vetor:
     for(int i = 0; i < pmesh->get_n_elements(); i++)
@@ -175,9 +154,60 @@ int main(int argc, char* argv[])
     VecView(x, v_view);
 
 
-    //Mat A;
+    Mat A;
     // CSR Matriz Esparsa
-    //MatCreateAIJ(PETSC_COMM_WORLD, PETSC_DECIDE,PETSC_DECIDE,pmesh->get_n_nodes(),pmesh->get_n_nodes(),10,NULL, 10, NULL, &A);
+    MatCreateAIJ(PETSC_COMM_WORLD, PETSC_DECIDE,PETSC_DECIDE,pmesh->get_n_global_nodes(),pmesh->get_n_global_nodes(),10,NULL, 10, NULL, &A);
+    MatGetOwnershipRange(A, &rstart, &rend);
+
+    std::cout << "MAT: processor ID " << processor_id << " Interval [" << rstart <<","<<rend <<"]\n" << std::flush;
+
+    MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);
+    MatView(A, m_view);
+    MatSetOption(A, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE); // sugestão do petsc
+
+    // Prencher a matriz:
+    for(int i = 0; i < pmesh->get_n_global_nodes(); i++)
+    {
+        for(int j = 0; j < pmesh->get_n_global_nodes(); j++)
+        {
+            MatSetValue(A, i, j, i+j, INSERT_VALUES);
+        }
+    }
+
+    MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);
+    MatView(A, m_view);
+
+    // teste
+    Mat B;
+    for(int i = 0 ; i < pmesh->get_n_elements() ; i++)
+    {
+        int connsize = pmesh->getElementConnSize(i);
+        unsigned int* conn = pmesh->getElementConn(i);
+        MatCreateAIJ(PETSC_COMM_WORLD,PETSC_DECIDE,PETSC_DECIDE,connsize,connsize,connsize,NULL, connsize, NULL, &B);
+        MatGetOwnershipRange(B, &rstart, &rend);
+
+        MatAssemblyBegin(B, MAT_FINAL_ASSEMBLY);
+        MatAssemblyEnd(B, MAT_FINAL_ASSEMBLY);
+        MatView(B, m_view);
+        MatSetOption(B, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE); // sugestão do petsc
+
+        // Prencher a matriz:
+        for(int j = 0; j < connsize; j++)
+        {
+            for(int k = 0; k < connsize; k++)
+            {
+                MatSetValue(B, gindices[conn[i]], gindices[conn[j]], 1, INSERT_VALUES); // tentando montar matriz local
+            }
+        }
+
+        MatAssemblyBegin(B, MAT_FINAL_ASSEMBLY);
+        MatAssemblyEnd(B, MAT_FINAL_ASSEMBLY);
+        MatView(B, m_view);
+
+        exit(0);
+    }
 
     ierr = PetscFinalize();CHKERRQ(ierr);
     return 0;
