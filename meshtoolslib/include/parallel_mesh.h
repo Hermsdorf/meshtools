@@ -37,31 +37,42 @@ class ParallelMesh : public Mesh{
         void writeParallelMesh();
         void writeParallelMeshBin();
 
-        std::vector<unsigned int>& get_local_to_global();
-        int get_n_neighbor_processors();
-        std::vector<SharedNodes>& get_communication_map();
-        void set_local_to_global(std::vector<unsigned int> local_to_global);
-        void set_n_neighbor_processors(int n_neighbor_processors);
-        void set_communication_map(std::vector<SharedNodes> communication_map);
-        bool get_internal_mesh();
-        void set_internal_mesh(bool internal_mesh);
-        unsigned int get_n_global_nodes();
-        void set_n_global_nodes(unsigned int n_global_nodes);
-        unsigned int get_n_global_elements();
-        void set_n_global_elements(unsigned int n_global_elements);
-        unsigned int get_n_global_internal_elements();
-        void set_n_global_internal_elements(unsigned int n_global_internal_elements);
-
+        
+        int                         get_n_neighbor_processors();
+        std::vector<SharedNodes>&   get_communication_map();
+        void                        set_n_neighbor_processors(int n_neighbor_processors);
+        void                        set_communication_map(std::vector<SharedNodes> communication_map);
+        bool                        get_internal_mesh();
+        void                        set_internal_mesh(bool internal_mesh);
+        unsigned int                get_n_global_nodes();
+        void                        set_n_global_nodes(unsigned int n_global_nodes);
+        unsigned int                get_n_global_elements();
+        void                        set_n_global_elements(unsigned int n_global_elements);
+        void                        set_n_global_face_elements(unsigned int n_global_face_elements);
+        unsigned int                get_n_global_internal_elements();
+        void                        set_n_global_internal_elements(unsigned int n_global_internal_elements);
+        void                        add_neighbor_shared_nodes(unsigned int p, unsigned int n_shared_nodes, const unsigned *node_list);
+        unsigned int                n_neighbor_shared_nodes(unsigned int p);
+        const unsigned int *        get_neighbor_shared_nodes(unsigned int p);
+        std::vector<unsigned int>&  getNeigborsProcessors();
+        std::vector<unsigned int>&  getSharedNodesOffset();
+        std::vector<unsigned int>&  getSharedNodes();
+        std::vector<unsigned int>&  getLocal2Global();
     private:
-        std::vector<unsigned int> local_to_global;
-        int n_neighbor_processors;
-        std::vector<SharedNodes> communication_map;
+        
         bool internal_mesh;
         int processor_id;
         int n_processors;
         unsigned int n_global_nodes;
         unsigned int n_global_elements;
+        unsigned int n_global_faces;
         unsigned int n_global_internal_elements;
+        std::vector<unsigned int> local_to_global;
+        int n_neighbor_processors;
+        std::vector<unsigned int> neighbor_processors;
+        std::vector<unsigned int> shared_nodes_offset;
+        std::vector<unsigned int> shared_nodes;
+        std::vector<SharedNodes> communication_map;
         
         void writePvtu();
 };

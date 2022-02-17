@@ -107,7 +107,7 @@ class Mesh {
          *     Referência a um vector do tipo unsigned short.
         */
 
-        std::vector<int>& get_physical_tag();
+        std::vector<int>& getPhysicalTag();
         /**
          * * OBJETIVO:
          *     Obter a array phyisical_tag a qual armazena as tags dos grupos físicos da malha.
@@ -125,7 +125,7 @@ class Mesh {
          *     Array do tipo int.
         */
 
-        std::map<int, physical_data_t> get_physical_map();
+        std::map<int, physical_data_t>& getPhysicalMap();
         /**
          * * OBJETIVO:
          *     Obter a variável phyisical_map a qual armazena o mapeamento dos grupos físicos da malha.
@@ -501,7 +501,7 @@ class Mesh {
         std::vector<unsigned int> conn;          // Conectividade dos elementos.
         std::vector<unsigned int> offset;        // Mapeia a localização de cada elemento no array conn.
         std::vector<unsigned short> type;        // Array indicando o tipo de cada elemento.
-        std::vector<int> physical_tag;           // Array indicando o physical tag de cada elemento.
+        std::vector<int>    physical_tag;         // Array indicando o physical tag de cada elemento.
         int* mesh_coloring_internal;             // Array indicando as cores dos elementos.
         unsigned int n_internal_colors;          // Número total de cores dos elementos internos da malha.
         std::map<int, physical_data_t>  physical_map;

@@ -15,9 +15,9 @@ int main(int argc, char* argv[])
     PetscViewer v_view, m_view;
     IS is; // index set
     
-    Mesh_partition_t *parts = new Mesh_partition_t();
+    MeshPartition *parts = new MeshPartition();
     int processor_id, n_processors;
-    Mesh* mesh;
+    Mesh*         mesh;
     ParallelMesh* pmesh;
 
     ierr = PetscInitialize(&argc,&argv,nullptr,help); CHKERRQ(ierr);

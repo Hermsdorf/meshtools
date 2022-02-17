@@ -79,7 +79,7 @@ std::vector<unsigned short>& Mesh::getType()
     return this->type;
 }
 
-std::vector<int>& Mesh::get_physical_tag()
+std::vector<int>& Mesh::getPhysicalTag()
 {
     return this->physical_tag;
 }
@@ -89,9 +89,9 @@ int* Mesh::get_mesh_coloring_internal()
     return this->mesh_coloring_internal;
 }
 
-std::map<int, physical_data_t> Mesh::get_physical_map()
+std::map<int, physical_data_t>& Mesh::getPhysicalMap()
 {
-    return this->physical_map;
+    return &this->physical_map;
 }
 
 int Mesh::getDim()

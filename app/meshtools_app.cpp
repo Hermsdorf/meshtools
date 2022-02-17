@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
 
     Mesh             *mesh  = nullptr;
     ParallelMesh     *pmesh = nullptr;
-    Mesh_partition_t *parts = new Mesh_partition_t();
+    MeshPartition *parts = new MeshPartition();
 
     if(processor_id == 0)
     {

@@ -7,15 +7,16 @@
 
 ParallelMesh::ParallelMesh()
 {
-    this->n_elements = 0;
-    this->n_nodes = 0;
-    this->internal_mesh = false;
-    this->mesh_coloring_internal = nullptr;
-    this->processor_id = 0;
-    this->n_processors = 1;
-    this->n_global_elements = 0;
+    this->n_elements                 = 0;
+    this->n_nodes                    = 0;
+    this->internal_mesh              = false;
+    this->mesh_coloring_internal     = nullptr;
+    this->processor_id               = 0;
+    this->n_processors               = 1;
+    this->n_global_elements          = 0;
     this->n_global_internal_elements = 0;
-    this->n_global_nodes = 0;
+    this->n_global_nodes             = 0;
+    shared_nodes_offset.push_back(0);
 #ifdef USE_MPI
     MPI_Comm_size(MPI_COMM_WORLD, &this->n_processors);
     MPI_Comm_rank(MPI_COMM_WORLD, &this->processor_id);
@@ -47,8 +48,9 @@ std::vector<unsigned int>& ParallelMesh::get_local_to_global()
     return this->local_to_global;
 }
 
-void ParallelMesh::set_local_to_global(std::vector<unsigned int> local_to_global)
+void ParallelMesh::set_local_to_global(std::vector<unsigned int>& local_to_global)
 {
+    
     this->local_to_global = local_to_global;
 }
 
@@ -141,6 +143,7 @@ void ParallelMesh::set_n_global_internal_elements(unsigned int n_global_internal
 {
     this->n_global_internal_elements = n_global_internal_elements;
 }
+
 
 void ParallelMesh::readParallelMesh(const char* filename)
 {
@@ -536,3 +539,23 @@ void ParallelMesh::writeParallelMesh()
 //     delete [] npart;
 //     delete [] epart;
 // }
+
+
+void  ParallelMesh::add_neighbor_shared_nodes(unsigned int p, unsigned int n_shared_nodes, const unsigned *node_list)
+{
+    this->neighbor_processors.push_back(p);
+    unsigned int ofs_prev = this->shared_nodes_offset.back();
+    for(int i = 0; i < n_shared_nodes; ++i)
+        this->shared_nodes.push_back(node_list[i]);
+    this->shared_nodes_offset.push_back(ofs_prev+n_shared_nodes);
+}
+
+unsigned int ParallelMesh::n_neighbor_shared_nodes(unsigned int p)
+{
+    return this->shared_nodes_offset[p+1] - this->shared_nodes_offset[p];
+}
+const unsigned int *    ParallelMesh::get_neighbor_shared_nodes(unsigned int p)
+{
+    unsigned int start       = this->shared_nodes_offset[p];
+    return   &this->shared_nodes[start];
+}
