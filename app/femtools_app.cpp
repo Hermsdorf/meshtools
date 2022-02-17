@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha
         if(n_processors > 1) {
-            parts->MeshPartitionerInternal(mesh,n_processors);
+            parts->ApplyPartitioner(mesh, n_processors);
         }
     }
 
@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
     {
         // Malha gerada pelo processo mestre é distribuida
         // para os demais processos. 
-        pmesh = parts->DistributedMeshInternal(mesh, processor_id, n_processors);
+        pmesh = parts->DistributedMesh(mesh, processor_id, n_processors);
 
         std::string str(argv[1]);
         str.resize(str.length()-4);
@@ -113,7 +113,7 @@ int main(int argc, char* argv[])
     // get_n_nodes() retorna o numero de nos no pmesh
     //std::cout << "rank " << processor_id << " nnodes " << pmesh->get_n_nodes() << "  nelements " << pmesh->get_n_elements() << '\n';
     // Criar o Sistema de Equações
-    std::vector<unsigned int> &gindices = pmesh->get_local_to_global();
+    std::vector<unsigned int> &gindices = pmesh->getLocal2Global();
 
     // for(int i = 0 ; i < gindices.size() ; i++)
     // {

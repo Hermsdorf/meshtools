@@ -497,7 +497,7 @@ class Mesh {
         unsigned int n_face_elements;            // Numero de elementos de superficie.
         unsigned int n_elements;                 // Numero de elementos internos.
         unsigned int n_nodes;                    // Numero de nós.
-        std::vector<double> coord;               // Coordenadas nodais.
+        std::vector<double>       coord;               // Coordenadas nodais.
         std::vector<unsigned int> conn;          // Conectividade dos elementos.
         std::vector<unsigned int> offset;        // Mapeia a localização de cada elemento no array conn.
         std::vector<unsigned short> type;        // Array indicando o tipo de cada elemento.

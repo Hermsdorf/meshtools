@@ -93,12 +93,12 @@ class MeshPartition
          * @param mesh 
          * @param pmesh 
          * @param i 
-         */
+         
         void ProcessLocalArrays(std::vector<double> &coord_local, std::vector<unsigned int> &conn_local, std::vector<unsigned int> &offset_local,
                                 std::vector<unsigned short> &type_local, std::vector<unsigned int> &local_to_global, std::vector<unsigned int> &global_to_local,
                                 std::vector<unsigned int> &shared_out, std::map<unsigned int, std::set<unsigned int>> &node_partition, std::vector<unsigned int> &interface_nodes,
                                 Mesh* mesh, ParallelMesh* pmesh, int i);
-
+        */
         void GetSharedNodes(Mesh* mesh, std::map<unsigned, std::set<unsigned> > &shared_nodes);
         void GetAndSendLocalData(Mesh *mesh, int sendto,
             int *array_sizes,
@@ -108,7 +108,7 @@ class MeshPartition
             std::vector<unsigned int>   & conn,
             std::vector<unsigned int>   & offset,
             std::vector<unsigned short> & type,
-            std::vector<unsigned int>   & tag,
+            std::vector<int>            & tag,
             std::vector<unsigned int>   & neighbors,
             std::vector<unsigned int>   & neighbors_offset,
             std::vector<unsigned int>   & neighbors_nodes,
@@ -135,7 +135,7 @@ void WritePartionData(
     std::vector<unsigned int>   & conn,
     std::vector<unsigned int>   & offset,
     std::vector<unsigned short> & type,
-    std::vector<unsigned int>   & tag,
+    std::vector<int>            & tag,
     std::vector<unsigned int>   & neighbors,
     std::vector<unsigned int>   & neighbors_offset,
     std::vector<unsigned int>   & neighbors_nodes);

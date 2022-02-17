@@ -91,7 +91,7 @@ int* Mesh::get_mesh_coloring_internal()
 
 std::map<int, physical_data_t>& Mesh::getPhysicalMap()
 {
-    return &this->physical_map;
+    return this->physical_map;
 }
 
 int Mesh::getDim()

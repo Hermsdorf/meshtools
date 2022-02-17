@@ -161,7 +161,7 @@ int main(int argc, char* argv[])
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha
         if(n_processors > 1 ) {
-            parts->MeshPartitionerInternal(mesh,n_processors);
+            parts->ApplyPartitioner(mesh,n_processors);
         }
     }
 
@@ -169,7 +169,7 @@ int main(int argc, char* argv[])
     {
         // Malha gerada pelo processo mestre é distribuida
         // para os demais processos. 
-        pmesh = parts->DistributedMeshInternal(mesh, processor_id, n_processors);
+        pmesh = parts->DistributedMesh(mesh, processor_id, n_processors);
         std::string str(gmsh_filename);
         str.resize(str.length()-4);
         pmesh->setFilename(str);

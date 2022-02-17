@@ -43,16 +43,18 @@ SharedNodes::~SharedNodes()
     this->nodes.clear();
 }
 
-std::vector<unsigned int>& ParallelMesh::get_local_to_global()
+std::vector<unsigned int>& ParallelMesh::getLocal2Global()
 {
     return this->local_to_global;
 }
 
-void ParallelMesh::set_local_to_global(std::vector<unsigned int>& local_to_global)
+/*
+void ParallelMesh::getLocal2Global(std::vector<unsigned int>& local_to_global)
 {
     
     this->local_to_global = local_to_global;
 }
+*/
 
 int ParallelMesh::get_n_neighbor_processors()
 {
@@ -127,6 +129,11 @@ void ParallelMesh::set_n_global_nodes(unsigned int n_global_nodes)
 unsigned int ParallelMesh::get_n_global_elements()
 {
     return this->n_global_elements;
+}
+
+void ParallelMesh::set_n_global_face_elements(unsigned int n_global_face_elements)
+{
+    this->n_global_faces = n_global_face_elements;
 }
 
 void ParallelMesh::set_n_global_elements(unsigned int n_global_elements)
@@ -558,4 +565,19 @@ const unsigned int *    ParallelMesh::get_neighbor_shared_nodes(unsigned int p)
 {
     unsigned int start       = this->shared_nodes_offset[p];
     return   &this->shared_nodes[start];
+}
+
+std::vector<unsigned int>& ParallelMesh::getNeigborsProcessors()
+{
+    return this->neighbor_processors;
+}
+        
+std::vector<unsigned int>&  ParallelMesh::getSharedNodesOffset()
+{
+    return this->shared_nodes_offset;
+}
+        
+std::vector<unsigned int>&  ParallelMesh::getSharedNodes()
+{
+    return this->shared_nodes;
 }
