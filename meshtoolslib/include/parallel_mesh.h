@@ -58,23 +58,31 @@ class ParallelMesh : public Mesh{
         std::vector<unsigned int>&  getSharedNodesOffset();
         std::vector<unsigned int>&  getSharedNodes();
         std::vector<unsigned int>&  getLocal2Global();
+       
+        void renumbering();
     private:
         
         bool internal_mesh;
-        int processor_id;
-        int n_processors;
         unsigned int n_global_nodes;
         unsigned int n_global_elements;
         unsigned int n_global_faces;
         unsigned int n_global_internal_elements;
         std::vector<unsigned int> local_to_global;
+        // Parallel Context attributes
+        int processor_id;
+        int n_processors;
         int n_neighbor_processors;
         std::vector<unsigned int> neighbor_processors;
         std::vector<unsigned int> shared_nodes_offset;
         std::vector<unsigned int> shared_nodes;
+        
+        std::vector<unsigned int> sendto_neighbors_map;
+        std::vector<unsigned int> recvfrom_neighbors_map;
+        //TODO: Remove this vector
         std::vector<SharedNodes> communication_map;
         
         void writePvtu();
+        void BuildCommunicationMap();
 };
 
 #endif // PARALLELMESH__H_

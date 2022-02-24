@@ -7,6 +7,10 @@
 #include "mpi.h"
 #endif
 
+#ifdef HAVE_PETSC
+#include "petsc.h"
+#endif
+
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -17,14 +21,17 @@
 
 namespace MeshTools 
 {
-    static int processor_id;
-    static int n_processors;
 
-    void Init(int argc, char* argv[]);
-
+    void Init(int argc, char* argv[]);    
     void Finalize();
 
+    int& processor_id();
+    int& n_processors();
+
+    MPI_Comm Comm();    
+
     void Exit();
+
 }
 
 

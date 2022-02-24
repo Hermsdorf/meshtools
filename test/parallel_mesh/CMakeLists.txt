@@ -1,3 +1,5 @@
+project (pmesh_test)
+cmake_minimum_required(VERSION 3.10)
 
 
 add_executable(pmesh_test test_p_mesh.cpp)
