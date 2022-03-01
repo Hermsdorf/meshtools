@@ -5,28 +5,6 @@
 
 #include "mesh.h"
 
-class SharedNodes{
-    public:
-        SharedNodes();
-        ~SharedNodes();
-
-        unsigned int get_id_neighbor_process();
-        unsigned int get_n_shared_nodes();
-        std::vector<unsigned int>& get_nodes();
-        void set_id_neighbor_process(unsigned int id_neighbor_process);
-        void set_n_shared_nodes(unsigned int n_shared_nodes);
-        void set_nodes(std::vector<unsigned int> nodes);
-
-        friend class ParallelMesh;
-
-    private:
-        unsigned int id_neighbor_process;
-        unsigned int n_shared_nodes;
-        std::vector<unsigned int> nodes; // nodes list
-
-        
-};
-
 class ParallelMesh : public Mesh{
     public:
         ParallelMesh();
@@ -39,9 +17,7 @@ class ParallelMesh : public Mesh{
 
         
         int                         get_n_neighbor_processors();
-        std::vector<SharedNodes>&   get_communication_map();
         void                        set_n_neighbor_processors(int n_neighbor_processors);
-        void                        set_communication_map(std::vector<SharedNodes> communication_map);
         bool                        get_internal_mesh();
         void                        set_internal_mesh(bool internal_mesh);
         unsigned int                get_n_global_nodes();
@@ -78,8 +54,6 @@ class ParallelMesh : public Mesh{
         
         std::vector<unsigned int> sendto_neighbors_map;
         std::vector<unsigned int> recvfrom_neighbors_map;
-        //TODO: Remove this vector
-        std::vector<SharedNodes> communication_map;
         
         void writePvtu();
         void BuildCommunicationMap();

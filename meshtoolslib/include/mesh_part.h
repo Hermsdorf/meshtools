@@ -24,7 +24,7 @@ class MeshPartition
          * @param mesh 
          * @param nparts 
          */
-        void ApplyPartitioner(Mesh* mesh, int nparts, bool use_face_elem = false);
+        void ApplyPartitioner(Mesh* mesh, int nparts);
 
         /**
          * @brief 

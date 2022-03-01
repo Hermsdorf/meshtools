@@ -29,32 +29,12 @@ ParallelMesh::ParallelMesh()
 ParallelMesh::~ParallelMesh()
 {
     local_to_global.clear();
-    communication_map.clear();
-}
-
-SharedNodes::SharedNodes()
-{
-    this->n_shared_nodes = 0;
-    this->id_neighbor_process = 0;
-}
-
-SharedNodes::~SharedNodes()
-{
-    this->nodes.clear();
 }
 
 std::vector<unsigned int>& ParallelMesh::getLocal2Global()
 {
     return this->local_to_global;
 }
-
-/*
-void ParallelMesh::getLocal2Global(std::vector<unsigned int>& local_to_global)
-{
-    
-    this->local_to_global = local_to_global;
-}
-*/
 
 int ParallelMesh::get_n_neighbor_processors()
 {
@@ -64,16 +44,6 @@ int ParallelMesh::get_n_neighbor_processors()
 void ParallelMesh::set_n_neighbor_processors(int n_neighbor_processors)
 {
     this->n_neighbor_processors = n_neighbor_processors;
-}
-
-std::vector<SharedNodes>& ParallelMesh::get_communication_map()
-{
-    return this->communication_map;
-}
-
-void ParallelMesh::set_communication_map(std::vector<SharedNodes> communication_map)
-{
-    this->communication_map = communication_map;
 }
 
 bool ParallelMesh::get_internal_mesh()
@@ -516,37 +486,6 @@ void ParallelMesh::writeParallelMesh()
     delete [] npart;
     delete [] epart;
 }
-
-// void ParallelMesh::writeParallelMeshBin()
-// {
-//     bool pmesh_is_internal = this->internal_mesh;
-//     int rank, size;
-
-//     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-//     MPI_Comm_size(MPI_COMM_WORLD, &size);
-//     int nnodes = this->get_n_nodes();
-//     int nelem = pmesh_is_internal ? this->get_n_elements() : (this->get_n_elements() + this->get_n_face_elements());
-//     int* npart = new int[nnodes];
-//     for(int i = 0 ; i < nnodes ; i++)
-//         npart[i] = rank;
-
-//     int* epart = new int[nelem];
-//     for(int i = 0 ; i < nelem ; i++)
-//         epart[i] = rank;
-
-
-//     if(pmesh_is_internal)
-//         MeshVTKWriterInternalBinAppended(rank, npart, epart, this->mesh_coloring_internal, NULL, NULL);
-//     else
-//         MeshVTKWriterBinAppended(rank, npart, epart, this->mesh_coloring_internal, NULL, NULL);
-
-//     if(rank == 0)
-//         writePvtu(this);
-
-//     delete [] npart;
-//     delete [] epart;
-// }
-
 
 void  ParallelMesh::add_neighbor_shared_nodes(unsigned int p, unsigned int n_shared_nodes, const unsigned *node_list)
 {
