@@ -500,6 +500,7 @@ unsigned int ParallelMesh::n_neighbor_shared_nodes(unsigned int p)
 {
     return this->shared_nodes_offset[p+1] - this->shared_nodes_offset[p];
 }
+
 const unsigned int *    ParallelMesh::get_neighbor_shared_nodes(unsigned int p)
 {
     unsigned int start       = this->shared_nodes_offset[p];
@@ -538,13 +539,12 @@ void ParallelMesh::BuildCommunicationMap()
 
 void ParallelMesh::renumbering()
 {
-    // indicar nos locais ou seja não é compartilhando com 
-    // nenhum outro processo
+    // Indicates local node, what means that it is not shared with other process
     std::vector<unsigned short> mask_node(this->n_nodes);
 
     std::fill(mask_node.begin(), mask_node.end(),0);
 
-    // marcar em mask_nodes, nodes que pertencem ao meus mestres
+    // Mark at mask_nodes, nodes that are belong to my master (which are process with id greater than mine)
     int max_buffer_size = 0;
     for(int i = 0; i < this->neighbor_processors.size(); ++i)
     {
@@ -562,8 +562,7 @@ void ParallelMesh::renumbering()
         }
     }
 
-    // contabilizar nos que são do processor local sem pertecer
-    // a nenhum mestre
+    // Count local nodes, which arent from other process (my master)
     unsigned int n_nodes_local = 0;
     for(int i=0; i < this->n_nodes; i++)
     {
@@ -573,6 +572,8 @@ void ParallelMesh::renumbering()
         } 
     }
     unsigned int n_nodes_offset;
+
+    // Sends from predecessor process the value of `n_nodes_local` to `n_nodes_offset` variable`
     MPI_Scan(&n_nodes_local,&n_nodes_offset,1,MPI_UNSIGNED,MPI_SUM,MPI_COMM_WORLD);
 
     for(int i=0; i < this->n_nodes; i++)
@@ -586,6 +587,7 @@ void ParallelMesh::renumbering()
     std::vector<unsigned int> sendBuffer(shared_nodes.size());
     std::vector<MPI_Request>  requests(this->sendto_neighbors_map.size()+this->recvfrom_neighbors_map.size());
     std::vector<MPI_Status>   status(this->sendto_neighbors_map.size()+this->recvfrom_neighbors_map.size());
+    
     // Exchange Data from
     unsigned int r = 0;
     int n_recvs = this->recvfrom_neighbors_map.size();
