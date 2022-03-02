@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
         mesh->MeshGmshReader(argv[1]);
     }
     
-    partitioner->ApplyPartitioner(mesh,MeshTools::n_processors(),false);
+    partitioner->ApplyPartitioner(mesh,MeshTools::n_processors());
      
     if(MeshTools::processor_id() == 0 ) 
     {

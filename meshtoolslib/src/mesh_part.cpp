@@ -62,7 +62,7 @@ void MeshPartition::ApplyPartitioner(Mesh *mesh, int nparts)
     if(MeshTools::processor_id() != 0 )
         return;
 
-    this->_use_bnd_elements = use_bnd_elem;
+    //this->_use_bnd_elements = use_bnd_elem;
     int nelem  = (int)mesh->get_n_elements();
     int nfe    = (int)mesh->get_n_face_elements();
     int nnodes = (int)mesh->get_n_nodes();
@@ -100,13 +100,15 @@ void MeshPartition::ApplyPartitioner(Mesh *mesh, int nparts)
             eptr[i+1] = eptr[i] + mesh->getElementConnSize(i);
         }
 
-        idx_t *vwgt = new idx_t[ntelem+1];
+        /*
+        idx_t *vwgt = new idx_t[nelem+1];
 
         for (int i =0; i < nelem; i++)
         {
             vwgt[i] = mesh->getElementConnSize(i);
         }
-
+        */
+        idx_t *vwgt    = 0;
         idx_t *vsize   = 0;
         real_t *tpwgts = 0;
         idx_t options[METIS_NOPTIONS];
@@ -1294,6 +1296,9 @@ ParallelMesh* MeshPartition::RecvLocalDataFromMaster()
     MPI_Recv(&_shared_nodes_offset[0] , _shared_nodes_offset.size() , MPI_UNSIGNED      , 0, 0, MPI_COMM_WORLD, &status);
     MPI_Recv(&_shared_nodes[0]  , _shared_nodes.size()     , MPI_UNSIGNED      , 0, 0, MPI_COMM_WORLD, &status);
     MPI_Recv(&_tag[0]  , _tag.size()     , MPI_UNSIGNED      , 0, 0, MPI_COMM_WORLD, &status);
+
+    return pmesh;
+
 }
 
 
@@ -1336,7 +1341,7 @@ void MeshPartition::WriteAscii(Mesh* mesh, int n_processors, const char *fname)
     fprintf(fout, "%d # num. faces   \n", mesh->get_n_face_elements());
     fprintf(fout, "%d # num. elements\n", mesh->get_n_elements());
     fprintf(fout, "%d # num. nodes \n",   mesh->get_n_nodes());
-    fprintf(fout, "%d # num. physical region\n", map.size());
+    fprintf(fout, "%ld # num. physical region\n", map.size());
     fprintf(fout, "$BEGIN_PHYSICAL_DATA");
     for(auto it = map.begin(); it != map.end(); it++)
         fprintf(fout, "%d %d %s\n", it->first, it->second.first, it->second.second.c_str());

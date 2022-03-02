@@ -56,35 +56,6 @@ void ParallelMesh::set_internal_mesh(bool internal_mesh)
     this->internal_mesh = internal_mesh;
 }
 
-unsigned int SharedNodes::get_id_neighbor_process()
-{
-    return this->id_neighbor_process;
-}
-
-void SharedNodes::set_id_neighbor_process(unsigned int id_neighbor_process)
-{
-    this->id_neighbor_process = id_neighbor_process;
-}
-
-unsigned int SharedNodes::get_n_shared_nodes()
-{
-    return this->n_shared_nodes;
-}
-
-void SharedNodes::set_n_shared_nodes(unsigned int n_shared_nodes)
-{
-    this->n_shared_nodes = n_shared_nodes;
-}
-
-std::vector<unsigned int>& SharedNodes::get_nodes()
-{
-    return this->nodes;
-}
-
-void SharedNodes::set_nodes(std::vector<unsigned int> nodes)
-{
-    this->nodes = nodes;
-}
 
 unsigned int ParallelMesh::get_n_global_nodes()
 {
@@ -202,7 +173,7 @@ void ParallelMesh::readParallelMesh(const char* filename)
             {
                 unsigned int commsize;
                 in >> commsize;
-                this->communication_map.resize(commsize);
+                //this->communication_map.resize(commsize);
 
                 this->n_neighbor_processors = commsize;
 
@@ -212,14 +183,14 @@ void ParallelMesh::readParallelMesh(const char* filename)
                     in >> id_neighbor_process_i >> n_shared_nodes_i;
 
                     
-                    this->communication_map[i].set_id_neighbor_process(id_neighbor_process_i);
-                    this->communication_map[i].set_n_shared_nodes(n_shared_nodes_i);
+                    //this->communication_map[i].set_id_neighbor_process(id_neighbor_process_i);
+                    //this->communication_map[i].set_n_shared_nodes(n_shared_nodes_i);
 
                     for(int j = 0 ; j < n_shared_nodes_i ; j++)
                     {
                         unsigned int node_i;
                         in >> node_i;
-                        this->communication_map[i].nodes.push_back(node_i);
+                        //this->communication_map[i].nodes.push_back(node_i);
                     }
                 }
             }
@@ -231,6 +202,7 @@ void ParallelMesh::readParallelMesh(const char* filename)
     }
 }
 
+//TODO: Implementar para novo formato
 void ParallelMesh::readParallelMeshBin(const char* filename)
 {
     this->setFilename(filename);
@@ -286,7 +258,7 @@ void ParallelMesh::readParallelMeshBin(const char* filename)
             {
                 unsigned int commsize;
                 in.read((char*) &commsize, sizeof(unsigned int));
-                this->communication_map.resize(commsize);
+                //this->communication_map.resize(commsize);
                 this->n_neighbor_processors = commsize;
 
                 for(int i = 0 ; i < commsize ; i++)
@@ -296,9 +268,9 @@ void ParallelMesh::readParallelMeshBin(const char* filename)
                     in.read((char*) &id_neighbor_process_i, sizeof(unsigned int));
                     in.read((char*) &n_shared_nodes_i, sizeof(unsigned int));
                     
-                    this->communication_map[i].set_id_neighbor_process(id_neighbor_process_i);
-                    this->communication_map[i].set_n_shared_nodes(n_shared_nodes_i);
-                    in.read((char*) &this->communication_map[i].nodes[0], n_shared_nodes_i*sizeof(unsigned int));
+                    //this->communication_map[i].set_id_neighbor_process(id_neighbor_process_i);
+                    //this->communication_map[i].set_n_shared_nodes(n_shared_nodes_i);
+                    ///in.read((char*) &this->communication_map[i].nodes[0], n_shared_nodes_i*sizeof(unsigned int));
 
                 }
             }
