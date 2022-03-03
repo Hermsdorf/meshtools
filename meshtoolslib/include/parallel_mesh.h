@@ -14,6 +14,7 @@ class ParallelMesh : public Mesh{
         void readParallelMeshBin(const char* filename);
         void writeParallelMesh();
         void writeParallelMeshBin();
+        void WritePVTK(const char* fname, MeshIODataAppended* info = nullptr);
 
         
         int                         get_n_neighbor_processors();
@@ -55,7 +56,7 @@ class ParallelMesh : public Mesh{
         std::vector<unsigned int> sendto_neighbors_map;
         std::vector<unsigned int> recvfrom_neighbors_map;
         
-        void writePvtu();
+        //void writePvtu();
         void BuildCommunicationMap();
 };
 

@@ -62,9 +62,8 @@ int main(int argc, char* argv[])
         partitioner->WriteDistributedMesh(mesh,0,MeshTools::n_processors(),"parallel");
     }
 
-    
     pmesh = partitioner->DistributedMesh(mesh,MeshTools::processor_id(),MeshTools::n_processors());
-    pmesh->WriteVTK("parallel");
+    pmesh->WritePVTK("parallel");
     pmesh->Write("mesh");
 
 

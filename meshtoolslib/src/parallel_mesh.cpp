@@ -386,48 +386,64 @@ void ParallelMesh::readParallelMeshHDF5(const char* filename)
 }
 #endif
 
-void ParallelMesh::writePvtu()
+void ParallelMesh::WritePVTK(const char* fname, MeshIODataAppended* info)
 {
-    std::cout << "Writing VTK parallel mesh...\n";
+    if(MeshTools::processor_id == 0)
+        std::cout << "Writing VTK parallel mesh...\n";
+    
+    this->WriteVTK(fname, info);
+
+    if(MeshTools::processor_id() != 0 ) return;
+
+    char filename[256];
+    sprintf(filename,"%s_%d.pvtu", fname, MeshTools::n_processors());
+
     std::ofstream fout;
 
-    int size = n_processors;
-    
-    std::string str(this->getFilename());
-    str.insert(str.length(), ".pvtu"); // inserir "p" em ".vtu" -> ".pvtu"
-    fout.open(str.c_str());
+    fout.open(filename);
     
     std::string os;
 
     std::string str_aux(this->getFilename());
     
     fout << "<VTKFile type=\"PUnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n";
-    fout << "\t<PUnstructuredGrid>\n";
-    for(int i = 0 ; i < size ; i++)
+    fout << " <PUnstructuredGrid>\n";
+    fout << "  <PPoints>\n";
+    fout << "    <PDataArray type=\"Float64\" NumberOfComponents=\"3\"/>\n";
+    fout << "  </PPoints>\n";
+    fout << "  <PCells>\n"; 
+    fout << "   <PDataArray type=\"Int32\" Name=\"connectivity\" NumberOfComponents=\"1\"/>\n"; 
+    fout << "   <PDataArray type=\"Int32\" Name=\"offsets\"      NumberOfComponents=\"1\"/>\n"; 
+    fout << "   <PDataArray type=\"UInt16\" Name=\"types\"       NumberOfComponents=\"1\"/>\n"; 
+    fout << " </PCells>\n";
+    if(info != nullptr)
     {
-        os = std::to_string(i);
-        int pos = str_aux.find_last_of('/'); // caso a malha esteja em outro diretorio, deixar somente o nome da malha
-        str_aux.erase(0, pos+1);
-        str_aux.insert(str_aux.length(), "_" + os + ".vtu");
-
-        fout << "\t\t<PPointData>\n";
-        fout << "\t\t\t<PDataArray type=\"Int32\" Name=\"npart\"/>\n";
-        fout << "\t\t</PPointData>\n";
-        fout << "\t\t<PCellData>\n";
-        fout << "\t\t\t<PDataArray type=\"Int32\" Name=\"epart\"/>\n";
-        if(this->n_internal_colors != 0) 
-            fout << "\t\t\t<PDataArray type=\"Int32\" Name=\"color\"/>\n";
-        fout << "\t\t</PCellData>\n";
-        fout << "\t\t<PPoints>\n";
-        fout << "\t\t\t<PDataArray type=\"Float64\" NumberOfComponents=\"3\"/>\n";
-        fout << "\t\t</PPoints>\n";
-        fout << "\t\t<Piece Source=\"" << str_aux << "\"/>\n";
-
-        str_aux.clear();
-        os.clear();
-        str_aux = this->getFilename();
+            auto & point_data = info->GetPointDataInfo();
+            auto & cell_data  = info->GetCellDataInfo();
+            if(point_data.size()!= 0 )
+            {
+                fout << "\t\t<PPointData>\n";
+                for(int i = 0; i < point_data.size(); ++i)
+                    fout << "\t\t\t<PDataArray type=\""<<MeshDataTypeSTR[point_data[i].type]<<"\" Name=\""<<point_data[i].name<<"\"/>\n";
+                fout << "\t\t</PPointData>\n";
+            }
+            if(cell_data.size()!= 0 )
+            {
+                fout << "\t\t<PCellData>\n";
+                for(int i = 0; i < cell_data.size(); ++i)
+                    fout << "\t\t\t<PDataArray type=\""<<MeshDataTypeSTR[cell_data[i].type]<<"\" Name=\""<<cell_data[i].name<<"\"/>\n";               
+                fout << "\t\t</PCellData>\n";
+            }
     }
-    fout << "\t</PUnstructuredGrid>\n";
+
+    for(int p = 0 ; p < MeshTools::n_processors() ; p++)
+    {
+        char  str_aux[256];
+        sprintf(str_aux,"%s_%d.vtu", fname, p);
+        fout << "    <Piece Source=\"" << str_aux << "\"/>\n";
+
+    }
+    fout << " </PUnstructuredGrid>\n";
     fout << "</VTKFile>\n";
 
     fout.close();
@@ -452,8 +468,8 @@ void ParallelMesh::writeParallelMesh()
 
     MeshVTKWriterInternal(rank, npart, epart, this->mesh_coloring_internal, NULL, NULL);
    
-    if(rank == 0)
-        this->writePvtu();
+    //if(rank == 0)
+    //    this->writePvtu();
 
     delete [] npart;
     delete [] epart;

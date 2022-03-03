@@ -23,3 +23,6 @@ include/meshtools_config.h
 .local/*
 .vscode-server
 .vscode-server/*
+.cproject
+.project
+.settings/language.settings.xml
