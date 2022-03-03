@@ -1528,16 +1528,22 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh, int processor_id, int n
         pmesh->set_n_neighbor_processors(n_neigbors);
 
         // Broadcasting Physical Groups
+        n_physical = map.size();
 
         std::vector<int>  map_ids(2*n_physical);
         std::vector<char> map_names(n_physical*MAX_STR);
   
         auto iter = map.begin();
+    
         for(int i = 0; iter != map.end(); iter++, i++)
         {
             map_ids[2*i  ]   = iter->first;           // id do grupo fisico
-            map_names[2*i+1] = iter->second.first;  // dimensao
-            strcpy(&map_names[i*MAX_STR],iter->second.second.c_str());
+            map_ids[2*i+1]   = iter->second.first;    // dimensao
+            strncpy(&map_names[i*MAX_STR],iter->second.second.c_str(),MAX_STR);
+            std::cout << iter->first << " ";
+            std::cout << iter->second.first << " ";
+            std::cout << iter->second.second << std::endl;
+            
         }
 
         MPI_Bcast(&n_physical,1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -1549,9 +1555,12 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh, int processor_id, int n
         for(int i = 0; i < n_physical; i++)
         {
             std::pair<int,physical_data_t> data;
-            data.first         = map_ids[2*i+1];
+            char buffer[MAX_STR+1];
+            data.first         = map_ids[2*i];
             data.second.first  = map_ids[2*i+1];
-            data.second.second = map_names[i*MAX_STR];
+            strncpy(buffer,&map_names[i*MAX_STR],MAX_STR-1);
+            buffer[MAX_STR] = '\0';
+            data.second.second = buffer;
             pmap.insert(data);
         }
 
@@ -1566,6 +1575,8 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh, int processor_id, int n
          // Broadcast Physical Groups
         MPI_Bcast(&n_physical,1, MPI_INT, 0, MPI_COMM_WORLD);
 
+        std::cout <<  "Recevendo n_physical = " << n_physical <<std::endl;
+
         std::vector<int>  map_ids(2*n_physical);
         std::vector<char> map_names(n_physical*MAX_STR);
 
@@ -1577,9 +1588,12 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh, int processor_id, int n
         for(int i = 0; i < n_physical; i++)
         {
             std::pair<int,physical_data_t> data;
-            data.first  = map_ids[2*i+1];
+            char buffer[MAX_STR+1];
+            data.first         = map_ids[2*i];
             data.second.first  = map_ids[2*i+1];
-            data.second.second = map_names[i*MAX_STR];
+            strncpy(buffer,&map_names[i*MAX_STR],MAX_STR-1);
+            buffer[MAX_STR] = '\0';
+            data.second.second = buffer;
             pmap.insert(data);
         }
 

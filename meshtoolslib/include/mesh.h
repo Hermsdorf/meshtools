@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 
+
 using namespace std;
 
 typedef enum {Int8=0, UInt8=1,Int32=2, UInt32=3, Float32=4,Float64=5} MeshDataType;
@@ -24,12 +25,14 @@ typedef struct
 typedef MeshIODataInfo PointData;
 typedef MeshIODataInfo CellData;
 
-class MeshIOData{
+class MeshIODataAppended{
     
     public:
-        MeshIOData();
+        MeshIODataAppended();
         void addPointDataInfo(const char* name, MeshDataType type, void *data_ptr);
         void addCellDataInfo(const char* name, MeshDataType type, void *data_ptr);
+        std::vector<PointData>& GetPointDataInfo() { return list_point_data; };
+        std::vector<CellData>& GetCellDataInfo() { return list_cell_data;};
     private:
         std::vector<PointData> list_point_data;
         std::vector<CellData>  list_cell_data;
@@ -520,8 +523,12 @@ class Mesh {
          * * OBJETIVO:
          *     Testar se a coloração calculada no algoritmo está correta.
         */
-
+       // TODO: remover
        void MeshVTKWriting(write_t writing);
+
+       void WriteVTK(const char* filename, MeshIODataAppended* info = nullptr);
+
+       void Write(const char* filename);
 
     protected:
         unsigned int n_face_elements;            // Numero de elementos de superficie.
@@ -532,11 +539,16 @@ class Mesh {
         std::vector<unsigned int> offset;        // Mapeia a localização de cada elemento no array conn.
         std::vector<unsigned short> type;        // Array indicando o tipo de cada elemento.
         std::vector<int>    physical_tag;         // Array indicando o physical tag de cada elemento.
-        int* mesh_coloring_internal;             // Array indicando as cores dos elementos.
-        unsigned int n_internal_colors;          // Número total de cores dos elementos internos da malha.
+
         std::map<int, physical_data_t>  physical_map;
         unsigned int dim;                        // Dimensão da malha.
         std::string filename;                    // Nome do arquvios de entrada de tipo msh
+#ifdef HAVE_HDF5
+        void write_hdf5(const char* filename, MeshIOData* append)
+#endif
+        // TODO: Criar uma classe para Coloração
+        int* mesh_coloring_internal;             // Array indicando as cores dos elementos.
+        unsigned int n_internal_colors;          // Número total de cores dos elementos internos da malha.
 };
 
 #endif // MESH_H

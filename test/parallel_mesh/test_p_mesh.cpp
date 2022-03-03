@@ -63,8 +63,10 @@ int main(int argc, char* argv[])
     }
 
     
-
     pmesh = partitioner->DistributedMesh(mesh,MeshTools::processor_id(),MeshTools::n_processors());
+    pmesh->WriteVTK("parallel");
+    pmesh->Write("mesh");
+
 
     if(mesh)        delete mesh;
     if(partitioner) delete partitioner;
