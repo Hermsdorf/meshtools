@@ -1,11 +1,56 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cstring>
 #include <sstream>
+#include <cassert>
+
 
 #include "metis.h"
 #include "mesh.h"
 #include "rcm.hpp"
+
+bool is_mesh_data_type_valid(MeshDataType type)
+{
+    switch(type)
+    {
+        case UInt8:
+        case Int8:
+        case UInt32:
+        case Int32:
+        case Float32:
+        case Float64:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+MeshIOData::MeshIOData()
+{
+    
+}
+
+void MeshIOData::addPointDataInfo(const char* name, MeshDataType type, void *data_ptr)
+{
+    CellData tmp;
+    assert(is_mesh_data_type_valid(type));
+    tmp.name = name;
+    tmp.data = data_ptr;
+    tmp.type = type;
+    this->list_point_data.push_back(tmp);
+}
+
+void MeshIOData::addCellDataInfo(const char* name, MeshDataType type, void *data_ptr)
+{
+    CellData tmp;
+    assert(is_mesh_data_type_valid(type));
+    tmp.name = name;
+    tmp.data = data_ptr;
+    tmp.type = type;
+    this->list_cell_data.push_back(tmp);
+}
+
 
 
 static int element_type[6] = {-1, 2, 3, 4, 4, 8};

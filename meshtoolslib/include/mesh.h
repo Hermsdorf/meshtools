@@ -1,12 +1,42 @@
-#include <iostream>
-#include <map>
-#include <vector>
 
 #ifndef MESH_H__
 #define MESH_H__
 
-typedef std::pair<int, std::string> physical_data_t;
+#include <iostream>
+#include <map>
+#include <vector>
+#include <string>
 
+using namespace std;
+
+typedef enum {Int8=0, UInt8=1,Int32=2, UInt32=3, Float32=4,Float64=5} MeshDataType;
+static string MeshDataTypeSTR[6] = {"Int8","UInt8","Int32", "UInt32", "Float32","Float64"}; 
+
+typedef struct 
+{
+    string        name;
+    MeshDataType  type;
+    void          *data;
+
+} MeshIODataInfo;
+
+
+typedef MeshIODataInfo PointData;
+typedef MeshIODataInfo CellData;
+
+class MeshIOData{
+    
+    public:
+        MeshIOData();
+        void addPointDataInfo(const char* name, MeshDataType type, void *data_ptr);
+        void addCellDataInfo(const char* name, MeshDataType type, void *data_ptr);
+    private:
+        std::vector<PointData> list_point_data;
+        std::vector<CellData>  list_cell_data;
+};
+
+
+typedef std::pair<int, std::string> physical_data_t;
 typedef enum {METIS_ND=0, RCM, FF} reorder_t;
 typedef enum {COLOR_DEFAULT=0, COLOR_DEFAULT_BLOCK, COLOR_ROKOS, COLOR_ROKOS_BLOCK} color_mode_t;
 typedef enum {BINARY=0, ASCII} write_t;

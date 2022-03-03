@@ -18,7 +18,12 @@ void Init(int argc, char* argv[])
     _mpi_comm = MPI_COMM_WORLD;
     MPI_Comm_size(_mpi_comm, &_n_processors);
     MPI_Comm_rank(_mpi_comm, &_processor_id);
+
 #endif
+    if(_processor_id == 0) {
+        std::cout<<"\nMeshTools Initialization\n"
+             <<"  Number of Processors: " << _n_processors << std::endl;
+    }
 
 }
 

@@ -988,7 +988,7 @@ void MeshPartition::GetNodePartition(Mesh* mesh, std::map<unsigned int, std::set
             for(int ino = 0; ino < connsize; ino++)
                 node_partition[conn[ino]].insert(this->elem_part[iel]);
     }
-#define _DEBUG
+//#define _DEBUG
 #ifdef _DEBUG
     for(auto it = node_partition.begin(); it != node_partition.end(); ++it){
         std::cout << it->first << " shared with ";
@@ -1007,7 +1007,7 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
     std::vector<unsigned int>   & conn,
     std::vector<unsigned int>   & offset,
     std::vector<unsigned short> & type,
-    std::vector<int>   & tag,
+    std::vector<int>            & tag,
     std::vector<unsigned int>   & neighbors,
     std::vector<unsigned int>   & neighbors_offset,
     std::vector<unsigned int>   & neighbors_nodes,
@@ -1229,7 +1229,7 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
         MPI_Isend(&neighbors_offset[0] , neighbors_offset.size() , MPI_UNSIGNED      , sendto, 0, MPI_COMM_WORLD, &requests[4]);
         MPI_Isend(&neighbors_nodes[0]  , neighbors_nodes.size()  , MPI_UNSIGNED      , sendto, 0, MPI_COMM_WORLD, &requests[5]);
         MPI_Isend(&tag[0]              , tag.size()              , MPI_UNSIGNED      , sendto, 0, MPI_COMM_WORLD, &requests[6]);
-        MPI_Waitall(7,requests,status);
+        MPI_Waitall(7,&requests[0],&status[0]);
     }
 
 
@@ -1238,10 +1238,12 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
 
 ParallelMesh* MeshPartition::RecvLocalDataFromMaster()
 {
-    int array_sizes[12];
-    MPI_Status status;
+    int          array_sizes[12];
+    MPI_Status   status;
+
     ParallelMesh* pmesh = new ParallelMesh();
 
+    std::cout <<"Processor " << MeshTools::processor_id() <<" receving data form 0" << std::endl;
     MPI_Recv(array_sizes, 11, MPI_INT,0, 0, MPI_COMM_WORLD, &status);
 
     int n_faces_global    = array_sizes[0];
@@ -1486,6 +1488,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh, int processor_id, int n
         // Processing and sending local arrays and variables to each `p` processor other than 0
         for (int p = 1; p < this->n_partitions; p++)
         {
+            std::cout << "Sending data do processor " << p << endl;
             this->GetAndSendLocalData(mesh,p,array_sizes,node_partition,coords,l2g,conn,offset,type,tag,neighbors,neighbors_offset,neighbors_nodes,true);
         }
 
@@ -1525,20 +1528,21 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh, int processor_id, int n
         pmesh->set_n_neighbor_processors(n_neigbors);
 
         // Broadcasting Physical Groups
-        int*  map_ids   = new int[2*n_physical];
-        char* map_names = new char[n_physical*MAX_STR];
 
+        std::vector<int>  map_ids(2*n_physical);
+        std::vector<char> map_names(n_physical*MAX_STR);
+  
         auto iter = map.begin();
         for(int i = 0; iter != map.end(); iter++, i++)
         {
-            map_ids[2*i  ] = iter->first;           // id do grupo fisico
+            map_ids[2*i  ]   = iter->first;           // id do grupo fisico
             map_names[2*i+1] = iter->second.first;  // dimensao
             strcpy(&map_names[i*MAX_STR],iter->second.second.c_str());
         }
 
         MPI_Bcast(&n_physical,1, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&map_ids,  n_physical*2, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&map_names,n_physical*MAX_STR, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&map_ids[0],  n_physical*2, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&map_names[0],n_physical*MAX_STR, MPI_CHAR, 0, MPI_COMM_WORLD);
 
         auto& pmap = pmesh->getPhysicalMap();
         pmap.clear();
@@ -1551,8 +1555,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh, int processor_id, int n
             pmap.insert(data);
         }
 
-        free(map_ids);
-        free(map_names);
+
     }   
     else
     {
@@ -1563,11 +1566,11 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh, int processor_id, int n
          // Broadcast Physical Groups
         MPI_Bcast(&n_physical,1, MPI_INT, 0, MPI_COMM_WORLD);
 
-        int*  map_ids   = new int[2*n_physical];
-        char* map_names = new char[n_physical*MAX_STR];
+        std::vector<int>  map_ids(2*n_physical);
+        std::vector<char> map_names(n_physical*MAX_STR);
 
-        MPI_Bcast(&map_ids, n_physical*2, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&map_names,n_physical*MAX_STR, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&map_ids[0], n_physical*2, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&map_names[0],n_physical*MAX_STR, MPI_CHAR, 0, MPI_COMM_WORLD);
         
         auto& pmap = pmesh->getPhysicalMap();
         pmap.clear();
@@ -1579,8 +1582,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh, int processor_id, int n
             data.second.second = map_names[i*MAX_STR];
             pmap.insert(data);
         }
-        free(map_ids);
-        free(map_names);
+
         
     }
 

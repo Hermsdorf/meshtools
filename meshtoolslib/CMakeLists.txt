@@ -2,6 +2,7 @@
 
 file(GLOB source_files_lib
          "include/*.h"
+         "include/*.hpp"
          "src/*.cpp"
     )
 
