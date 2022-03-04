@@ -51,7 +51,12 @@ int main(int argc, char* argv[])
     {
         mesh                  = new Mesh();
         mesh->MeshGmshReader(filename.c_str());
-        mesh->WriteVTK("serial");
+        std::vector<unsigned int> gindex(mesh->get_n_nodes());
+        for(int i = 0; i < gindex.size(); i++)
+            gindex[i] = i;
+        MeshIODataAppended info;
+        info.addPointDataInfo("Index",UInt32,(void*)&gindex[0]);
+        mesh->WriteVTK("serial", &info);
     }
     
     pmesh = partitioner->DistributedMesh(mesh);
@@ -59,7 +64,7 @@ int main(int argc, char* argv[])
         MeshIODataAppended info;
         auto& l2g = pmesh->getLocal2Global();
         info.addPointDataInfo("Index",UInt32,(void*)&l2g[0]);
-        //pmesh->renumbering();
+        pmesh->renumbering();
         pmesh->writePVTK("parallel", &info);
         pmesh->WritePMesh("mesh");
     }

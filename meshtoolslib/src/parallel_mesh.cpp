@@ -11,17 +11,12 @@ ParallelMesh::ParallelMesh()
     this->n_nodes                    = 0;
     this->internal_mesh              = false;
     this->mesh_coloring_internal     = nullptr;
-    this->processor_id               = 0;
-    this->n_processors               = 1;
+    this->processor_id               = MeshTools::processor_id();
+    this->n_processors               = MeshTools::n_processors();
     this->n_global_elements          = 0;
     this->n_global_internal_elements = 0;
     this->n_global_nodes             = 0;
     shared_nodes_offset.push_back(0);
-#ifdef USE_MPI
-    MPI_Comm_size(MPI_COMM_WORLD, &this->n_processors);
-    MPI_Comm_rank(MPI_COMM_WORLD, &this->processor_id);
-#endif
-
 }
 
 
@@ -507,8 +502,12 @@ void ParallelMesh::renumbering()
     // Indicates local node, what means that it is not shared with other process
     std::vector<unsigned short> mask_node(this->n_nodes);
 
-    std::fill(mask_node.begin(), mask_node.end(),0);
-
+    for(int i = 0; i < this->n_nodes; ++i)
+         mask_node[i] = 0;
+   
+    //MPI_Barrier(MPI_COMM_WORLD);
+    //std::cout << MeshTools::processor_id() << " - Linha: " << __LINE__ << std::endl;
+    unsigned int n_nodes_offset;
     // Mark at mask_nodes, nodes that are belong to my master (which are process with id greater than mine)
     int max_buffer_size = 0;
     for(int i = 0; i < this->neighbor_processors.size(); ++i)
@@ -521,12 +520,13 @@ void ParallelMesh::renumbering()
             if((end-start) > max_buffer_size) max_buffer_size = (end-start);
             for(int ino = start; ino < end; ino++)
             {
-                int node_id = this->shared_nodes[node_id]; 
+                int node_id = this->shared_nodes[ino]; 
                 mask_node[node_id]=1;
             }
         }
     }
 
+    //std::cout << MeshTools::processor_id() << " - Linha: " << __LINE__ << std::endl;
     // Count local nodes, which arent from other process (my master)
     unsigned int n_nodes_local = 0;
     for(int i=0; i < this->n_nodes; i++)
@@ -536,11 +536,15 @@ void ParallelMesh::renumbering()
             n_nodes_local++;
         } 
     }
-    unsigned int n_nodes_offset;
 
+ 
+    //std::cout << MeshTools::processor_id() << " - Linha: " << __LINE__ << " nodes local " << n_nodes_local << std::endl;
     // Sends from predecessor process the value of `n_nodes_local` to `n_nodes_offset` variable`
     MPI_Scan(&n_nodes_local,&n_nodes_offset,1,MPI_UNSIGNED,MPI_SUM,MPI_COMM_WORLD);
 
+    n_nodes_offset -= n_nodes_local;
+    
+    //std::cout << MeshTools::processor_id() << " - Linha: " << __LINE__ << " nodes offset " << n_nodes_offset << std::endl;
     for(int i=0; i < this->n_nodes; i++)
     {
         if(mask_node[i]==0) {
