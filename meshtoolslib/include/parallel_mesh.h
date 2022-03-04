@@ -12,10 +12,9 @@ class ParallelMesh : public Mesh{
 
         void readParallelMesh(const char* filename);
         void readParallelMeshBin(const char* filename);
-        void writeParallelMesh();
-        void writeParallelMeshBin();
-        void WritePVTK(const char* fname, MeshIODataAppended* info = nullptr);
 
+        void writePVTK(const char* fname, MeshIODataAppended* info = nullptr);
+        void WritePMesh(const char *fname);
         
         int                         get_n_neighbor_processors();
         void                        set_n_neighbor_processors(int n_neighbor_processors);

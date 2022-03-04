@@ -51,21 +51,18 @@ int main(int argc, char* argv[])
     {
         mesh                  = new Mesh();
         mesh->MeshGmshReader(filename.c_str());
+        mesh->WriteVTK("serial");
     }
     
-    partitioner->ApplyPartitioner(mesh,MeshTools::n_processors());
-     
-    if(MeshTools::processor_id() == 0 ) 
-    {
-        partitioner->WriteAscii(mesh,MeshTools::n_processors(), "serial");
-        partitioner->WriteVTK(mesh,"vtk");
-        partitioner->WriteDistributedMesh(mesh,0,MeshTools::n_processors(),"parallel");
+    pmesh = partitioner->DistributedMesh(mesh);
+    {   
+        MeshIODataAppended info;
+        auto& l2g = pmesh->getLocal2Global();
+        info.addPointDataInfo("Index",UInt32,(void*)&l2g[0]);
+        //pmesh->renumbering();
+        pmesh->writePVTK("parallel", &info);
+        pmesh->WritePMesh("mesh");
     }
-
-    pmesh = partitioner->DistributedMesh(mesh,MeshTools::processor_id(),MeshTools::n_processors());
-    pmesh->WritePVTK("parallel");
-    pmesh->Write("mesh");
-
 
     if(mesh)        delete mesh;
     if(partitioner) delete partitioner;

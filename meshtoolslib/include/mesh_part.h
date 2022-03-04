@@ -76,7 +76,7 @@ class MeshPartition
          * @param mesh 
          * @return ParallelMesh* 
          */
-        ParallelMesh* DistributedMesh(Mesh* mesh, int processor_id=0, int n_processor=1);
+        ParallelMesh* DistributedMesh(Mesh* mesh);
 
         /**
          * @brief 
@@ -124,21 +124,21 @@ class MeshPartition
         int* nodal_part;      // Informações nodais da partição.
         int* elem_part;       // Informações elementares da partição.
         int *face_part;
-        bool _use_bnd_elements; 
+        bool applied; 
 
-void WritePartionData(
-    const char* basename,
-    int processor,
-    int *array_sizes,
-    std::vector<double>         & coord,
-    std::vector<unsigned int>   & l2g, 
-    std::vector<unsigned int>   & conn,
-    std::vector<unsigned int>   & offset,
-    std::vector<unsigned short> & type,
-    std::vector<int>            & tag,
-    std::vector<unsigned int>   & neighbors,
-    std::vector<unsigned int>   & neighbors_offset,
-    std::vector<unsigned int>   & neighbors_nodes);
+    void WritePartionData(
+        const char* basename,
+        int processor,
+        int *array_sizes,
+        std::vector<double>         & coord,
+        std::vector<unsigned int>   & l2g, 
+        std::vector<unsigned int>   & conn,
+        std::vector<unsigned int>   & offset,
+        std::vector<unsigned short> & type,
+        std::vector<int>            & tag,
+        std::vector<unsigned int>   & neighbors,
+        std::vector<unsigned int>   & neighbors_offset,
+        std::vector<unsigned int>   & neighbors_nodes);
 
     void GetNodePartition(Mesh *mesh, std::map<unsigned int, std::set<unsigned int> > &node_partition);
 

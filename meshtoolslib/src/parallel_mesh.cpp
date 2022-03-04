@@ -386,7 +386,7 @@ void ParallelMesh::readParallelMeshHDF5(const char* filename)
 }
 #endif
 
-void ParallelMesh::WritePVTK(const char* fname, MeshIODataAppended* info)
+void ParallelMesh::writePVTK(const char* fname, MeshIODataAppended* info)
 {
     if(MeshTools::processor_id == 0)
         std::cout << "Writing VTK parallel mesh...\n";
@@ -450,30 +450,7 @@ void ParallelMesh::WritePVTK(const char* fname, MeshIODataAppended* info)
     std::cout << "Writing pvtu completed successfully\n";
 }
 
-void ParallelMesh::writeParallelMesh()
-{
-    int rank, size;
-    rank = processor_id;
-    size = n_processors;
 
-    int nnodes = this->get_n_nodes();
-    int nelem  = this->get_n_elements();
-    int* npart = new int[nnodes];
-    for(int i = 0 ; i < nnodes ; i++)
-        npart[i] = rank;
-
-    int* epart = new int[nelem];
-    for(int i = 0 ; i < nelem ; i++)
-        epart[i] = rank;
-
-    MeshVTKWriterInternal(rank, npart, epart, this->mesh_coloring_internal, NULL, NULL);
-   
-    //if(rank == 0)
-    //    this->writePvtu();
-
-    delete [] npart;
-    delete [] epart;
-}
 
 void  ParallelMesh::add_neighbor_shared_nodes(unsigned int p, unsigned int n_shared_nodes, const unsigned *node_list)
 {
@@ -619,4 +596,69 @@ void ParallelMesh::renumbering()
         }
         
     }
+}
+
+void ParallelMesh::WritePMesh(const char *fname)
+{
+    char filename[256];
+    sprintf(filename,"%s_%04d.mts",fname,MeshTools::processor_id());
+    FILE* fout = fopen(filename,"w");
+    if(!fout) return ;
+
+
+    fprintf(fout, "# Mesh Tools File \n");
+    fprintf(fout, "1.0  0  1 # [version] [0:ascii - 1:binary] [0:serial - 1:parallel]\n");
+    fprintf(fout, "%d # num. faces   \n", this->n_face_elements);
+    fprintf(fout, "%d # num. elements\n", this->n_elements);
+    fprintf(fout, "%d # num. nodes \n",   this->n_nodes);
+    fprintf(fout, "%ld # num. physical region\n", this->physical_map.size());
+    fprintf(fout, "$BEGIN_PHYSICAL_DATA\n");
+    for(auto it = this->physical_map.begin(); it != this->physical_map.end(); it++)
+        fprintf(fout, "%d %d %s\n", it->first, it->second.first, it->second.second.c_str());
+    fprintf(fout, "$END_PHYSICAL_DATA\n"); 
+    fprintf(fout, "$BEGIN_NODE_DATA\n");
+    for(int n = 0; n < this->n_nodes; n++)
+        fprintf(fout,"%-4d %8.8e %8.8e %8.8e\n",n,coord[n*3],coord[n*3+1], coord[n*3+2]);
+    fprintf(fout, "$ENDNODE_DATA\n");
+    fprintf(fout,"$BEGIN_BOUNDARY_DATA\n");
+    for(int iel = 0; iel <  this->n_face_elements; iel++)
+    {
+        fprintf(fout,"%-4d %-4d", iel, this->physical_tag[iel]);
+        unsigned int connsize = this->getSurfaceElementConnSize(iel);
+        unsigned int *conn    = this->getSurfaceElementConn(iel);
+        for(int i = 0; i < connsize; ++i)
+            fprintf(fout, "%-4d ", conn[i]);
+        fprintf(fout,"\n");
+    }
+    fprintf(fout,"$END_BOUNDARY_DATA\n");
+    fprintf(fout,"$BEGIN_ELEMENT DATA\n");
+    for(int iel = 0; iel < this->n_elements; iel++)
+    {
+        fprintf(fout,"%-4d %-4d ", iel, this->physical_tag[iel+this->n_face_elements]);
+        unsigned int connsize = this->getElementConnSize(iel);
+        unsigned int *conn    = this->getElementConn(iel);
+        for(int i = 0; i < connsize; ++i)
+            fprintf(fout, "%-4d ", conn[i]);
+        fprintf(fout,"\n");
+    }
+    fprintf(fout,"$END_ELEMENT DATA\n");
+    fprintf(fout,"$BEGIN_GLOBAL_NODE_IDS\n");
+    for(int i = 0; i < this->n_nodes; ++i) {
+        fprintf(fout, "%-4d ", this->local_to_global[i]);
+        if((i+1)%5 == 0) fprintf(fout,"\n");
+    }
+    fprintf(fout,"$END_GLOBAL_NODE_IDS\n");
+    fprintf(fout ,"$BEGIN_PARALLEL_DATA\n");
+    fprintf(fout, "%ld  # number of neighbor processors \n", neighbor_processors.size());
+    for(int i=0; i < this->neighbor_processors.size(); i++)
+            fprintf(fout,"%d ", neighbor_processors[i]);
+    fprintf(fout, "  # neighbor processors\n");
+    for(int i=0; i < this->shared_nodes_offset.size(); i++)
+        fprintf(fout,"%d ", shared_nodes_offset[i]);
+    fprintf(fout, " # node offset\n");
+    for(int i=0; i < shared_nodes.size(); i++)
+        fprintf(fout,"%d ", shared_nodes[i]);
+    fprintf(fout, "\n");
+    fprintf(fout ,"$END_PARALLEL_DATA\n");
+    fclose(fout);
 }
