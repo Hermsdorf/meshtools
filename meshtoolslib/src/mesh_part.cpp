@@ -22,7 +22,7 @@ MeshPartition::MeshPartition()
     this->n_partitions = 1;
     this->nodal_part = nullptr;
     this->elem_part = nullptr;
-    this->_use_bnd_elements = false;
+    this->applied  = false;
 }
 
 MeshPartition::~MeshPartition()
@@ -192,6 +192,7 @@ void MeshPartition::ApplyPartitioner(Mesh *mesh, int nparts)
             }
         }
     }
+    this->applied = true;
 }
 
 void MeshPartition::WriteInternalPartition(Mesh *mesh)
@@ -1194,7 +1195,7 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
             for (int i = 0; i < connsize; i++) 
                 conn[nc++] = g2l[conn_ptr[i]];
                 
-            type[iel_local] = mesh->getElementType(iel);
+            type[iel_local] = mesh->getSurfaceElementType(iel);
             tag[iel_local] = tag_orig[iel];
             iel_local++;
         }
@@ -1214,7 +1215,7 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
             offset[iel_local + 1] = offset[iel_local] + connsize;
             for (int i = 0; i < connsize; i++)
                    conn[nc++] = g2l[conn_ptr[i]];
-            type[iel_local] = mesh->getElementType(iel+nface_elem);
+            type[iel_local] = mesh->getElementType(iel);
             tag[iel_local]  = tag_orig[iel+nface_elem];
             iel_local++;
         }
@@ -1445,17 +1446,24 @@ void MeshPartition::WritePartionData(
     }
 }
 
-ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh, int processor_id, int n_processors)
+ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
 {
+
+    int processor_id = MeshTools::processor_id();
+    int n_procesors  = MeshTools::n_processors(); 
 
 #ifdef USE_MPI
     int array_sizes[12];
- 
+
+   
     ParallelMesh *pmesh ; 
 
     // process 0 is responsible to generate local arrays and send it to each processor
     if (processor_id == 0)
     {
+         if(!this->applied)
+            this->ApplyPartitioner(mesh,n_procesors);
+
         std::vector<double>          coords;
         std::vector<unsigned int>    l2g;
         std::vector<unsigned int>    conn;
