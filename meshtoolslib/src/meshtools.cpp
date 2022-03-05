@@ -12,13 +12,16 @@ void Init(int argc, char* argv[])
 {
     _processor_id = 0;
     _n_processors = 1;
-#ifdef USE_MPI
+#if defined(PETSC_ENABLE)
+    PetscInitialize(&argc,&argv,0,0);
+    _mpi_comm = PETSC_COMM_WORLD;
+    MPI_Comm_size(_mpi_comm, &_n_processors);
+    MPI_Comm_rank(_mpi_comm, &_processor_id);
+#elif defined(USE_MPI)
     MPI_Init(&argc, &argv);
-    
     _mpi_comm = MPI_COMM_WORLD;
     MPI_Comm_size(_mpi_comm, &_n_processors);
     MPI_Comm_rank(_mpi_comm, &_processor_id);
-
 #endif
     if(_processor_id == 0) {
         std::cout<<"\nMeshTools Initialization\n"
@@ -29,15 +32,19 @@ void Init(int argc, char* argv[])
 
 void Finalize()
 {
-#ifdef USE_MPI
+#if defined(PETSC_ENABLE)
+    PetscFinalize();
+#elif defined(USE_MPI)
     MPI_Finalize();
 #endif  
 }
 
 void Exit()
 {
-#ifdef USE_MPI
-    MPI_Finalize() ;
+#if defined(PETSC_ENABLE)
+    PetscFinalize();
+#elif defined(USE_MPI)
+    MPI_Finalize();
 #endif  
     std::exit(-1);
 }

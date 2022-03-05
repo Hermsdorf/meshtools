@@ -20,9 +20,9 @@ int main(int argc, char* argv[])
     Mesh*         mesh;
     ParallelMesh* pmesh;
 
-    ierr = PetscInitialize(&argc,&argv,nullptr,help); CHKERRQ(ierr);
-    MPI_Comm_rank(PETSC_COMM_WORLD,&processor_id);
-    MPI_Comm_size(PETSC_COMM_WORLD,&n_processors);
+    MeshTools::Init(argc,argv);
+    processor_id = MeshTools::processor_id();
+    n_processors = MeshTools::n_processors();
 
     if(processor_id == 0)
     {
@@ -70,14 +70,14 @@ int main(int argc, char* argv[])
     {
         // Malha gerada pelo processo mestre é distribuida
         // para os demais processos. 
-        pmesh = parts->DistributedMesh(mesh, processor_id, n_processors);
+        pmesh = parts->DistributedMesh(mesh);
 
         std::string str(argv[1]);
         str.resize(str.length()-4);
         pmesh->setFilename(str);
 
         //Escreve partição na arquivo 
-        pmesh->writeParallelMesh();
+        //pmesh->writeParallelMesh();
     }
 
     // std::cout << "\nPMESH " << processor_id << "\n";
@@ -209,6 +209,8 @@ int main(int argc, char* argv[])
         exit(0);
     }
 
-    ierr = PetscFinalize();CHKERRQ(ierr);
+   
+
+    MeshTools::Finalize();
     return 0;
 }

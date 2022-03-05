@@ -56,12 +56,9 @@ int main(int argc, char* argv[])
     int n_processors = 1;
     int processor_id = 0;
 
-    //MeshTools::Init(argc,argv);
-#ifdef USE_MPI
-    MPI_Init(&argc, &argv);
-    MPI_Comm_size(MPI_COMM_WORLD, &n_processors);
-    MPI_Comm_rank(MPI_COMM_WORLD, &processor_id);
-#endif
+    MeshTools::Init(argc,argv);
+    processor_id = MeshTools::processor_id();
+    n_processors = MeshTools::n_processors();
 
     // Obrigatorio ter ao menos 3 argumentos:
     // ./meshtools -m <filename>
@@ -69,9 +66,7 @@ int main(int argc, char* argv[])
     {
         if(processor_id==0) 
             usage(argv[0]);
-#ifdef USE_MPI
-        MPI_Finalize();
-#endif 
+        MeshTools::Finalize();
         return 0;
     }
 
@@ -137,9 +132,8 @@ int main(int argc, char* argv[])
     {
         if(processor_id==0) 
             usage(argv[0]);
-#ifdef USE_MPI
-        MPI_Finalize();
-#endif 
+
+        MeshTools::Finalize();
         return 0;
     }
 
@@ -169,16 +163,13 @@ int main(int argc, char* argv[])
     {
         // Malha gerada pelo processo mestre é distribuida
         // para os demais processos. 
-        pmesh = parts->DistributedMesh(mesh, processor_id, n_processors);
+        pmesh = parts->DistributedMesh(mesh);
+        
         std::string str(gmsh_filename);
         str.resize(str.length()-4);
-        pmesh->setFilename(str);
-
-        // Aplica em cada partição a coloração
-        //pmesh->MeshColoring(color_alg, block_size);
 
         //Escreve partição na arquivo 
-        pmesh->writeParallelMesh();
+        pmesh->WritePMesh(str.c_str());
     }
     else
     {
@@ -190,8 +181,6 @@ int main(int argc, char* argv[])
         if(flg_write)
             mesh->MeshVTKWriting(writing);
 
-        //FiniteElementKernels::run(*mesh);
-
     }
 
     // Desaloca as estruturas criadas.
@@ -199,9 +188,7 @@ int main(int argc, char* argv[])
     if(parts) delete parts;
     if(pmesh) delete pmesh;
 
-#ifdef USE_MPI
-    MPI_Finalize();
-#endif 
+    MeshTools::Finalize();
 
     return 0;
 

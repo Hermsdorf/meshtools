@@ -16,17 +16,16 @@ class ParallelMesh : public Mesh{
         void writePVTK(const char* fname, MeshIODataAppended* info = nullptr);
         void WritePMesh(const char *fname);
         
-        int                         get_n_neighbor_processors();
-        void                        set_n_neighbor_processors(int n_neighbor_processors);
-        bool                        get_internal_mesh();
-        void                        set_internal_mesh(bool internal_mesh);
+
         unsigned int                get_n_global_nodes();
         void                        set_n_global_nodes(unsigned int n_global_nodes);
         unsigned int                get_n_global_elements();
         void                        set_n_global_elements(unsigned int n_global_elements);
         void                        set_n_global_face_elements(unsigned int n_global_face_elements);
-        unsigned int                get_n_global_internal_elements();
-        void                        set_n_global_internal_elements(unsigned int n_global_internal_elements);
+        unsigned int                get_n_local_nodes();
+        unsigned int                get_start_global_index();
+        int                         get_n_neighbor_processors();
+        void                        set_n_neighbor_processors(int n_neighbor_processors);
         void                        add_neighbor_shared_nodes(unsigned int p, unsigned int n_shared_nodes, const unsigned *node_list);
         unsigned int                n_neighbor_shared_nodes(unsigned int p);
         const unsigned int *        get_neighbor_shared_nodes(unsigned int p);
@@ -34,8 +33,8 @@ class ParallelMesh : public Mesh{
         std::vector<unsigned int>&  getSharedNodesOffset();
         std::vector<unsigned int>&  getSharedNodes();
         std::vector<unsigned int>&  getLocal2Global();
-       
-        void renumbering();
+        void  getGhostNodesIds(std::vector<unsigned int>& local_ghosts_nodes, std::vector<unsigned int>& global_ghosts_nodes);
+        void  renumbering();
     private:
         
         bool internal_mesh;
@@ -43,6 +42,9 @@ class ParallelMesh : public Mesh{
         unsigned int n_global_elements;
         unsigned int n_global_faces;
         unsigned int n_global_internal_elements;
+        unsigned int n_local_nodes;
+        unsigned int start_node_index;
+        
         std::vector<unsigned int> local_to_global;
         // Parallel Context attributes
         int processor_id;
@@ -56,7 +58,7 @@ class ParallelMesh : public Mesh{
         std::vector<unsigned int> recvfrom_neighbors_map;
         
         //void writePvtu();
-        void BuildCommunicationMap();
+        void build_communication_map();
 };
 
 #endif // PARALLELMESH__H_

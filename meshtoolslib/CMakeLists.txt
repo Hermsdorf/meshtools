@@ -5,6 +5,10 @@ file(GLOB source_files_lib
          "include/*.hpp"
          "src/*.cpp"
     )
+    
+if(PETSc_FOUND)
+    include_directories(${PETSc_INCLUDE_DIRS})
+endif()
 
 add_library(meshtoolslib SHARED ${source_files_lib})
 

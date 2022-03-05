@@ -41,15 +41,7 @@ void ParallelMesh::set_n_neighbor_processors(int n_neighbor_processors)
     this->n_neighbor_processors = n_neighbor_processors;
 }
 
-bool ParallelMesh::get_internal_mesh()
-{
-    return this->internal_mesh;
-}
 
-void ParallelMesh::set_internal_mesh(bool internal_mesh)
-{
-    this->internal_mesh = internal_mesh;
-}
 
 
 unsigned int ParallelMesh::get_n_global_nodes()
@@ -77,16 +69,10 @@ void ParallelMesh::set_n_global_elements(unsigned int n_global_elements)
     this->n_global_elements = n_global_elements;
 }
 
-unsigned int ParallelMesh::get_n_global_internal_elements()
+unsigned int ParallelMesh::get_n_local_nodes()
 {
-    return this->n_global_internal_elements;
+    return this->n_local_nodes;
 }
-
-void ParallelMesh::set_n_global_internal_elements(unsigned int n_global_internal_elements)
-{
-    this->n_global_internal_elements = n_global_internal_elements;
-}
-
 
 void ParallelMesh::readParallelMesh(const char* filename)
 {
@@ -445,7 +431,37 @@ void ParallelMesh::writePVTK(const char* fname, MeshIODataAppended* info)
     std::cout << "Writing pvtu completed successfully\n";
 }
 
+void  ParallelMesh::getGhostNodesIds(std::vector<unsigned int>& local_ghosts_nodes, std::vector<unsigned int>& global_ghosts_nodes)
+{
+    // Indicates local node, what means that it is not shared with other process
+    std::vector<unsigned short> mask_node(this->n_nodes);
+    local_ghosts_nodes.clear();
+    global_ghosts_nodes.clear();
 
+    // Mark at mask_nodes, nodes that are belong to my master (which are process with id greater than mine)
+    for(int i = 0; i < this->neighbor_processors.size(); ++i)
+    {
+        unsigned int neighbor  = this->neighbor_processors[i];
+        if(neighbor > this->processor_id)
+        {
+            unsigned int start     = this->shared_nodes_offset[i];
+            unsigned int end       = this->shared_nodes_offset[i+1];
+
+            for(int ino = start; ino < end; ino++)
+            {
+                int node_id = this->shared_nodes[ino]; 
+                mask_node[node_id]=1;
+            }
+        }
+    }
+
+    for(int ino = 0; ino < this->n_nodes; ++ino)
+        if(mask_node[ino]){
+            local_ghosts_nodes.push_back(ino);
+            global_ghosts_nodes.push_back(this->local_to_global[ino]);
+        }
+
+}
 
 void  ParallelMesh::add_neighbor_shared_nodes(unsigned int p, unsigned int n_shared_nodes, const unsigned *node_list)
 {
@@ -482,7 +498,12 @@ std::vector<unsigned int>&  ParallelMesh::getSharedNodes()
     return this->shared_nodes;
 }
 
-void ParallelMesh::BuildCommunicationMap()
+unsigned int ParallelMesh::get_start_global_index()
+{
+    return this->start_node_index;
+}
+
+void ParallelMesh::build_communication_map()
 {
   
     for(int i = 0; i < this->neighbor_processors.size(); ++i)
@@ -505,9 +526,9 @@ void ParallelMesh::renumbering()
     for(int i = 0; i < this->n_nodes; ++i)
          mask_node[i] = 0;
    
-    //MPI_Barrier(MPI_COMM_WORLD);
-    //std::cout << MeshTools::processor_id() << " - Linha: " << __LINE__ << std::endl;
+    
     unsigned int n_nodes_offset;
+
     // Mark at mask_nodes, nodes that are belong to my master (which are process with id greater than mine)
     int max_buffer_size = 0;
     for(int i = 0; i < this->neighbor_processors.size(); ++i)
@@ -526,25 +547,25 @@ void ParallelMesh::renumbering()
         }
     }
 
-    //std::cout << MeshTools::processor_id() << " - Linha: " << __LINE__ << std::endl;
+    
     // Count local nodes, which arent from other process (my master)
-    unsigned int n_nodes_local = 0;
+    this->n_local_nodes = 0;
     for(int i=0; i < this->n_nodes; i++)
     {
         if(mask_node[i]==0) {
-            local_to_global[i] = n_nodes_local;
-            n_nodes_local++;
+            local_to_global[i] = this->n_local_nodes;
+            this->n_local_nodes++;
         } 
     }
 
  
-    //std::cout << MeshTools::processor_id() << " - Linha: " << __LINE__ << " nodes local " << n_nodes_local << std::endl;
-    // Sends from predecessor process the value of `n_nodes_local` to `n_nodes_offset` variable`
-    MPI_Scan(&n_nodes_local,&n_nodes_offset,1,MPI_UNSIGNED,MPI_SUM,MPI_COMM_WORLD);
-
-    n_nodes_offset -= n_nodes_local;
     
-    //std::cout << MeshTools::processor_id() << " - Linha: " << __LINE__ << " nodes offset " << n_nodes_offset << std::endl;
+    // Sends from predecessor process the value of `n_nodes_local` to `n_nodes_offset` variable`
+    MPI_Scan(&this->n_local_nodes,&n_nodes_offset,1,MPI_UNSIGNED,MPI_SUM,MPI_COMM_WORLD);
+    n_nodes_offset -= this->n_local_nodes;
+    
+    this->start_node_index = n_nodes_offset;
+   
     for(int i=0; i < this->n_nodes; i++)
     {
         if(mask_node[i]==0) {
@@ -562,8 +583,8 @@ void ParallelMesh::renumbering()
     int n_recvs = this->recvfrom_neighbors_map.size();
     for(int i =0; i < n_recvs; i++)
     {
-        int neighbor_idx = this->recvfrom_neighbors_map[i];
-        int recv_from    = this->neighbor_processors[neighbor_idx];
+        int neighbor_idx       = this->recvfrom_neighbors_map[i];
+        int recv_from          = this->neighbor_processors[neighbor_idx];
         unsigned int start     = this->shared_nodes_offset[i];
         unsigned int end       = this->shared_nodes_offset[i+1];
         unsigned int n_shared_nodes = (end-start);
@@ -611,11 +632,11 @@ void ParallelMesh::WritePMesh(const char *fname)
 
 
     fprintf(fout, "# Mesh Tools File \n");
-    fprintf(fout, "1.0  0  1 # [version] [0:ascii - 1:binary] [0:serial - 1:parallel]\n");
-    fprintf(fout, "%d # num. faces   \n", this->n_face_elements);
-    fprintf(fout, "%d # num. elements\n", this->n_elements);
-    fprintf(fout, "%d # num. nodes \n",   this->n_nodes);
-    fprintf(fout, "%ld # num. physical region\n", this->physical_map.size());
+    fprintf(fout, "1.0  0  1 \n");
+    fprintf(fout, "%8d  # num. faces   \n", this->n_face_elements);
+    fprintf(fout, "%8d  # num. elements\n", this->n_elements);
+    fprintf(fout, "%8d  # num. nodes \n",   this->n_nodes);
+    fprintf(fout, "%8ld # num. physical region\n", this->physical_map.size());
     fprintf(fout, "$BEGIN_PHYSICAL_DATA\n");
     for(auto it = this->physical_map.begin(); it != this->physical_map.end(); it++)
         fprintf(fout, "%d %d %s\n", it->first, it->second.first, it->second.second.c_str());

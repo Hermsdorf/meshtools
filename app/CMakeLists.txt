@@ -51,6 +51,7 @@
    meshtoolslib
    ${ADDITIONAL_ITEMS}
    ${METIS_LIBRARIES}
+   ${PETSc_LINK_LIBRARIES}
    )
 
    target_link_libraries(femtools 

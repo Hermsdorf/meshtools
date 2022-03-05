@@ -7,7 +7,7 @@
 #include "mpi.h"
 #endif
 
-#ifdef HAVE_PETSC
+#ifdef PETSC_ENABLE
 #include "petsc.h"
 #endif
 
