@@ -1,5 +1,5 @@
-#ifndef PARALLELMESH__H_
-#define PARALLELMESH__H_
+#ifndef PARALLEL_MESH_H
+#define PARALLEL_MESH_H
 
 #include <iostream>
 
@@ -61,4 +61,4 @@ class ParallelMesh : public Mesh{
         void build_communication_map();
 };
 
-#endif // PARALLELMESH__H_
+#endif /* PARALLEL_MESH_H */

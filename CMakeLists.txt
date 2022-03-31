@@ -41,6 +41,9 @@ endif()
 include_directories(${METIS_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/meshtoolslib/include)
 
+# Compilando bibliotecas de terceitos
+add_subdirectory(${CMAKE_SOURCE_DIR}/contrib/fparser)
+
 add_subdirectory(meshtoolslib)
 
 if(MESHTOOLS_BUILD_APP)

@@ -1,5 +1,5 @@
-#ifndef C1D6AFE9_DE06_4F81_9D1F_8A4C41B5D464
-#define C1D6AFE9_DE06_4F81_9D1F_8A4C41B5D464
+#ifndef MESHTOOLS_H
+#define MESHTOOLS_H
 
 #include "meshtools_config.h"
 
@@ -36,4 +36,4 @@ namespace MeshTools
 
 
 
-#endif /* C1D6AFE9_DE06_4F81_9D1F_8A4C41B5D464 */
+#endif /* MESHTOOLS_H */

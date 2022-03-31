@@ -1,5 +1,5 @@
-#ifndef MESHPART_H
-#define MESHPART_H
+#ifndef MESH_PART_H
+#define MESH_PART_H
 
 #include <iostream>
 #include <set>
@@ -144,4 +144,4 @@ class MeshPartition
 
 };
 
-#endif // MESHPART_H
+#endif /* MESH_PART_H */
