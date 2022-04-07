@@ -40,6 +40,7 @@ class MeshIODataAppended{
 
 
 typedef std::pair<int, std::string> physical_data_t;
+
 typedef enum {METIS_ND=0, RCM, FF} reorder_t;
 typedef enum {COLOR_DEFAULT=0, COLOR_DEFAULT_BLOCK, COLOR_ROKOS, COLOR_ROKOS_BLOCK} color_mode_t;
 typedef enum {BINARY=0, ASCII} write_t;
@@ -469,7 +470,7 @@ class Mesh {
          * @param velocity Array do tipo double com informações das velocidades da malha.
          * @param pressure Array do tipo float com informações das pressões da malha.
         */
-
+       // TODO: remover
         void MeshVTKWriterBinAppended(int timeStep=0, int* npart=NULL, int* epart=NULL, int* color=NULL, double* velocity=NULL, float* pressure=NULL);
         /**
          * * OBJETIVO:
@@ -484,6 +485,7 @@ class Mesh {
          * @param velocity Array do tipo double com informações das velocidades da malha.
          * @param pressure Array do tipo float com informações das pressões da malha.
         */
+       // TODO: remover
         void MeshVTKWriterInternalBinAppended(int timeStep=0, int* npart=NULL, int* epart=NULL, int* color=NULL, double* velocity=NULL, float* pressure=NULL);
         /**
          * * OBJETIVO:
@@ -530,18 +532,25 @@ class Mesh {
 
        void Write(const char* filename);
 
+
+       void extract_boundary_nodes();
+
+
     protected:
-        unsigned int n_face_elements;            // Numero de elementos de superficie.
-        unsigned int n_elements;                 // Numero de elementos internos.
-        unsigned int n_nodes;                    // Numero de nós.
-        std::vector<double>       coord;               // Coordenadas nodais.
-        std::vector<unsigned int> conn;          // Conectividade dos elementos.
-        std::vector<unsigned int> offset;        // Mapeia a localização de cada elemento no array conn.
-        std::vector<unsigned short> type;        // Array indicando o tipo de cada elemento.
-        std::vector<int>    physical_tag;         // Array indicando o physical tag de cada elemento.
+        unsigned int                n_face_elements;            // Numero de elementos de superficie.
+        unsigned int                n_elements;                 // Numero de elementos internos.
+        unsigned int                n_nodes;                    // Numero de nós.
+        std::vector<double>         coord;                      // Coordenadas nodais.
+        std::vector<unsigned int>   conn;                       // Conectividade dos elementos.
+        std::vector<unsigned int>   offset;                     // Mapeia a localização de cada elemento no array conn.
+        std::vector<unsigned short> type;                       // Array indicando o tipo de cada elemento.
+        std::vector<int>            physical_tag;               // Array indicando o physical tag de cada elemento.
+        std::vector<int>            boundary_nodes;             // Array indicando o physical tag de cada elemento.
 
         std::map<int, physical_data_t>  physical_map;
-        unsigned int dim;                        // Dimensão da malha.
+        unsigned int dim;                                       // Dimensão da malha.
+        
+        // TODO: remover 
         std::string filename;                    // Nome do arquvios de entrada de tipo msh
 #ifdef HAVE_HDF5
         void write_hdf5(const char* filename, MeshIOData* append)
