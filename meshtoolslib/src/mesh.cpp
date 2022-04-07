@@ -256,3 +256,24 @@ unsigned int Mesh::getSurfaceElementConnSize(unsigned int element_num)
 
 }
 
+void  Mesh::extract_boundary_nodes()
+{
+    
+    for(auto it = physical_map.begin(); it != physical_map.end(); ++it)
+    {
+        if(it->secont.first != (dim-1)) continue;
+
+        std::set<int>  node_on_boundary;
+
+        for(int iel=0; iel < this->n_face_elements; iel++)
+        {
+            if(tag[iel] == it->first)
+            {
+                unsigned int connsize = getSurfaceElementConnSize(iel); 
+                unsigned int conn     = getSurfaceElementConn(iel); 
+                for(int ino = 0; ino < connsize; ++ino)
+                    node_on_boundary.insert(conn[ino])
+            }
+        }
+    }
+}

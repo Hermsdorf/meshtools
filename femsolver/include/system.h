@@ -19,11 +19,12 @@ public:
     void init();
 
 private:
-    const ParallelMesh &_pmesh;
-    std::string _system_name;
+    const ParallelMesh &       _pmesh;
+    std::string                _system_name;
     std::map<std::string, int> _vars;
-    int _n_dofs;
-    Vec _solution;
+    int                        _n_dofs;
+
+    Vec        _solution;
     VecScatter _scatter;
 };
 

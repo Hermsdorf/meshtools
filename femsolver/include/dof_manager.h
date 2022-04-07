@@ -1,6 +1,6 @@
 
-#ifndef ACB619A8_16AD_4AD3_B738_DD90955B29D5
-#define ACB619A8_16AD_4AD3_B738_DD90955B29D5
+#ifndef DOF_MANAGER_H
+#define DOF_MANAGER_H
 
 #include "dirichlet_boundary.h"
 #include "parallel_mesh.h"
@@ -8,22 +8,29 @@
 class DofManager
 {
 public:
-    DofManager(const ParallelMesh &mesh);
-    unsigned int set_n_dofs();
-    void set_dofs_ids(std::vector<unsigned int> &dofs_ids);
+
+    DofManager(ParallelMesh &mesh);
+    unsigned int get_n_dofs();
+    void         add_dof_id(unsigned int dof_id);
     unsigned int first_global_dof_index();
     unsigned int last_global_dof_index();
-    void dof_indices(int size, unsigned int *local_dof, unsigned int *global_dof);
-    void add_dirichlet_boundary(DirichletBoundary boundary);
+    void         dof_indices(int size, unsigned int *local_dof, unsigned int *global_dof);
+    void         add_dirichlet_boundary(DirichletBoundary &boundary);
+    void         prepare_to_use();
 
 private:
-    const ParallelMesh &_mesh;
-    unsigned int _ndof;
-    std::vector<unsigned int> _dofs;
-    unsigned int _first_global_dof_index;
-    unsigned int _last_global_dof_index;
+    // Private 
+    ParallelMesh &              _mesh;
+    unsigned int                _ndof;
+    std::vector<unsigned int>   _dofs;
+    unsigned int                _first_global_dof_index;
+    unsigned int                _last_global_dof_index;
+    bool                        _prepared_to_use;
 
-    std::vector<DirichletBoundary> boundaries;
+    std::vector<DirichletBoundary> _boundaries;
+    std::vector<int>               _dof_indices;
+    
+
 };
 
-#endif /* ACB619A8_16AD_4AD3_B738_DD90955B29D5 */
+#endif /* DOF_MANAGER_H */
