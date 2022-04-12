@@ -22,13 +22,13 @@ private:
     // Private 
     ParallelMesh &              _mesh;
     unsigned int                _ndof;
-    std::vector<unsigned int>   _dofs;
-    unsigned int                _first_global_dof_index;
+    std::vector<unsigned int>   _dofs; // global dofs numbering
+    unsigned int                _first_global_dof_index; 
     unsigned int                _last_global_dof_index;
     bool                        _prepared_to_use;
 
     std::vector<DirichletBoundary> _boundaries;
-    std::vector<int>               _dof_indices;
+    std::vector<int>               _dof_indices; // maps global to local indices
     
 
 };

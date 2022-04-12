@@ -10,7 +10,7 @@ class DirichletBoundary {
   ~DirichletBoundary();
   bool operator==(const DirichletBoundary& db);
   int  get_boundary_id() { return _boundary_surface; };
-  int  get_dof_id() { return _dof_id       }; 
+  int  get_dof_id() { return _dof_id; }; 
 
  private:
   int _boundary_surface;
