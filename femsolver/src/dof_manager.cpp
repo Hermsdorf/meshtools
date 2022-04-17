@@ -177,9 +177,59 @@ void DofManager::prepare_to_use()
         for(int ino =start; ino < end; ino++) {
             int node              = shared_nodes[ino];
 
-            for(int dof_id =0; dof_id < _ndof; ++dof_id)
-                _dof_indices[node*_ndof + dof_id]    = recvBuffer[ino*_ndof + dof_id];
+            for(int dof_id =0; dof_id < _ndof; ++dof_id){
+                int recv_value = recvBuffer[ino*_ndof + dof_id];
+                if(recv_value >= 0)
+                    _dof_indices[node*_ndof + dof_id] = recv_value;
+            }
         }  
     }
+}
+
+void DofManager::calculate_onnz_dnnz(unsigned int *onnz, unsigned int *dnnz)
+{
+    int n_local_dof = _mesh.get_n_local_nodes()*_ndof;
+
+    // Preallocation Matrix
+    std::vector<std::set<PetscInt>> vdiag(n_local_dof);
+    std::vector<std::set<PetscInt>> voff(n_local_dof);
+
+    auto &gindex = _dof_indices;
+    unsigned int start = _first_global_dof_index;
+    unsigned int end = start + n_local_dof;
+
+    // Getting the d_nnz e o_nnz vector needed to matrix preallocation
+    for (int iel = 0; iel < _mesh.get_n_elements(); ++iel)
+    {
+        int connsz = _mesh.getElementConnSize(iel);
+        unsigned int *conn = _mesh.getElementConn(iel);
+        for (int i = 0; i < connsz; ++i)
+        {
+            unsigned int gi = gindex[conn[i]];
+            unsigned int li = gi - start;
+            if (gi >= start && gi < end)
+            {
+                for (int j = 0; j < connsz; ++j)
+                {
+                    unsigned int gj = gindex[conn[j]];
+                    if (gj >= start && gj < end)
+                        vdiag[li].insert(gj);
+                    else
+                        voff[li].insert(gj);
+                }
+            }
+        }
+    }
+
+    unsigned int* d_nnz = new unsigned int[n_local_dof];
+    unsigned int* o_nnz = new unsigned int[n_local_dof];
+    for (int i = 0; i < n_local_dof; i++)
+    {
+        d_nnz[i] = vdiag[i].size();
+        o_nnz[i] = voff[i].size();
+    }
+
+    onnz = o_nnz;
+    dnnz = d_nnz;
 }
     

@@ -10,13 +10,14 @@ class DofManager
 public:
 
     DofManager(ParallelMesh &mesh);
-    unsigned int get_n_dofs();
+    unsigned int get_n_dofs() { return this->_ndof; };
     void         add_dof_id(unsigned int dof_id);
     unsigned int first_global_dof_index();
     unsigned int last_global_dof_index();
     void         dof_indices(int size, unsigned int *local_dof, unsigned int *global_dof);
     void         add_dirichlet_boundary(DirichletBoundary &boundary);
     void         prepare_to_use();
+    void         calculate_onnz_dnnz(unsigned int *onnz, unsigned int *dnnz);
 
 private:
     // Private 
