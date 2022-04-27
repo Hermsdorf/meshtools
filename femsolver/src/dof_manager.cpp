@@ -4,7 +4,7 @@
 #include "meshtools.h"
 #include "dof_manager.h"
 
- DofManager::DofManager(ParallelMesh &mesh):
+DofManager::DofManager(ParallelMesh &mesh):
     _mesh(mesh),
     _ndof(0),
     _first_global_dof_index(0),
@@ -14,6 +14,14 @@
 
     }
 
+DofManager::~DofManager()
+{
+    _dofs.clear();
+    _dof_indices.clear();
+    _boundaries.clear();
+    if(&_mesh)
+        delete &_mesh;
+}
 void DofManager::add_dirichlet_boundary(DirichletBoundary &boundary)
 {
     for(auto it = _boundaries.begin(); it != _boundaries.end(); ++it)
@@ -184,6 +192,8 @@ void DofManager::prepare_to_use()
             }
         }  
     }
+
+    _prepared_to_use = true;
 }
 
 void DofManager::calculate_onnz_dnnz(unsigned int *onnz, unsigned int *dnnz)

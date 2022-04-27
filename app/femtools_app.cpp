@@ -5,141 +5,14 @@
 #include "mesh_part.h"
 #include "alglin.h"
 #include "parallel_mesh.h"
+#include "dof_manager.h"
+#include "dirichlet_boundary.h"
 
 static char help[] = "Empty Problem\n\n";
 
-int main(int argc, char* argv[])
+void fillXVec(Vec &x, ParallelMesh* pmesh, std::vector<unsigned int> &gindices)
 {
-    PetscErrorCode ierr;
-    Vec v;
-    PetscViewer v_view, m_view;
-    IS is; // index set
-    
-    MeshPartition *parts = new MeshPartition();
-    int processor_id, n_processors;
-    Mesh*         mesh;
-    ParallelMesh* pmesh;
-
-    MeshTools::Init(argc,argv);
-    processor_id = MeshTools::processor_id();
-    n_processors = MeshTools::n_processors();
-
-    if(processor_id == 0)
-    {
-        // Rodando serial ou em paralelo o processo mestre
-        // irá ler a malha. 
-        mesh = new Mesh(argv[1]);
-        
-        // std::cout << "MESH\n";
-        // std::cout << "  nodes: \n    ";
-        // std::vector<double> coord = mesh->getCoord();
-        // for(int i = 0 ; i < coord.size() ; i++)
-        // {
-        //     std::cout << coord[i] << " ";
-        //     if((i+1)%3 == 0)
-        //         std::cout << "\n    ";
-        // }        
-
-        // std::cout << "\n  elems: \n";
-        // unsigned int nelem = mesh->get_n_elements();
-        // unsigned int* conn;
-        // unsigned int connsize;
-        // for(int i = 0 ; i < nelem ; i++)
-        // {
-        //     conn = mesh->getElementConn(i);
-        //     connsize = mesh->getElementConnSize(i);
-        //     std::cout << "   elem " << i+1 << ": ";
-        //     for(int j = 0 ; j < connsize ; j++)
-        //         std::cout << conn[j] << " ";
-        //     std::cout << "\n";
-        // }
-
-        // Aplica a reordenação nodal considerando o algoritmo
-        // escolhido pelo usuário
-    
-        //mesh->MeshReordering(RCM);
-    
-        // Se houver mais um processo, o processo mestre irá
-        // particionar a malha
-        if(n_processors > 1) {
-            parts->ApplyPartitioner(mesh, n_processors);
-        }
-    }
-
-    if(n_processors > 1 ) 
-    {
-        // Malha gerada pelo processo mestre é distribuida
-        // para os demais processos. 
-        pmesh = parts->DistributedMesh(mesh);
-
-        std::string str(argv[1]);
-        str.resize(str.length()-4);
-        pmesh->setFilename(str);
-
-        //Escreve partição na arquivo 
-        //pmesh->writeParallelMesh();
-    }
-
-    // std::cout << "\nPMESH " << processor_id << "\n";
-    // std::cout << "  nodes: \n    ";
-    // std::vector<double> coord = pmesh->getCoord();
-    // for(int i = 0 ; i < coord.size() ; i++)
-    // {
-    //     std::cout << coord[i] << " ";
-    //     if((i+1)%3 == 0)
-    //         std::cout << "\n    ";
-    // }
-        
-    // std::cout << "\n  local to global: ";
-    // std::vector<unsigned int> ltg = pmesh->get_local_to_global();
-    // for(int i = 0 ; i < ltg.size() ; i++)
-    //     std::cout << ltg[i] << " ";
-    
-
-    // std::cout << "\n  elems: \n";
-    // unsigned int nelem = pmesh->get_n_elements();
-    // unsigned int* conn;
-    // unsigned int connsize;
-    // for(int i = 0 ; i < nelem ; i++)
-    // {
-    //     conn = pmesh->getElementConn(i);
-    //     connsize = pmesh->getElementConnSize(i);
-    //     std::cout << "   elem " << i+1 << ": ";
-    //     for(int j = 0 ; j < connsize ; j++)
-    //         std::cout << conn[j] << " ";
-    //     std::cout << "\n";
-    // }
-
-    // get_n_nodes() retorna o numero de nos no pmesh
-    //std::cout << "rank " << processor_id << " nnodes " << pmesh->get_n_nodes() << "  nelements " << pmesh->get_n_elements() << '\n';
-    // Criar o Sistema de Equações
-    std::vector<unsigned int> &gindices = pmesh->getLocal2Global();
-
-    // for(int i = 0 ; i < gindices.size() ; i++)
-    // {
-    //     std::cout << "rank " << processor_id << "   " << i <<  " ->> " << gindices[i] << "\n";
-    // }
-
-    // Objetivo criar ym sistema de equações:
-    // MATRIZ A
-    // Vetores b,x
-
-    // std::cout << "\nN GLOBAL NODES " << pmesh->get_n_global_nodes();
-    // std::cout << "\nN GLOBAL ELEMENTS " << pmesh->get_n_global_elements();
-    // std::cout << "\nN GLOBAL INTERNAL ELEMENTS " << pmesh->get_n_global_internal_elements() << "\n";
-
-    Vec x;                                  // numero de nos totais
     VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, pmesh->get_n_global_nodes(), &x);
-    
-    // Intervalo dos indices globais em cada processo
-    PetscInt rstart, rend;
-    VecGetOwnershipRange(x, &rstart, &rend);
-
-    std::cout << "processor ID " << processor_id << " Interval [" << rstart <<","<<rend <<"]\n" << std::flush;
-
-    //VecView(x, v_view);
-
-    // Prencher o vetor:
     for(int i = 0; i < pmesh->get_n_elements(); i++)
     {
         unsigned int  csize = pmesh->getElementConnSize(i);
@@ -150,11 +23,15 @@ int main(int argc, char* argv[])
 
     VecAssemblyBegin(x);
     VecAssemblyEnd(x);
+}
 
-    VecView(x, v_view);
+void fillAMat(Mat& A, ParallelMesh* pmesh, int processor_id)
+{
+    PetscViewer m_view;
 
+    PetscInt rstart, rend;
+    MatGetOwnershipRange(A, &rstart, &rend);
 
-    Mat A;
     // CSR Matriz Esparsa
     MatCreateAIJ(PETSC_COMM_WORLD, PETSC_DECIDE,PETSC_DECIDE,pmesh->get_n_global_nodes(),pmesh->get_n_global_nodes(),10,NULL, 10, NULL, &A);
     MatGetOwnershipRange(A, &rstart, &rend);
@@ -177,10 +54,13 @@ int main(int argc, char* argv[])
 
     MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);
-    MatView(A, m_view);
+}
 
-    // teste
-    Mat B;
+void fillBMat(Mat& B, ParallelMesh* pmesh, std::vector<unsigned int>& gindices)
+{
+    PetscViewer m_view;
+    PetscInt rstart, rend;
+    MatGetOwnershipRange(B, &rstart, &rend);
     for(int i = 0 ; i < pmesh->get_n_elements() ; i++)
     {
         int connsize = pmesh->getElementConnSize(i);
@@ -190,7 +70,6 @@ int main(int argc, char* argv[])
 
         MatAssemblyBegin(B, MAT_FINAL_ASSEMBLY);
         MatAssemblyEnd(B, MAT_FINAL_ASSEMBLY);
-        MatView(B, m_view);
         MatSetOption(B, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE); // sugestão do petsc
 
         // Prencher a matriz:
@@ -204,13 +83,87 @@ int main(int argc, char* argv[])
 
         MatAssemblyBegin(B, MAT_FINAL_ASSEMBLY);
         MatAssemblyEnd(B, MAT_FINAL_ASSEMBLY);
-        MatView(B, m_view);
+    }
+}
 
-        exit(0);
+int main(int argc, char* argv[])
+{
+    PetscErrorCode ierr;
+    PetscViewer v_view, m_view;
+    Vec v;
+    IS is; // index set
+    
+    MeshPartition *parts = new MeshPartition();
+    int processor_id, n_processors;
+    Mesh*         mesh;
+    ParallelMesh* pmesh;
+
+    MeshTools::Init(argc,argv);
+    processor_id = MeshTools::processor_id();
+    n_processors = MeshTools::n_processors();
+
+    if(processor_id == 0)
+    {
+        // Rodando serial ou em paralelo o processo mestre
+        // irá ler a malha. 
+        mesh = new Mesh(argv[1]);
+        
+        // Aplica a reordenação nodal considerando o algoritmo
+        // escolhido pelo usuário
+        //mesh->MeshReordering(RCM);
+    
+        // Se houver mais um processo, o processo mestre irá
+        // particionar a malha
+        if(n_processors > 1) {
+            parts->ApplyPartitioner(mesh, n_processors);
+        }
     }
 
-   
+    if(n_processors > 1 ) 
+    {
+        // Malha gerada pelo processo mestre é distribuida
+        // para os demais processos. 
+        pmesh = parts->DistributedMesh(mesh);
 
+        std::string str(argv[1]);
+        str.resize(str.length()-4);
+        pmesh->setFilename(str);
+        
+        DofManager* dm = new DofManager(*pmesh);
+
+        auto physical_data = pmesh->getPhysicalMap();
+        for(int i = 0 ; i < physical_data.size() ; i++)
+        {
+            DirichletBoundary* dirichlet = new DirichletBoundary(physical_data[i].first, 0, "x^2", "x");
+            dm->add_dirichlet_boundary(*dirichlet);
+        }
+        
+        unsigned int* onnz;
+        unsigned int* dnnz;
+        dm->prepare_to_use();
+        dm->calculate_onnz_dnnz(onnz, dnnz);
+    }
+
+    // Criar o Sistema de Equações
+    std::vector<unsigned int> &gindices = pmesh->getLocal2Global();
+
+    Vec x;                                  // numero de nos totais
+    fillXVec(x, pmesh, gindices);
+    VecView(x, v_view);
+
+    Mat A;
+    fillAMat(A, pmesh, processor_id);
+    MatView(A, m_view);
+
+    // teste
+    Mat B;
+    fillBMat(B, pmesh, gindices);
+    MatView(B, m_view);
+
+   
+    VecDestroy(&x);
+    MatDestroy(&A);
+    MatDestroy(&B);
     MeshTools::Finalize();
     return 0;
 }

@@ -533,7 +533,7 @@ class Mesh {
        void Write(const char* filename);
 
 
-       void extract_boundary_nodes();
+       void extract_boundary_nodes(std::vector<int>& tag);
 
 
     protected:

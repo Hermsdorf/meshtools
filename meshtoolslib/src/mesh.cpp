@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cassert>
+#include <set>
 #include "mesh.h" 
 
 using namespace std;
@@ -256,12 +257,11 @@ unsigned int Mesh::getSurfaceElementConnSize(unsigned int element_num)
 
 }
 
-void  Mesh::extract_boundary_nodes()
-{
-    
+void Mesh::extract_boundary_nodes(std::vector<int>& tag)
+{  
     for(auto it = physical_map.begin(); it != physical_map.end(); ++it)
     {
-        if(it->secont.first != (dim-1)) continue;
+        if(it->second.first != (dim-1)) continue;
 
         std::set<int>  node_on_boundary;
 
@@ -270,9 +270,9 @@ void  Mesh::extract_boundary_nodes()
             if(tag[iel] == it->first)
             {
                 unsigned int connsize = getSurfaceElementConnSize(iel); 
-                unsigned int conn     = getSurfaceElementConn(iel); 
+                unsigned int* conn     = getSurfaceElementConn(iel); 
                 for(int ino = 0; ino < connsize; ++ino)
-                    node_on_boundary.insert(conn[ino])
+                    node_on_boundary.insert(conn[ino]);
             }
         }
     }

@@ -8,8 +8,8 @@
 class DofManager
 {
 public:
-
     DofManager(ParallelMesh &mesh);
+    ~DofManager();
     unsigned int get_n_dofs() { return this->_ndof; };
     void         add_dof_id(unsigned int dof_id);
     unsigned int first_global_dof_index();
