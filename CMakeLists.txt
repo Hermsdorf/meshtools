@@ -17,11 +17,26 @@ option(MESHTOOLS_BUILD_APP  "Build meshtools application" ON)
 option(MPI_ENABLE       "Enable MPI" ON)
 option(OpenMP_ENABLE    "Enable OpenMP" ON)
 option(CATALYST_ENABLE  "Enable Paraview Catalyst" OFF)
+option(DEBUG_ENABLE  "Enable Paraview Catalyst" OFF)
+
+
+if(DEBUG_ENABLE)
+  set(DEBUG_ 1)
+endif()
 
 find_package(METIS REQUIRED)
 
 
 include(FindPkgConfig)
+
+
+if(MPI_ENABLE)
+  find_package(MPI)
+  if(MPI_FOUND)
+     include_directories(${MPI_C_INCLUDE_PATH})
+     set(USE_MPI 1)
+  endif()
+endif()
 
 if(DEFINED ENV{PETSC_DIR})
   set (ENV{PKG_CONFIG_PATH} "$ENV{PETSC_DIR}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
@@ -36,15 +51,21 @@ else()
   message(STATUS "PETSc was not founded! Please define PETSc_DIR var!!")
 endif()
 
-#include_directories(${PETSC_INCLUDES})
-#add_definitions(${PETSC_DEFINITIONS})
+if(PETSc_FOUND)
+include_directories(${PETSc_INCLUDE_DIRS})
+endif()
+
 include_directories(${METIS_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/meshtoolslib/include)
+include_directories(${CMAKE_SOURCE_DIR}/femsolverlib/include)
+include_directories(${CMAKE_SOURCE_DIR}/contrib/fparser)
 
 # Compilando bibliotecas de terceitos
 add_subdirectory(${CMAKE_SOURCE_DIR}/contrib/fparser)
 
+# Compilar as bibliotecas locais
 add_subdirectory(meshtoolslib)
+add_subdirectory(femsolverlib)
 
 if(MESHTOOLS_BUILD_APP)
  

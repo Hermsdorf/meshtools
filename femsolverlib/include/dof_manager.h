@@ -5,16 +5,24 @@
 #include "dirichlet_boundary.h"
 #include "parallel_mesh.h"
 
+// dof: graus de liberdade da equação (por nó)
 class DofManager
 {
 public:
     DofManager(ParallelMesh &mesh);
     ~DofManager();
     unsigned int get_n_dofs() { return this->_ndof; };
-    void         add_dof_id(unsigned int dof_id);
+    void         set_n_dofs(unsigned int n){this->_ndof = n;};
     unsigned int first_global_dof_index();
     unsigned int last_global_dof_index();
-    void         dof_indices(int size, unsigned int *local_dof, unsigned int *global_dof);
+    /**
+     * @brief 
+     * 
+     * @param id_dof      id da variavel
+     * @param local_dof   numeraçao local no elemento (conectividade)
+     * @param global_dof  numeracao global das equacoes para o id_dof
+     */
+    void         dof_indices(int id_dof, unsigned int *local_dof, unsigned int *global_dof);
     void         add_dirichlet_boundary(DirichletBoundary &boundary);
     void         prepare_to_use();
     void         calculate_onnz_dnnz(unsigned int *onnz, unsigned int *dnnz);
@@ -29,7 +37,7 @@ private:
     bool                        _prepared_to_use;
 
     std::vector<DirichletBoundary> _boundaries;
-    std::vector<int>               _dof_indices; // maps global to local indices
+    std::vector<int>               _dof_indices; // maps global to local indices nnos*ndof
     
 
 };

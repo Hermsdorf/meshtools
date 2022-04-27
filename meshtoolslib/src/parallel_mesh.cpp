@@ -564,6 +564,7 @@ void ParallelMesh::renumbering()
     MPI_Scan(&this->n_local_nodes,&n_nodes_offset,1,MPI_UNSIGNED,MPI_SUM,MPI_COMM_WORLD);
     n_nodes_offset -= this->n_local_nodes;
     
+
     this->start_node_index = n_nodes_offset;
    
     for(int i=0; i < this->n_nodes; i++)

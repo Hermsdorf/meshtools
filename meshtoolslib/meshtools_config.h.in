@@ -9,3 +9,8 @@
 #cmakedefine CATALYST_ENABLE
 #cmakedefine USE_CATALYST @USE_CATALYST@
 
+#cmakedefine DEBUG_
+
+
+
+

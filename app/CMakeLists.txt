@@ -57,6 +57,8 @@
    target_link_libraries(femtools 
    PRIVATE
    meshtoolslib
+   femsolverlib
+   fparser
    ${ADDITIONAL_ITEMS}
    ${METIS_LIBRARIES}
    ${PETSc_LINK_LIBRARIES}

@@ -15,4 +15,11 @@ DirichletBoundary::DirichletBoundary(const DirichletBoundary& bnd)
     this->function_parser = bnd.function_parser;
 }
 
+bool DirichletBoundary::operator==(const DirichletBoundary& db)
+{
+    return (this->_boundary_surface == db._boundary_surface) && 
+           (this->_dof_id           == db._dof_id); 
+}
+
+
 DirichletBoundary::~DirichletBoundary() { }
