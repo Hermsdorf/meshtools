@@ -33,6 +33,7 @@ void DofManager::add_dirichlet_boundary(DirichletBoundary &boundary)
 
 void DofManager::prepare_to_use()
 {
+    MPI_Barrier(MPI_COMM_WORLD);
     //* 1. Defining nodes with boundary conditions
     int n_nodes             = _mesh.get_n_nodes();
     int n_boundary_elements = _mesh.get_n_face_elements();
@@ -42,6 +43,8 @@ void DofManager::prepare_to_use()
     std::vector<unsigned int>&  shared_nodes = _mesh.getSharedNodes();
 
     _dof_indices.resize(n_nodes*_ndof);
+
+    cout << "processor[" << MeshTools::processor_id() << "]  - dof_indices.size() " << _dof_indices.size() << endl;
 
     for(auto it = _boundaries.begin(); it != _boundaries.end(); ++it)
     {
@@ -62,6 +65,8 @@ void DofManager::prepare_to_use()
             }
         }
 
+         cout << "processor[" << MeshTools::processor_id() << "] has " << boundary_nodes.size() << " nodes on boundary " << boundary_id<< endl;
+
         for(auto bnd_node_iter =  boundary_nodes.begin(); bnd_node_iter != boundary_nodes.end(); ++bnd_node_iter)
         {
             int node_id = *bnd_node_iter;
@@ -80,6 +85,7 @@ void DofManager::prepare_to_use()
 
     // Mark at _dof_indices, nodes that are belong to my master (which are process with id greater than mine)
     int max_buffer_size = 0;
+    int n_dof_shared   = 0;
     for(int i = 0; i < neighbor_processors.size(); ++i)
     {
         unsigned int neighbor  = neighbor_processors[i];
@@ -92,12 +98,16 @@ void DofManager::prepare_to_use()
             {
                 int node_id = shared_nodes[ino]; 
 
-                for(int dof_id =0; dof_id < _ndof; ++dof_id)
+                for(int dof_id =0; dof_id < _ndof; ++dof_id) {
                     // flag indicanting that this node belongs to my master, so the equation belongs to him
                     _dof_indices[node_id*_ndof + dof_id] = -2;
+                    n_dof_shared++;
+                }
             }
         }
     }
+
+
 
     //* 3. Defining the number of the equations that were not marked with the previous -1 and -2 flags
     unsigned int n_equations_offset = 0;
@@ -111,6 +121,21 @@ void DofManager::prepare_to_use()
         }
     }
 
+    cout << "processor[" << MeshTools::processor_id() << "] has " << n_local_equations << " local equations , n_shared_dof =" << n_dof_shared << endl;
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    if(MeshTools::processor_id() == 1)
+    {
+        for(int n =0; n < n_nodes; n++)
+        {
+            for(int dof_id =0; dof_id < _ndof; ++dof_id) {
+                std::cout << " node " << n << ", dof " << dof_id << ": " << _dof_indices[n*_ndof+dof_id] << " \n";
+            }
+        }
+    }
+
+   MPI_Barrier(MPI_COMM_WORLD);
     //* 4. Calculating offset
         
     // Sends from predecessor process the value of `n_local_equations` to calculate `n_equations_offset` variable
@@ -174,6 +199,7 @@ void DofManager::prepare_to_use()
         MPI_Isend(&sendBuffer[start],n_shared_dof,MPI_UNSIGNED,sendto,0,MPI_COMM_WORLD,&requests[r++]);
     }
 
+    // FIXME: buffer de envio/recebimento nao correspondem 
     MPI_Waitall(r,&requests[0], &status[0]);
 
     for(int i =0; i < n_recvs; i++)
@@ -192,6 +218,17 @@ void DofManager::prepare_to_use()
                     _dof_indices[node*_ndof + dof_id] = recv_value;
             }
         }  
+    }
+
+    if(MeshTools::processor_id() == 1)
+    {
+        cout << endl;
+        for(int n =0; n < n_nodes; n++)
+        {
+            for(int dof_id =0; dof_id < _ndof; ++dof_id) {
+                std::cout << " node " << n << ", dof " << dof_id << ": " << _dof_indices[n*_ndof+dof_id] << " \n";
+            }
+        }
     }
 
     _prepared_to_use = true;

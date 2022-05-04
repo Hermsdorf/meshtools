@@ -154,33 +154,53 @@ int main(int argc, char* argv[])
     //     }
     // }
         
+    // Sistema de fluido: NS
+    // 2D: 3 Dofs
+    //  0 : vel_x
+    //  1 : vel_y
+    //  2 : pressao
+    MeshIODataAppended info;
+    pmesh->writePVTK("parallel", &info);
+    pmesh->WritePMesh("parallel");
+       
+
     DofManager* dm = new DofManager(*pmesh);
+    dm->set_n_dofs(3);
 
     auto physical_data = pmesh->getPhysicalMap();
    for(int i = 0 ; i < physical_data.size() ; i++)
     {
-        DirichletBoundary* dirichlet = new DirichletBoundary(physical_data[i].first, i, "1", "");
-        dm->add_dirichlet_boundary(*dirichlet);
-        if (processor_id == 0)
-            std::cout << "Dirichlet boundary: " << dirichlet->get_dof_id() << ", " << dirichlet->get_boundary_id() << std::endl;
+        if(physical_data[i].first == 1)
+        {
+            
+            DirichletBoundary* dirichlet1 = new DirichletBoundary(physical_data[i].first, 0, "1", "");
+            DirichletBoundary* dirichlet2 = new DirichletBoundary(physical_data[i].first, 1, "0", "");
+            DirichletBoundary* dirichlet3 = new DirichletBoundary(physical_data[i].first, 2, "0", "");
+            dm->add_dirichlet_boundary(*dirichlet1);
+            dm->add_dirichlet_boundary(*dirichlet2);
+            dm->add_dirichlet_boundary(*dirichlet3);
+            if (processor_id == 0)
+                 std::cout << "Dirichlet boundary: " << dirichlet1->get_dof_id() << ", " << dirichlet1->get_boundary_id() << std::endl;
+            }
     }
     
     unsigned int* onnz;
     unsigned int* dnnz;
-    dm->set_n_dofs(2);
+    
     dm->prepare_to_use();
     dm->calculate_onnz_dnnz(onnz, dnnz);
 
     std::vector<int> dof_indices;
     dof_indices = dm->get_dof_indices();
-    if(processor_id == 0)
-    {
-        // mapping: node_id*_ndof + dof_id
-        for(int i = 0 ; i < dof_indices.size() ; i++)
-        {
-            std::cout << "[" << processor_id << "] node " << i%pmesh->get_n_nodes() << ", dof " << i%2 << ": " << dof_indices[i] << " \n";
-        }
-    }
+
+    // if(processor_id == 0)
+    // {
+    //     // mapping: node_id*_ndof + dof_id
+    //     for(int i = 0 ; i < dof_indices.size() ; i++)
+    //     {
+    //         std::cout << "[" << processor_id << "] node " << i%pmesh->get_n_nodes() << ", dof " << i%2 << ": " << dof_indices[i] << " \n";
+    //     }
+    // }
 
     // Criar o Sistema de Equações
     // std::vector<unsigned int> &gindices = pmesh->getLocal2Global();
