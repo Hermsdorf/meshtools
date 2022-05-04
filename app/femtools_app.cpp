@@ -40,7 +40,6 @@ void fillAMat(Mat& A, ParallelMesh* pmesh, int processor_id)
 
     MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);
-    MatView(A, m_view);
     MatSetOption(A, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE); // sugestão do petsc
 
     // Prencher a matriz:
@@ -107,10 +106,6 @@ int main(int argc, char* argv[])
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha. 
         mesh = new Mesh(argv[1]);
-        
-        // Aplica a reordenação nodal considerando o algoritmo
-        // escolhido pelo usuário
-        //mesh->MeshReordering(RCM);
     
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha
@@ -128,42 +123,81 @@ int main(int argc, char* argv[])
         std::string str(argv[1]);
         str.resize(str.length()-4);
         pmesh->setFilename(str);
-        
-        DofManager* dm = new DofManager(*pmesh);
+    }
 
-        auto physical_data = pmesh->getPhysicalMap();
-        for(int i = 0 ; i < physical_data.size() ; i++)
-        {
-            DirichletBoundary* dirichlet = new DirichletBoundary(physical_data[i].first, 0, "x^2", "x");
-            dm->add_dirichlet_boundary(*dirichlet);
-        }
+    // if(processor_id == 1)
+    // {
+    //     auto coord = pmesh->getCoord();
+    //     auto conn = pmesh->getConn();
+    //     auto offset = pmesh->getOffset();
+
+    //     std::cout << "Nodes coords (" << coord.size()/3 << "): " << std::endl << "   ";
+    //     for(int i = 1 ; i <= coord.size() ; i++)
+    //     {
+    //         std::cout << coord[i-1] << " ";
+    //         if (i % 3 == 0)
+    //             std::cout << "\n   ";
+    //     }
+
+    //     std::cout << "Elem conn (" << offset.size()-1 << "): " << std::endl << "   ";
+    //     for(int i = 0 ; i < offset.size()-1 ; i++)
+    //     {
+    //         int begin = offset[i];
+    //         int end = offset[i+1];
+    //         std::cout << "elem " << i << " [" << begin << ", " << end << ") : ";
+
+    //         for(int j = begin ; j < end ; j++)
+    //         {
+    //             std::cout << conn[j] << " ";
+    //         }
+    //         std::cout << "\n   ";
+    //     }
+    // }
         
-        unsigned int* onnz;
-        unsigned int* dnnz;
-        dm->prepare_to_use();
-        dm->calculate_onnz_dnnz(onnz, dnnz);
+    DofManager* dm = new DofManager(*pmesh);
+
+    auto physical_data = pmesh->getPhysicalMap();
+   for(int i = 0 ; i < physical_data.size() ; i++)
+    {
+        DirichletBoundary* dirichlet = new DirichletBoundary(physical_data[i].first, i, "1", "");
+        dm->add_dirichlet_boundary(*dirichlet);
+        if (processor_id == 0)
+            std::cout << "Dirichlet boundary: " << dirichlet->get_dof_id() << ", " << dirichlet->get_boundary_id() << std::endl;
+    }
+    
+    unsigned int* onnz;
+    unsigned int* dnnz;
+    dm->set_n_dofs(2);
+    dm->prepare_to_use();
+    dm->calculate_onnz_dnnz(onnz, dnnz);
+
+    std::vector<int> dof_indices;
+    dof_indices = dm->get_dof_indices();
+    if(processor_id == 0)
+    {
+        // mapping: node_id*_ndof + dof_id
+        for(int i = 0 ; i < dof_indices.size() ; i++)
+        {
+            std::cout << "[" << processor_id << "] node " << i%pmesh->get_n_nodes() << ", dof " << i%2 << ": " << dof_indices[i] << " \n";
+        }
     }
 
     // Criar o Sistema de Equações
-    std::vector<unsigned int> &gindices = pmesh->getLocal2Global();
+    // std::vector<unsigned int> &gindices = pmesh->getLocal2Global();
 
-    Vec x;                                  // numero de nos totais
-    fillXVec(x, pmesh, gindices);
-    VecView(x, v_view);
+    // Vec x;                                  // numero de nos totais
+    // std::cout << "[" << processor_id << "] Calculating x vector...\n";
+    // fillXVec(x, pmesh, gindices);
+    // VecView(x, v_view);
 
-    Mat A;
-    fillAMat(A, pmesh, processor_id);
-    MatView(A, m_view);
-
-    // teste
-    Mat B;
-    fillBMat(B, pmesh, gindices);
-    MatView(B, m_view);
+    // Mat A;
+    // std::cout << "[" << processor_id << "] Calculating A matrix...\n";
+    // fillAMat(A, pmesh, processor_id);
+    // MatView(A, m_view);
 
    
-    VecDestroy(&x);
-    MatDestroy(&A);
-    MatDestroy(&B);
-    MeshTools::Finalize();
-    return 0;
+    // VecDestroy(&x);
+    // MatDestroy(&A);
+    //MeshTools::Finalize();
+    //return 0;
 }

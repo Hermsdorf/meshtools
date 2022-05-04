@@ -26,6 +26,7 @@ public:
     void         add_dirichlet_boundary(DirichletBoundary &boundary);
     void         prepare_to_use();
     void         calculate_onnz_dnnz(unsigned int *onnz, unsigned int *dnnz);
+    std::vector<int> get_dof_indices() { return this->_dof_indices; };
 
 private:
     // Private 

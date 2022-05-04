@@ -33,8 +33,7 @@ void DofManager::add_dirichlet_boundary(DirichletBoundary &boundary)
 
 void DofManager::prepare_to_use()
 {
-    // 1. Defining nodes with boundary conditions
-    // TODO: supomos que todo elemento de contorno vai ta nos elementos de face. A gente não pode ter uma condição de contorno no meio da malha?
+    //* 1. Defining nodes with boundary conditions
     int n_nodes             = _mesh.get_n_nodes();
     int n_boundary_elements = _mesh.get_n_face_elements();
     std::vector<int> &tags  = _mesh.getPhysicalTag();
@@ -66,12 +65,12 @@ void DofManager::prepare_to_use()
         for(auto bnd_node_iter =  boundary_nodes.begin(); bnd_node_iter != boundary_nodes.end(); ++bnd_node_iter)
         {
             int node_id = *bnd_node_iter;
-            // flag indicanting that there is no boundary condition to this node because it is a boundary node
+            // flag indicanting that there is no equation to this node because it is a boundary node (with its respective boundary condition)
             _dof_indices[node_id*_ndof + dof_id] = -1;
         }
     }
 
-    // 2. Marking nodes that doesnt belongs to the processor
+    //* 2. Marking nodes that doesnt belongs to the processor
     
     // Indicates local node, what means that it is not shared with other process
     std::vector<unsigned short> mask_node(n_nodes);
@@ -94,13 +93,13 @@ void DofManager::prepare_to_use()
                 int node_id = shared_nodes[ino]; 
 
                 for(int dof_id =0; dof_id < _ndof; ++dof_id)
-                    // flag indicanting that this node belongs to my master, so the equations are from him
+                    // flag indicanting that this node belongs to my master, so the equation belongs to him
                     _dof_indices[node_id*_ndof + dof_id] = -2;
             }
         }
     }
 
-    // 3. Defining the number of the equations that were not marked with the previous -1 and -2 flags
+    //* 3. Defining the number of the equations that were not marked with the previous -1 and -2 flags
     unsigned int n_equations_offset = 0;
     int n_local_equations = 0;
     for(int i = 0; i < _dof_indices.size(); ++i)
@@ -112,13 +111,13 @@ void DofManager::prepare_to_use()
         }
     }
 
-    // 4. Calculating offset
+    //* 4. Calculating offset
         
     // Sends from predecessor process the value of `n_local_equations` to calculate `n_equations_offset` variable
     MPI_Scan(&n_local_equations,&n_equations_offset,1,MPI_UNSIGNED,MPI_SUM,MPI_COMM_WORLD);
     n_equations_offset -= n_local_equations;
 
-    this->first_global_dof_index = n_equations_offset; 
+    this->_first_global_dof_index = n_equations_offset; 
 
     for(int i=0; i < _dof_indices.size(); i++)
     {
@@ -126,7 +125,7 @@ void DofManager::prepare_to_use()
             _dof_indices[i] += n_equations_offset;
     }
 
-    // 5. Communicating dof of interface nodes
+    //* 5. Communicating dof of interface nodes
     std::vector<unsigned int> sendto_neighbors_map;
     std::vector<unsigned int> recvfrom_neighbors_map;
     for(int i = 0; i < neighbor_processors.size(); ++i)
@@ -244,4 +243,3 @@ void DofManager::calculate_onnz_dnnz(unsigned int *onnz, unsigned int *dnnz)
     onnz = o_nnz;
     dnnz = d_nnz;
 }
-    
