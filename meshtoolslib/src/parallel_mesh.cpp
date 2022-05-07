@@ -632,7 +632,7 @@ void ParallelMesh::WritePMesh(const char *fname)
     if(!fout) return ;
 
 
-    fprintf(fout, "# Mesh Tools File \n");
+    fprintf(fout, "# MeshTools File \n");
     fprintf(fout, "1.0  0  1 \n");
     fprintf(fout, "%8d  # num. faces   \n", this->n_face_elements);
     fprintf(fout, "%8d  # num. elements\n", this->n_elements);
@@ -657,7 +657,7 @@ void ParallelMesh::WritePMesh(const char *fname)
         fprintf(fout,"\n");
     }
     fprintf(fout,"$END_BOUNDARY_DATA\n");
-    fprintf(fout,"$BEGIN_ELEMENT DATA\n");
+    fprintf(fout,"$BEGIN_ELEMENT_DATA\n");
     for(int iel = 0; iel < this->n_elements; iel++)
     {
         fprintf(fout,"%-4d %-4d ", iel, this->physical_tag[iel+this->n_face_elements]);
@@ -667,13 +667,13 @@ void ParallelMesh::WritePMesh(const char *fname)
             fprintf(fout, "%-4d ", conn[i]);
         fprintf(fout,"\n");
     }
-    fprintf(fout,"$END_ELEMENT DATA\n");
+    fprintf(fout,"$END_ELEMENT_DATA\n");
     fprintf(fout,"$BEGIN_GLOBAL_NODE_IDS\n");
     for(int i = 0; i < this->n_nodes; ++i) {
         fprintf(fout, "%-4d ", this->local_to_global[i]);
         if((i+1)%5 == 0) fprintf(fout,"\n");
     }
-    fprintf(fout,"$END_GLOBAL_NODE_IDS\n");
+    fprintf(fout,"\n$END_GLOBAL_NODE_IDS\n");
     fprintf(fout ,"$BEGIN_PARALLEL_DATA\n");
     fprintf(fout, "%ld  # number of neighbor processors \n", neighbor_processors.size());
     for(int i=0; i < this->neighbor_processors.size(); i++)

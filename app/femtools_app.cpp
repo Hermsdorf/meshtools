@@ -125,35 +125,6 @@ int main(int argc, char* argv[])
         pmesh->setFilename(str);
     }
 
-    // if(processor_id == 1)
-    // {
-    //     auto coord = pmesh->getCoord();
-    //     auto conn = pmesh->getConn();
-    //     auto offset = pmesh->getOffset();
-
-    //     std::cout << "Nodes coords (" << coord.size()/3 << "): " << std::endl << "   ";
-    //     for(int i = 1 ; i <= coord.size() ; i++)
-    //     {
-    //         std::cout << coord[i-1] << " ";
-    //         if (i % 3 == 0)
-    //             std::cout << "\n   ";
-    //     }
-
-    //     std::cout << "Elem conn (" << offset.size()-1 << "): " << std::endl << "   ";
-    //     for(int i = 0 ; i < offset.size()-1 ; i++)
-    //     {
-    //         int begin = offset[i];
-    //         int end = offset[i+1];
-    //         std::cout << "elem " << i << " [" << begin << ", " << end << ") : ";
-
-    //         for(int j = begin ; j < end ; j++)
-    //         {
-    //             std::cout << conn[j] << " ";
-    //         }
-    //         std::cout << "\n   ";
-    //     }
-    // }
-        
     // Sistema de fluido: NS
     // 2D: 3 Dofs
     //  0 : vel_x
@@ -188,19 +159,7 @@ int main(int argc, char* argv[])
     unsigned int* dnnz;
     
     dm->prepare_to_use();
-    dm->calculate_onnz_dnnz(onnz, dnnz);
-
-    std::vector<int> dof_indices;
-    dof_indices = dm->get_dof_indices();
-
-    // if(processor_id == 0)
-    // {
-    //     // mapping: node_id*_ndof + dof_id
-    //     for(int i = 0 ; i < dof_indices.size() ; i++)
-    //     {
-    //         std::cout << "[" << processor_id << "] node " << i%pmesh->get_n_nodes() << ", dof " << i%2 << ": " << dof_indices[i] << " \n";
-    //     }
-    // }
+    //dm->calculate_onnz_dnnz(onnz, dnnz);
 
     // Criar o Sistema de Equações
     // std::vector<unsigned int> &gindices = pmesh->getLocal2Global();

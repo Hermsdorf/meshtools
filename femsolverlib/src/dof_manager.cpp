@@ -1,5 +1,6 @@
 
 #include <set>
+#include <algorithm>
 
 #include "meshtools.h"
 #include "dof_manager.h"
@@ -30,7 +31,6 @@ void DofManager::add_dirichlet_boundary(DirichletBoundary &boundary)
     _boundaries.push_back(boundary);
 }
 
-
 void DofManager::prepare_to_use()
 {
     MPI_Barrier(MPI_COMM_WORLD);
@@ -41,6 +41,7 @@ void DofManager::prepare_to_use()
     std::vector<unsigned int>&  neighbor_processors = _mesh.getNeigborsProcessors();
     std::vector<unsigned int>&  shared_nodes_offset = _mesh.getSharedNodesOffset();
     std::vector<unsigned int>&  shared_nodes = _mesh.getSharedNodes();
+    std::vector<unsigned int>& l2g = _mesh.getLocal2Global();
 
     _dof_indices.resize(n_nodes*_ndof);
 
@@ -124,18 +125,19 @@ void DofManager::prepare_to_use()
     cout << "processor[" << MeshTools::processor_id() << "] has " << n_local_equations << " local equations , n_shared_dof =" << n_dof_shared << endl;
 
     MPI_Barrier(MPI_COMM_WORLD);
-
-    if(MeshTools::processor_id() == 1)
+    if(MeshTools::processor_id() == 0)
     {
+        cout << "Before send messages..." << endl;
         for(int n =0; n < n_nodes; n++)
         {
             for(int dof_id =0; dof_id < _ndof; ++dof_id) {
-                std::cout << " node " << n << ", dof " << dof_id << ": " << _dof_indices[n*_ndof+dof_id] << " \n";
+                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _dof_indices[n*_ndof+dof_id] << " \n";
             }
         }
+        std::cout << "\n\n====================================\n\n";
     }
 
-   MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
     //* 4. Calculating offset
         
     // Sends from predecessor process the value of `n_local_equations` to calculate `n_equations_offset` variable
@@ -164,6 +166,14 @@ void DofManager::prepare_to_use()
             sendto_neighbors_map.push_back(i);
     }
 
+    for (int i = 0; i < recvfrom_neighbors_map.size(); ++i)
+    {   
+        std::cout << "processor[" << MeshTools::processor_id() << "] is receiving from processor [" << neighbor_processors[recvfrom_neighbors_map[i]] << "]\n";
+    }
+    for (int i = 0; i < sendto_neighbors_map.size(); ++i)
+    {   
+        std::cout << "processor[" << MeshTools::processor_id() << "] is sending to processor [" << neighbor_processors[sendto_neighbors_map[i]] << "]\n";
+    }
     std::vector<unsigned int> recvBuffer(shared_nodes.size()*_ndof);
     std::vector<unsigned int> sendBuffer(shared_nodes.size()*_ndof);
     std::vector<MPI_Request>  requests(sendto_neighbors_map.size()+recvfrom_neighbors_map.size());
@@ -190,9 +200,35 @@ void DofManager::prepare_to_use()
         unsigned int end       = shared_nodes_offset[i+1];
         unsigned int n_shared_dof = (end-start)*_ndof;
 
+        std::vector<unsigned int> global_node_ids(end-start);
+        std::vector<unsigned int>::iterator low;
+        int count = 0;
+        for(int ino = start; ino < end; ino++)
+        {
+            unsigned int local_node_id = shared_nodes[ino];
+            global_node_ids[count] = l2g[local_node_id];
+            count++;
+        }
+
+        std::sort(global_node_ids.begin(), global_node_ids.end());
+        std::vector<unsigned int> shared_nodes_ordered(shared_nodes.size());
         for(int ino =start; ino < end; ino++) 
         {
-            int node        = shared_nodes[ino];
+            low = std::lower_bound(global_node_ids.begin(), global_node_ids.end(), shared_nodes[ino]);
+
+            unsigned int new_position = low - global_node_ids.begin();
+            shared_nodes_ordered[new_position] = shared_nodes[ino];
+        }
+
+        for(int i = 0 ; i< shared_nodes_ordered.size(); i++)
+        {
+            std::cout << "processor [" << MeshTools::processor_id() << "] shared_nodes[" << i << "] = " << shared_nodes[i] << ", shared_nodes_ordered[ " << i << "] = " << shared_nodes_ordered[i] << "\n";
+        }
+
+        for(int ino =0; ino < (end-start); ino++) 
+        {
+            
+            int node        = shared_nodes_ordered[ino];
             for(int dof_id =0; dof_id < _ndof; ++dof_id)
                 sendBuffer[ino*_ndof + dof_id] = _dof_indices[node*_ndof + dof_id];
         }
@@ -219,14 +255,27 @@ void DofManager::prepare_to_use()
             }
         }  
     }
-
-    if(MeshTools::processor_id() == 1)
+    MPI_Barrier(MPI_COMM_WORLD);
+    if(MeshTools::processor_id() == 0)
     {
         cout << endl;
         for(int n =0; n < n_nodes; n++)
         {
             for(int dof_id =0; dof_id < _ndof; ++dof_id) {
-                std::cout << " node " << n << ", dof " << dof_id << ": " << _dof_indices[n*_ndof+dof_id] << " \n";
+                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _dof_indices[n*_ndof+dof_id] << " \n";
+            }
+        }
+        std::cout << "\n\n====================================\n\n";
+    }
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    if(MeshTools::processor_id() == 1)
+    {
+        for(int n =0; n < n_nodes; n++)
+        {
+            for(int dof_id =0; dof_id < _ndof; ++dof_id) {
+                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _dof_indices[n*_ndof+dof_id] << " \n";
             }
         }
     }
