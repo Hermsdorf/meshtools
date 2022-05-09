@@ -1106,7 +1106,7 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
     for( ; map_it !=  node_partition.end(); map_it++)
     {
         int node_id          = map_it->first;
-        int local_node_id    = g2l[node_id];
+        //int local_node_id    = g2l[node_id];
         
         if(map_it->second.count(sendto)>0)
         {
@@ -1115,7 +1115,7 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
                 unsigned int processor = *list_processors;
                 if(processor != sendto)
                 {
-                    nodes_per_processors[processor].insert(local_node_id);
+                    nodes_per_processors[processor].insert(node_id);
                 }
             }
         }
@@ -1496,7 +1496,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
         // Processing and sending local arrays and variables to each `p` processor other than 0
         for (int p = 1; p < this->n_partitions; p++)
         {
-            std::cout << "Sending data do processor " << p << endl;
+            std::cout << "Sending data to processor " << p << endl;
             this->GetAndSendLocalData(mesh,p,array_sizes,node_partition,coords,l2g,conn,offset,type,tag,neighbors,neighbors_offset,neighbors_nodes,true);
         }
 
