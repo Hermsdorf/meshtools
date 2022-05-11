@@ -506,15 +506,67 @@ unsigned int ParallelMesh::get_start_global_index()
 void ParallelMesh::build_communication_map()
 {
   
+
+    for(int i = 0; i < this->n_nodes; ++i)
+         mask_node[i] = -1;
+
+    
+    // Construção do recvnodes
     for(int i = 0; i < this->neighbor_processors.size(); ++i)
     {
-        unsigned int p     = this->neighbor_processors[i];
+        unsigned int neighbor  = this->neighbor_processors[i];
+        unsigned int start     = this->shared_nodes_offset[i];
+        unsigned int end       = this->shared_nodes_offset[i+1];
+        for(int ino = start; ino < end; ino++)
+        {
+                int node_id = this->shared_nodes[ino]; 
+                if(neighbor > mask_node[node_id]) mask_node[node_id] = neighbor;
+        }
+    }
+
+    for(int i = 0; i < this->neighbor_processors.size(); ++i)
+    {
+        unsigned int neighbor  = this->neighbor_processors[i];
+       
         
-        if(this->processor_id < p) // processor_id is slave of p
-            this->recvfrom_neighbors_map.push_back(i);
-        
-        if(this->processor_id > p) // processor id is master of  p
-            this->sendto_neighbors_map.push_back(i);
+        if(this->processor_id < neighbor ) // processor_id is slave of p
+        {
+            MessageInformation info;
+            info.processor_id = neighbor;
+            unsigned int start     = this->shared_nodes_offset[i];
+            unsigned int end       = this->shared_nodes_offset[i+1];
+            for(int ino = start; ino < end; ino++)
+            {   
+                int node_id = this->shared_nodes[ino]; 
+                if(mask_node[node_id] == neighbor) {
+                    info.nodes.push_back(node_id);
+                }
+            }
+            if(info.nodes.size() > 0)
+                this->send_info.push_back(info);
+        } 
+    }
+
+    // Construção do sendnodes
+    for(int i = 0; i < this->neighbor_processors.size(); ++i)
+    {
+        unsigned int neighbor  = this->neighbor_processors[i];
+        if(this->processor_id > neighbor ) // processor_id is master of p
+        {
+            MessageInformation info;
+            info.processor_id = neighbor;
+            unsigned int start     = this->shared_nodes_offset[i];
+            unsigned int end       = this->shared_nodes_offset[i+1];
+            for(int ino = start; ino < end; ino++)
+            {   
+                int node_id = this->shared_nodes[ino]; 
+                if(mask_node[node_id] == neighbor) {
+                    info.nodes.push_back(node_id);
+                }
+            }
+            if(info.nodes.size() > 0)
+                this->send_info.push_back(info);
+        }
     }
 }
 

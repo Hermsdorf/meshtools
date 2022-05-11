@@ -5,6 +5,13 @@
 
 #include "mesh.h"
 
+typedef struct 
+{
+    unsigned int processor_id;
+    std::vector<unsigned int> nodes;
+} MessageInformation;
+
+
 class ParallelMesh : public Mesh{
     public:
         ParallelMesh();
@@ -54,8 +61,8 @@ class ParallelMesh : public Mesh{
         std::vector<unsigned int> shared_nodes_offset;
         std::vector<unsigned int> shared_nodes;
         
-        std::vector<unsigned int> sendto_neighbors_map;
-        std::vector<unsigned int> recvfrom_neighbors_map;
+        std::vector <MessageInformation> sendto_info;
+        std::vector <MessageInformation> recvfrom_info;
         
         //void writePvtu();
         void build_communication_map();

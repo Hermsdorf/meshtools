@@ -1110,6 +1110,10 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
         
         if(map_it->second.count(sendto)>0)
         {
+            // obter id do maior processo que contém o nó
+            // auto end = map_it->second.end();
+            // unsigned int maior_processor = *(--end);
+
             for(auto list_processors = map_it->second.begin(); list_processors != map_it->second.end(); list_processors++)
             {
                 unsigned int processor = *list_processors;
@@ -1131,7 +1135,7 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
                 neighbors_offset.push_back(ofs + nodes_per_processors[np].size());
                 ofs      += nodes_per_processors[np].size();
                 for(auto it_list = nodes_per_processors[np].begin(); it_list != nodes_per_processors[np].end(); it_list++)
-                    neighbors_nodes.push_back(*it_list);
+                    neighbors_nodes.push_back(g2l[*it_list]);
         }
     }
 

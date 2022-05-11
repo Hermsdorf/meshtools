@@ -34,6 +34,8 @@ void DofManager::add_dirichlet_boundary(DirichletBoundary &boundary)
 void DofManager::prepare_to_use()
 {
     MPI_Barrier(MPI_COMM_WORLD);
+    cout << "DofManager::prepare_to_use()" << endl;
+
     //* 1. Defining nodes with boundary conditions
     int n_nodes             = _mesh.get_n_nodes();
     int n_boundary_elements = _mesh.get_n_face_elements();
@@ -84,6 +86,8 @@ void DofManager::prepare_to_use()
     for(int i = 0; i < n_nodes; ++i)
          mask_node[i] = 0;
 
+    // map <int, int> node_id, processor_id;
+    
     // Mark at _dof_indices, nodes that are belong to my master (which are process with id greater than mine)
     int max_buffer_size = 0;
     int n_dof_shared   = 0;
@@ -253,6 +257,19 @@ void DofManager::prepare_to_use()
                 std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _dof_indices[n*_ndof+dof_id] << " \n";
             }
         }
+    }
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    if(MeshTools::processor_id() == 2)
+    {
+        cout << endl;
+        for(int n =0; n < n_nodes; n++)
+        {
+            for(int dof_id =0; dof_id < _ndof; ++dof_id) {
+                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _dof_indices[n*_ndof+dof_id] << " \n";
+            }
+        }
+        std::cout << "\n\n====================================\n\n";
     }
 
     _prepared_to_use = true;

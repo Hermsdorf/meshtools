@@ -135,30 +135,32 @@ int main(int argc, char* argv[])
     pmesh->WritePMesh("parallel");
        
 
-    DofManager* dm = new DofManager(*pmesh);
-    dm->set_n_dofs(3);
+    //DofManager* dm = new DofManager(*pmesh);
+    //dm->set_n_dofs(1);
 
     auto physical_data = pmesh->getPhysicalMap();
-   for(int i = 0 ; i < physical_data.size() ; i++)
+    /*
+    for(int i = 0 ; i < physical_data.size() ; i++)
     {
         if(physical_data[i].first == 1)
         {
             
-            DirichletBoundary* dirichlet1 = new DirichletBoundary(physical_data[i].first, 0, "1", "");
-            DirichletBoundary* dirichlet2 = new DirichletBoundary(physical_data[i].first, 1, "0", "");
-            DirichletBoundary* dirichlet3 = new DirichletBoundary(physical_data[i].first, 2, "0", "");
-            dm->add_dirichlet_boundary(*dirichlet1);
-            dm->add_dirichlet_boundary(*dirichlet2);
-            dm->add_dirichlet_boundary(*dirichlet3);
+            //DirichletBoundary* dirichlet1 = new DirichletBoundary(physical_data[i].first, 0, "1", "");
+            //DirichletBoundary* dirichlet2 = new DirichletBoundary(physical_data[i].first, 1, "0", "");
+            //DirichletBoundary* dirichlet3 = new DirichletBoundary(physical_data[i].first, 2, "0", "");
+            //dm->add_dirichlet_boundary(*dirichlet1);
+            //dm->add_dirichlet_boundary(*dirichlet2);
+            //dm->add_dirichlet_boundary(*dirichlet3);
             if (processor_id == 0)
                  std::cout << "Dirichlet boundary: " << dirichlet1->get_dof_id() << ", " << dirichlet1->get_boundary_id() << std::endl;
             }
     }
+    */
     
     unsigned int* onnz;
     unsigned int* dnnz;
     
-    dm->prepare_to_use();
+    //dm->prepare_to_use();
     //dm->calculate_onnz_dnnz(onnz, dnnz);
 
     // Criar o Sistema de Equações
