@@ -1110,10 +1110,6 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
         
         if(map_it->second.count(sendto)>0)
         {
-            // obter id do maior processo que contém o nó
-            // auto end = map_it->second.end();
-            // unsigned int maior_processor = *(--end);
-
             for(auto list_processors = map_it->second.begin(); list_processors != map_it->second.end(); list_processors++)
             {
                 unsigned int processor = *list_processors;
@@ -1129,7 +1125,7 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
     neighbors_offset.push_back(ofs);
     for (int np = 0; np < this->n_partitions; np++)
     {
-        if (np != sendto && nodes_per_processors[np].size() != 0)
+        if (np != sendto && nodes_per_processors[np].size() != 0)   
         {
                 neighbors.push_back(np);
                 neighbors_offset.push_back(ofs + nodes_per_processors[np].size());

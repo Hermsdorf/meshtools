@@ -40,8 +40,11 @@ class ParallelMesh : public Mesh{
         std::vector<unsigned int>&  getSharedNodesOffset();
         std::vector<unsigned int>&  getSharedNodes();
         std::vector<unsigned int>&  getLocal2Global();
+        std::vector<MessageInformation>& get_sendto_info();
+        std::vector<MessageInformation>& get_recvfrom_info();
         void  getGhostNodesIds(std::vector<unsigned int>& local_ghosts_nodes, std::vector<unsigned int>& global_ghosts_nodes);
         void  renumbering();
+        void build_communication_map();
     private:
         
         bool internal_mesh;
@@ -63,9 +66,6 @@ class ParallelMesh : public Mesh{
         
         std::vector <MessageInformation> sendto_info;
         std::vector <MessageInformation> recvfrom_info;
-        
-        //void writePvtu();
-        void build_communication_map();
 };
 
 #endif /* PARALLEL_MESH_H */

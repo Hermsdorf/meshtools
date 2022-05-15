@@ -40,10 +40,6 @@ void DofManager::prepare_to_use()
     int n_nodes             = _mesh.get_n_nodes();
     int n_boundary_elements = _mesh.get_n_face_elements();
     std::vector<int> &tags  = _mesh.getPhysicalTag();
-    std::vector<unsigned int>&  neighbor_processors = _mesh.getNeigborsProcessors();
-    std::vector<unsigned int>&  shared_nodes_offset = _mesh.getSharedNodesOffset();
-    std::vector<unsigned int>&  shared_nodes = _mesh.getSharedNodes();
-    std::vector<unsigned int>& l2g = _mesh.getLocal2Global();
 
     _dof_indices.resize(n_nodes*_ndof);
 
@@ -80,39 +76,29 @@ void DofManager::prepare_to_use()
 
     //* 2. Marking nodes that doesnt belongs to the processor
     
-    // Indicates local node, what means that it is not shared with other process
-    std::vector<unsigned short> mask_node(n_nodes);
-
-    for(int i = 0; i < n_nodes; ++i)
-         mask_node[i] = 0;
-
-    // map <int, int> node_id, processor_id;
-    
     // Mark at _dof_indices, nodes that are belong to my master (which are process with id greater than mine)
-    int max_buffer_size = 0;
-    int n_dof_shared   = 0;
-    for(int i = 0; i < neighbor_processors.size(); ++i)
+    std::vector<MessageInformation>& recvfrom = _mesh.get_recvfrom_info();
+    unsigned int max_buffer_size = 0;
+    unsigned int n_dof_shared   = 0;
+    for(int i = 0; i < recvfrom.size(); ++i)
     {
-        unsigned int neighbor  = neighbor_processors[i];
-        if(neighbor > MeshTools::processor_id())
+        unsigned int neighbor                   = recvfrom[i].processor_id;
+        std::vector<unsigned int>& shared_nodes = recvfrom[i].nodes;
+        unsigned int n_shared_nodes             = shared_nodes.size();
+        
+        if(n_shared_nodes > max_buffer_size) max_buffer_size = n_shared_nodes;
+        for(int ino = 0; ino < n_shared_nodes ; ino++)
         {
-            unsigned int start     = shared_nodes_offset[i];
-            unsigned int end       = shared_nodes_offset[i+1];
-            if((end-start) > max_buffer_size) max_buffer_size = (end-start);
-            for(int ino = start; ino < end; ino++)
-            {
-                int node_id = shared_nodes[ino]; 
+            int node_id = shared_nodes[ino]; 
 
-                for(int dof_id =0; dof_id < _ndof; ++dof_id) {
-                    // flag indicanting that this node belongs to my master, so the equation belongs to him
-                    _dof_indices[node_id*_ndof + dof_id] = -2;
-                    n_dof_shared++;
-                }
+            for(int dof_id =0; dof_id < _ndof; ++dof_id) {
+                // flag indicanting that this node belongs to my master, so the equation belongs to him
+                _dof_indices[node_id*_ndof + dof_id] = -2;
+                n_dof_shared++;
             }
         }
+        
     }
-
-
 
     //* 3. Defining the number of the equations that were not marked with the previous -1 and -2 flags
     unsigned int n_equations_offset = 0;
@@ -156,30 +142,19 @@ void DofManager::prepare_to_use()
             _dof_indices[i] += n_equations_offset;
     }
 
-    //* 5. Communicating dof of interface nodes
-    std::vector<unsigned int> sendto_neighbors_map;
-    std::vector<unsigned int> recvfrom_neighbors_map;
-    for(int i = 0; i < neighbor_processors.size(); ++i)
-    {
-        unsigned int p     = neighbor_processors[i];
-        
-        if(MeshTools::processor_id() < p) // processor_id is slave of p
-            recvfrom_neighbors_map.push_back(i);
+    std::vector<MessageInformation>& sendto_neighbors_map   = _mesh.get_sendto_info();
+    std::vector<MessageInformation>& recvfrom_neighbors_map = _mesh.get_recvfrom_info();
 
-        else if(MeshTools::processor_id() > p) // processor id is master of  p
-            sendto_neighbors_map.push_back(i);
-    }
+    unsigned int recv_n_shared_nodes = 0;
+    for(int i = 0; i < recvfrom_neighbors_map.size(); ++i)
+        recv_n_shared_nodes += recvfrom_neighbors_map[i].nodes.size();
 
-    for (int i = 0; i < recvfrom_neighbors_map.size(); ++i)
-    {   
-        std::cout << "processor[" << MeshTools::processor_id() << "] is receiving from processor [" << neighbor_processors[recvfrom_neighbors_map[i]] << "]\n";
-    }
-    for (int i = 0; i < sendto_neighbors_map.size(); ++i)
-    {   
-        std::cout << "processor[" << MeshTools::processor_id() << "] is sending to processor [" << neighbor_processors[sendto_neighbors_map[i]] << "]\n";
-    }
-    std::vector<unsigned int> recvBuffer(shared_nodes.size()*_ndof);
-    std::vector<unsigned int> sendBuffer(shared_nodes.size()*_ndof);
+    unsigned int sendto_n_shared_nodes = 0;
+    for(int i = 0; i < sendto_neighbors_map.size(); ++i)
+        sendto_n_shared_nodes += sendto_neighbors_map[i].nodes.size();
+
+    std::vector<unsigned int> recvBuffer(recv_n_shared_nodes*_ndof);
+    std::vector<unsigned int> sendBuffer(sendto_n_shared_nodes*_ndof);
     std::vector<MPI_Request>  requests(sendto_neighbors_map.size()+recvfrom_neighbors_map.size());
     std::vector<MPI_Status>   status(sendto_neighbors_map.size()+recvfrom_neighbors_map.size());
     
@@ -188,30 +163,27 @@ void DofManager::prepare_to_use()
     int n_recvs = recvfrom_neighbors_map.size();
     for(int i =0; i < n_recvs; i++)
     {
-        int neighbor_idx       = recvfrom_neighbors_map[i];
-        int recv_from          = neighbor_processors[neighbor_idx];
-        unsigned int start     = shared_nodes_offset[i];
-        unsigned int end       = shared_nodes_offset[i+1];
-        unsigned int n_shared_dof = (end-start)*_ndof;
-        MPI_Irecv(&recvBuffer[start],n_shared_dof,MPI_UNSIGNED, recv_from,0,MPI_COMM_WORLD,&requests[r++]);
+        std::vector<unsigned int> neighbor_nodes  = recvfrom_neighbors_map[i].nodes;
+        int recv_from                             = recvfrom_neighbors_map[i].processor_id;
+        unsigned int n_shared_dof                 = neighbor_nodes.size()*_ndof;
+
+        MPI_Irecv(&recvBuffer[neighbor_nodes[0]],n_shared_dof,MPI_UNSIGNED, recv_from,0,MPI_COMM_WORLD,&requests[r++]);
     }
+
     int n_sends = sendto_neighbors_map.size();
     for(int i =0; i < n_sends; i++)
     {
-        int neighbor_idx       = sendto_neighbors_map[i];
-        int sendto             = neighbor_processors[neighbor_idx];
-        unsigned int start     = shared_nodes_offset[i];
-        unsigned int end       = shared_nodes_offset[i+1];
-        unsigned int n_shared_dof = (end-start)*_ndof;
+        std::vector<unsigned int> neighbor_nodes = sendto_neighbors_map[i].nodes;
+        int sendto                               = sendto_neighbors_map[i].processor_id;
+        unsigned int n_shared_dof                = neighbor_nodes.size()*_ndof;
 
-        for(int ino =0; ino < (end-start); ino++) 
+        for(int ino =0; ino < neighbor_nodes.size(); ino++) 
         {
-            
-            int node        = shared_nodes[ino];
+            int node = neighbor_nodes[ino];
             for(int dof_id =0; dof_id < _ndof; ++dof_id)
                 sendBuffer[ino*_ndof + dof_id] = _dof_indices[node*_ndof + dof_id];
         }
-        MPI_Isend(&sendBuffer[start],n_shared_dof,MPI_UNSIGNED,sendto,0,MPI_COMM_WORLD,&requests[r++]);
+        MPI_Isend(&sendBuffer[neighbor_nodes[0]],n_shared_dof,MPI_UNSIGNED,sendto,0,MPI_COMM_WORLD,&requests[r++]);
     }
 
     // FIXME: buffer de envio/recebimento nao correspondem 
@@ -219,13 +191,12 @@ void DofManager::prepare_to_use()
 
     for(int i =0; i < n_recvs; i++)
     {
-        int neighbor_idx = recvfrom_neighbors_map[i];
-        int recv_from    = neighbor_processors[neighbor_idx];
-        unsigned int start     = shared_nodes_offset[i];
-        unsigned int end       = shared_nodes_offset[i+1];
-        unsigned int n_shared_nodes = (end-start);
-        for(int ino =start; ino < end; ino++) {
-            int node              = shared_nodes[ino];
+        std::vector<unsigned int> neighbor_nodes  = recvfrom_neighbors_map[i].nodes;
+        unsigned int n_shared_nodes               = neighbor_nodes.size();
+        
+        for(int ino = 0; ino < n_shared_nodes; ino++) 
+        {
+            int node = neighbor_nodes[ino];
 
             for(int dof_id =0; dof_id < _ndof; ++dof_id){
                 int recv_value = recvBuffer[ino*_ndof + dof_id];
@@ -234,6 +205,7 @@ void DofManager::prepare_to_use()
             }
         }  
     }
+    std::cout << "After sending messages..." << endl;
     MPI_Barrier(MPI_COMM_WORLD);
     if(MeshTools::processor_id() == 0)
     {
