@@ -1099,8 +1099,8 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
         }
     }
 
-    // Fills nodes_per_processors vector which contains the local nodes present in each processor other than the one is going to be sent
-    // its like the inversion of node_partition structure
+    // Fills nodes_per_processors vector which contains the local nodes present in each processor other than the one is going to be sent.
+    // Its like the inversion of node_partition structure
     auto map_it     = node_partition.begin();
     std::vector< std::set <unsigned int> > nodes_per_processors(this->n_partitions);
     for( ; map_it !=  node_partition.end(); map_it++)
@@ -1476,13 +1476,13 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
 
         // A map indicanting each process that the node i is present
         //
-        //            |
-        //       P0   |         P1
-        //            |
+        //            |         |
+        //       P0   |    P1   |   P1
+        //            |         |
         //    -------o1---------o2------
-        //            |
-        //       P2   |         P3
-        //            |
+        //            |         |
+        //       P2   |    P3   |   P3
+        //            |         |
         //
         // This node has node_partition[1] = {P0, P1, P2, P3} and node_partition is node_partition[2] = {P1, P3}
         std::map<unsigned int, std::set<unsigned int> > node_partition;

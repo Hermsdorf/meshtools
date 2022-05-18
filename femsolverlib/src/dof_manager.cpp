@@ -124,9 +124,22 @@ void DofManager::prepare_to_use()
                 std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _dof_indices[n*_ndof+dof_id] << " \n";
             }
         }
-        std::cout << "\n\n====================================\n\n";
+        
     }
+    MPI_Barrier(MPI_COMM_WORLD);
 
+    if(MeshTools::processor_id() == 1)
+    {
+        cout << "Before send messages..." << endl;
+        for(int n =0; n < n_nodes; n++)
+        {
+            for(int dof_id =0; dof_id < _ndof; ++dof_id) {
+                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _dof_indices[n*_ndof+dof_id] << " \n";
+            }
+        }
+        std::cout << "\n\n====================================\n\n";
+        
+    }
     MPI_Barrier(MPI_COMM_WORLD);
     //* 4. Calculating offset
         
