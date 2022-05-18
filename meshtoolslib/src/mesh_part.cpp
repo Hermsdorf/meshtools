@@ -1608,6 +1608,8 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
         
     }
 
+    pmesh->build_communication_map();
+
     return pmesh;
 #else
     return nullptr;

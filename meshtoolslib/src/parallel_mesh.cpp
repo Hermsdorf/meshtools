@@ -516,7 +516,7 @@ void ParallelMesh::build_communication_map()
 {
     int greather_neighbor_process[this->n_nodes];
     for(int i = 0; i < this->n_nodes; ++i)
-        greather_neighbor_process[i] = -1;
+        greather_neighbor_process[i] = processor_id;
     
     for(int i = 0; i < this->neighbor_processors.size(); ++i)
     {
@@ -559,7 +559,10 @@ void ParallelMesh::build_communication_map()
             unsigned int end       = this->shared_nodes_offset[i+1];
             for(int ino = start; ino < end; ino++){   
                 int node_id = this->shared_nodes[ino];
-                info.nodes.push_back(node_id);
+                if(greather_neighbor_process[node_id] == this->processor_id) {
+                    info.nodes.push_back(node_id);
+                }
+                //info.nodes.push_back(node_id);
             }
             if(info.nodes.size() > 0)
                 this->sendto_info.push_back(info);

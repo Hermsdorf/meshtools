@@ -20,8 +20,7 @@ DofManager::~DofManager()
     _dofs.clear();
     _dof_indices.clear();
     _boundaries.clear();
-    if(&_mesh)
-        delete &_mesh;
+
 }
 void DofManager::add_dirichlet_boundary(DirichletBoundary &boundary)
 {
@@ -78,6 +77,7 @@ void DofManager::prepare_to_use()
     
     // Mark at _dof_indices, nodes that are belong to my master (which are process with id greater than mine)
     std::vector<MessageInformation>& recvfrom = _mesh.get_recvfrom_info();
+
     unsigned int max_buffer_size = 0;
     unsigned int n_dof_shared   = 0;
     for(int i = 0; i < recvfrom.size(); ++i)
@@ -173,6 +173,7 @@ void DofManager::prepare_to_use()
     
     // Exchange Data from
     unsigned int r = 0;
+    unsigned int offset = 0;
     int n_recvs = recvfrom_neighbors_map.size();
     for(int i =0; i < n_recvs; i++)
     {
@@ -180,10 +181,14 @@ void DofManager::prepare_to_use()
         int recv_from                             = recvfrom_neighbors_map[i].processor_id;
         unsigned int n_shared_dof                 = neighbor_nodes.size()*_ndof;
 
-        MPI_Irecv(&recvBuffer[neighbor_nodes[0]],n_shared_dof,MPI_UNSIGNED, recv_from,0,MPI_COMM_WORLD,&requests[r++]);
+        MPI_Irecv(&recvBuffer[offset],n_shared_dof,MPI_UNSIGNED, recv_from,0,MPI_COMM_WORLD,&requests[r++]);
+
+        offset += n_shared_dof;
+
     }
 
     int n_sends = sendto_neighbors_map.size();
+    offset = 0;
     for(int i =0; i < n_sends; i++)
     {
         std::vector<unsigned int> neighbor_nodes = sendto_neighbors_map[i].nodes;
@@ -193,30 +198,36 @@ void DofManager::prepare_to_use()
         for(int ino =0; ino < neighbor_nodes.size(); ino++) 
         {
             int node = neighbor_nodes[ino];
-            for(int dof_id =0; dof_id < _ndof; ++dof_id)
-                sendBuffer[ino*_ndof + dof_id] = _dof_indices[node*_ndof + dof_id];
+            for(int dof_id =0; dof_id < _ndof; ++dof_id) {
+                unsigned int idx = ino*_ndof + dof_id;
+                sendBuffer[offset+idx] = _dof_indices[node*_ndof + dof_id];
+            }
         }
-        MPI_Isend(&sendBuffer[neighbor_nodes[0]],n_shared_dof,MPI_UNSIGNED,sendto,0,MPI_COMM_WORLD,&requests[r++]);
+        
+        MPI_Isend(&sendBuffer[offset],n_shared_dof,MPI_UNSIGNED,sendto,0,MPI_COMM_WORLD,&requests[r++]);
+        offset += n_shared_dof;
     }
 
     // FIXME: buffer de envio/recebimento nao correspondem 
     MPI_Waitall(r,&requests[0], &status[0]);
 
+    offset = 0;
     for(int i =0; i < n_recvs; i++)
     {
         std::vector<unsigned int> neighbor_nodes  = recvfrom_neighbors_map[i].nodes;
-        unsigned int n_shared_nodes               = neighbor_nodes.size();
+        unsigned int n_shared_nodes               = neighbor_nodes.size()*_ndof;
         
-        for(int ino = 0; ino < n_shared_nodes; ino++) 
+        for(int ino = 0; ino <  neighbor_nodes.size(); ino++) 
         {
             int node = neighbor_nodes[ino];
 
             for(int dof_id =0; dof_id < _ndof; ++dof_id){
-                int recv_value = recvBuffer[ino*_ndof + dof_id];
+                int recv_value = recvBuffer[offset+ino*_ndof + dof_id];
                 if(recv_value >= 0)
                     _dof_indices[node*_ndof + dof_id] = recv_value;
             }
-        }  
+        } 
+        offset += n_shared_nodes; 
     }
     std::cout << "After sending messages..." << endl;
     MPI_Barrier(MPI_COMM_WORLD);

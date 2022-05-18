@@ -119,7 +119,7 @@ int main(int argc, char* argv[])
         // Malha gerada pelo processo mestre é distribuida
         // para os demais processos. 
         pmesh = parts->DistributedMesh(mesh);
-        pmesh->build_communication_map();
+        
 
         MPI_Barrier(MPI_COMM_WORLD);
         
@@ -146,9 +146,9 @@ int main(int argc, char* argv[])
 
         MPI_Barrier(MPI_COMM_WORLD);
         
-        std::string str(argv[1]);
-        str.resize(str.length()-4);
-        pmesh->setFilename(str);
+        //std::string str(argv[1]);
+        //str.resize(str.length()-4);
+        //pmesh->setFilename(str);
     }
 
     // Sistema de fluido: NS
@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
     DofManager* dm = new DofManager(*pmesh);
     dm->set_n_dofs(1);
 
-    auto physical_data = pmesh->getPhysicalMap();
+    //auto physical_data = pmesh->getPhysicalMap();
     /*
     for(int i = 0 ; i < physical_data.size() ; i++)
     {
@@ -183,8 +183,8 @@ int main(int argc, char* argv[])
     }
     */
     
-    unsigned int* onnz;
-    unsigned int* dnnz;
+    //unsigned int* onnz;
+    //unsigned int* dnnz;
     
     dm->prepare_to_use();
     //dm->calculate_onnz_dnnz(onnz, dnnz);
@@ -205,6 +205,7 @@ int main(int argc, char* argv[])
    
     // VecDestroy(&x);
     // MatDestroy(&A);
-    //MeshTools::Finalize();
-    //return 0;
+    
+    MeshTools::Finalize();
+    return 0;
 }
