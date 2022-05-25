@@ -112,6 +112,8 @@ void DofManager::prepare_to_use()
         }
     }
 
+    this->_n_local_equations = n_local_equations;
+
     cout << "processor[" << MeshTools::processor_id() << "] has " << n_local_equations << " local equations , n_shared_dof =" << n_dof_shared << endl;
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -271,17 +273,14 @@ void DofManager::prepare_to_use()
     _prepared_to_use = true;
 }
 
-void DofManager::calculate_onnz_dnnz(unsigned int *onnz, unsigned int *dnnz)
+void DofManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::vector<unsigned int> &onnz)
 {
-    int n_local_dof = _mesh.get_n_local_nodes()*_ndof;
-
     // Preallocation Matrix
-    std::vector<std::set<PetscInt>> vdiag(n_local_dof);
-    std::vector<std::set<PetscInt>> voff(n_local_dof);
+    std::vector<std::set<int>> vdiag(_n_local_equations);
+    std::vector<std::set<int>> voff(_n_local_equations);
 
-    auto &gindex = _dof_indices;
     unsigned int start = _first_global_dof_index;
-    unsigned int end = start + n_local_dof;
+    unsigned int end   = start + n_local_dof;
 
     // Getting the d_nnz e o_nnz vector needed to matrix preallocation
     for (int iel = 0; iel < _mesh.get_n_elements(); ++iel)
@@ -290,30 +289,34 @@ void DofManager::calculate_onnz_dnnz(unsigned int *onnz, unsigned int *dnnz)
         unsigned int *conn = _mesh.getElementConn(iel);
         for (int i = 0; i < connsz; ++i)
         {
-            unsigned int gi = gindex[conn[i]];
-            unsigned int li = gi - start;
-            if (gi >= start && gi < end)
+            for(int j = 0; j < this->_ndof; j++)
             {
-                for (int j = 0; j < connsz; ++j)
-                {
-                    unsigned int gj = gindex[conn[j]];
-                    if (gj >= start && gj < end)
-                        vdiag[li].insert(gj);
+                unsigned int Idx = conn[i]*this->_ndof + j;  // local
+                unsigned eqIdx = this->_dof_indices[Idx];    // global
+                if(eqIdx >= 0 ) {
+                    if(eqIdx >= start && eqIdx < end)
+                    {
+                        vdiag[eqIdx-start].insert(eqIdx);
+                    }
                     else
-                        voff[li].insert(gj);
+                    {
+                        voff[eqIdx-start].insert(eqIdx);
+                    }
                 }
             }
         }
     }
 
-    unsigned int* d_nnz = new unsigned int[n_local_dof];
-    unsigned int* o_nnz = new unsigned int[n_local_dof];
-    for (int i = 0; i < n_local_dof; i++)
+    for (int i = 0; i < _n_local_equations; i++)
     {
         d_nnz[i] = vdiag[i].size();
         o_nnz[i] = voff[i].size();
     }
+}
 
-    onnz = o_nnz;
-    dnnz = d_nnz;
+
+
+unsigned int DofManager::n_local_equations()
+{
+    return this->_n_local_equations;
 }
