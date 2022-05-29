@@ -3,9 +3,9 @@
 #include <algorithm>
 
 #include "meshtools.h"
-#include "dof_manager.h"
+#include "equation_manager.h"
 
-DofManager::DofManager(ParallelMesh &mesh):
+EquationManager::EquationManager(ParallelMesh &mesh):
     _mesh(mesh),
     _ndof(0),
     _first_global_dof_index(0),
@@ -15,14 +15,14 @@ DofManager::DofManager(ParallelMesh &mesh):
 
     }
 
-DofManager::~DofManager()
+EquationManager::~EquationManager()
 {
     _dofs.clear();
-    _dof_indices.clear();
+    _equation_indices.clear();
     _boundaries.clear();
-
 }
-void DofManager::add_dirichlet_boundary(DirichletBoundary &boundary)
+
+void EquationManager::add_dirichlet_boundary(DirichletBoundary &boundary)
 {
     for(auto it = _boundaries.begin(); it != _boundaries.end(); ++it)
         if(*it == boundary) return;
@@ -30,19 +30,19 @@ void DofManager::add_dirichlet_boundary(DirichletBoundary &boundary)
     _boundaries.push_back(boundary);
 }
 
-void DofManager::prepare_to_use()
+void EquationManager::prepare_to_use()
 {
     MPI_Barrier(MPI_COMM_WORLD);
-    cout << "DofManager::prepare_to_use()" << endl;
+    cout << "EquationManager::prepare_to_use()" << endl;
 
     //* 1. Defining nodes with boundary conditions
     int n_nodes             = _mesh.get_n_nodes();
     int n_boundary_elements = _mesh.get_n_face_elements();
     std::vector<int> &tags  = _mesh.getPhysicalTag();
 
-    _dof_indices.resize(n_nodes*_ndof);
+    _equation_indices.resize(n_nodes*_ndof);
 
-    cout << "processor[" << MeshTools::processor_id() << "]  - dof_indices.size() " << _dof_indices.size() << endl;
+    cout << "processor[" << MeshTools::processor_id() << "]  - dof_indices.size() " << _equation_indices.size() << endl;
 
     for(auto it = _boundaries.begin(); it != _boundaries.end(); ++it)
     {
@@ -69,13 +69,13 @@ void DofManager::prepare_to_use()
         {
             int node_id = *bnd_node_iter;
             // flag indicanting that there is no equation to this node because it is a boundary node (with its respective boundary condition)
-            _dof_indices[node_id*_ndof + dof_id] = -1;
+            _equation_indices[node_id*_ndof + dof_id] = -1;
         }
     }
 
     //* 2. Marking nodes that doesnt belongs to the processor
     
-    // Mark at _dof_indices, nodes that are belong to my master (which are process with id greater than mine)
+    // Mark at _equation_indices, nodes that are belong to my master (which are process with id greater than mine)
     std::vector<MessageInformation>& recvfrom = _mesh.get_recvfrom_info();
 
     unsigned int max_buffer_size = 0;
@@ -93,7 +93,7 @@ void DofManager::prepare_to_use()
 
             for(int dof_id =0; dof_id < _ndof; ++dof_id) {
                 // flag indicanting that this node belongs to my master, so the equation belongs to him
-                _dof_indices[node_id*_ndof + dof_id] = -2;
+                _equation_indices[node_id*_ndof + dof_id] = -2;
                 n_dof_shared++;
             }
         }
@@ -103,11 +103,11 @@ void DofManager::prepare_to_use()
     //* 3. Defining the number of the equations that were not marked with the previous -1 and -2 flags
     unsigned int n_equations_offset = 0;
     int n_local_equations = 0;
-    for(int i = 0; i < _dof_indices.size(); ++i)
+    for(int i = 0; i < _equation_indices.size(); ++i)
     {
-        if(_dof_indices[i] >= 0)
+        if(_equation_indices[i] >= 0)
         {
-            _dof_indices[i] = n_local_equations;
+            _equation_indices[i] = n_local_equations;
             n_local_equations++;
         }
     }
@@ -123,7 +123,7 @@ void DofManager::prepare_to_use()
         for(int n =0; n < n_nodes; n++)
         {
             for(int dof_id =0; dof_id < _ndof; ++dof_id) {
-                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _dof_indices[n*_ndof+dof_id] << " \n";
+                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _equation_indices[n*_ndof+dof_id] << " \n";
             }
         }
         
@@ -136,7 +136,7 @@ void DofManager::prepare_to_use()
         for(int n =0; n < n_nodes; n++)
         {
             for(int dof_id =0; dof_id < _ndof; ++dof_id) {
-                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _dof_indices[n*_ndof+dof_id] << " \n";
+                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _equation_indices[n*_ndof+dof_id] << " \n";
             }
         }
         std::cout << "\n\n====================================\n\n";
@@ -151,10 +151,10 @@ void DofManager::prepare_to_use()
 
     this->_first_global_dof_index = n_equations_offset; 
 
-    for(int i=0; i < _dof_indices.size(); i++)
+    for(int i=0; i < _equation_indices.size(); i++)
     {
-        if(_dof_indices[i] >= 0)
-            _dof_indices[i] += n_equations_offset;
+        if(_equation_indices[i] >= 0)
+            _equation_indices[i] += n_equations_offset;
     }
 
     std::vector<MessageInformation>& sendto_neighbors_map   = _mesh.get_sendto_info();
@@ -202,7 +202,7 @@ void DofManager::prepare_to_use()
             int node = neighbor_nodes[ino];
             for(int dof_id =0; dof_id < _ndof; ++dof_id) {
                 unsigned int idx = ino*_ndof + dof_id;
-                sendBuffer[offset+idx] = _dof_indices[node*_ndof + dof_id];
+                sendBuffer[offset+idx] = _equation_indices[node*_ndof + dof_id];
             }
         }
         
@@ -226,7 +226,7 @@ void DofManager::prepare_to_use()
             for(int dof_id =0; dof_id < _ndof; ++dof_id){
                 int recv_value = recvBuffer[offset+ino*_ndof + dof_id];
                 if(recv_value >= 0)
-                    _dof_indices[node*_ndof + dof_id] = recv_value;
+                    _equation_indices[node*_ndof + dof_id] = recv_value;
             }
         } 
         offset += n_shared_nodes; 
@@ -239,7 +239,7 @@ void DofManager::prepare_to_use()
         for(int n =0; n < n_nodes; n++)
         {
             for(int dof_id =0; dof_id < _ndof; ++dof_id) {
-                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _dof_indices[n*_ndof+dof_id] << " \n";
+                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _equation_indices[n*_ndof+dof_id] << " \n";
             }
         }
         std::cout << "\n\n====================================\n\n";
@@ -252,7 +252,7 @@ void DofManager::prepare_to_use()
         for(int n =0; n < n_nodes; n++)
         {
             for(int dof_id =0; dof_id < _ndof; ++dof_id) {
-                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _dof_indices[n*_ndof+dof_id] << " \n";
+                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _equation_indices[n*_ndof+dof_id] << " \n";
             }
         }
     }
@@ -264,7 +264,7 @@ void DofManager::prepare_to_use()
         for(int n =0; n < n_nodes; n++)
         {
             for(int dof_id =0; dof_id < _ndof; ++dof_id) {
-                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _dof_indices[n*_ndof+dof_id] << " \n";
+                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _equation_indices[n*_ndof+dof_id] << " \n";
             }
         }
         std::cout << "\n\n====================================\n\n";
@@ -273,14 +273,14 @@ void DofManager::prepare_to_use()
     _prepared_to_use = true;
 }
 
-void DofManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::vector<unsigned int> &onnz)
+void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::vector<unsigned int> &onnz)
 {
     // Preallocation Matrix
     std::vector<std::set<int>> vdiag(_n_local_equations);
     std::vector<std::set<int>> voff(_n_local_equations);
 
     unsigned int start = _first_global_dof_index;
-    unsigned int end   = start + n_local_dof;
+    unsigned int end   = start + _n_local_equations;
 
     // Getting the d_nnz e o_nnz vector needed to matrix preallocation
     for (int iel = 0; iel < _mesh.get_n_elements(); ++iel)
@@ -292,7 +292,7 @@ void DofManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::vecto
             for(int j = 0; j < this->_ndof; j++)
             {
                 unsigned int Idx = conn[i]*this->_ndof + j;  // local
-                unsigned eqIdx = this->_dof_indices[Idx];    // global
+                unsigned eqIdx = this->_equation_indices[Idx];    // global
                 if(eqIdx >= 0 ) {
                     if(eqIdx >= start && eqIdx < end)
                     {
@@ -309,14 +309,14 @@ void DofManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::vecto
 
     for (int i = 0; i < _n_local_equations; i++)
     {
-        d_nnz[i] = vdiag[i].size();
-        o_nnz[i] = voff[i].size();
+        dnnz[i] = vdiag[i].size();
+        onnz[i] = voff[i].size();
     }
 }
 
 
 
-unsigned int DofManager::n_local_equations()
+unsigned int EquationManager::n_local_equations()
 {
     return this->_n_local_equations;
 }

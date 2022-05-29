@@ -1,5 +1,5 @@
 
-#include "dof_manager.h"
+#include "equation_manager.h"
 #include "petsc.h"
 
 // Ax = b
@@ -15,13 +15,13 @@ class ImplicitSystem
     private:
         std::vector<std::string> variables_names;
         std::string              system_name;
-        int n_ndof; 
+        int n_dof; 
         Vec          rhs;
-        vec          solution;
+        Vec          solution;
         Mat          A;
         Vec          solution_local;
-        DofManager dof;
-        const ParallelMesh& mesh;
+        EquationManager equations;
+        ParallelMesh& mesh;
         VecScatter scatter;
 
-}
+};
