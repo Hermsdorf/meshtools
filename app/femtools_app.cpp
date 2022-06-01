@@ -5,7 +5,7 @@
 #include "mesh_part.h"
 #include "alglin.h"
 #include "parallel_mesh.h"
-#include "dof_manager.h"
+#include "implicit_system.h"
 #include "dirichlet_boundary.h"
 
 static char help[] = "Empty Problem\n\n";
@@ -119,33 +119,6 @@ int main(int argc, char* argv[])
         // Malha gerada pelo processo mestre é distribuida
         // para os demais processos. 
         pmesh = parts->DistributedMesh(mesh);
-        
-
-        MPI_Barrier(MPI_COMM_WORLD);
-        
-        std::vector<MessageInformation>& recvfrom = pmesh->get_recvfrom_info();
-        std::vector<MessageInformation>& sendto   = pmesh->get_sendto_info();
-
-        for(int i = 0 ; i < recvfrom.size() ; i++)
-        {
-            std::cout << "[" << processor_id << "] receiving from " << recvfrom[i].processor_id << " nodes ";
-            for(int j = 0 ; j < recvfrom[i].nodes.size() ; j++)
-                std::cout << recvfrom[i].nodes[j] << ", ";
-            std::cout << "\n";
-        }
-
-        MPI_Barrier(MPI_COMM_WORLD);
-
-        for(int i = 0 ; i < sendto.size() ; i++)
-        {
-            std::cout << "[" << processor_id << "] sending to " << sendto[i].processor_id << " nodes ";
-            for(int j = 0 ; j < sendto[i].nodes.size() ; j++)
-                std::cout << sendto[i].nodes[j] << ", ";
-            std::cout << "\n";
-        }
-
-        MPI_Barrier(MPI_COMM_WORLD);
-        
         //std::string str(argv[1]);
         //str.resize(str.length()-4);
         //pmesh->setFilename(str);
@@ -161,8 +134,8 @@ int main(int argc, char* argv[])
     pmesh->WritePMesh("parallel");
        
 
-    DofManager* dm = new DofManager(*pmesh);
-    dm->set_n_dofs(1);
+    //DofManager* dm = new DofManager(*pmesh);
+    //dm->set_n_dofs(1);
 
     //auto physical_data = pmesh->getPhysicalMap();
     /*
@@ -186,7 +159,7 @@ int main(int argc, char* argv[])
     //unsigned int* onnz;
     //unsigned int* dnnz;
     
-    dm->prepare_to_use();
+    //dm->prepare_to_use();
     //dm->calculate_onnz_dnnz(onnz, dnnz);
 
     // Criar o Sistema de Equações

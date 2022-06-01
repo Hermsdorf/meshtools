@@ -6,85 +6,140 @@ using namespace std;
 #include "meshtools.h"
 
 ImplicitSystem::ImplicitSystem(ParallelMesh &mesh, std::string name):
-    mesh(mesh), system_name(name), n_dof(0), equations(mesh)
+    _mesh(mesh), _system_name(name), _n_dof(0), _equations(mesh)
     {
-        //this->init();
+
     }   
 
 int ImplicitSystem::addVariable(std::string name)
 {
-    n_dof++;
+    
 
-    if(std::find(this->variables_names.begin(), this->variables_names.end(), name) != this->variables_names.end())
-        this->variables_names.push_back(name);
-
-    return this->variables_names.size() - 1;
+    if(std::find(this->_variables_names.begin(), this->_variables_names.end(), name) != this->_variables_names.end())
+    {
+        this->_variables_names.push_back(name);
+        _n_dof++;
+    }
+    return this->_variables_names.size() - 1;
 }
-
 
 
 void ImplicitSystem::init()
 {
  
-    this->equations.set_n_dofs(this->variables_names.size());
-    this->equations.prepare_to_use();
+    this->_equations.set_n_dofs(this->_variables_names.size());
+    this->_equations.prepare_to_use();
 
-    std::vector<unsigned int> onnz(this->equations.n_local_equations());
-    std::vector<unsigned int> dnnz(this->equations.n_local_equations());
-    this->equations.calculate_dnnz_onnz(dnnz, onnz);
+    std::vector<unsigned int> onnz(this->_equations.n_local_equations());
+    std::vector<unsigned int> dnnz(this->_equations.n_local_equations());
+    this->_equations.calculate_dnnz_onnz(dnnz, onnz);
 
     // Create the matrix
-    MatCreateAIJ(MeshTools::Comm(), this->equations.n_local_equations(), this->equations.n_local_equations(),
-                 PETSC_DETERMINE, PETSC_DETERMINE, NULL,
-                 (PetscInt*) dnnz.data(), NULL, (PetscInt*) onnz.data(), &this->A);
+    MatCreateAIJ(MeshTools::Comm(), 
+                this->_equations.n_local_equations(), this->_equations.n_local_equations(),
+                 PETSC_DETERMINE, PETSC_DETERMINE, 
+                 PETSC_DECIDE, (PetscInt*) dnnz.data(), 
+                 PETSC_DECIDE, (PetscInt*) onnz.data(), &this->_A);
 
     // Create the right-hand-side vector
-    VecCreate(MeshTools::Comm(), &this->rhs);
-    VecSetSizes(this->rhs, this->equations.n_local_equations(), PETSC_DETERMINE);
-    VecSetFromOptions(this->rhs);   
+    VecCreate(MeshTools::Comm(), &this->_rhs);
+    VecSetSizes(this->_rhs, this->_equations.n_local_equations(), PETSC_DETERMINE);
+    VecSetFromOptions(this->_rhs);   
 
     // Create the solution vector
-    VecDuplicate(this->rhs, &this->solution);
+    VecDuplicate(this->_rhs, &this->_solution);
 
     IS is_local;
     IS is_global;
   
     std::vector<unsigned int> eq_local;
     std::vector<unsigned int> eq_global;
-    unsigned int n_nodes = this->mesh.get_n_nodes();
+    unsigned int n_nodes = this->_mesh.get_n_nodes();
 
    for(int ino = 0; ino < n_nodes; ino++)
    {
-         for(int idof = 0; idof < this->variables_names.size(); idof++)
+         for(int idof = 0; idof < this->_variables_names.size(); idof++)
          {
-              unsigned int idxLocal = ino*this->n_dof + idof;
+              unsigned int idxLocal = ino*this->_n_dof + idof;
               eq_local.push_back(idxLocal);
-              eq_global.push_back(this->equations.get_dof_indices()[idxLocal]);
+              eq_global.push_back(this->_equations.get_dof_indices()[idxLocal]);
          }
    }
 
     ISCreateGeneral(MeshTools::Comm(), eq_local.size(), (PetscInt *)eq_local.data(), PETSC_COPY_VALUES, &is_local);
     ISCreateGeneral(MeshTools::Comm(), eq_global.size(), (PetscInt *)eq_global.data(), PETSC_COPY_VALUES, &is_global);
 
-    VecCreateSeq(PETSC_COMM_SELF, n_nodes*n_dof, &solution_local);
-    VecScatterCreate(solution, is_global, solution_local, is_local, &scatter);
+    VecCreateSeq(PETSC_COMM_SELF, n_nodes*_n_dof, &_solution_local);
+    VecScatterCreate(_solution, is_global, _solution_local, is_local, &_scatter);
 
     ISDestroy(&is_local);
     ISDestroy(&is_global);
 
+    // Create the KSP solver
+    KSPCreate(MeshTools::Comm(), &this->_ksp);
+    KSPSetOperators(this->_ksp, this->_A, this->_A);
+    KSPSetType(this->_ksp, KSPGMRES);
+    KSPSetTolerances(this->_ksp, 1e-8, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
+    KSPSetFromOptions(this->_ksp);
+    KSPSetUp(this->_ksp);
+
 }
 
-void ImplicitSystem::assemble()
+void ImplicitSystem::close()
 {
-    VecScatterBegin(scatter, solution, solution_local, INSERT_VALUES, SCATTER_FORWARD);
-    VecScatterEnd(scatter  , solution, solution_local, INSERT_VALUES, SCATTER_FORWARD);
+    MatAssemblyBegin(_A,MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(_A,MAT_FINAL_ASSEMBLY);
 }
 
 ImplicitSystem::~ImplicitSystem()
 {
-    VecDestroy(&this->solution);
-    VecDestroy(&this->rhs);
-    MatDestroy(&this->A);
-    VecDestroy(&this->solution_local);
-    VecScatterDestroy(&this->scatter);
+    KSPDestroy(&this->_ksp);
+    VecDestroy(&this->_solution);
+    VecDestroy(&this->_rhs);
+    MatDestroy(&this->_A);
+    VecDestroy(&this->_solution_local);
+    VecScatterDestroy(&this->_scatter);
 }
+
+void ImplicitSystem::solve()
+{
+    this->close();
+    KSPSolve(this->_ksp, this->_rhs, this->_solution);
+    VecScatterBegin(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
+    VecScatterEnd(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
+}
+
+void ImplicitSystem::add_matrix_entry(std::vector<int>& row_indices, 
+                                     std::vector<int>& col_indices, double* values)
+{
+    MatSetValues(this->_A,row_indices.size(),&row_indices[0], col_indices.size(), &col_indices[0],values,ADD_VALUES);
+}
+
+void ImplicitSystem::set_matrix_entry(std::vector<int>& row_indices, 
+                                      std::vector<int>& col_indices, double* values)
+{
+    MatSetValues(this->_A,row_indices.size(),row_indices.data(), col_indices.size(), col_indices.data(),values,INSERT_VALUES);
+}   
+
+void ImplicitSystem::add_rhs_entry(std::vector<int>& row_indices, double* values)
+{
+    VecSetValues(this->_rhs, row_indices.size(), row_indices.data(), values, ADD_VALUES);
+}
+
+void ImplicitSystem::set_rhs_entry(std::vector<int>& row_indices, double* values)
+{
+    VecSetValues(this->_rhs, row_indices.size(), row_indices.data(), values, INSERT_VALUES);
+}
+
+void ImplicitSystem::get_local_solution_array(double** solution_array)
+{
+    VecGetArray(this->_solution_local, solution_array);
+}
+
+void ImplicitSystem::restore_local_solution_array(double** solution_array)
+{
+    VecRestoreArray(this->_solution_local, solution_array);
+}
+
+
+

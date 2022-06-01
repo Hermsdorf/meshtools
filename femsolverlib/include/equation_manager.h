@@ -5,6 +5,8 @@
 #include "dirichlet_boundary.h"
 #include "parallel_mesh.h"
 
+
+
 class EquationManager
 {
 public:
@@ -40,7 +42,10 @@ private:
 
 
     std::vector<DirichletBoundary> _boundaries;
-    std::vector<int>               _equation_indices; // maps global to local indices nnos*ndof
+
+    // boundary nodes mapping
+    std::vector< std::vector <unsigned int> > _boundary_nodes_map;
+    std::vector<int>                          _equation_indices; // maps global to local indices nnos*ndof
     
 
 };
