@@ -11,16 +11,19 @@ ImplicitSystem::ImplicitSystem(ParallelMesh &mesh, std::string name):
 
     }   
 
-int ImplicitSystem::addVariable(std::string name)
+int ImplicitSystem::add_variable(std::string name)
 {
-    
-
     if(std::find(this->_variables_names.begin(), this->_variables_names.end(), name) != this->_variables_names.end())
     {
         this->_variables_names.push_back(name);
         _n_dof++;
     }
     return this->_variables_names.size() - 1;
+}
+
+void ImplicitSystem::add_dirichlet_boundary(DirichletBoundary &boundary)
+{
+    this->_equations.add_dirichlet_boundary(boundary);
 }
 
 
