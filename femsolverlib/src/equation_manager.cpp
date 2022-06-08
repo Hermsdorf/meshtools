@@ -58,8 +58,6 @@ void EquationManager::prepare_to_use()
 
     _boundary_nodes_map.resize(_boundaries.size());
 
-    cout << "processor[" << MeshTools::processor_id() << "]  - dof_indices.size() " << _equation_indices.size() << endl;
-
     int bnd_id = 0;
     for(auto it = _boundaries.begin(); it != _boundaries.end(); ++it)
     {
@@ -79,8 +77,6 @@ void EquationManager::prepare_to_use()
                     boundary_nodes.insert(conn[ino]);
             }
         }
-
-        cout << "processor[" << MeshTools::processor_id() << "] has " << boundary_nodes.size() << " nodes on boundary " << boundary_id<< endl;
 
         _boundary_nodes_map[bnd_id].resize(boundary_nodes.size());
 
@@ -134,49 +130,6 @@ void EquationManager::prepare_to_use()
     }
 
     this->_n_local_equations = n_local_equations;
-    cout << "processor[" << MeshTools::processor_id() << "] has " << n_local_equations << " local equations , n_shared_dof =" << n_dof_shared << endl;
-
-    MPI_Barrier(MPI_COMM_WORLD);
-    if(MeshTools::processor_id() == 0)
-    {
-        cout << "Before send messages..." << endl;
-        for(int n =0; n < n_nodes; n++)
-        {
-            for(int dof_id =0; dof_id < _ndof; ++dof_id) {
-                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _equation_indices[n*_ndof+dof_id] << " \n";
-            }
-        }
-        
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    if(MeshTools::processor_id() == 1)
-    {
-        cout << "Before send messages..." << endl;
-        for(int n =0; n < n_nodes; n++)
-        {
-            for(int dof_id =0; dof_id < _ndof; ++dof_id) {
-                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _equation_indices[n*_ndof+dof_id] << " \n";
-            }
-        }
-        std::cout << "\n\n====================================\n\n";
-        
-    }
-
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    if(MeshTools::processor_id() == 2)
-    {
-        cout << "Before send messages..." << endl;
-        for(int n =0; n < n_nodes; n++)
-        {
-            for(int dof_id =0; dof_id < _ndof; ++dof_id) {
-                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _equation_indices[n*_ndof+dof_id] << " \n";
-            }
-        }
-        std::cout << "\n\n====================================\n\n";
-        
-    }
 
     //* 4. Calculating offset
         
@@ -264,44 +217,6 @@ void EquationManager::prepare_to_use()
             }
         } 
         offset += n_shared_nodes; 
-    }
-
-    std::cout << "After sending messages..." << endl;
-    MPI_Barrier(MPI_COMM_WORLD);
-    if(MeshTools::processor_id() == 0)
-    {
-        cout << endl;
-        for(int n =0; n < n_nodes; n++)
-        {
-            for(int dof_id =0; dof_id < _ndof; ++dof_id) {
-                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _equation_indices[n*_ndof+dof_id] << " \n";
-            }
-        }
-        std::cout << "\n\n====================================\n\n";
-    }
-
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    if(MeshTools::processor_id() == 1)
-    {
-        for(int n =0; n < n_nodes; n++)
-        {
-            for(int dof_id =0; dof_id < _ndof; ++dof_id) {
-                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _equation_indices[n*_ndof+dof_id] << " \n";
-            }
-        }
-    }
-
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    if(MeshTools::processor_id() == 2)
-    {
-        for(int n =0; n < n_nodes; n++)
-        {
-            for(int dof_id =0; dof_id < _ndof; ++dof_id) {
-                std::cout << "[" << MeshTools::processor_id() << "] node " << n << ", dof " << dof_id << ": " << _equation_indices[n*_ndof+dof_id] << " \n";
-            }
-        }
     }
 
     _prepared_to_use = true;
