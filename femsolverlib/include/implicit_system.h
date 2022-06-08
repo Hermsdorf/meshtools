@@ -26,7 +26,7 @@ class ImplicitSystem
     private:
         std::vector<std::string> _variables_names;
         std::string              _system_name;
-        int                      _n_dof; 
+        unsigned int             _n_dof; 
         Vec                      _rhs;
         Vec                      _solution;
         Mat                      _A;
