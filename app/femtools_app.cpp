@@ -134,8 +134,9 @@ int main(int argc, char* argv[])
     pmesh->WritePMesh("parallel");
        
 
-    //DofManager* dm = new DofManager(*pmesh);
-    //dm->set_n_dofs(1);
+    ImplicitSystem* implicit_system = new ImplicitSystem(*pmesh, "test");
+    implicit_system->add_variable("test_variable");
+    implicit_system->init();
 
     //auto physical_data = pmesh->getPhysicalMap();
     /*
@@ -179,6 +180,7 @@ int main(int argc, char* argv[])
     // VecDestroy(&x);
     // MatDestroy(&A);
     
+    delete implicit_system;
     MeshTools::Finalize();
     return 0;
 }

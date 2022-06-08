@@ -8,8 +8,7 @@
 EquationManager::EquationManager(ParallelMesh &mesh):
     _mesh(mesh),
     _ndof(0),
-    _first_global_dof_index(0),
-    _last_global_dof_index(0),
+    _first_global_equation_index(0),
     _prepared_to_use(false)
     {
 
@@ -17,10 +16,22 @@ EquationManager::EquationManager(ParallelMesh &mesh):
 
 EquationManager::~EquationManager()
 {
-    _dofs.clear();
     _equation_indices.clear();
     _boundaries.clear();
 }
+
+unsigned int EquationManager::first_global_equation_index()
+{
+    return this->_first_global_equation_index;
+}
+
+unsigned int EquationManager::n_local_equations()
+{
+    return this->_n_local_equations;
+}
+
+void EquationManager::equation_indices(int id_dof, unsigned int *local_equation, unsigned int *global_equation)
+{}
 
 void EquationManager::add_dirichlet_boundary(DirichletBoundary &boundary)
 {
@@ -47,8 +58,6 @@ void EquationManager::prepare_to_use()
 
     _boundary_nodes_map.resize(_boundaries.size());
 
-    //cout << "processor[" << MeshTools::processor_id() << "]  - dof_indices.size() " << _equation_indices.size() << endl;
-
     int bnd_id = 0;
     for(auto it = _boundaries.begin(); it != _boundaries.end(); ++it)
     {
@@ -69,7 +78,6 @@ void EquationManager::prepare_to_use()
             }
         }
 
-        //cout << "processor[" << MeshTools::processor_id() << "] has " << boundary_nodes.size() << " nodes on boundary " << boundary_id<< endl;
         _boundary_nodes_map[bnd_id].resize(boundary_nodes.size());
 
         unsigned int ibcno = 0;
@@ -129,7 +137,7 @@ void EquationManager::prepare_to_use()
     MPI_Scan(&n_local_equations,&n_equations_offset,1,MPI_UNSIGNED,MPI_SUM,MPI_COMM_WORLD);
     n_equations_offset -= n_local_equations;
 
-    this->_first_global_dof_index = n_equations_offset; 
+    this->_first_global_equation_index = n_equations_offset; 
 
     for(int i=0; i < _equation_indices.size(); i++)
     {
@@ -190,7 +198,6 @@ void EquationManager::prepare_to_use()
         offset += n_shared_dof;
     }
 
-    // FIXME: buffer de envio/recebimento nao correspondem 
     MPI_Waitall(r,&requests[0], &status[0]);
 
     offset = 0;
@@ -211,6 +218,7 @@ void EquationManager::prepare_to_use()
         } 
         offset += n_shared_nodes; 
     }
+
     _prepared_to_use = true;
 }
 
@@ -220,7 +228,7 @@ void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::
     std::vector<std::set<int>> vdiag(_n_local_equations);
     std::vector<std::set<int>> voff(_n_local_equations);
 
-    unsigned int start = _first_global_dof_index;
+    unsigned int start = _first_global_equation_index;
     unsigned int end   = start + _n_local_equations;
 
     // Getting the d_nnz e o_nnz vector needed to matrix preallocation
@@ -253,9 +261,4 @@ void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::
         dnnz[i] = vdiag[i].size();
         onnz[i] = voff[i].size();
     }
-}
-
-unsigned int EquationManager::n_local_equations()
-{
-    return this->_n_local_equations;
 }

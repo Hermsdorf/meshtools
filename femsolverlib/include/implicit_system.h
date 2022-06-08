@@ -7,7 +7,8 @@ class ImplicitSystem
 {
     public:
         ImplicitSystem(ParallelMesh &mesh, std::string name);
-        int addVariable(std::string name);
+        int add_variable(std::string name);
+        void add_dirichlet_boundary(DirichletBoundary &boundary);
         void init();
         void close();
         void add_matrix_entry(std::vector<int>& row_indices, 
@@ -25,7 +26,7 @@ class ImplicitSystem
     private:
         std::vector<std::string> _variables_names;
         std::string              _system_name;
-        int                      _n_dof; 
+        unsigned int             _n_dof; 
         Vec                      _rhs;
         Vec                      _solution;
         Mat                      _A;

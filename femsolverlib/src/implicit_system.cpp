@@ -11,16 +11,19 @@ ImplicitSystem::ImplicitSystem(ParallelMesh &mesh, std::string name):
 
     }   
 
-int ImplicitSystem::addVariable(std::string name)
+int ImplicitSystem::add_variable(std::string name)
 {
-    
-
-    if(std::find(this->_variables_names.begin(), this->_variables_names.end(), name) != this->_variables_names.end())
+    if(std::find(this->_variables_names.begin(), this->_variables_names.end(), name) == this->_variables_names.end())
     {
         this->_variables_names.push_back(name);
         _n_dof++;
     }
     return this->_variables_names.size() - 1;
+}
+
+void ImplicitSystem::add_dirichlet_boundary(DirichletBoundary &boundary)
+{
+    this->_equations.add_dirichlet_boundary(boundary);
 }
 
 
@@ -62,7 +65,7 @@ void ImplicitSystem::init()
          {
               unsigned int idxLocal = ino*this->_n_dof + idof;
               eq_local.push_back(idxLocal);
-              eq_global.push_back(this->_equations.get_dof_indices()[idxLocal]);
+              eq_global.push_back(this->_equations.get_equation_indices()[idxLocal]);
          }
    }
 
