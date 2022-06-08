@@ -23,7 +23,7 @@ public:
      * @param local_equation   local element numbering (connectivity)
      * @param global_equation  global equation numbering for dof id
      */
-    void         equation_indices(int id_dof, unsigned int *local_equation, unsigned int *global_equation);
+    void         equation_indices(int id_dof, unsigned int *conn_local, unsigned int *global_equation);
     void         add_dirichlet_boundary(DirichletBoundary &boundary);
     void         prepare_to_use();
     void         calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::vector<unsigned int> &onnz);

@@ -134,9 +134,41 @@ int main(int argc, char* argv[])
     pmesh->WritePMesh("parallel");
        
 
-    ImplicitSystem* implicit_system = new ImplicitSystem(*pmesh, "test");
-    implicit_system->add_variable("test_variable");
+    ImplicitSystem* implicit_system = new ImplicitSystem(*pmesh, "poisson");    
+    implicit_system->add_variable("u");
     implicit_system->init();
+
+/*
+    for(int iel =0; pmesh->get_n_elements() > iel; iel++)
+    {
+        int connsize = pmesh->getElementConnSize(iel);
+        unsigned int* conn = pmesh->getElementConn(iel);
+        double coord[6];
+        double qpoints[2];
+        double phi[3];
+        double dphi[3][2];
+        double JxW
+        double Ke[3][3];
+        double Fe[3];
+        std::vector<unsigned int> gindices;
+
+        pmesh->getElementCoord(iel, coord);
+        ComputeTRI3Functions(coord,qpoints,phi,dphi,&JxW);
+        for(int i = 0; i < connsize; i++)
+        {
+            Fe[i] += phi[i]*f(x,y)*JxW;
+
+            for(int j = 0; j < connsize; j++)
+            {
+                Ke[i][j] += dphi[i][j]*dphi[i][j]*JxW;
+            }
+        }
+
+
+        implicit_system->add_matrix_entry()
+    }
+
+    */
 
     //auto physical_data = pmesh->getPhysicalMap();
     /*

@@ -1,9 +1,10 @@
 
 #include <set>
 #include <algorithm>
-
+#include <cassert>
 #include "meshtools.h"
 #include "equation_manager.h"
+using namespace std;
 
 EquationManager::EquationManager(ParallelMesh &mesh):
     _mesh(mesh),
@@ -225,12 +226,19 @@ void EquationManager::prepare_to_use()
 void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::vector<unsigned int> &onnz)
 {
     // Preallocation Matrix
-    std::vector<std::set<int>> vdiag(_n_local_equations);
-    std::vector<std::set<int>> voff(_n_local_equations);
+    int n_nodes = _mesh.get_n_nodes();
+    std::vector<std::set<int>> vdiag(n_nodes*_ndof); //nnodes*_ndof
+    std::vector<std::set<int>> voff(n_nodes*_ndof);
+    
+    dnnz.resize(_n_local_equations);
+    onnz.resize(_n_local_equations);
 
-    unsigned int start = _first_global_equation_index;
-    unsigned int end   = start + _n_local_equations;
+    int start = _first_global_equation_index;
+    int end   = start + _n_local_equations;
 
+    cout << "EquationManager::calculate_dnnz_onnz()" << endl;
+    cout << "  start: " << start << endl;
+    cout << "  end: " << end << endl;
     // Getting the d_nnz e o_nnz vector needed to matrix preallocation
     for (int iel = 0; iel < _mesh.get_n_elements(); ++iel)
     {
@@ -241,23 +249,37 @@ void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::
             for(int j = 0; j < this->_ndof; j++)
             {
                 unsigned int Idx = conn[i]*this->_ndof + j;  // local
-                unsigned eqIdx = this->_equation_indices[Idx];    // global
+                
+                int eqIdx = this->_equation_indices[Idx];    // global
                 if(eqIdx >= 0 ) {
+                   
+                    cout << "eqIdx - start: " << eqIdx - start << endl;
                     if(eqIdx >= start && eqIdx < end)
                     {
-                        vdiag[eqIdx-start].insert(eqIdx);
+                        vdiag[Idx].insert(eqIdx);
+                        
                     }
                     else
                     {
-                        voff[eqIdx-start].insert(eqIdx);
+                        voff[Idx].insert(eqIdx);
                     }
                 }
             }
         }
     }
 
-    for (int i = 0; i < _n_local_equations; i++)
+    MPI_Barrier(MPI_COMM_WORLD);
+     cout << "  setting dnnz and onnz" << endl;
+    for (int i = 0; i < n_nodes*_ndof; i++)
     {
+        /*
+        if(vdiag[i].size() > 0)
+        {
+            int eqIdx = this->_equation_indices[i];
+            //dnnz[eqIdx] = vdiag[i].size();
+            
+        }
+        */
         dnnz[i] = vdiag[i].size();
         onnz[i] = voff[i].size();
     }
