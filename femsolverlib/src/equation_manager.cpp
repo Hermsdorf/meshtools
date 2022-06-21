@@ -112,6 +112,7 @@ void EquationManager::prepare_to_use()
             for(int dof_id =0; dof_id < _ndof; ++dof_id) {
                 // flag indicanting that this node belongs to my master, so the equation belongs to him
                 _equation_indices[node_id*_ndof + dof_id] = -2;
+                cout << "[ " << MeshTools::processor_id() << " ] " << "node_id: " << node_id << " belongs to processor " << neighbor << endl;
                 n_dof_shared++;
             }
         }
@@ -225,20 +226,34 @@ void EquationManager::prepare_to_use()
 
 void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::vector<unsigned int> &onnz)
 {
+    /* FIXME: mesh dez.msh:
+        [ 1 ] _equation_indices: 3 4 5 6 7 8 9
+        [ 0 ] _equation_indices: 4 8 6 0 1 2 7 
+
+        processor 0 should have 4 indices with value -2 which belongs to processor 1
+        -1 is propagating but -2 isn't
+    */
+    cout << " [ " << MeshTools::processor_id() << " ] _equation_indices: ";
+    for(int i = 0 ; i < _equation_indices.size(); i++)
+    {
+        cout << _equation_indices[i] << " ";
+    }
+    cout << "\n\n";
+
     // Preallocation Matrix
     int n_nodes = _mesh.get_n_nodes();
-    std::vector<std::set<int>> vdiag(n_nodes*_ndof); //nnodes*_ndof
+    cout << "[ " << MeshTools::processor_id() << " ] nnodes = " << n_nodes << "\n";
+    std::vector<std::set<int>> vdiag(n_nodes*_ndof);
     std::vector<std::set<int>> voff(n_nodes*_ndof);
     
     dnnz.resize(_n_local_equations);
     onnz.resize(_n_local_equations);
-
+    cout << "[ " << MeshTools::processor_id() << " ] n_local_equations = " << _n_local_equations << "\n";
     int start = _first_global_equation_index;
     int end   = start + _n_local_equations;
-
     cout << "EquationManager::calculate_dnnz_onnz()" << endl;
-    cout << "  start: " << start << endl;
-    cout << "  end: " << end << endl;
+    cout << "  [ " << MeshTools::processor_id() << " ] first_global_equation_index = " << start << "\n";
+    cout << "  [ " << MeshTools::processor_id() << " ] last_global_equation_index = " << end << "\n";
     // Getting the d_nnz e o_nnz vector needed to matrix preallocation
     for (int iel = 0; iel < _mesh.get_n_elements(); ++iel)
     {
@@ -253,7 +268,7 @@ void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::
                 int eqIdx = this->_equation_indices[Idx];    // global
                 if(eqIdx >= 0 ) {
                    
-                    cout << "eqIdx - start: " << eqIdx - start << endl;
+                    cout << "    [ " << MeshTools::processor_id() << " ] Idx: " << Idx << endl;
                     if(eqIdx >= start && eqIdx < end)
                     {
                         vdiag[Idx].insert(eqIdx);
@@ -268,18 +283,11 @@ void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::
         }
     }
 
+    // FIXME: for iterating n_nodes*_ndof which is greather than the number of equations (_n_local_equations)
     MPI_Barrier(MPI_COMM_WORLD);
-     cout << "  setting dnnz and onnz" << endl;
+    cout << "  setting dnnz and onnz" << endl;
     for (int i = 0; i < n_nodes*_ndof; i++)
     {
-        /*
-        if(vdiag[i].size() > 0)
-        {
-            int eqIdx = this->_equation_indices[i];
-            //dnnz[eqIdx] = vdiag[i].size();
-            
-        }
-        */
         dnnz[i] = vdiag[i].size();
         onnz[i] = voff[i].size();
     }

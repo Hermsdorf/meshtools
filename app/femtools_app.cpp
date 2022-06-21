@@ -132,10 +132,22 @@ int main(int argc, char* argv[])
     MeshIODataAppended info;
     pmesh->writePVTK("parallel", &info);
     pmesh->WritePMesh("parallel");
-       
-
+    
     ImplicitSystem* implicit_system = new ImplicitSystem(*pmesh, "poisson");    
     implicit_system->add_variable("u");
+    
+    auto physical_data = pmesh->getPhysicalMap();
+    
+    for(int i = 0 ; i < physical_data.size() ; i++)
+    {
+        if(physical_data[i].first == 1)
+        {
+            
+            DirichletBoundary* dirichlet1 = new DirichletBoundary(physical_data[i].first, 0, "sqrt(2*x + 4*y + 3)", "x, y");
+            implicit_system->add_dirichlet_boundary(*dirichlet1);
+        }
+    }
+
     implicit_system->init();
 
 /*
