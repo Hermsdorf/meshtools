@@ -243,11 +243,12 @@ void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::
     // Preallocation Matrix
     int n_nodes = _mesh.get_n_nodes();
     cout << "[ " << MeshTools::processor_id() << " ] nnodes = " << n_nodes << "\n";
-    std::vector<std::set<int>> vdiag(n_nodes*_ndof);
-    std::vector<std::set<int>> voff(n_nodes*_ndof);
+    std::vector< std::set<int> > vdiag;
+    std::vector< std::set<int>  > voff ;
     
     dnnz.resize(_n_local_equations);
     onnz.resize(_n_local_equations);
+
     cout << "[ " << MeshTools::processor_id() << " ] n_local_equations = " << _n_local_equations << "\n";
     int start = _first_global_equation_index;
     int end   = start + _n_local_equations;
@@ -257,38 +258,46 @@ void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::
     // Getting the d_nnz e o_nnz vector needed to matrix preallocation
     for (int iel = 0; iel < _mesh.get_n_elements(); ++iel)
     {
-        int connsz = _mesh.getElementConnSize(iel);
+        int         connsz = _mesh.getElementConnSize(iel);
         unsigned int *conn = _mesh.getElementConn(iel);
-        for (int i = 0; i < connsz; ++i)
+
+        // TODO: Criar uma rotina para obter as equacoes do elemento
+        std::vector<int> equations;
+
+        for (int i = 0; i < equations.size(); ++i)
         {
-            for(int j = 0; j < this->_ndof; j++)
-            {
-                unsigned int Idx = conn[i]*this->_ndof + j;  // local
-                
-                int eqIdx = this->_equation_indices[Idx];    // global
-                if(eqIdx >= 0 ) {
+            int eqI = equations[i];
+             if(eqI >= 0 ) {
                    
-                    cout << "    [ " << MeshTools::processor_id() << " ] Idx: " << Idx << endl;
-                    if(eqIdx >= start && eqIdx < end)
+                    if(eqI >= start && eqI < end)
                     {
-                        vdiag[Idx].insert(eqIdx);
-                        
+                         for(int j = 0; j < equations.size(); j++)
+                         {
+                                int eqJ = equations[j];
+                                if(eqJ >= start && eqJ < end)
+                                {
+                                        vdiag[eqI-start].insert(eqJ));
+                                }
+                                else
+                                {
+                                        voff[eqI-start].insert(eqJ);
+                                }
+
+                         }
                     }
-                    else
-                    {
-                        voff[Idx].insert(eqIdx);
-                    }
-                }
-            }
+             }
         }
+
     }
+
 
     // FIXME: for iterating n_nodes*_ndof which is greather than the number of equations (_n_local_equations)
     MPI_Barrier(MPI_COMM_WORLD);
     cout << "  setting dnnz and onnz" << endl;
-    for (int i = 0; i < n_nodes*_ndof; i++)
+    for(int i = 0; i < _n_local_equations; i++)
     {
         dnnz[i] = vdiag[i].size();
         onnz[i] = voff[i].size();
     }
+
 }
