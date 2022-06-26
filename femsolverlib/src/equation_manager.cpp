@@ -31,8 +31,38 @@ unsigned int EquationManager::n_local_equations()
     return this->_n_local_equations;
 }
 
-void EquationManager::equation_indices(int id_dof, unsigned int *local_equation, unsigned int *global_equation)
-{}
+void EquationManager::equation_indices(int id_dof, unsigned int *conn_local, int conn_size, unsigned int *global_equation)
+{
+    std::vector<int> dof_required;
+
+    // When dof id is -1 it means that we want to get the equation for every dof in the system
+    if(id_dof == -1)
+    {
+        dof_required.resize(_ndof);
+        for(int i = 0 ; i < _ndof ; i++)
+            dof_required[i] = i;
+    }   
+    else
+    {
+        dof_required.resize(1);
+        dof_required[0] = id_dof;
+    }
+    
+    if(!global_equation) global_equation = new unsigned int[dof_required.size()*conn_size];
+
+    for(int i = 0 ; i < conn_size ; i++)
+    {
+        unsigned int node_id = conn_local[i];
+        
+        for(int j = 0 ; j < dof_required.size(); j++)
+        {
+            unsigned int dof_id = dof_required[j];
+            global_equation[i*dof_required.size() + j] = _equation_indices[node_id*_ndof + dof_id];
+        }
+    }
+
+    dof_required.clear();
+}   
 
 void EquationManager::add_dirichlet_boundary(DirichletBoundary &boundary)
 {
@@ -112,7 +142,6 @@ void EquationManager::prepare_to_use()
             for(int dof_id =0; dof_id < _ndof; ++dof_id) {
                 // flag indicanting that this node belongs to my master, so the equation belongs to him
                 _equation_indices[node_id*_ndof + dof_id] = -2;
-                cout << "[ " << MeshTools::processor_id() << " ] " << "node_id: " << node_id << " belongs to processor " << neighbor << endl;
                 n_dof_shared++;
             }
         }
@@ -226,74 +255,57 @@ void EquationManager::prepare_to_use()
 
 void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::vector<unsigned int> &onnz)
 {
-    /* FIXME: mesh dez.msh:
-        [ 1 ] _equation_indices: 3 4 5 6 7 8 9
-        [ 0 ] _equation_indices: 4 8 6 0 1 2 7 
-
-        processor 0 should have 4 indices with value -2 which belongs to processor 1
-        -1 is propagating but -2 isn't
-    */
-    cout << " [ " << MeshTools::processor_id() << " ] _equation_indices: ";
-    for(int i = 0 ; i < _equation_indices.size(); i++)
-    {
-        cout << _equation_indices[i] << " ";
-    }
-    cout << "\n\n";
-
     // Preallocation Matrix
     int n_nodes = _mesh.get_n_nodes();
-    cout << "[ " << MeshTools::processor_id() << " ] nnodes = " << n_nodes << "\n";
     std::vector< std::set<int> > vdiag;
     std::vector< std::set<int>  > voff ;
     
     dnnz.resize(_n_local_equations);
     onnz.resize(_n_local_equations);
 
-    cout << "[ " << MeshTools::processor_id() << " ] n_local_equations = " << _n_local_equations << "\n";
     int start = _first_global_equation_index;
     int end   = start + _n_local_equations;
-    cout << "EquationManager::calculate_dnnz_onnz()" << endl;
-    cout << "  [ " << MeshTools::processor_id() << " ] first_global_equation_index = " << start << "\n";
-    cout << "  [ " << MeshTools::processor_id() << " ] last_global_equation_index = " << end << "\n";
     // Getting the d_nnz e o_nnz vector needed to matrix preallocation
     for (int iel = 0; iel < _mesh.get_n_elements(); ++iel)
     {
         int         connsz = _mesh.getElementConnSize(iel);
         unsigned int *conn = _mesh.getElementConn(iel);
 
-        // TODO: Criar uma rotina para obter as equacoes do elemento
-        std::vector<int> equations;
+        int n_equations = connsz;
+        unsigned int* equations = new unsigned int[n_equations];
+        equation_indices(0, conn, connsz, equations);
 
-        for (int i = 0; i < equations.size(); ++i)
+        std::cout << "  ===== equations =====" << endl;
+        for(int i = 0 ; i < n_equations ; i++)
+        {
+            std::cout << "  [ " << MeshTools::processor_id() << " ] equations[" << i << "] = " << equations[i] << "\n";
+        }
+
+        for(int i = 0; i < n_equations; ++i)
         {
             int eqI = equations[i];
-             if(eqI >= 0 ) {
-                   
-                    if(eqI >= start && eqI < end)
+            if(eqI >= 0 ) {
+                if(eqI >= start && eqI < end)
+                {
+                    for(int j = 0; j < n_equations; j++)
                     {
-                         for(int j = 0; j < equations.size(); j++)
-                         {
-                                int eqJ = equations[j];
-                                if(eqJ >= start && eqJ < end)
-                                {
-                                        vdiag[eqI-start].insert(eqJ));
-                                }
-                                else
-                                {
-                                        voff[eqI-start].insert(eqJ);
-                                }
-
-                         }
+                        int eqJ = equations[j];
+                        if(eqJ >= start && eqJ < end)
+                        {
+                            vdiag[eqI-start].insert(eqJ);
+                        }
+                        else
+                        {
+                            voff[eqI-start].insert(eqJ);
+                        }
                     }
+                }
              }
         }
 
+        delete [] equations;
     }
 
-
-    // FIXME: for iterating n_nodes*_ndof which is greather than the number of equations (_n_local_equations)
-    MPI_Barrier(MPI_COMM_WORLD);
-    cout << "  setting dnnz and onnz" << endl;
     for(int i = 0; i < _n_local_equations; i++)
     {
         dnnz[i] = vdiag[i].size();

@@ -29,12 +29,12 @@ void ImplicitSystem::add_dirichlet_boundary(DirichletBoundary &boundary)
 
 void ImplicitSystem::init()
 {
- 
     this->_equations.set_n_dofs(this->_variables_names.size());
     this->_equations.prepare_to_use();
 
     std::vector<unsigned int> onnz(this->_equations.n_local_equations());
     std::vector<unsigned int> dnnz(this->_equations.n_local_equations());
+
     this->_equations.calculate_dnnz_onnz(dnnz, onnz);
 
     // Create the matrix
