@@ -306,4 +306,24 @@ void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::
         onnz[i] = voff[i].size();
     }
 
+    MPI_Barrier(MPI_COMM_WORLD);
+    cout << " [ " << MeshTools::processor_id() << " ] _equation_indices = "; 
+    for(int i = 0 ; i < _equation_indices.size() ; i++)
+        cout << _equation_indices[i] << " ";
+    cout << endl;
+    MPI_Barrier(MPI_COMM_WORLD);
+    cout << " [ " << MeshTools::processor_id() << " ] dnnz = ";
+    for(int i = 0; i < _n_local_equations; i++)
+    {
+        cout << dnnz[i] << ", ";
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    cout << endl << " [ " << MeshTools::processor_id() << " ] onnz = ";
+    for(int i = 0; i < _n_local_equations; i++)
+    {
+        cout << onnz[i] << ", ";
+    }
+    cout << endl;
+    MPI_Barrier(MPI_COMM_WORLD);
+
 }
