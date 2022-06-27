@@ -48,8 +48,6 @@ void EquationManager::equation_indices(int id_dof, unsigned int *conn_local, int
         dof_required[0] = id_dof;
     }
     
-    if(!global_equation) global_equation = new unsigned int[dof_required.size()*conn_size];
-
     for(int i = 0 ; i < conn_size ; i++)
     {
         unsigned int node_id = conn_local[i];
@@ -257,34 +255,30 @@ void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::
 {
     // Preallocation Matrix
     int n_nodes = _mesh.get_n_nodes();
-    std::vector< std::set<int> > vdiag;
-    std::vector< std::set<int>  > voff ;
+    std::vector< std::set<int> > vdiag(_n_local_equations);
+    std::vector< std::set<int> > voff(_n_local_equations);
     
     dnnz.resize(_n_local_equations);
     onnz.resize(_n_local_equations);
 
     int start = _first_global_equation_index;
     int end   = start + _n_local_equations;
+
     // Getting the d_nnz e o_nnz vector needed to matrix preallocation
     for (int iel = 0; iel < _mesh.get_n_elements(); ++iel)
     {
         int         connsz = _mesh.getElementConnSize(iel);
         unsigned int *conn = _mesh.getElementConn(iel);
 
-        int n_equations = connsz;
+        int n_equations = connsz*_ndof;
         unsigned int* equations = new unsigned int[n_equations];
-        equation_indices(0, conn, connsz, equations);
+        equation_indices(-1, conn, connsz, equations);
 
-        std::cout << "  ===== equations =====" << endl;
-        for(int i = 0 ; i < n_equations ; i++)
-        {
-            std::cout << "  [ " << MeshTools::processor_id() << " ] equations[" << i << "] = " << equations[i] << "\n";
-        }
-
-        for(int i = 0; i < n_equations; ++i)
+        for(int i = 0; i < n_equations; i++)
         {
             int eqI = equations[i];
-            if(eqI >= 0 ) {
+            if(eqI >= 0)
+            {
                 if(eqI >= start && eqI < end)
                 {
                     for(int j = 0; j < n_equations; j++)
