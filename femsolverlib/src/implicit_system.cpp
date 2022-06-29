@@ -44,6 +44,8 @@ void ImplicitSystem::init()
                  PETSC_DECIDE, (PetscInt*) dnnz.data(), 
                  PETSC_DECIDE, (PetscInt*) onnz.data(), &this->_A);
 
+    MatSetOption(_A, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+
     // Create the right-hand-side vector
     VecCreate(MeshTools::Comm(), &this->_rhs);
     VecSetSizes(this->_rhs, this->_equations.n_local_equations(), PETSC_DETERMINE);
@@ -118,6 +120,13 @@ void ImplicitSystem::add_matrix_entry(std::vector<int>& row_indices,
     MatSetValues(this->_A,row_indices.size(),&row_indices[0], col_indices.size(), &col_indices[0],values,ADD_VALUES);
 }
 
+void ImplicitSystem::add_matrix_entry(int nrows, int *row_indices, 
+                              int ncols, int* col_indices, double* values)
+{
+    MatSetValues(this->_A,nrows,row_indices, ncols, col_indices,values,ADD_VALUES);
+}
+
+
 void ImplicitSystem::set_matrix_entry(std::vector<int>& row_indices, 
                                       std::vector<int>& col_indices, double* values)
 {
@@ -144,5 +153,20 @@ void ImplicitSystem::restore_local_solution_array(double** solution_array)
     VecRestoreArray(this->_solution_local, solution_array);
 }
 
+EquationManager& ImplicitSystem::get_equation_manager()
+{
+    return this->_equations;
+}
 
+void ImplicitSystem::print_matrix()
+{
+    MatInfo info;
+    MatGetInfo(this->_A, MAT_LOCAL, &info);
+    PetscPrintf(PETSC_COMM_WORLD, "Matrix nonzeros: %d\n", info.nz_used);
+    PetscPrintf(PETSC_COMM_WORLD, "Matrix nonzeros/proc: %d\n", info.nz_allocated);
+    PetscPrintf(PETSC_COMM_WORLD, "Matrix memory: %d\n", info.memory);
+
+    MatView(this->_A, PETSC_VIEWER_STDOUT_WORLD);
+    
+}
 

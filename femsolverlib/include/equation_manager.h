@@ -24,7 +24,7 @@ public:
      * @param conn_size        number of nodes at the element
      * @param global_equation  global equation numbering for dof id
      */
-    void         equation_indices(int id_dof, unsigned int *conn_local, int conn_size, unsigned int *global_equation);
+    void         equation_indices(int id_dof, unsigned int *conn_local, int conn_size, int *global_equation);
     void         add_dirichlet_boundary(DirichletBoundary &boundary);
     void         prepare_to_use();
     void         calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::vector<unsigned int> &onnz);

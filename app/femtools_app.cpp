@@ -42,6 +42,7 @@ void fillAMat(Mat& A, ParallelMesh* pmesh, int processor_id)
     MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);
     MatSetOption(A, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE); // sugestão do petsc
 
+
     // Prencher a matriz:
     for(int i = 0; i < pmesh->get_n_global_nodes(); i++)
     {
@@ -114,30 +115,27 @@ int main(int argc, char* argv[])
         }
     }
 
-    if(n_processors > 1 ) 
-    {
+    //if(n_processors > 1 ) 
+    //{
         // Malha gerada pelo processo mestre é distribuida
         // para os demais processos. 
-        pmesh = parts->DistributedMesh(mesh);
-        //std::string str(argv[1]);
-        //str.resize(str.length()-4);
-        //pmesh->setFilename(str);
-    }
+    pmesh = parts->DistributedMesh(mesh);
+
+    //}
 
     // Sistema de fluido: NS
     // 2D: 3 Dofs
     //  0 : vel_x
     //  1 : vel_y
     //  2 : pressao
-    MeshIODataAppended info;
-    pmesh->writePVTK("parallel", &info);
-    pmesh->WritePMesh("parallel");
+
+
     
     ImplicitSystem* implicit_system = new ImplicitSystem(*pmesh, "poisson");    
     implicit_system->add_variable("u");
     //implicit_system->add_variable("v");
     
-    auto physical_data = pmesh->getPhysicalMap();
+    //auto physical_data = pmesh->getPhysicalMap();
     
     // for(int i = 0 ; i < physical_data.size() ; i++)
     // {
@@ -151,80 +149,47 @@ int main(int argc, char* argv[])
 
     implicit_system->init();
 
-/*
+    EquationManager& em = implicit_system->get_equation_manager();
+
     for(int iel =0; pmesh->get_n_elements() > iel; iel++)
     {
-        int connsize = pmesh->getElementConnSize(iel);
+        int connsize       = pmesh->getElementConnSize(iel);
         unsigned int* conn = pmesh->getElementConn(iel);
-        double coord[6];
-        double qpoints[2];
-        double phi[3];
-        double dphi[3][2];
-        double JxW
-        double Ke[3][3];
-        double Fe[3];
-        std::vector<unsigned int> gindices;
+        int gindex[connsize];
 
-        pmesh->getElementCoord(iel, coord);
-        ComputeTRI3Functions(coord,qpoints,phi,dphi,&JxW);
+        double Ke[3][3] = {0};
+        double Fe[3] = {0};
+        em.equation_indices(0, conn, connsize, gindex);
+
         for(int i = 0; i < connsize; i++)
         {
-            Fe[i] += phi[i]*f(x,y)*JxW;
+            Fe[i] += 1.0;
 
             for(int j = 0; j < connsize; j++)
             {
-                Ke[i][j] += dphi[i][j]*dphi[i][j]*JxW;
+                Ke[i][j] += 1.0;
             }
         }
-
-
-        implicit_system->add_matrix_entry()
+        implicit_system->add_matrix_entry(connsize,&gindex[0], connsize, &gindex[0], &Ke[0][0]);
+        //implicit_system->add_vector_entry(connsize,&gindex[0], &Fe[0]);
+        //
     }
 
-    */
+    implicit_system->close();
 
-    //auto physical_data = pmesh->getPhysicalMap();
-    /*
-    for(int i = 0 ; i < physical_data.size() ; i++)
-    {
-        if(physical_data[i].first == 1)
-        {
-            
-            //DirichletBoundary* dirichlet1 = new DirichletBoundary(physical_data[i].first, 0, "1", "");
-            //DirichletBoundary* dirichlet2 = new DirichletBoundary(physical_data[i].first, 1, "0", "");
-            //DirichletBoundary* dirichlet3 = new DirichletBoundary(physical_data[i].first, 2, "0", "");
-            //dm->add_dirichlet_boundary(*dirichlet1);
-            //dm->add_dirichlet_boundary(*dirichlet2);
-            //dm->add_dirichlet_boundary(*dirichlet3);
-            if (processor_id == 0)
-                 std::cout << "Dirichlet boundary: " << dirichlet1->get_dof_id() << ", " << dirichlet1->get_boundary_id() << std::endl;
-            }
-    }
-    */
-    
-    //unsigned int* onnz;
-    //unsigned int* dnnz;
-    
-    //dm->prepare_to_use();
-    //dm->calculate_onnz_dnnz(onnz, dnnz);
+    // implicit_system->solve();
+    // TODO
+    // const double * ptr = implicit_system->get_local_solution_array();
 
-    // Criar o Sistema de Equações
-    // std::vector<unsigned int> &gindices = pmesh->getLocal2Global();
+    MeshIODataAppended info;
+    //info.addPointDataInfo("u", Float64, ptr);
+    pmesh->writePVTK("parallel", &info);
+    pmesh->WritePMesh("parallel");
 
-    // Vec x;                                  // numero de nos totais
-    // std::cout << "[" << processor_id << "] Calculating x vector...\n";
-    // fillXVec(x, pmesh, gindices);
-    // VecView(x, v_view);
 
-    // Mat A;
-    // std::cout << "[" << processor_id << "] Calculating A matrix...\n";
-    // fillAMat(A, pmesh, processor_id);
-    // MatView(A, m_view);
+    implicit_system->print_matrix();
 
-   
-    // VecDestroy(&x);
-    // MatDestroy(&A);
-    
+
     delete implicit_system;
     MeshTools::Finalize();
     return 0;

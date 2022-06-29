@@ -31,7 +31,7 @@ unsigned int EquationManager::n_local_equations()
     return this->_n_local_equations;
 }
 
-void EquationManager::equation_indices(int id_dof, unsigned int *conn_local, int conn_size, unsigned int *global_equation)
+void EquationManager::equation_indices(int id_dof, unsigned int *conn_local, int conn_size, int *global_equation)
 {
     std::vector<int> dof_required;
 
@@ -271,7 +271,7 @@ void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::
         unsigned int *conn = _mesh.getElementConn(iel);
 
         int n_equations = connsz*_ndof;
-        unsigned int* equations = new unsigned int[n_equations];
+        int* equations = new int[n_equations];
         equation_indices(-1, conn, connsz, equations);
 
         for(int i = 0; i < n_equations; i++)

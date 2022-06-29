@@ -1451,169 +1451,175 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
 
     int processor_id = MeshTools::processor_id();
     int n_procesors  = MeshTools::n_processors(); 
-
-#ifdef USE_MPI
-    int array_sizes[12];
-
-   
+        
     ParallelMesh *pmesh ; 
 
-    // process 0 is responsible to generate local arrays and send it to each processor
-    if (processor_id == 0)
+    if(n_procesors > 1)
     {
-         if(!this->applied)
-            this->ApplyPartitioner(mesh,n_procesors);
+        int array_sizes[12];
 
-        std::vector<double>          coords;
-        std::vector<unsigned int>    l2g;
-        std::vector<unsigned int>    conn;
-        std::vector<unsigned int>    offset;
-        std::vector<unsigned short>  type;
-        std::vector<int>             tag;
-        std::vector<unsigned int>    neighbors;
-        std::vector<unsigned int>    neighbors_offset;
-        std::vector<unsigned int>    neighbors_nodes;
 
-        // A map indicanting each process that the node i is present
-        //
-        //            |         |
-        //       P0   |    P1   |   P1
-        //            |         |
-        //    -------o1---------o2------
-        //            |         |
-        //       P2   |    P3   |   P3
-        //            |         |
-        //
-        // This node has node_partition[1] = {P0, P1, P2, P3} and node_partition is node_partition[2] = {P1, P3}
-        std::map<unsigned int, std::set<unsigned int> > node_partition;
-    
-        auto & map      = mesh->getPhysicalMap();
-        array_sizes[10] = map.size();
-    
-        // Fills node_partition structure
-        this->GetNodePartition(mesh,node_partition);
 
-        // Processing and sending local arrays and variables to each `p` processor other than 0
-        for (int p = 1; p < this->n_partitions; p++)
+        // process 0 is responsible to generate local arrays and send it to each processor
+        if (processor_id == 0)
         {
-            std::cout << "Sending data to processor " << p << endl;
-            this->GetAndSendLocalData(mesh,p,array_sizes,node_partition,coords,l2g,conn,offset,type,tag,neighbors,neighbors_offset,neighbors_nodes,true);
-        }
+            if(!this->applied)
+                this->ApplyPartitioner(mesh,n_procesors);
 
-        // Processing and filling local arrays and variables to process 0
-        pmesh = new ParallelMesh();
+            std::vector<double>          coords;
+            std::vector<unsigned int>    l2g;
+            std::vector<unsigned int>    conn;
+            std::vector<unsigned int>    offset;
+            std::vector<unsigned short>  type;
+            std::vector<int>             tag;
+            std::vector<unsigned int>    neighbors;
+            std::vector<unsigned int>    neighbors_offset;
+            std::vector<unsigned int>    neighbors_nodes;
 
-        auto & _coords = pmesh->getCoord();
-        auto & _conn   = pmesh->getConn();
-        auto & _l2g    = pmesh->getLocal2Global();
-        auto & _type   = pmesh->getType();
-        auto & _tag    = pmesh->getPhysicalTag(); 
-        auto & _offset = pmesh->getOffset();
-        auto & _neighbors           = pmesh->getNeigborsProcessors();
-        auto & _shared_nodes_offset = pmesh->getSharedNodesOffset();
-        auto & _shared_nodes        = pmesh->getSharedNodes();
-
-        this->GetAndSendLocalData(mesh,0,array_sizes,node_partition,_coords,_l2g,_conn,_offset,_type,_tag,_neighbors,_shared_nodes_offset,_shared_nodes,false);
+            // A map indicanting each process that the node i is present
+            //
+            //            |         |
+            //       P0   |    P1   |   P1
+            //            |         |
+            //    -------o1---------o2------
+            //            |         |
+            //       P2   |    P3   |   P3
+            //            |         |
+            //
+            // This node has node_partition[1] = {P0, P1, P2, P3} and node_partition is node_partition[2] = {P1, P3}
+            std::map<unsigned int, std::set<unsigned int> > node_partition;
         
-        int n_faces_global    = array_sizes[0];
-        int n_faces_local     = array_sizes[1];
-        int n_elements_global = array_sizes[2];
-        int n_elements_local  = array_sizes[3]; 
-        int n_nodes           = array_sizes[4];
-        int n_nodes_local     = array_sizes[5];
-        int connsize          = array_sizes[6];
-        int n_neigbors        = array_sizes[7];
-        int neihg_ofs         = array_sizes[8];
-        int neig_nodes        = array_sizes[9];
-        int n_physical        = array_sizes[10];
+            auto & map      = mesh->getPhysicalMap();
+            array_sizes[10] = map.size();
+        
+            // Fills node_partition structure
+            this->GetNodePartition(mesh,node_partition);
 
-        pmesh->set_n_face_elements(n_faces_local);
-        pmesh->set_n_elements(n_elements_local);
-        pmesh->set_n_nodes(n_nodes_local);
-        pmesh->set_n_global_elements(n_elements_global);
-        pmesh->set_n_global_face_elements(n_faces_global);
-        pmesh->set_n_global_nodes(n_nodes);
-        pmesh->set_n_neighbor_processors(n_neigbors);
+            // Processing and sending local arrays and variables to each `p` processor other than 0
+            for (int p = 1; p < this->n_partitions; p++)
+            {
+                std::cout << "Sending data to processor " << p << endl;
+                this->GetAndSendLocalData(mesh,p,array_sizes,node_partition,coords,l2g,conn,offset,type,tag,neighbors,neighbors_offset,neighbors_nodes,true);
+            }
 
-        // Broadcasting Physical Groups
-        n_physical = map.size();
+            // Processing and filling local arrays and variables to process 0
+            pmesh = new ParallelMesh();
 
-        std::vector<int>  map_ids(2*n_physical);
-        std::vector<char> map_names(n_physical*MAX_STR);
-  
-        auto iter = map.begin();
+            auto & _coords = pmesh->getCoord();
+            auto & _conn   = pmesh->getConn();
+            auto & _l2g    = pmesh->getLocal2Global();
+            auto & _type   = pmesh->getType();
+            auto & _tag    = pmesh->getPhysicalTag(); 
+            auto & _offset = pmesh->getOffset();
+            auto & _neighbors           = pmesh->getNeigborsProcessors();
+            auto & _shared_nodes_offset = pmesh->getSharedNodesOffset();
+            auto & _shared_nodes        = pmesh->getSharedNodes();
+
+            this->GetAndSendLocalData(mesh,0,array_sizes,node_partition,_coords,_l2g,_conn,_offset,_type,_tag,_neighbors,_shared_nodes_offset,_shared_nodes,false);
+            
+            int n_faces_global    = array_sizes[0];
+            int n_faces_local     = array_sizes[1];
+            int n_elements_global = array_sizes[2];
+            int n_elements_local  = array_sizes[3]; 
+            int n_nodes           = array_sizes[4];
+            int n_nodes_local     = array_sizes[5];
+            int connsize          = array_sizes[6];
+            int n_neigbors        = array_sizes[7];
+            int neihg_ofs         = array_sizes[8];
+            int neig_nodes        = array_sizes[9];
+            int n_physical        = array_sizes[10];
+
+            pmesh->set_n_face_elements(n_faces_local);
+            pmesh->set_n_elements(n_elements_local);
+            pmesh->set_n_nodes(n_nodes_local);
+            pmesh->set_n_global_elements(n_elements_global);
+            pmesh->set_n_global_face_elements(n_faces_global);
+            pmesh->set_n_global_nodes(n_nodes);
+            pmesh->set_n_neighbor_processors(n_neigbors);
+
+            // Broadcasting Physical Groups
+            n_physical = map.size();
+
+            std::vector<int>  map_ids(2*n_physical);
+            std::vector<char> map_names(n_physical*MAX_STR);
     
-        for(int i = 0; iter != map.end(); iter++, i++)
+            auto iter = map.begin();
+        
+            for(int i = 0; iter != map.end(); iter++, i++)
+            {
+                map_ids[2*i  ]   = iter->first;           // id do grupo fisico
+                map_ids[2*i+1]   = iter->second.first;    // dimensao
+                strncpy(&map_names[i*MAX_STR],iter->second.second.c_str(),MAX_STR);
+                std::cout << iter->first << " ";
+                std::cout << iter->second.first << " ";
+                std::cout << iter->second.second << std::endl;
+                
+            }
+
+            MPI_Bcast(&n_physical,1, MPI_INT, 0, MPI_COMM_WORLD);
+            MPI_Bcast(&map_ids[0],  n_physical*2, MPI_INT, 0, MPI_COMM_WORLD);
+            MPI_Bcast(&map_names[0],n_physical*MAX_STR, MPI_CHAR, 0, MPI_COMM_WORLD);
+
+            auto& pmap = pmesh->getPhysicalMap();
+            pmap.clear();
+            for(int i = 0; i < n_physical; i++)
+            {
+                std::pair<int,physical_data_t> data;
+                char buffer[MAX_STR+1];
+                data.first         = map_ids[2*i];
+                data.second.first  = map_ids[2*i+1];
+                strncpy(buffer,&map_names[i*MAX_STR],MAX_STR-1);
+                buffer[MAX_STR] = '\0';
+                data.second.second = buffer;
+                pmap.insert(data);
+            }
+
+
+        }   
+        else
         {
-            map_ids[2*i  ]   = iter->first;           // id do grupo fisico
-            map_ids[2*i+1]   = iter->second.first;    // dimensao
-            strncpy(&map_names[i*MAX_STR],iter->second.second.c_str(),MAX_STR);
-            std::cout << iter->first << " ";
-            std::cout << iter->second.first << " ";
-            std::cout << iter->second.second << std::endl;
+            pmesh = this->RecvLocalDataFromMaster();
+
+            int n_physical;
+
+            // Broadcast Physical Groups
+            MPI_Bcast(&n_physical,1, MPI_INT, 0, MPI_COMM_WORLD);
+
+            std::cout <<  "Recevendo n_physical = " << n_physical <<std::endl;
+
+            std::vector<int>  map_ids(2*n_physical);
+            std::vector<char> map_names(n_physical*MAX_STR);
+
+            MPI_Bcast(&map_ids[0], n_physical*2, MPI_INT, 0, MPI_COMM_WORLD);
+            MPI_Bcast(&map_names[0],n_physical*MAX_STR, MPI_CHAR, 0, MPI_COMM_WORLD);
+            
+            auto& pmap = pmesh->getPhysicalMap();
+            pmap.clear();
+            for(int i = 0; i < n_physical; i++)
+            {
+                std::pair<int,physical_data_t> data;
+                char buffer[MAX_STR+1];
+                data.first         = map_ids[2*i];
+                data.second.first  = map_ids[2*i+1];
+                strncpy(buffer,&map_names[i*MAX_STR],MAX_STR-1);
+                buffer[MAX_STR] = '\0';
+                data.second.second = buffer;
+                pmap.insert(data);
+            }
+
             
         }
-
-        MPI_Bcast(&n_physical,1, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&map_ids[0],  n_physical*2, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&map_names[0],n_physical*MAX_STR, MPI_CHAR, 0, MPI_COMM_WORLD);
-
-        auto& pmap = pmesh->getPhysicalMap();
-        pmap.clear();
-        for(int i = 0; i < n_physical; i++)
-        {
-            std::pair<int,physical_data_t> data;
-            char buffer[MAX_STR+1];
-            data.first         = map_ids[2*i];
-            data.second.first  = map_ids[2*i+1];
-            strncpy(buffer,&map_names[i*MAX_STR],MAX_STR-1);
-            buffer[MAX_STR] = '\0';
-            data.second.second = buffer;
-            pmap.insert(data);
-        }
-
-
-    }   
+        pmesh->build_communication_map();
+    }
     else
     {
-        pmesh = this->RecvLocalDataFromMaster();
+        // pmesh is actually a seria mesh
+        pmesh = new ParallelMesh();
 
-        int n_physical;
+        //TODO: copiar dados da Mesh para PMesh
 
-         // Broadcast Physical Groups
-        MPI_Bcast(&n_physical,1, MPI_INT, 0, MPI_COMM_WORLD);
-
-        std::cout <<  "Recevendo n_physical = " << n_physical <<std::endl;
-
-        std::vector<int>  map_ids(2*n_physical);
-        std::vector<char> map_names(n_physical*MAX_STR);
-
-        MPI_Bcast(&map_ids[0], n_physical*2, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&map_names[0],n_physical*MAX_STR, MPI_CHAR, 0, MPI_COMM_WORLD);
-        
-        auto& pmap = pmesh->getPhysicalMap();
-        pmap.clear();
-        for(int i = 0; i < n_physical; i++)
-        {
-            std::pair<int,physical_data_t> data;
-            char buffer[MAX_STR+1];
-            data.first         = map_ids[2*i];
-            data.second.first  = map_ids[2*i+1];
-            strncpy(buffer,&map_names[i*MAX_STR],MAX_STR-1);
-            buffer[MAX_STR] = '\0';
-            data.second.second = buffer;
-            pmap.insert(data);
-        }
-
-        
     }
-
-    pmesh->build_communication_map();
-
     return pmesh;
-#else
-    return nullptr;
-#endif
 }
 
 
