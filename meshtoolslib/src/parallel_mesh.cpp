@@ -31,6 +31,23 @@ std::vector<unsigned int>& ParallelMesh::getLocal2Global()
     return this->local_to_global;
 }
 
+void ParallelMesh::setNeighborProcessors(std::vector<unsigned int> neighbors_processors)
+{
+    this->neighbor_processors = neighbor_processors;
+}
+void ParallelMesh::setSharedNodesOffset(std::vector<unsigned int> shared_nodes_offset)
+{
+    this->shared_nodes_offset = shared_nodes_offset;
+}
+void ParallelMesh::setSharedNodes(std::vector<unsigned int> shared_nodes)
+{
+    this->shared_nodes = shared_nodes;
+}
+void ParallelMesh::setLocal2Global(std::vector<unsigned int> local2global)
+{
+    this->local_to_global = local2global;
+}
+
 int ParallelMesh::get_n_neighbor_processors()
 {
     return this->n_neighbor_processors;
@@ -40,9 +57,6 @@ void ParallelMesh::set_n_neighbor_processors(int n_neighbor_processors)
 {
     this->n_neighbor_processors = n_neighbor_processors;
 }
-
-
-
 
 unsigned int ParallelMesh::get_n_global_nodes()
 {
@@ -483,7 +497,7 @@ const unsigned int *    ParallelMesh::get_neighbor_shared_nodes(unsigned int p)
     return   &this->shared_nodes[start];
 }
 
-std::vector<unsigned int>& ParallelMesh::getNeigborsProcessors()
+std::vector<unsigned int>& ParallelMesh::getNeighborsProcessors()
 {
     return this->neighbor_processors;
 }
@@ -739,4 +753,34 @@ void ParallelMesh::WritePMesh(const char *fname)
     fprintf(fout, "\n");
     fprintf(fout ,"$END_PARALLEL_DATA\n");
     fclose(fout);
+}
+
+void ParallelMesh::set_start_node_index(unsigned int start_node_index)
+{
+    this->start_node_index = start_node_index;
+}
+
+void ParallelMesh::set_n_processors(int n_processors)
+{
+    this->n_processors = n_processors;
+}
+
+void ParallelMesh::set_sendto_info(std::vector<MessageInformation>  info)
+{
+    this->sendto_info = info;
+}
+
+void ParallelMesh::set_recvfrom_info(std::vector<MessageInformation>  info)
+{
+    this->recvfrom_info = info;
+}
+
+bool ParallelMesh::get_internal_mesh()
+{
+    return this->internal_mesh;
+}
+
+void ParallelMesh::set_internal_mesh(bool internal_mesh)
+{
+    this->internal_mesh = internal_mesh;
 }

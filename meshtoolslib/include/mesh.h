@@ -545,7 +545,7 @@ class Mesh {
         std::vector<unsigned int>   offset;                     // Mapeia a localização de cada elemento no array conn.
         std::vector<unsigned short> type;                       // Array indicando o tipo de cada elemento.
         std::vector<int>            physical_tag;               // Array indicando o physical tag de cada elemento.
-        std::vector<int>            boundary_nodes;             // Array indicando o physical tag de cada elemento.
+        std::vector<int>            boundary_nodes;
 
         std::map<int, physical_data_t>  physical_map;
         unsigned int dim;                                       // Dimensão da malha.
