@@ -1255,8 +1255,8 @@ ParallelMesh* MeshPartition::RecvLocalDataFromMaster()
     int n_nodes_local     = array_sizes[5];
     int connsize          = array_sizes[6];
     int n_neigbors        = array_sizes[7];
-    int neihg_ofs         = array_sizes[8];
-    int neig_nodes        = array_sizes[9];
+    int neigh_ofs         = array_sizes[8];
+    int neigh_nodes        = array_sizes[9];
     int n_physical        = array_sizes[10];
 
     pmesh->set_n_face_elements(n_faces_local);
@@ -1273,7 +1273,7 @@ ParallelMesh* MeshPartition::RecvLocalDataFromMaster()
     auto & _type   = pmesh->getType();
     auto & _tag    = pmesh->getPhysicalTag(); 
     auto & _offset = pmesh->getOffset();
-    auto & _neighbors           = pmesh->getNeigborsProcessors();
+    auto & _neighbors           = pmesh->getNeighborsProcessors();
     auto & _shared_nodes_offset = pmesh->getSharedNodesOffset();
     auto & _shared_nodes        = pmesh->getSharedNodes();
 
@@ -1286,8 +1286,8 @@ ParallelMesh* MeshPartition::RecvLocalDataFromMaster()
     _type.resize(n_total_elements);
     _tag.resize(n_total_elements);
     _neighbors.resize(n_neigbors);
-    _shared_nodes_offset.resize(neihg_ofs);
-    _shared_nodes.resize(neig_nodes);
+    _shared_nodes_offset.resize(neigh_ofs);
+    _shared_nodes.resize(neigh_nodes);
 
     MPI_Recv(&_coords[0], _coords.size(), MPI_DOUBLE  , 0, 0, MPI_COMM_WORLD, &status);
     MPI_Recv(&_l2g[0]   , _l2g.size()   , MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &status);
@@ -1404,8 +1404,8 @@ void MeshPartition::WritePartionData(
         int n_nodes_local     = array_sizes[5];
         int connsize          = array_sizes[6];
         int n_neigbors        = array_sizes[7];
-        int neihg_ofs         = array_sizes[8];
-        int neig_nodes        = array_sizes[9];
+        int neigh_ofs         = array_sizes[8];
+        int neigh_nodes        = array_sizes[9];
     
         fprintf(fout, "# Mesh File version 0.1\n");
         fprintf(fout, "%d %d # num. faces global e local\n", n_faces_global, n_faces_local);
@@ -1458,8 +1458,6 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
     {
         int array_sizes[12];
 
-
-
         // process 0 is responsible to generate local arrays and send it to each processor
         if (processor_id == 0)
         {
@@ -1511,7 +1509,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
             auto & _type   = pmesh->getType();
             auto & _tag    = pmesh->getPhysicalTag(); 
             auto & _offset = pmesh->getOffset();
-            auto & _neighbors           = pmesh->getNeigborsProcessors();
+            auto & _neighbors           = pmesh->getNeighborsProcessors();
             auto & _shared_nodes_offset = pmesh->getSharedNodesOffset();
             auto & _shared_nodes        = pmesh->getSharedNodes();
 
@@ -1525,8 +1523,8 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
             int n_nodes_local     = array_sizes[5];
             int connsize          = array_sizes[6];
             int n_neigbors        = array_sizes[7];
-            int neihg_ofs         = array_sizes[8];
-            int neig_nodes        = array_sizes[9];
+            int neigh_ofs         = array_sizes[8];
+            int neigh_nodes       = array_sizes[9];
             int n_physical        = array_sizes[10];
 
             pmesh->set_n_face_elements(n_faces_local);
@@ -1553,7 +1551,6 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
                 std::cout << iter->first << " ";
                 std::cout << iter->second.first << " ";
                 std::cout << iter->second.second << std::endl;
-                
             }
 
             MPI_Bcast(&n_physical,1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -1573,8 +1570,6 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
                 data.second.second = buffer;
                 pmap.insert(data);
             }
-
-
         }   
         else
         {
@@ -1585,7 +1580,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
             // Broadcast Physical Groups
             MPI_Bcast(&n_physical,1, MPI_INT, 0, MPI_COMM_WORLD);
 
-            std::cout <<  "Recevendo n_physical = " << n_physical <<std::endl;
+            std::cout <<  "Receiving n_physical = " << n_physical <<std::endl;
 
             std::vector<int>  map_ids(2*n_physical);
             std::vector<char> map_names(n_physical*MAX_STR);
@@ -1613,12 +1608,52 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
     }
     else
     {
-        // pmesh is actually a seria mesh
+        // pmesh is actually a serial mesh
         pmesh = new ParallelMesh();
 
-        //TODO: copiar dados da Mesh para PMesh
+        pmesh->setFilename(mesh->getFilename());
 
+        pmesh->set_n_processors(1);
+        pmesh->set_n_neighbor_processors(0);
+
+        pmesh->set_n_elements(mesh->get_n_elements());
+        pmesh->set_n_global_elements(mesh->get_n_elements());
+        pmesh->set_n_face_elements(mesh->get_n_face_elements());
+        pmesh->set_n_global_face_elements(mesh->get_n_face_elements());
+
+        bool is_internal = pmesh->get_n_face_elements() == 0 ? true : false;
+        pmesh->set_internal_mesh(is_internal);
+
+        pmesh->set_n_nodes(mesh->get_n_nodes());
+        pmesh->set_n_global_nodes(mesh->get_n_nodes());
+
+        pmesh->setCoord(mesh->getCoord());
+        pmesh->setConn(mesh->getConn());
+        pmesh->setOffset(mesh->getOffset());
+        pmesh->setType(mesh->getType());
+        pmesh->set_physical_map(mesh->getPhysicalMap());
+        
+        pmesh->setDim(mesh->getDim());
+
+        std::vector<unsigned int> local2global;
+        for(int i = 0 ; i < pmesh->get_n_nodes() ; i++)
+            local2global[i] = i;
+        
+        pmesh->setLocal2Global(local2global);
+
+        // Empty vectors because it doesn't exists any neighbors
+        std::vector<unsigned int> empty_vector;
+        pmesh->setNeighborProcessors(empty_vector);
+        pmesh->setSharedNodesOffset(empty_vector);
+        pmesh->setSharedNodes(empty_vector);
+
+        std::vector<MessageInformation> empty_vector_message;
+        pmesh->set_sendto_info(empty_vector_message);
+        pmesh->set_recvfrom_info(empty_vector_message);
+
+        pmesh->set_start_node_index(0);
     }
+
     return pmesh;
 }
 
