@@ -75,7 +75,7 @@ void QUAD4DShape(double _xi[], double dpsi[][4])
 
 #define X(i) (coords[i*3+0])
 #define Y(i) (coords[i*3+1])
-void ComputeQuad4Functions(double qp[], double qw, double *coords, double phi[4], double dphi[4][2], double *JxW)
+void ComputeQuad4Functions(double qp[], double qw, double *coords, double *point, double phi[4], double dphi[4][2], double *JxW)
 {
     double dpsi[2][4];
     double J[2][2]    = {{0.0, 0.0}, {0.0, 0.0}};
@@ -83,10 +83,16 @@ void ComputeQuad4Functions(double qp[], double qw, double *coords, double phi[4]
     
     QUAD4Shape(qp, phi);
     QUAD4DShape(qp,dpsi);
+
+    point[0] = 0.0;
+    point[1] = 0.0;
     for(int i=0; i<4; i++)
     {
         double x = X(i);
         double y = Y(i);
+
+        point[0] += phi[i]*x;
+        point[1] += phi[i]*y;
 
         J[0][0] +=  x*dpsi[0][i];
         J[0][1] +=  y*dpsi[0][i];
