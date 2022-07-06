@@ -14,9 +14,10 @@ class ImplicitSystem
         void add_matrix_entry(std::vector<int>& row_indices,std::vector<int>& col_indices, double* values);
         void add_matrix_entry(int nrows, int *row_indices, int ncols, int* col_indices, double* values);
         void add_rhs_entry(std::vector<int>& row_indices, double *value);
+        void add_rhs_entry(int nrows, int* row_indices, double *value);
         void set_matrix_entry(std::vector<int>& row_indices, std::vector<int>& col_indices, double* values);
         void set_rhs_entry(std::vector<int>& row_indices, double *value);
-        void get_local_solution_array(double** solution_array);
+        double* get_local_solution_array();
         void restore_local_solution_array(double** solution_array);
 
         void print_matrix();

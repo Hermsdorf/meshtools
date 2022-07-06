@@ -144,26 +144,30 @@ int main(int argc, char* argv[])
             }
         }
         implicit_system->add_matrix_entry(connsize,&gindex[0], connsize, &gindex[0], &Ke[0][0]);
-        //implicit_system->add_vector_entry(connsize,&gindex[0], &Fe[0]);
-        //
+        implicit_system->add_rhs_entry(connsize,&gindex[0], &Fe[0]);
+        
     }
 
     implicit_system->close();
+    implicit_system->solve();
 
-    // implicit_system->solve();
-    // TODO
-    // const double * ptr = implicit_system->get_local_solution_array();
+    double *solution_ptr = implicit_system->get_local_solution_array();
+    for(int i = 0 ; i < pmesh->get_n_global_nodes() ; i++)
+    {
+        std::cout << "Solution[" << i << "] = " << solution_ptr[i] << std::endl;
+    }
 
     MeshIODataAppended info;
     //info.addPointDataInfo("u", Float64, ptr);
     //pmesh->writePVTK("parallel", &info);
     //pmesh->WritePMesh("parallel");
 
-
+    implicit_system->restore_local_solution_array(&solution_ptr); // ??
     implicit_system->print_matrix();
 
 
     delete implicit_system;
+    delete pmesh;
     MeshTools::Finalize();
     return 0;
 }

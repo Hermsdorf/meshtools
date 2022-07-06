@@ -39,11 +39,8 @@ void ImplicitSystem::init()
 
     if(MeshTools::n_processors() == 1)
     {
-        
         MatCreateSeqAIJ(MeshTools::Comm(), this->_equations.n_local_equations(), this->_equations.n_local_equations(),
                         PETSC_DECIDE, (PetscInt*) dnnz.data(), &this->_A);
-
-
     } 
     else
     {
@@ -100,8 +97,6 @@ void ImplicitSystem::init()
     KSPSetType(this->_ksp, KSPGMRES);
     KSPSetTolerances(this->_ksp, 1e-8, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
     KSPSetFromOptions(this->_ksp);
-   
-
 }
 
 void ImplicitSystem::close()
@@ -156,14 +151,22 @@ void ImplicitSystem::add_rhs_entry(std::vector<int>& row_indices, double* values
     VecSetValues(this->_rhs, row_indices.size(), row_indices.data(), values, ADD_VALUES);
 }
 
+void ImplicitSystem::add_rhs_entry(int nrows, int* row_indices, double* values)
+{
+    VecSetValues(this->_rhs, nrows, row_indices, values, ADD_VALUES);
+}
+
 void ImplicitSystem::set_rhs_entry(std::vector<int>& row_indices, double* values)
 {
     VecSetValues(this->_rhs, row_indices.size(), row_indices.data(), values, INSERT_VALUES);
 }
 
-void ImplicitSystem::get_local_solution_array(double** solution_array)
+double* ImplicitSystem::get_local_solution_array()
 {
-    VecGetArray(this->_solution_local, solution_array);
+    double* solution_array;
+    VecGetArray(this->_solution_local, &solution_array);
+    
+    return solution_array;
 }
 
 void ImplicitSystem::restore_local_solution_array(double** solution_array)

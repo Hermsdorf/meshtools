@@ -66,7 +66,7 @@ class ParallelMesh : public Mesh{
         unsigned int n_global_faces;
         unsigned int n_global_internal_elements;
         unsigned int n_local_nodes;
-        unsigned int start_node_index;
+        unsigned int start_node_index; // is the equivalent of _first_global_equation_index of equation_manager ?
         
         std::vector<unsigned int> local_to_global;
         // Parallel Context attributes
