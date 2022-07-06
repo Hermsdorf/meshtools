@@ -363,13 +363,16 @@ void Mesh::MeshGmshReader(const char* filename)
     {
         this->n_elements = dim_count[3];
         this->n_face_elements = dim_count[2];
+        this->dim = 3;
     } else if (dim_count[2] != 0)
     {
         this->n_elements      = dim_count[2];
         this->n_face_elements = dim_count[1];
+        this->dim = 2;
     } else
     {
         this->n_elements      = dim_count[1];
+        this->dim = 1;
     }
     
 

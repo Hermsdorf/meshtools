@@ -1635,7 +1635,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
         
         pmesh->setDim(mesh->getDim());
 
-        std::vector<unsigned int> local2global;
+        std::vector<unsigned int> local2global(pmesh->get_n_nodes());
         for(int i = 0 ; i < pmesh->get_n_nodes() ; i++)
             local2global[i] = i;
         

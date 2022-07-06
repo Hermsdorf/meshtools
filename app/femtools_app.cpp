@@ -115,13 +115,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    //if(n_processors > 1 ) 
-    //{
-        // Malha gerada pelo processo mestre é distribuida
-        // para os demais processos. 
     pmesh = parts->DistributedMesh(mesh);
-
-    //}
 
     // Sistema de fluido: NS
     // 2D: 3 Dofs
@@ -129,8 +123,6 @@ int main(int argc, char* argv[])
     //  1 : vel_y
     //  2 : pressao
 
-
-    
     ImplicitSystem* implicit_system = new ImplicitSystem(*pmesh, "poisson");    
     implicit_system->add_variable("u");
     //implicit_system->add_variable("v");
