@@ -114,7 +114,7 @@ void EquationManager::prepare_to_use()
         {
             int node_id = *bnd_node_iter;
             // flag indicanting that there is no equation to this node because it is a boundary node (with its respective boundary condition)
-            _equation_indices[node_id*_ndof + dof_id] = -1;
+            //_equation_indices[node_id*_ndof + dof_id] = -1;
             _boundary_nodes_map[bnd_id][ibcno++] = node_id;
         }
     }
@@ -159,6 +159,14 @@ void EquationManager::prepare_to_use()
     }
 
     this->_n_local_equations = n_local_equations;
+    this->_first_global_equation_index = 0;
+
+
+    if(MeshTools::n_processors() == 1)
+    {
+        _prepared_to_use = true;
+        return;
+    }
 
     //* 4. Calculating offset
         
@@ -306,6 +314,7 @@ void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::
         onnz[i] = voff[i].size();
     }
 
+/*
     MPI_Barrier(MPI_COMM_WORLD);
     cout << " [ " << MeshTools::processor_id() << " ] _equation_indices = "; 
     for(int i = 0 ; i < _equation_indices.size() ; i++)
@@ -325,5 +334,6 @@ void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::
     }
     cout << endl;
     MPI_Barrier(MPI_COMM_WORLD);
+*/
 
 }

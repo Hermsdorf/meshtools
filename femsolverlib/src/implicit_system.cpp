@@ -37,15 +37,29 @@ void ImplicitSystem::init()
 
     this->_equations.calculate_dnnz_onnz(dnnz, onnz);
 
-    // Create the matrix
-    MatCreateAIJ(MeshTools::Comm(), 
+    if(MeshTools::n_processors() == 1)
+    {
+        
+        MatCreateSeqAIJ(MeshTools::Comm(), this->_equations.n_local_equations(), this->_equations.n_local_equations(),
+                        PETSC_DECIDE, (PetscInt*) dnnz.data(), &this->_A);
+
+
+    } 
+    else
+    {
+        // Create the matrix
+        MatCreateAIJ(MeshTools::Comm(), 
                 this->_equations.n_local_equations(), this->_equations.n_local_equations(),
                  PETSC_DETERMINE, PETSC_DETERMINE, 
                  PETSC_DECIDE, (PetscInt*) dnnz.data(), 
                  PETSC_DECIDE, (PetscInt*) onnz.data(), &this->_A);
 
+    }
+
+    
     MatSetOption(_A, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
 
+    MatZeroEntries(_A);
     // Create the right-hand-side vector
     VecCreate(MeshTools::Comm(), &this->_rhs);
     VecSetSizes(this->_rhs, this->_equations.n_local_equations(), PETSC_DETERMINE);
@@ -86,7 +100,7 @@ void ImplicitSystem::init()
     KSPSetType(this->_ksp, KSPGMRES);
     KSPSetTolerances(this->_ksp, 1e-8, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
     KSPSetFromOptions(this->_ksp);
-    KSPSetUp(this->_ksp);
+   
 
 }
 
@@ -94,6 +108,8 @@ void ImplicitSystem::close()
 {
     MatAssemblyBegin(_A,MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(_A,MAT_FINAL_ASSEMBLY);
+    VecAssemblyBegin(this->_rhs);
+    VecAssemblyEnd(this->_rhs);
 }
 
 ImplicitSystem::~ImplicitSystem()
@@ -108,7 +124,9 @@ ImplicitSystem::~ImplicitSystem()
 
 void ImplicitSystem::solve()
 {
+
     this->close();
+    KSPSetUp(this->_ksp);
     KSPSolve(this->_ksp, this->_rhs, this->_solution);
     VecScatterBegin(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
     VecScatterEnd(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);

@@ -117,33 +117,14 @@ int main(int argc, char* argv[])
 
     pmesh = parts->DistributedMesh(mesh);
 
-    // Sistema de fluido: NS
-    // 2D: 3 Dofs
-    //  0 : vel_x
-    //  1 : vel_y
-    //  2 : pressao
-
     ImplicitSystem* implicit_system = new ImplicitSystem(*pmesh, "poisson");    
     implicit_system->add_variable("u");
-    //implicit_system->add_variable("v");
-    
-    //auto physical_data = pmesh->getPhysicalMap();
-    
-    // for(int i = 0 ; i < physical_data.size() ; i++)
-    // {
-    //     if(physical_data[i].first == 1)
-    //     {
-            
-    //         DirichletBoundary* dirichlet1 = new DirichletBoundary(physical_data[i].first, 0, "sqrt(2*x + 4*y + 3)", "x, y");
-    //         implicit_system->add_dirichlet_boundary(*dirichlet1);
-    //     }
-    // }
 
     implicit_system->init();
 
     EquationManager& em = implicit_system->get_equation_manager();
 
-    for(int iel =0; pmesh->get_n_elements() > iel; iel++)
+    for(int iel =0; iel < pmesh->get_n_elements(); iel++)
     {
         int connsize       = pmesh->getElementConnSize(iel);
         unsigned int* conn = pmesh->getElementConn(iel);
@@ -175,8 +156,8 @@ int main(int argc, char* argv[])
 
     MeshIODataAppended info;
     //info.addPointDataInfo("u", Float64, ptr);
-    pmesh->writePVTK("parallel", &info);
-    pmesh->WritePMesh("parallel");
+    //pmesh->writePVTK("parallel", &info);
+    //pmesh->WritePMesh("parallel");
 
 
     implicit_system->print_matrix();
