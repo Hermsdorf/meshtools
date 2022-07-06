@@ -18,7 +18,7 @@
 using namespace std;
 
 void QGaussTri3(int *nqp, double* qp, double* qw)
-{
+
   //
   //  QGaussTri3(nqp, qp, qw)
   //
@@ -73,8 +73,8 @@ void ComputeTRI3Functions(double gp[], double qw, double *coords, double phi[3],
     double J[2][2]    = {{0.0, 0.0}, {0.0, 0.0}};
     double Jinv[2][2] = {{0.0, 0.0}, {0.0, 0.0}};
     
-    TRI3Shape(qp, phi);
-    TRI3DShape(qp,dpsi);
+    TRI3Shape(gp, phi);
+    TRI3DShape(gp,dpsi);
     for(int i=0; i<3; i++)
     {
         double x = X(i);
