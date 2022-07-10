@@ -1632,6 +1632,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
         pmesh->setOffset(mesh->getOffset());
         pmesh->setType(mesh->getType());
         pmesh->set_physical_map(mesh->getPhysicalMap());
+        pmesh->set_physical_tag(mesh->getPhysicalTag());
         
         pmesh->setDim(mesh->getDim());
 

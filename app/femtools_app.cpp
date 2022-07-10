@@ -168,6 +168,8 @@ int main(int argc, char* argv[])
 
     delete implicit_system;
     delete pmesh;
+    delete mesh;
+    delete parts;
     MeshTools::Finalize();
     return 0;
 }
