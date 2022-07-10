@@ -49,7 +49,7 @@ MeshIODataAppended::MeshIODataAppended()
 
 void MeshIODataAppended::addPointDataInfo(const char* name, MeshDataType type, void *data_ptr)
 {
-    CellData tmp;
+    PointData tmp;
     assert(is_mesh_data_type_valid(type));
     tmp.name = name;
     tmp.data = data_ptr;

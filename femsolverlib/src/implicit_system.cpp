@@ -187,7 +187,16 @@ void ImplicitSystem::print_matrix()
     PetscPrintf(PETSC_COMM_WORLD, "Matrix nonzeros/proc: %d\n", info.nz_allocated);
     PetscPrintf(PETSC_COMM_WORLD, "Matrix memory: %d\n", info.memory);
 
+    MatAssemblyBegin(this->_A,MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(this->_A,MAT_FINAL_ASSEMBLY);
     MatView(this->_A, PETSC_VIEWER_STDOUT_WORLD);
     
+}
+
+void ImplicitSystem::print_rhs()
+{
+    VecAssemblyBegin(this->_rhs);
+    VecAssemblyEnd(this->_rhs);
+    VecView(this->_rhs, PETSC_VIEWER_STDOUT_WORLD);
 }
 

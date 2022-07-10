@@ -21,6 +21,7 @@ class ImplicitSystem
         void restore_local_solution_array(double** solution_array);
 
         void print_matrix();
+        void print_rhs();
 
         EquationManager& get_equation_manager();
         

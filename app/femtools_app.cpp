@@ -147,10 +147,11 @@ int main(int argc, char* argv[])
         implicit_system->add_rhs_entry(connsize,&gindex[0], &Fe[0]);
         
     }
-
-    implicit_system->close();
+    implicit_system->print_matrix();
+    implicit_system->print_rhs();
+    
     implicit_system->solve();
-
+    implicit_system->close();
     double *solution_ptr = implicit_system->get_local_solution_array();
     for(int i = 0 ; i < pmesh->get_n_global_nodes() ; i++)
     {
@@ -158,12 +159,11 @@ int main(int argc, char* argv[])
     }
 
     MeshIODataAppended info;
-    //info.addPointDataInfo("u", Float64, ptr);
-    //pmesh->writePVTK("parallel", &info);
-    //pmesh->WritePMesh("parallel");
+    info.addPointDataInfo("u", Float64, solution_ptr);
+    pmesh->writePVTK("parallel", &info);
+    pmesh->WritePMesh("parallel");
 
     implicit_system->restore_local_solution_array(&solution_ptr); // ??
-    implicit_system->print_matrix();
 
 
     delete implicit_system;
