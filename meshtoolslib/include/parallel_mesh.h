@@ -29,6 +29,7 @@ class ParallelMesh : public Mesh{
         void                        set_n_global_elements(unsigned int n_global_elements);
         void                        set_n_global_face_elements(unsigned int n_global_face_elements);
         unsigned int                get_n_local_nodes();
+        void                        set_n_local_nodes(unsigned int n_local_nodes);
         unsigned int                get_start_global_index();
         void                        set_n_processors(int n_processors);
         int                         get_n_neighbor_processors();
@@ -56,7 +57,7 @@ class ParallelMesh : public Mesh{
         void                             set_recvfrom_info(std::vector<MessageInformation> recvfrom_info);
         
         void getGhostNodesIds(std::vector<unsigned int>& local_ghosts_nodes, std::vector<unsigned int>& global_ghosts_nodes);
-        void renumbering();
+        void update();
         void build_communication_map();
     private:
         

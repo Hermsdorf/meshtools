@@ -81,10 +81,10 @@ void EquationManager::prepare_to_use()
     //* 1. Defining nodes with boundary conditions
     int n_nodes             = _mesh.get_n_nodes();
     int n_boundary_elements = _mesh.get_n_face_elements();
+    std::vector<unsigned int> &  l2g = _mesh.getLocal2Global();
     std::vector<int> &tags  = _mesh.getPhysicalTag();
 
     _equation_indices.resize(n_nodes*_ndof);
-
     _boundary_nodes_map.resize(_boundaries.size());
 
     int bnd_id = 0;
@@ -119,7 +119,21 @@ void EquationManager::prepare_to_use()
         }
     }
 
-    //* 2. Marking nodes that doesnt belongs to the processor
+
+    for(int ino = 0; ino < n_nodes; ino++)
+    {
+        for(int idof = 0; idof < _ndof; idof++)
+        {
+            _equation_indices[ino*_ndof + idof] = l2g[ino]*_ndof + idof;
+        }
+    }
+
+    this->_first_global_equation_index =  _mesh.get_start_global_index()*_ndof;
+    this->_n_local_equations = _mesh.get_n_local_nodes()*_ndof;
+    
+    
+    /*
+    // 2. Marking nodes that doesnt belongs to the processor
     
     // Mark at _equation_indices, nodes that are belong to my master (which are process with id greater than mine)
     std::vector<MessageInformation>& recvfrom = _mesh.get_recvfrom_info();
@@ -139,14 +153,14 @@ void EquationManager::prepare_to_use()
 
             for(int dof_id =0; dof_id < _ndof; ++dof_id) {
                 // flag indicanting that this node belongs to my master, so the equation belongs to him
-                _equation_indices[node_id*_ndof + dof_id] = -2;
+                _equation_indices[node_id*_ndof + dof_id] = -1;
                 n_dof_shared++;
             }
         }
         
     }
 
-    //* 3. Defining the number of the equations that were not marked with the previous -1 and -2 flags
+    // 3. Defining the number of the equations that were not marked with the previous -1 and -2 flags
     unsigned int n_equations_offset = 0;
     int n_local_equations = 0;
     for(int i = 0; i < _equation_indices.size(); ++i)
@@ -162,17 +176,20 @@ void EquationManager::prepare_to_use()
     this->_first_global_equation_index = 0;
 
 
-    if(MeshTools::n_processors() == 1)
-    {
-        _prepared_to_use = true;
-        return;
-    }
+    //if(MeshTools::n_processors() == 1)
+    //{
+    //    _prepared_to_use = true;
+    //    return;
+    //}
 
-    //* 4. Calculating offset
+    // 4. Calculating offset
         
     // Sends from predecessor process the value of `n_local_equations` to calculate `n_equations_offset` variable
     MPI_Scan(&n_local_equations,&n_equations_offset,1,MPI_UNSIGNED,MPI_SUM,MPI_COMM_WORLD);
     n_equations_offset -= n_local_equations;
+
+    
+    if(MeshTools::processor_id() == 1) std::cout <<  "n_equations_offset = " << n_equations_offset << std::endl;
 
     this->_first_global_equation_index = n_equations_offset; 
 
@@ -249,11 +266,19 @@ void EquationManager::prepare_to_use()
 
             for(int dof_id =0; dof_id < _ndof; ++dof_id){
                 int recv_value = recvBuffer[offset+ino*_ndof + dof_id];
-                if(recv_value >= 0)
+                //if(recv_value >= 0)
                     _equation_indices[node*_ndof + dof_id] = recv_value;
             }
         } 
         offset += n_shared_nodes; 
+    }
+
+    */
+    if(MeshTools::processor_id() == 0)
+    {
+        cout << "Equation indices: " << endl;
+        for(int i = 0; i < _equation_indices.size(); ++i)
+            cout << _equation_indices[i] << " ";
     }
 
     _prepared_to_use = true;

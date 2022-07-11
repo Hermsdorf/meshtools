@@ -4,6 +4,8 @@
 
 #include "meshtools.h"
 #include "parallel_mesh.h"
+#include "mpi.h"
+
 
 ParallelMesh::ParallelMesh()
 {
@@ -46,6 +48,11 @@ void ParallelMesh::setSharedNodes(std::vector<unsigned int> shared_nodes)
 void ParallelMesh::setLocal2Global(std::vector<unsigned int> local2global)
 {
     this->local_to_global = local2global;
+}
+
+void ParallelMesh::set_n_local_nodes(unsigned int n_local_nodes)
+{
+    this->n_local_nodes = n_local_nodes;
 }
 
 int ParallelMesh::get_n_neighbor_processors()
@@ -528,6 +535,10 @@ std::vector<MessageInformation>& ParallelMesh::get_recvfrom_info()
 
 void ParallelMesh::build_communication_map()
 {
+
+    if(MeshTools::processor_id() == 0)
+        std::cout << "Building communication map\n";
+
     int greather_neighbor_process[this->n_nodes];
     for(int i = 0; i < this->n_nodes; ++i)
         greather_neighbor_process[i] = processor_id;
@@ -582,113 +593,140 @@ void ParallelMesh::build_communication_map()
                 this->sendto_info.push_back(info);
         }
     }
+    MPI_Barrier(MeshTools::Comm());
+
+    cout << "Processor " << MeshTools::processor_id() << ": " << this->sendto_info.size() << " sendto_info\n";
+    cout << "Processor " << MeshTools::processor_id() << ": " << this->recvfrom_info.size() << " recvfrom_info\n";
+    if(MeshTools::processor_id() == 0)
+        std::cout << "fininshing communication map\n";
 }
 
-void ParallelMesh::renumbering(){}
-// {
-//     // Indicates local node, what means that it is not shared with other process
-//     std::vector<unsigned short> mask_node(this->n_nodes);
+void ParallelMesh::update()
+{
+    // Indicates local node, what means that it is not shared with other process
+    std::vector<unsigned short> mask_node(this->n_nodes);
 
-//     for(int i = 0; i < this->n_nodes; ++i)
-//          mask_node[i] = 0;
+    for(int i = 0; i < this->n_nodes; ++i)
+         mask_node[i] = 0;
    
-    
-//     unsigned int n_nodes_offset;
+    unsigned int n_nodes_offset;
 
-//     // Mark at mask_nodes, nodes that are belong to my master (which are process with id greater than mine)
-//     int max_buffer_size = 0;
-//     for(int i = 0; i < this->neighbor_processors.size(); ++i)
-//     {
-//         unsigned int neighbor  = this->neighbor_processors[i];
-//         if(neighbor > this->processor_id)
-//         {
-//             unsigned int start     = this->shared_nodes_offset[i];
-//             unsigned int end       = this->shared_nodes_offset[i+1];
-//             if((end-start) > max_buffer_size) max_buffer_size = (end-start);
-//             for(int ino = start; ino < end; ino++)
-//             {
-//                 int node_id = this->shared_nodes[ino]; 
-//                 mask_node[node_id]=1;
-//             }
-//         }
-//     }
+   // Mark nodes that are belong to my master (which are process with id greater than mine)
+    std::vector<MessageInformation>& recvfrom = this->get_recvfrom_info();
 
-    
-//     // Count local nodes, which arent from other process (my master)
-//     this->n_local_nodes = 0;
-//     for(int i=0; i < this->n_nodes; i++)
-//     {
-//         if(mask_node[i]==0) {
-//             local_to_global[i] = this->n_local_nodes;
-//             this->n_local_nodes++;
-//         } 
-//     }
-
- 
-    
-//     // Sends from predecessor process the value of `n_nodes_local` to `n_nodes_offset` variable`
-//     MPI_Scan(&this->n_local_nodes,&n_nodes_offset,1,MPI_UNSIGNED,MPI_SUM,MPI_COMM_WORLD);
-//     n_nodes_offset -= this->n_local_nodes;
-    
-
-//     this->start_node_index = n_nodes_offset;
-   
-//     for(int i=0; i < this->n_nodes; i++)
-//     {
-//         if(mask_node[i]==0) {
-//             local_to_global[i] += n_nodes_offset;
-//         } 
-//     }
-    
-//     std::vector<unsigned int> recvBuffer(shared_nodes.size());
-//     std::vector<unsigned int> sendBuffer(shared_nodes.size());
-//     std::vector<MPI_Request>  requests(this->sendto_neighbors_map.size()+this->recvfrom_neighbors_map.size());
-//     std::vector<MPI_Status>   status(this->sendto_neighbors_map.size()+this->recvfrom_neighbors_map.size());
-    
-//     // Exchange Data from
-//     unsigned int r = 0;
-//     int n_recvs = this->recvfrom_neighbors_map.size();
-//     for(int i =0; i < n_recvs; i++)
-//     {
-//         int neighbor_idx       = this->recvfrom_neighbors_map[i];
-//         int recv_from          = this->neighbor_processors[neighbor_idx];
-//         unsigned int start     = this->shared_nodes_offset[i];
-//         unsigned int end       = this->shared_nodes_offset[i+1];
-//         unsigned int n_shared_nodes = (end-start);
-//         MPI_Irecv(&recvBuffer[start],n_shared_nodes,MPI_UNSIGNED, recv_from,0,MPI_COMM_WORLD,&requests[r++]);
-//     }
-//     int n_sends = this->sendto_neighbors_map.size();
-//     for(int i =0; i < n_sends; i++)
-//     {
-//         int neighbor_idx       = this->sendto_neighbors_map[i];
-//         int sendto             = this->neighbor_processors[neighbor_idx];
-//         unsigned int start     = this->shared_nodes_offset[i];
-//         unsigned int end       = this->shared_nodes_offset[i+1];
-//         unsigned int n_shared_nodes = (end-start);
-
-//         for(int ino =start; ino < end; ino++) {
-//             int node        = this->shared_nodes[ino];
-//             sendBuffer[ino] = local_to_global[node];
-//         }
-//         MPI_Isend(&sendBuffer[start],n_shared_nodes,MPI_UNSIGNED,sendto,0,MPI_COMM_WORLD,&requests[r++]);
-//     }
-
-//     MPI_Waitall(r,&requests[0], &status[0]);
-
-//     for(int i =0; i < n_recvs; i++)
-//     {
-//         int neighbor_idx = this->recvfrom_neighbors_map[i];
-//         int recv_from    = this->neighbor_processors[neighbor_idx];
-//         unsigned int start     = this->shared_nodes_offset[i];
-//         unsigned int end       = this->shared_nodes_offset[i+1];
-//         unsigned int n_shared_nodes = (end-start);
-//         for(int ino =start; ino < end; ino++) {
-//             int node              = this->shared_nodes[ino];
-//             local_to_global[node] = recvBuffer[ino];
-//         }
+    unsigned int max_buffer_size = 0;
+    unsigned int n_nodes_shared   = 0;
+    for(int i = 0; i < recvfrom.size(); ++i)
+    {
+        unsigned int neighbor                   = recvfrom[i].processor_id;
+        std::vector<unsigned int>& shared_nodes = recvfrom[i].nodes;
+        unsigned int n_shared_nodes             = shared_nodes.size();
         
-//     }
-// }
+        if(n_shared_nodes > max_buffer_size) max_buffer_size = n_shared_nodes;
+        for(int ino = 0; ino < n_shared_nodes ; ino++)
+        {
+            int node_id = shared_nodes[ino]; 
+             // flag indicanting that this node belongs to my master, so the equation belongs to him
+            mask_node[node_id] = 1;
+            n_nodes_shared++;
+        }
+    }
+
+
+    // Count local nodes, which arent from other process (my master)
+    this->n_local_nodes = 0;
+    for(int i=0; i < this->n_nodes; i++)
+    {
+        if(mask_node[i]==0) {
+            this->n_local_nodes++;
+        } 
+    }
+
+    // Sends from predecessor process the value of `n_nodes_local` to `n_nodes_offset` variable`
+    MPI_Scan(&n_local_nodes,&n_nodes_offset,1,MPI_UNSIGNED,MPI_SUM,MPI_COMM_WORLD);
+    n_nodes_offset -= this->n_local_nodes;
+    
+    this->start_node_index = n_nodes_offset;
+   
+   /*
+    for(int i=0; i < this->n_nodes; i++)
+    {
+        if(mask_node[i]==0) {
+            local_to_global[i] += n_nodes_offset;
+        } 
+    }
+
+    std::vector<MessageInformation>& sendto_neighbors_map   =  this->get_sendto_info();
+    std::vector<MessageInformation>& recvfrom_neighbors_map =  this->get_recvfrom_info();
+
+    unsigned int recv_n_shared_nodes = 0;
+    for(int i = 0; i < recvfrom_neighbors_map.size(); ++i)
+        recv_n_shared_nodes += recvfrom_neighbors_map[i].nodes.size();
+
+    unsigned int sendto_n_shared_nodes = 0;
+    for(int i = 0; i < sendto_neighbors_map.size(); ++i)
+        sendto_n_shared_nodes += sendto_neighbors_map[i].nodes.size();
+
+    std::vector<unsigned int> recvBuffer(recv_n_shared_nodes);
+    std::vector<unsigned int> sendBuffer(sendto_n_shared_nodes);
+    std::vector<MPI_Request>  requests(sendto_neighbors_map.size()+recvfrom_neighbors_map.size());
+    std::vector<MPI_Status>   status(sendto_neighbors_map.size()+recvfrom_neighbors_map.size());
+    
+    // Exchange Data from
+    unsigned int r = 0;
+    unsigned int offset = 0;
+    int n_recvs = recvfrom_neighbors_map.size();
+    for(int i =0; i < n_recvs; i++)
+    {
+        std::vector<unsigned int> neighbor_nodes  = recvfrom_neighbors_map[i].nodes;
+        int recv_from                             = recvfrom_neighbors_map[i].processor_id;
+        unsigned int n_shared_nodes               = neighbor_nodes.size();
+
+        MPI_Irecv(&recvBuffer[offset],n_shared_nodes,MPI_UNSIGNED, recv_from,0,MPI_COMM_WORLD,&requests[r++]);
+
+        offset += n_shared_nodes;
+
+    }
+
+    int n_sends = sendto_neighbors_map.size();
+    offset = 0;
+    for(int i =0; i < n_sends; i++)
+    {
+        std::vector<unsigned int> neighbor_nodes = sendto_neighbors_map[i].nodes;
+        int sendto                               = sendto_neighbors_map[i].processor_id;
+        unsigned int n_shared_nodes              = neighbor_nodes.size();
+
+        for(int ino =0; ino < neighbor_nodes.size(); ino++) 
+        {
+            int node = neighbor_nodes[ino];
+            sendBuffer[offset+ino] = local_to_global[node];
+        }
+        
+        MPI_Isend(&sendBuffer[offset],n_shared_nodes,MPI_UNSIGNED,sendto,0,MPI_COMM_WORLD,&requests[r++]);
+        offset += n_shared_nodes;
+    }
+
+    MPI_Waitall(r,&requests[0], &status[0]);
+
+    offset = 0;
+    for(int i =0; i < n_recvs; i++)
+    {
+        std::vector<unsigned int> neighbor_nodes  = recvfrom_neighbors_map[i].nodes;
+        unsigned int n_shared_nodes               = neighbor_nodes.size();
+        
+        for(int ino = 0; ino <  neighbor_nodes.size(); ino++) 
+        {
+            int node = neighbor_nodes[ino];
+            unsigned int recv_value = recvBuffer[offset+ino];
+            if(recv_value >= 0)
+                local_to_global[node] = recv_value;
+            
+        } 
+        offset += n_shared_nodes; 
+    }
+    */
+}
+
 
 void ParallelMesh::WritePMesh(const char *fname)
 {

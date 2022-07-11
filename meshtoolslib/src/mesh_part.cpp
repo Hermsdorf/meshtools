@@ -1601,10 +1601,11 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
                 data.second.second = buffer;
                 pmap.insert(data);
             }
-
-            
         }
+
+
         pmesh->build_communication_map();
+        
     }
     else
     {
@@ -1625,6 +1626,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
         pmesh->set_internal_mesh(is_internal);
 
         pmesh->set_n_nodes(mesh->get_n_nodes());
+        pmesh->set_n_local_nodes(mesh->get_n_nodes());
         pmesh->set_n_global_nodes(mesh->get_n_nodes());
 
         pmesh->setCoord(mesh->getCoord());
@@ -1644,6 +1646,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
 
         // Empty vectors because it doesn't exists any neighbors
         std::vector<unsigned int> empty_vector;
+        
         pmesh->setNeighborProcessors(empty_vector);
         pmesh->setSharedNodesOffset(empty_vector);
         pmesh->setSharedNodes(empty_vector);
@@ -1653,8 +1656,10 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
         pmesh->set_recvfrom_info(empty_vector_message);
 
         pmesh->set_start_node_index(0);
-    }
 
+    }
+    //
+    pmesh->update();
     return pmesh;
 }
 

@@ -30,6 +30,7 @@ void ImplicitSystem::add_dirichlet_boundary(DirichletBoundary &boundary)
 void ImplicitSystem::init()
 {
     this->_equations.set_n_dofs(this->_variables_names.size());
+    
     this->_equations.prepare_to_use();
 
     std::vector<unsigned int> onnz(this->_equations.n_local_equations());
@@ -123,6 +124,9 @@ void ImplicitSystem::solve()
     this->close();
     KSPSetUp(this->_ksp);
     KSPSolve(this->_ksp, this->_rhs, this->_solution);
+
+    VecView(this->_solution, PETSC_VIEWER_STDOUT_WORLD);
+
     VecScatterBegin(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
     VecScatterEnd(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
 }

@@ -213,7 +213,7 @@ int main(int argc, char *argv[])
         MeshIODataAppended info;
         auto &l2g = pmesh->getLocal2Global();
         info.addPointDataInfo("Index", UInt32, (void *)&l2g[0]);
-        pmesh->renumbering();
+        pmesh->update();
         pmesh->writePVTK("parallel", &info);
         pmesh->WritePMesh("mesh");
     }

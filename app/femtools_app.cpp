@@ -8,6 +8,9 @@
 #include "implicit_system.h"
 #include "dirichlet_boundary.h"
 
+
+#include <assert.h>
+
 static char help[] = "Empty Problem\n\n";
 
 void fillXVec(Vec &x, ParallelMesh* pmesh, std::vector<unsigned int> &gindices)
@@ -95,7 +98,7 @@ int main(int argc, char* argv[])
     
     MeshPartition *parts = new MeshPartition();
     int processor_id, n_processors;
-    Mesh*         mesh;
+    Mesh        * mesh;
     ParallelMesh* pmesh;
 
     MeshTools::Init(argc,argv);
@@ -117,9 +120,17 @@ int main(int argc, char* argv[])
 
     pmesh = parts->DistributedMesh(mesh);
 
+    if(MeshTools::n_processors() == 1)
+        pmesh->WritePMesh("serial");
+    else
+        pmesh->WritePMesh("pmesh");
+
+    cout << "local nodes on processor " << MeshTools::processor_id() << ": "<< pmesh->get_n_local_nodes() << std::endl;
+
+
+
     ImplicitSystem* implicit_system = new ImplicitSystem(*pmesh, "poisson");    
     implicit_system->add_variable("u");
-
     implicit_system->init();
 
     EquationManager& em = implicit_system->get_equation_manager();
@@ -136,6 +147,7 @@ int main(int argc, char* argv[])
 
         for(int i = 0; i < connsize; i++)
         {
+            assert(gindex[i] >= 0);
             Fe[i] += 1.0;
 
             for(int j = 0; j < connsize; j++)
@@ -143,14 +155,24 @@ int main(int argc, char* argv[])
                 Ke[i][j] += 1.0;
             }
         }
-        implicit_system->add_matrix_entry(connsize,&gindex[0], connsize, &gindex[0], &Ke[0][0]);
-        implicit_system->add_rhs_entry(connsize,&gindex[0], &Fe[0]);
+
+        if(processor_id == 0)
+        {
+            std::cout << "Elemento " << iel << ": ";
+            std::cout  << "indices: " << gindex[0] << " " << gindex[1] << " " << gindex[2] << std::endl;
+        }
+        
+        implicit_system->add_matrix_entry(connsize,gindex, connsize, gindex, &Ke[0][0]);
+        implicit_system->add_rhs_entry(connsize,gindex,Fe);
         
     }
     implicit_system->print_matrix();
-    implicit_system->print_rhs();
+    //implicit_system->print_rhs();
     
-    implicit_system->solve();
+    //implicit_system->solve();
+    
+
+    /*
     implicit_system->close();
     double *solution_ptr = implicit_system->get_local_solution_array();
     for(int i = 0 ; i < pmesh->get_n_global_nodes() ; i++)
@@ -164,11 +186,13 @@ int main(int argc, char* argv[])
     pmesh->WritePMesh("parallel");
 
     implicit_system->restore_local_solution_array(&solution_ptr); // ??
-
+    
 
     delete implicit_system;
+    */
+
+    if(MeshTools::processor_id() == 0)  delete mesh;
     delete pmesh;
-    delete mesh;
     delete parts;
     MeshTools::Finalize();
     return 0;
