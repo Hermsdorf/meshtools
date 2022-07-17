@@ -165,11 +165,6 @@ void ImplicitSystem::set_rhs_entry(std::vector<int>& row_indices, double* values
     VecSetValues(this->_rhs, row_indices.size(), row_indices.data(), values, INSERT_VALUES);
 }
 
-void ImplicitSystem::set_rhs_entry(std::vector<int>& row_indices, Vec values)
-{
-    //VecSetValues(this->_rhs, row_indices.size(), row_indices.data(), VecGetRrayvalues, INSERT_VALUES);
-}
-
 double* ImplicitSystem::get_local_solution_array()
 {
     double* solution_array;
