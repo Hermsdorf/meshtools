@@ -274,12 +274,13 @@ void EquationManager::prepare_to_use()
     }
 
     */
-    if(MeshTools::processor_id() == 0)
-    {
-        cout << "Equation indices: " << endl;
-        for(int i = 0; i < _equation_indices.size(); ++i)
-            cout << _equation_indices[i] << " ";
-    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    cout << "[ " << MeshTools::processor_id() << " ] Equation indices: ";
+    for(int i = 0; i < _equation_indices.size(); ++i)
+        cout << _equation_indices[i] << " ";
+    cout << "\n";
+    MPI_Barrier(MPI_COMM_WORLD);
+
 
     _prepared_to_use = true;
 }

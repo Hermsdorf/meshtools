@@ -163,34 +163,64 @@ int main(int argc, char* argv[])
         }
         
         implicit_system->add_matrix_entry(connsize,gindex, connsize, gindex, &Ke[0][0]);
-        implicit_system->add_rhs_entry(connsize,gindex,Fe);
+        //implicit_system->add_rhs_entry(connsize,gindex,Fe);
         
     }
-    implicit_system->print_matrix();
-    //implicit_system->print_rhs();
+    // Creating array fullfilled with ones
+    unsigned int n_local_nodes = pmesh->get_n_local_nodes();
+    unsigned int n_local_nodes_slave_p = 0;
+    Vec one;
     
-    //implicit_system->solve();
-    
+    if (MeshTools::processor_id() < MeshTools::n_processors()-1)
+        MPI_Send(&n_local_nodes, 1, MPI_UNSIGNED, MeshTools::processor_id()+1, 0, MPI_COMM_WORLD);
+    if (MeshTools::processor_id() > 0)
+        MPI_Recv(&n_local_nodes_slave_p, 1, MPI_UNSIGNED, MeshTools::processor_id()-1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    VecCreateMPI(PETSC_COMM_WORLD, pmesh->get_n_local_nodes(), PETSC_DETERMINE, &one);
 
-    /*
+    for(int i = n_local_nodes_slave_p; i < n_local_nodes_slave_p+n_local_nodes; i++)
+        VecSetValue(one, i, 1.0, INSERT_VALUES);
+    VecAssemblyBegin(one);
+    VecAssemblyEnd(one);
+
+    Vec res;
+    VecCreateMPI(PETSC_COMM_WORLD, pmesh->get_n_local_nodes(), PETSC_DETERMINE, &res);
+    VecAssemblyBegin(res);
+    VecAssemblyEnd(res);
+    MatAssemblyBegin(implicit_system->get_matrix(), MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(implicit_system->get_matrix(), MAT_FINAL_ASSEMBLY);
+
+    // Multiplying matrix by array with ones to get the RHS array
+    MatMult(implicit_system->get_matrix(), one, res);
+    VecView(res, PETSC_VIEWER_STDOUT_WORLD);
+
+    PetscScalar* res_arr;
+    VecGetArray(res, &res_arr);
+
+    std::vector<int> gindex;
+    for(int i = n_local_nodes_slave_p; i < n_local_nodes_slave_p+n_local_nodes; i++)
+        gindex.push_back(i);
+
+    implicit_system->set_rhs_entry(gindex, res_arr);
+    VecRestoreArray(res, &res_arr);
+    //implicit_system->print_matrix();
+    implicit_system->print_rhs();
+    
+    implicit_system->solve();
+    
     implicit_system->close();
-    double *solution_ptr = implicit_system->get_local_solution_array();
-    for(int i = 0 ; i < pmesh->get_n_global_nodes() ; i++)
-    {
-        std::cout << "Solution[" << i << "] = " << solution_ptr[i] << std::endl;
-    }
 
-    MeshIODataAppended info;
-    info.addPointDataInfo("u", Float64, solution_ptr);
-    pmesh->writePVTK("parallel", &info);
-    pmesh->WritePMesh("parallel");
+    implicit_system->print_solution();
 
-    implicit_system->restore_local_solution_array(&solution_ptr); // ??
+    // double *solution_ptr = implicit_system->get_local_solution_array();
+    // MeshIODataAppended info;
+    // info.addPointDataInfo("u", Float64, solution_ptr);
+    // pmesh->writePVTK("parallel", &info);
+    // pmesh->WritePMesh("parallel");
+
+    // implicit_system->restore_local_solution_array(&solution_ptr); // ??
     
-
     delete implicit_system;
-    */
-
+    
     if(MeshTools::processor_id() == 0)  delete mesh;
     delete pmesh;
     delete parts;

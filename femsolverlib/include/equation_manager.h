@@ -43,7 +43,7 @@ private:
 
     // boundary nodes mapping
     std::vector< std::vector <unsigned int> > _boundary_nodes_map;
-    std::vector<int>                          _equation_indices; // maps global to local indices nnos*ndof
+    std::vector<int>                          _equation_indices; // maps local to global indices nnos*ndof
     
 
 };
