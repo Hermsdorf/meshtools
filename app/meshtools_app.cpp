@@ -6,7 +6,6 @@
 #include "meshtools.h"
 #include "mesh.h"
 #include "mesh_part.h"
-#include "alglin.h"
 #include "parallel_mesh.h"
 
 
@@ -178,8 +177,8 @@ int main(int argc, char* argv[])
         mesh->MeshColoring(color_alg, block_size);
 
         // Escreve a malha em arquivo.
-        if(flg_write)
-            mesh->MeshVTKWriting(writing);
+        //if(flg_write)
+        //    mesh->MeshVTKWriting(writing);
 
     }
 

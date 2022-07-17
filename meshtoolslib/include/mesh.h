@@ -456,7 +456,7 @@ class Mesh {
          * @param velocity Array do tipo double com informações das velocidades da malha.
          * @param pressure Array do tipo float com informações das pressões da malha.
         */
-        void MeshVTKWriterInternal(int timeStep=0, int *nparts=NULL, int *epart=NULL, int* color=NULL, double* velocity=NULL, float* pressure=NULL);
+        //void MeshVTKWriterInternal(int timeStep=0, int *nparts=NULL, int *epart=NULL, int* color=NULL, double* velocity=NULL, float* pressure=NULL);
         /**
          * * OBJETIVO:
          *     Escrita da malha somente com elementos internos no formato VTK.
@@ -470,37 +470,13 @@ class Mesh {
          * @param velocity Array do tipo double com informações das velocidades da malha.
          * @param pressure Array do tipo float com informações das pressões da malha.
         */
-       // TODO: remover
-        void MeshVTKWriterBinAppended(int timeStep=0, int* npart=NULL, int* epart=NULL, int* color=NULL, double* velocity=NULL, float* pressure=NULL);
-        /**
-         * * OBJETIVO:
-         *     Escrita da malha completa em binário, com elementos internos e de superfície, no formato VTK.
-         * 
-         * * PARAMETROS:
-         * @param timeStep Variável para criar uma sequência de arquivos a serem abertos no ParaView. 
-         *                 (Para gerar somente um arquivo da malha, inserir 0 no valor do timeStep)
-         * @param npart Array do tipo inteiro com as informações nodais de partição.
-         * @param epart Array do tipo inteiro com as informações elementares de partição.
-         * @param color Array do tipo inteiro com as informações de coloração dos elementos internos.
-         * @param velocity Array do tipo double com informações das velocidades da malha.
-         * @param pressure Array do tipo float com informações das pressões da malha.
-        */
-       // TODO: remover
-        void MeshVTKWriterInternalBinAppended(int timeStep=0, int* npart=NULL, int* epart=NULL, int* color=NULL, double* velocity=NULL, float* pressure=NULL);
-        /**
-         * * OBJETIVO:
-         *     Escrita da malha em binário somente com elementos internos no formato VTK.
-         * 
-         * * PARAMETROS:
-         * @param timeStep Variável para criar uma sequência de arquivos a serem abertos no ParaView.
-         *                 (Para gerar somente um arquivo da malha, inserir 0 no valor do timeStep)
-         * @param npart Array do tipo inteiro com as informações nodais de partição.
-         * @param epart Array do tipo inteiro com as informações elementares de partição.
-         * @param color Array do tipo inteiro com as informações de coloração dos elementos internos.
-         * @param velocity Array do tipo double com informações das velocidades da malha.
-         * @param pressure Array do tipo float com informações das pressões da malha.
-        */
 
+
+       std::vector<unsigned int>& getNodeIndexes()
+       {
+            return this->node_index;
+       }
+       
         void MeshReordering(reorder_t reorder);
         /**
          * * OBJETIVO:
@@ -526,7 +502,7 @@ class Mesh {
          *     Testar se a coloração calculada no algoritmo está correta.
         */
        // TODO: remover
-       void MeshVTKWriting(write_t writing);
+       //void MeshVTKWriting(write_t writing);
 
        void WriteVTK(const char* filename, MeshIODataAppended* info = nullptr);
 
@@ -546,6 +522,7 @@ class Mesh {
         std::vector<unsigned short> type;                       // Array indicando o tipo de cada elemento.
         std::vector<int>            physical_tag;               // Array indicando o physical tag de cada elemento.
         std::vector<int>            boundary_nodes;
+        std::vector<unsigned int>   node_index;                 // Array indicando o índice de cada nó.
 
         std::map<int, physical_data_t>  physical_map;
         unsigned int dim;                                       // Dimensão da malha.

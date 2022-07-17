@@ -27,5 +27,8 @@ include/meshtools_config.h
 .project
 .settings/language.settings.xml
 msh/t6_0.vtu
-.gitignore
 msh/t10_0.vtu
+*.vtu
+*.pvtu
+*.mts
+

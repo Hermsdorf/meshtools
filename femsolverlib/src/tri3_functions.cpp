@@ -15,9 +15,10 @@
 //
 //
 #include <iostream>
+#include <cassert>
 using namespace std;
 
-void QGaussTri3(int *nqp, double* qp, double* qw)
+void QGaussTri3(int nqp, double qp[][2], double qw[])
 
   //
   //  QGaussTri3(nqp, qp, qw)
@@ -38,9 +39,9 @@ void QGaussTri3(int *nqp, double* qp, double* qw)
   //  None
   //
   {
-     *nqp  = 1;
-     qp[0] = 1.0/3.0;
-     qp[1] = 1.0/3.0;
+     assert(nqp==1);
+     qp[0][0] = 1.0/3.0;
+     qp[0][1] = 1.0/3.0;
      qw[0] = 0.5;
   }
 
@@ -67,18 +68,20 @@ void TRI3DShape(double _xi[], double dpsi[][3])
 
 #define X(i) (coords[i*3+0])
 #define Y(i) (coords[i*3+1])
-void ComputeTRI3Functions(double gp[], double qw, double *coords, double phi[3], double dphi[2][3], double *JxW)
+void ComputeTRI3Functions(double gp[], double qw, double *coords, double xyqp[2], double phi[3], double dphi[3][2], double *JxW)
 {
     double dpsi[2][3];
     double J[2][2]    = {{0.0, 0.0}, {0.0, 0.0}};
     double Jinv[2][2] = {{0.0, 0.0}, {0.0, 0.0}};
-    
+   
     TRI3Shape(gp, phi);
     TRI3DShape(gp,dpsi);
     for(int i=0; i<3; i++)
     {
         double x = X(i);
         double y = Y(i);
+        xyqp[0] += x*phi[i];
+        xyqp[1] += y*phi[i];
 
         J[0][0] +=  x*dpsi[0][i];
         J[0][1] +=  y*dpsi[0][i];

@@ -35,7 +35,7 @@ void TestPETScMatrix(ParallelMesh *pmesh)
     std::vector<std::set<PetscInt>> vdiag(n_local_eq);
     std::vector<std::set<PetscInt>> voff(n_local_eq);
 
-    auto &gindex = pmesh->getLocal2Global();
+    auto &gindex = pmesh->getNodeIndexes();
     unsigned int start = pmesh->get_start_global_index();
     unsigned int end = start + n_local_eq;
 
@@ -127,7 +127,7 @@ void TestPETScISVector(ParallelMesh *pmesh)
 
     int n_nodes = pmesh->get_n_nodes();
     int n_local = pmesh->get_n_local_nodes(); // n_nodes - n_ghost_nodes
-    auto &gindex = pmesh->getLocal2Global();
+    auto &gindex = pmesh->getNodeIndexes();
 
     pmesh->getGhostNodesIds(local_ghosts_nodes, global_ghosts_nodes);
 
@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
     pmesh = partitioner->DistributedMesh(mesh);
     {
         MeshIODataAppended info;
-        auto &l2g = pmesh->getLocal2Global();
+        auto &l2g = pmesh->getNodeIndexes();
         info.addPointDataInfo("Index", UInt32, (void *)&l2g[0]);
         pmesh->update();
         pmesh->writePVTK("parallel", &info);

@@ -79,10 +79,10 @@ void EquationManager::prepare_to_use()
 #endif
 
     //* 1. Defining nodes with boundary conditions
-    int n_nodes             = _mesh.get_n_nodes();
-    int n_boundary_elements = _mesh.get_n_face_elements();
-    std::vector<unsigned int> &  l2g = _mesh.getLocal2Global();
-    std::vector<int> &tags  = _mesh.getPhysicalTag();
+    int n_nodes                      = _mesh.get_n_nodes();
+    int n_boundary_elements          = _mesh.get_n_face_elements();
+    std::vector<unsigned int> &  l2g = _mesh.getNodeIndexes();
+    std::vector<int> &tags           = _mesh.getPhysicalTag();
 
     _equation_indices.resize(n_nodes*_ndof);
     _boundary_nodes_map.resize(_boundaries.size());

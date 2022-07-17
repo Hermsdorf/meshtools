@@ -45,11 +45,10 @@ class ParallelMesh : public Mesh{
         std::vector<unsigned int>&  getNeighborsProcessors();
         std::vector<unsigned int>&  getSharedNodesOffset();
         std::vector<unsigned int>&  getSharedNodes();
-        std::vector<unsigned int>&  getLocal2Global();
         void                        setNeighborProcessors(std::vector<unsigned int> neighbors_processors);
         void                        setSharedNodesOffset(std::vector<unsigned int> shared_nodes_offset);
         void                        setSharedNodes(std::vector<unsigned int> shared_nodes);
-        void                        setLocal2Global(std::vector<unsigned int> local2global);
+
 
         std::vector<MessageInformation>& get_sendto_info();
         std::vector<MessageInformation>& get_recvfrom_info();
@@ -69,7 +68,7 @@ class ParallelMesh : public Mesh{
         unsigned int n_local_nodes;
         unsigned int start_node_index; // is the equivalent of _first_global_equation_index of equation_manager ?
         
-        std::vector<unsigned int> local_to_global;
+        // std::vector<unsigned int> local_to_global;
         // Parallel Context attributes
         int processor_id;
         int n_processors;

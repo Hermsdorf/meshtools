@@ -83,7 +83,7 @@ void ImplicitSystem::init()
          }
    }
 
-    ISCreateGeneral(MeshTools::Comm(), eq_local.size(), (PetscInt *)eq_local.data(), PETSC_COPY_VALUES, &is_local);
+    ISCreateGeneral(MeshTools::Comm(), eq_local.size() , (PetscInt *)eq_local.data() , PETSC_COPY_VALUES, &is_local);
     ISCreateGeneral(MeshTools::Comm(), eq_global.size(), (PetscInt *)eq_global.data(), PETSC_COPY_VALUES, &is_global);
 
     VecCreateSeq(PETSC_COMM_SELF, n_nodes*_n_dof, &_solution_local);
@@ -122,10 +122,14 @@ void ImplicitSystem::solve()
 {
 
     this->close();
+    //VecSet(this->_solution,1.0);
+    //MatMult(_A, this->_solution, this->_rhs);
+    //VecView(this->_rhs, PETSC_VIEWER_STDOUT_WORLD);
+
     KSPSetUp(this->_ksp);
     KSPSolve(this->_ksp, this->_rhs, this->_solution);
 
-    VecView(this->_solution, PETSC_VIEWER_STDOUT_WORLD);
+    //VecView(this->_solution, PETSC_VIEWER_STDOUT_WORLD);
 
     VecScatterBegin(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
     VecScatterEnd(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
@@ -186,13 +190,19 @@ EquationManager& ImplicitSystem::get_equation_manager()
 void ImplicitSystem::print_matrix()
 {
     MatInfo info;
+    PetscBool is_assembled;
+    MatAssembled(this->_A,&is_assembled);
+    if(!is_assembled)
+    {
+        MatAssemblyBegin(this->_A,MAT_FINAL_ASSEMBLY);
+        MatAssemblyEnd(this->_A,MAT_FINAL_ASSEMBLY);
+    }
+
     MatGetInfo(this->_A, MAT_LOCAL, &info);
     PetscPrintf(PETSC_COMM_WORLD, "Matrix nonzeros: %d\n", info.nz_used);
     PetscPrintf(PETSC_COMM_WORLD, "Matrix nonzeros/proc: %d\n", info.nz_allocated);
     PetscPrintf(PETSC_COMM_WORLD, "Matrix memory: %d\n", info.memory);
 
-    MatAssemblyBegin(this->_A,MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(this->_A,MAT_FINAL_ASSEMBLY);
     MatView(this->_A, PETSC_VIEWER_STDOUT_WORLD);
     
 }

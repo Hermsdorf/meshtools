@@ -25,13 +25,9 @@ ParallelMesh::ParallelMesh()
 
 ParallelMesh::~ParallelMesh()
 {
-    local_to_global.clear();
+    //local_to_global.clear();
 }
 
-std::vector<unsigned int>& ParallelMesh::getLocal2Global()
-{
-    return this->local_to_global;
-}
 
 void ParallelMesh::setNeighborProcessors(std::vector<unsigned int> neighbors_processors)
 {
@@ -45,10 +41,12 @@ void ParallelMesh::setSharedNodes(std::vector<unsigned int> shared_nodes)
 {
     this->shared_nodes = shared_nodes;
 }
+/*
 void ParallelMesh::setLocal2Global(std::vector<unsigned int> local2global)
 {
     this->local_to_global = local2global;
 }
+*/
 
 void ParallelMesh::set_n_local_nodes(unsigned int n_local_nodes)
 {
@@ -168,7 +166,7 @@ void ParallelMesh::readParallelMesh(const char* filename)
                     unsigned int lglobal_i;
                     in >> lglobal_i;
 
-                    this->local_to_global.push_back(lglobal_i);
+                    this->node_index.push_back(lglobal_i);
                 }
             }
             else if(s.find("SHARED NODES: ") == 0)
@@ -229,7 +227,7 @@ void ParallelMesh::readParallelMeshBin(const char* filename)
     this->coord.resize(nnodes*3);
     this->offset.resize(nelem+1);
     this->type.resize(nelem);
-    this->local_to_global.resize(nnodes);
+    this->node_index.resize(nnodes);
 
     while(!in.eof())
     {
@@ -254,7 +252,7 @@ void ParallelMesh::readParallelMeshBin(const char* filename)
             }
             else if(s.find("LOCAL_TO_GLOBAL: ") == 0)
             {
-                in.read((char*) &this->local_to_global[0], nnodes*sizeof(unsigned int));
+                in.read((char*) &this->node_index[0], nnodes*sizeof(unsigned int));
             }
             else if(s.find("SHARED NODES: ") == 0)
             {
@@ -418,30 +416,38 @@ void ParallelMesh::writePVTK(const char* fname, MeshIODataAppended* info)
     fout << "   <PDataArray type=\"Int32\" Name=\"offsets\"      NumberOfComponents=\"1\"/>\n"; 
     fout << "   <PDataArray type=\"UInt16\" Name=\"types\"       NumberOfComponents=\"1\"/>\n"; 
     fout << " </PCells>\n";
+    fout << "<PPointData>\n";
+    fout << "<PDataArray type=\"UInt32\" Name=\"node-id\"/>\n";
+   
     if(info != nullptr)
     {
-            auto & point_data = info->GetPointDataInfo();
-            auto & cell_data  = info->GetCellDataInfo();
-            if(point_data.size()!= 0 )
-            {
-                fout << "\t\t<PPointData>\n";
-                for(int i = 0; i < point_data.size(); ++i)
-                    fout << "\t\t\t<PDataArray type=\""<<MeshDataTypeSTR[point_data[i].type]<<"\" Name=\""<<point_data[i].name<<"\"/>\n";
-                fout << "\t\t</PPointData>\n";
-            }
-            if(cell_data.size()!= 0 )
-            {
-                fout << "\t\t<PCellData>\n";
-                for(int i = 0; i < cell_data.size(); ++i)
-                    fout << "\t\t\t<PDataArray type=\""<<MeshDataTypeSTR[cell_data[i].type]<<"\" Name=\""<<cell_data[i].name<<"\"/>\n";               
-                fout << "\t\t</PCellData>\n";
-            }
+        auto & point_data = info->GetPointDataInfo();
+            
+        if(point_data.size()!= 0 )
+        {
+            for(int i = 0; i < point_data.size(); ++i)
+                fout << "\t\t\t<PDataArray type=\""<<MeshDataTypeSTR[point_data[i].type]<<"\" Name=\""<<point_data[i].name<<"\"/>\n";
+                
+        }
     }
+    fout << "</PPointData>\n";
+    if(info != nullptr)
+    {
+        auto & cell_data  = info->GetCellDataInfo();
+        if(cell_data.size()!= 0 )
+        {
+            fout << "\t\t<PCellData>\n";
+            for(int i = 0; i < cell_data.size(); ++i)
+                fout << "\t\t\t<PDataArray type=\""<<MeshDataTypeSTR[cell_data[i].type]<<"\" Name=\""<<cell_data[i].name<<"\"/>\n";               
+            fout << "\t\t</PCellData>\n";
+        }
+    }
+    
 
     for(int p = 0 ; p < MeshTools::n_processors() ; p++)
     {
         char  str_aux[256];
-        sprintf(str_aux,"%s_%d.vtu", fname, p);
+        sprintf(str_aux,"%s_%d_%d.vtu", fname,  MeshTools::n_processors(),p);
         fout << "    <Piece Source=\"" << str_aux << "\"/>\n";
 
     }
@@ -479,7 +485,7 @@ void  ParallelMesh::getGhostNodesIds(std::vector<unsigned int>& local_ghosts_nod
     for(int ino = 0; ino < this->n_nodes; ++ino)
         if(mask_node[ino]){
             local_ghosts_nodes.push_back(ino);
-            global_ghosts_nodes.push_back(this->local_to_global[ino]);
+            global_ghosts_nodes.push_back(this->node_index[ino]);
         }
 
 }
@@ -638,21 +644,27 @@ void ParallelMesh::update()
     for(int i=0; i < this->n_nodes; i++)
     {
         if(mask_node[i]==0) {
+            this->node_index[i] = this->n_local_nodes;
             this->n_local_nodes++;
         } 
     }
 
+    if(MeshTools::n_processors() == 1)
+    {
+         this->start_node_index = 0;
+         return;
+    }
     // Sends from predecessor process the value of `n_nodes_local` to `n_nodes_offset` variable`
     MPI_Scan(&n_local_nodes,&n_nodes_offset,1,MPI_UNSIGNED,MPI_SUM,MPI_COMM_WORLD);
     n_nodes_offset -= this->n_local_nodes;
     
     this->start_node_index = n_nodes_offset;
    
-   /*
+    // Builds the local node index
     for(int i=0; i < this->n_nodes; i++)
     {
         if(mask_node[i]==0) {
-            local_to_global[i] += n_nodes_offset;
+            this->node_index[i] += n_nodes_offset;
         } 
     }
 
@@ -699,7 +711,7 @@ void ParallelMesh::update()
         for(int ino =0; ino < neighbor_nodes.size(); ino++) 
         {
             int node = neighbor_nodes[ino];
-            sendBuffer[offset+ino] = local_to_global[node];
+            sendBuffer[offset+ino] = node_index[node];
         }
         
         MPI_Isend(&sendBuffer[offset],n_shared_nodes,MPI_UNSIGNED,sendto,0,MPI_COMM_WORLD,&requests[r++]);
@@ -718,20 +730,17 @@ void ParallelMesh::update()
         {
             int node = neighbor_nodes[ino];
             unsigned int recv_value = recvBuffer[offset+ino];
-            if(recv_value >= 0)
-                local_to_global[node] = recv_value;
-            
+            node_index[node] = recv_value;
         } 
         offset += n_shared_nodes; 
     }
-    */
 }
 
 
 void ParallelMesh::WritePMesh(const char *fname)
 {
     char filename[256];
-    sprintf(filename,"%s_%04d.mts",fname,MeshTools::processor_id());
+    sprintf(filename,"%s_%04d_%04d.mts",fname,MeshTools::n_processors(),MeshTools::processor_id());
     FILE* fout = fopen(filename,"w");
     if(!fout) return ;
 
@@ -774,7 +783,7 @@ void ParallelMesh::WritePMesh(const char *fname)
     fprintf(fout,"$END_ELEMENT_DATA\n");
     fprintf(fout,"$BEGIN_GLOBAL_NODE_IDS\n");
     for(int i = 0; i < this->n_nodes; ++i) {
-        fprintf(fout, "%-4d ", this->local_to_global[i]);
+        fprintf(fout, "%-4d ", this->node_index[i]);
         if((i+1)%5 == 0) fprintf(fout,"\n");
     }
     fprintf(fout,"\n$END_GLOBAL_NODE_IDS\n");
