@@ -10,15 +10,30 @@
 
 static char help[] = "Empty Problem\n\n";
 
+
+
 // Poisson Equation
 // -----------------
 // \nabla u = f
 // \u = 0 on boundary
 // f(x,y)
 
+
+double exact_solution(double x, double y)
+{
+    return 100.0 * x * (1.0 - x) * y * (1.0 - y);
+}
+
+// 
 double body_force(double x, double y)
 {
-    return 1.0;
+    const double eps = 1.0E-5;
+    const double fxy = -(exact_solution(x, y-eps) +
+                       exact_solution(x, y+eps) +
+                        exact_solution(x-eps, y) +
+                        exact_solution(x+eps, y) -
+                        4.*exact_solution(x, y))/eps/eps;
+    return fxy;
 }
 
 int main(int argc, char* argv[])
@@ -56,8 +71,10 @@ int main(int argc, char* argv[])
 
     ImplicitSystem* implicit_system = new ImplicitSystem(*pmesh, "poisson");    
     int dof = implicit_system->add_variable("u");
-    // Indicar as condições de contorno
+    DirichletBoundary bc(1,dof,"0.0","");
+    implicit_system->add_dirichlet_boundary(bc);
 
+    // Indicar as condições de contorno
 
     // Inicializar o sistema
     implicit_system->init();
@@ -65,7 +82,7 @@ int main(int argc, char* argv[])
     double k  = 1.0E-3; // difusão
 
     std::vector<double>& coords = pmesh->getCoord();
-    int ndim = pmesh->getDim();
+    int ndim                    = pmesh->getDim();
 
     // loop sobre os elementos da malha
     EquationManager& em = implicit_system->get_equation_manager();
@@ -119,12 +136,13 @@ int main(int argc, char* argv[])
         implicit_system->add_rhs_entry(connsize,gindex,Fe);
         
     }
-    implicit_system->print_matrix();
-    implicit_system->print_rhs();
+
     
     implicit_system->solve();
     
-
+    implicit_system->print_matrix();
+    implicit_system->print_rhs();
+    
     double *solution_ptr = implicit_system->get_local_solution_array();
     MeshIODataAppended info;
     info.addPointDataInfo("u", Float64, solution_ptr);

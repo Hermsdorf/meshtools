@@ -121,15 +121,17 @@ ImplicitSystem::~ImplicitSystem()
 void ImplicitSystem::solve()
 {
 
-    this->close();
-    //VecSet(this->_solution,1.0);
-    //MatMult(_A, this->_solution, this->_rhs);
-    //VecView(this->_rhs, PETSC_VIEWER_STDOUT_WORLD);
+    MatAssemblyBegin(_A,MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(_A, MAT_FINAL_ASSEMBLY);
+    VecAssemblyBegin(this->_rhs);
+    VecAssemblyEnd(this->_rhs);
+
+    this->apply_dirichlet_boundary_conditions();
+
 
     KSPSetUp(this->_ksp);
     KSPSolve(this->_ksp, this->_rhs, this->_solution);
 
-    //VecView(this->_solution, PETSC_VIEWER_STDOUT_WORLD);
 
     VecScatterBegin(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
     VecScatterEnd(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
@@ -214,3 +216,32 @@ void ImplicitSystem::print_rhs()
     VecView(this->_rhs, PETSC_VIEWER_STDOUT_WORLD);
 }
 
+void ImplicitSystem::apply_dirichlet_boundary_conditions()
+{
+
+    std::vector<unsigned int>& node_ids = _mesh.getNodeIndexes();
+
+    int nbc = this->_equations.get_number_of_dirichlet_boundaries();
+    for(int ibc = 0; ibc < nbc; ibc++)
+    {
+        std::cout << "Applying dirichlet boundary condition " << ibc << std::endl;
+        DirichletBoundary &bc            = this->_equations.get_dirichlet_boundary(ibc);
+        std::vector<unsigned int>& nodes = this->_equations.get_boundary_nodes(ibc);
+        std::vector<PetscScalar> values(nodes.size());
+        std::vector<PetscInt> idx(nodes.size());
+        int dof = bc.get_dof_id();
+        for(unsigned int inode = 0; inode < nodes.size(); inode++)
+        {
+            // TODO: usar fparser para avaliar o valor da condicao de contorno
+            values[inode] = 0.0;
+            idx[inode]    = _n_dof*node_ids[nodes[inode]] + dof;
+        }
+
+        MatZeroRows(this->_A, nodes.size(), &idx[0],1.0, 0, 0);
+        VecSetValues(this->_rhs, nodes.size(), &idx[0], &values[0], INSERT_VALUES);
+
+    }
+
+    this->close();
+
+}

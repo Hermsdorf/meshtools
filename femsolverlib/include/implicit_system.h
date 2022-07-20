@@ -20,6 +20,8 @@ class ImplicitSystem
         double* get_local_solution_array();
         void restore_local_solution_array(double** solution_array);
 
+        void apply_dirichlet_boundary_conditions();
+
         void print_matrix();
         void print_rhs();
 
