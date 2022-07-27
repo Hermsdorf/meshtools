@@ -131,8 +131,18 @@ void ImplicitSystem::solve()
     KSPSetUp(this->_ksp);
     KSPSolve(this->_ksp, this->_rhs, this->_solution);
 
+    int its;
+    double rnorm;
+    KSPGetIterationNumber(this->_ksp,&its);
+    KSPGetResidualNorm(this->_ksp, &rnorm);
+     if(MeshTools::processor_id() == 0) std::cout << "Solution computed" << std::endl;
+    PetscPrintf(MeshTools::Comm(), "Number of iterations = %d\n", its);
+    PetscPrintf(MeshTools::Comm(), "Final norm of residual: %g\n", rnorm);
+
     VecScatterBegin(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
     VecScatterEnd(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
+
+   
 }
 
 void ImplicitSystem::add_matrix_entry(std::vector<int>& row_indices, 
@@ -222,7 +232,7 @@ void ImplicitSystem::apply_dirichlet_boundary_conditions()
     int nbc = this->_equations.get_number_of_dirichlet_boundaries();
     for(int ibc = 0; ibc < nbc; ibc++)
     {
-        std::cout << "Applying dirichlet boundary condition " << ibc << std::endl;
+        if(MeshTools::processor_id() == 0)   std::cout << "Applying dirichlet boundary condition " << ibc << std::endl;
         DirichletBoundary &bc            = this->_equations.get_dirichlet_boundary(ibc);
         std::vector<unsigned int>& nodes = this->_equations.get_boundary_nodes(ibc);
         std::vector<PetscScalar> values(nodes.size());

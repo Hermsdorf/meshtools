@@ -111,8 +111,8 @@ void TRI3ComputeFunctions( RealVector q_point, double qw, std::vector<Point> coo
 
     for(int i=0; i<dphi.size(); i++)
     {
-        dphi[i](0) = Jinv[0][0]*dpsi[0][i] + Jinv[0][1]*dpsi[1][i];
-        dphi[i](1) = Jinv[1][0]*dpsi[0][i] + Jinv[1][1]*dpsi[1][i];
+        dphi[i](0) = Jinv[0][0]*dpsi[0][i] + Jinv[0][1]*dpsi[1][i]; // dphi_i/dx
+        dphi[i](1) = Jinv[1][0]*dpsi[0][i] + Jinv[1][1]*dpsi[1][i]; // dphi_i/dy
     }
 
     JxW = qw*detJ;

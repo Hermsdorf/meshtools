@@ -16,16 +16,17 @@ static char help[] = "Empty Problem\n\n";
 
 // Poisson Equation
 // -----------------
-// \nabla u = f
-// \u = 0 on boundary
-// f(x,y)
-
+// \nabla u = f  em um dominio \Omega = [0,1] x [0,1]
+// \u = 0 na superficie de contorno \Lambda
+// f(x,y) é tal que a solução exata é dada por
+//   100.0 * x * (1.0 - x) * y * (1.0 - y);
+//
 double exact_solution(double x, double y)
 {
     return 100.0 * x * (1.0 - x) * y * (1.0 - y);
 }
 
-// 
+// Calculado usando aproximação de diferencas finitas
 double body_force(double x, double y)
 {
     const double eps = 1.0E-5;
@@ -37,7 +38,8 @@ double body_force(double x, double y)
     return fxy;
 }
 
-int main(int argc, char* argv[])
+
+int poisson_tri3(int argc, char* argv[])
 {
     PetscErrorCode ierr;
     MeshPartition *parts = new MeshPartition();
@@ -65,10 +67,6 @@ int main(int argc, char* argv[])
 
     pmesh = parts->DistributedMesh(mesh);
 
-    if(MeshTools::n_processors() == 1)
-        pmesh->WritePMesh("serial");
-    else
-        pmesh->WritePMesh("pmesh");
 
     // Cria o sistema de equações implicito
     ImplicitSystem* implicit_system = new ImplicitSystem(*pmesh, "poisson");    
@@ -82,7 +80,6 @@ int main(int argc, char* argv[])
     implicit_system->add_dirichlet_boundary(bc);
 
     
-
     // Inicializar o sistema
     // Necessário para calcular alocar o sistema
     implicit_system->init();
@@ -132,13 +129,9 @@ int main(int argc, char* argv[])
             {
                 // avaliando a função fonte
                 double fxy = body_force(qpoint(0), qpoint(1));
-
                 Fe[i] += JxW*fxy*phi[i];
-
                 for(int j = 0; j < nnoel; j++)
-                {
                     Ke(i,j) += JxW*(dphi[i]*dphi[j]);
-                }
             }
         }
 
@@ -161,4 +154,10 @@ int main(int argc, char* argv[])
 
     MeshTools::Finalize();
     return 0;
+}
+
+
+int main(int argc, char *argv[])
+{
+    return poisson_tri3(argc, argv);
 }

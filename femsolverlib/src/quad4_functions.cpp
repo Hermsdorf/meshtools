@@ -1,5 +1,7 @@
 
 #include <iostream>
+#include <vector>
+#include "numeric_vector.h"
 
 //  Linear Quadrilateral element functions
 //  (-,1)     (1,1)
@@ -12,8 +14,7 @@
 // (-1,-1)    (1,-1)
 //
 //
-
-void QGaussQUAD4(int *nqp, double qp[][2], double *qw)
+void QUAD4DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw)
 {
   //
   //  QGaussQuad4(nqp, qp, qw)
@@ -33,15 +34,16 @@ void QGaussQUAD4(int *nqp, double qp[][2], double *qw)
   //  -------------
   //  None
   //
-  *nqp  = 4;
-  qp[0][0] =  -0.57735026919;
-  qp[0][1] =  -0.57735026919;
-  qp[1][0] =   0.57735026919;
-  qp[1][1] =  -0.57735026919;
-  qp[2][0] =   0.57735026919;
-  qp[2][1] =   0.57735026919;
-  qp[3][0] =  -0.57735026919;
-  qp[3][1] =   0.57735026919;
+  qpoints.resize(4);
+  qw.resize(4);
+  qpoints[0](0) =  -0.57735026919;
+  qpoints[0](1) =  -0.57735026919;
+  qpoints[1](0) =   0.57735026919;
+  qpoints[1](1) =  -0.57735026919;
+  qpoints[2](0) =   0.57735026919;
+  qpoints[2](1) =   0.57735026919;
+  qpoints[3](0) =  -0.57735026919;
+  qpoints[3](1) =   0.57735026919;
   qw[0] = qw[1] = qw[2] = qw[3] = 1.0;
 
 }
@@ -68,13 +70,15 @@ void QUAD4DShape(double _xi[], double dpsi[][4])
 
     dpsi[1][0] = -0.25*(1.0-xi);  // dN1/deta
     dpsi[1][1] = -0.25*(1.0+xi);  // dN2/deta
-    dpsi[2][2] =  0.25*(1.0+xi);  // dN3/deta
-    dpsi[3][3] =  0.25*(1.0-xi);  // dN4/deta
+    dpsi[1][2] =  0.25*(1.0+xi);  // dN3/deta
+    dpsi[1][3] =  0.25*(1.0-xi);  // dN4/deta
 
 }
 
 #define X(i) (coords[i*3+0])
 #define Y(i) (coords[i*3+1])
+
+// TODO: refazer a chamada usando Point , Gradient. Veja TRI3. 
 void ComputeQuad4Functions(double qp[], double qw, double *coords, double *point, double phi[4], double dphi[4][2], double *JxW)
 {
     double dpsi[2][4];

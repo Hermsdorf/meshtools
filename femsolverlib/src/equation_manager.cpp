@@ -73,11 +73,6 @@ void EquationManager::add_dirichlet_boundary(DirichletBoundary &boundary)
 void EquationManager::prepare_to_use()
 {
 
-#ifdef DEBUG    
-    MPI_Barrier(MPI_COMM_WORLD);
-    cout << "EquationManager::prepare_to_use()" << endl;
-#endif
-
     //* 1. Defining nodes with boundary conditions
     int n_nodes                      = _mesh.get_n_nodes();
     int n_boundary_elements          = _mesh.get_n_face_elements();
@@ -273,13 +268,14 @@ void EquationManager::prepare_to_use()
         offset += n_shared_nodes; 
     }
 
-    */
+    
     if(MeshTools::processor_id() == 0)
     {
         cout << "Equation indices: " << endl;
         for(int i = 0; i < _equation_indices.size(); ++i)
             cout << _equation_indices[i] << " ";
     }
+    */
 
     _prepared_to_use = true;
 }
