@@ -7,6 +7,8 @@
 #include "implicit_system.h"
 #include "dirichlet_boundary.h"
 #include "fem_functions.h"
+#include "dense_matrix.h"
+#include "numeric_vector.h"
 
 static char help[] = "Empty Problem\n\n";
 
@@ -79,69 +81,86 @@ int main(int argc, char* argv[])
     // Inicializar o sistema
     implicit_system->init();
 
-    double k  = 1.0E-3; // difusão
-
     std::vector<double>& coords = pmesh->getCoord();
     int ndim                    = pmesh->getDim();
 
     // loop sobre os elementos da malha
     EquationManager& em = implicit_system->get_equation_manager();
+
+    bool flag = true;
     for(int iel =0; iel < pmesh->get_n_elements(); iel++)
     {
-        int connsize       = pmesh->getElementConnSize(iel);
+        int nnoel          = pmesh->getElementConnSize(iel);
         unsigned int* conn = pmesh->getElementConn(iel);
         
-        int gindex[connsize];
-        int nqp = 1       ;  // usando um ponto de integração para TRI3
-        double qp[nqp][2] ;  // coordenadas do ponto de integração
-        double qw[nqp]    ;  // peso do ponto de integração
+        int equation_indices[nnoel];
+
+        std::vector<Point>  qp;  // coordenadas do ponto de integração
+        std::vector<double> qw;   // peso do ponto de integração
         
+        //Point centroid;
         // Obtendo as cordenadas do nós do elemento
-        double xyz[connsize*3];
-        for(int i = 0; i < connsize; i++)
+        std::vector<Point> coords_iel(nnoel);
+        const double one3 = 1.0/3.0;
+        for(int i = 0; i < nnoel; i++)
         {
             int index    = conn[i];
-            xyz[i*3]   = coords[index*3];
-            xyz[i*3+1] = coords[index*3+1];
-            xyz[i*3+2] = coords[index*3+2];
+            coords_iel[i](0)   = coords[index*3];
+            coords_iel[i](1)   = coords[index*3+1];
+            coords_iel[i](2)   = coords[index*3+2];
+
+            // centroid(0) += coords[index*3]*one3;
+            // centroid(1) += coords[index*3+1]*one3;
+            // centroid(2) += coords[index*3+2]*one3;
         }
 
-        double Ke[connsize][connsize] = {0}; // matriz de rigidez local
-        double Fe[connsize]           = {0}; // vetor de forca local
-        double phi[connsize]          = {0}; // vetor de solucao local
-        double dphi[connsize][2]   = {0};  // derivada da solucao local
-        double xyqp[2] = {0};              // coordenadas do ponto de integracao
-        double JxW = 0;
+        DenseMatrix<double>   Ke(nnoel,nnoel); // matriz de rigidez do elemento
+        std::vector<double>   Fe(nnoel);       // vetor de força do elemento
+        std::vector<double>   phi(nnoel);
+        std::vector<Gradient> dphi(nnoel);
+
+        Point xy_gauss;    // coordenadas do ponto de integracao
+        double JxW      = 0;
+
+        em.equation_indices(dof, conn, nnoel, equation_indices);
 
         // calculando a função de forma e suas derivadas para elemento TRI3
-        QGaussTri3(nqp,qp,qw);
-        ComputeTRI3Functions(qp[0],qw[0],xyz,xyqp,phi,dphi,&JxW);
-        em.equation_indices(dof, conn, connsize, gindex);
-
-        // calculando a matriz de rigidez e o vetor de forca local
-
-        for(int i = 0; i < connsize; i++)
+        TRI3DefaultQGauss(qp,qw);
+        for(int q = 0; q < qp.size(); q++)
         {
-            double fxy = body_force(xyqp[0], xyqp[1]);
-
-            Fe[i] += JxW*fxy*phi[i];
-
-            for(int j = 0; j < connsize; j++)
+            TRI3ComputeFunctions(qp[q],qw[q],coords_iel,xy_gauss,phi,dphi,JxW);
+    
+            // calculando a matriz de rigidez e o vetor de forca local
+            for(int i = 0; i < nnoel; i++)
             {
-                Ke[i][j] += JxW*k*(dphi[i][0]*dphi[j][0] + dphi[i][1]*dphi[j][1]);
+                double fxy = body_force(xy_gauss(0), xy_gauss(1));
+
+                Fe[i] += JxW*fxy*phi[i];
+
+                for(int j = 0; j < nnoel; j++)
+                {
+                    Ke(i,j) += JxW*(dphi[i]*dphi[j]);
+                }
             }
         }
 
-        implicit_system->add_matrix_entry(connsize,gindex, connsize, gindex, &Ke[0][0]);
-        implicit_system->add_rhs_entry(connsize,gindex,Fe);
+        // if(flag)
+        // {
+        //     std:: cout << "\nElement = " << iel << " Centroid = (" << centroid(0) <<" , " << centroid(1) <<")" << std::endl;
+        //     Ke.print();
+        //     //flag = false;
+        // }
+
+        implicit_system->add_matrix_entry(nnoel,equation_indices, nnoel, equation_indices, &Ke(0,0) );
+        implicit_system->add_rhs_entry(nnoel,equation_indices,Fe.data());
         
     }
 
     
     implicit_system->solve();
     
-    implicit_system->print_matrix();
-    implicit_system->print_rhs();
+    //implicit_system->print_matrix();
+    //implicit_system->print_rhs();
     
     double *solution_ptr = implicit_system->get_local_solution_array();
     MeshIODataAppended info;

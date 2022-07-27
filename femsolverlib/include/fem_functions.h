@@ -1,7 +1,16 @@
 #ifndef FEM_FUNCTIONS_H
 #define FEM_FUNCTIONS_H
 
-void QGaussTri3(int nqp, double qp[][2], double qw[]);
-void ComputeTRI3Functions(double gp[], double qw, double *coords, double xyqp[2],double phi[3], double dphi[3][2], double *JxW);
+#include <iostream>
+#include "parallel_mesh.h"
+#include "numeric_vector.h"
 
+
+void TRI3DefaultQGauss(std::vector<RealVector> &points, std::vector<double> &qw);
+
+void TRI3ComputeFunctions( RealVector q_point, double qw, std::vector<Point> coords, RealVector &p_gauss, 
+                           std::vector<double>   &phi, 
+                           std::vector<Gradient> &dphi ,
+                           double &JxW);
+ 
 #endif /* FEM_FUNCTIONS_H */

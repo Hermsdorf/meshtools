@@ -16,12 +16,15 @@
 //
 #include <iostream>
 #include <cassert>
+#include <vector>
 using namespace std;
 
-void QGaussTri3(int nqp, double qp[][2], double qw[])
+#include "numeric_vector.h"
+
+void TRI3DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw)
 
   //
-  //  QGaussTri3(nqp, qp, qw)
+  //  TRI3DefaultQGauss(nqp, qp, qw)
   //
   //  Purpose:
   //  -------
@@ -39,24 +42,25 @@ void QGaussTri3(int nqp, double qp[][2], double qw[])
   //  None
   //
   {
-     assert(nqp==1);
-     qp[0][0] = 1.0/3.0;
-     qp[0][1] = 1.0/3.0;
+     qpoints.resize(1);
+     qw.resize(1);
+     qpoints[0](0) = 1.0/3.0;
+     qpoints[0](1) = 1.0/3.0;
+     qpoints[0](2) = 0.0;
      qw[0] = 0.5;
   }
 
-void TRI3Shape(double _xi[], double psi[])
+void TRI3Shape(Point _xi, std::vector<double> & psi)
 {
-    double xi  = _xi[0];
-    double eta = _xi[1];
+    double xi  = _xi(0);
+    double eta = _xi(1);
     psi[0] = 1.0 - xi - eta; // N1
     psi[1] = xi;             // N2
     psi[2] = eta;            // N3
 }
 
-void TRI3DShape(double _xi[], double dpsi[][3])
+void TRI3DShape(Point _xi, double dpsi[][3])
 {
-
     dpsi[0][0] = -1.0;  // dN1/dxi 
     dpsi[0][1] =  1.0;  // dN2/dxi 
     dpsi[0][2] =  0.0;  // dN3/dxi 
@@ -66,22 +70,25 @@ void TRI3DShape(double _xi[], double dpsi[][3])
 
 }
 
-#define X(i) (coords[i*3+0])
-#define Y(i) (coords[i*3+1])
-void ComputeTRI3Functions(double gp[], double qw, double *coords, double xyqp[2], double phi[3], double dphi[3][2], double *JxW)
+#define X(i) (coords[i](0))
+#define Y(i) (coords[i](1))
+void TRI3ComputeFunctions( RealVector q_point, double qw, std::vector<Point> coords, RealVector &p_gauss, 
+                           std::vector<double>   &phi, 
+                           std::vector<Gradient> &dphi ,
+                           double &JxW)
 {
     double dpsi[2][3];
     double J[2][2]    = {{0.0, 0.0}, {0.0, 0.0}};
     double Jinv[2][2] = {{0.0, 0.0}, {0.0, 0.0}};
    
-    TRI3Shape(gp, phi);
-    TRI3DShape(gp,dpsi);
+    TRI3Shape(q_point, phi);
+    TRI3DShape(q_point,dpsi);
     for(int i=0; i<3; i++)
     {
         double x = X(i);
         double y = Y(i);
-        xyqp[0] += x*phi[i];
-        xyqp[1] += y*phi[i];
+        p_gauss(0) += x*phi[i];
+        p_gauss(1) += y*phi[i];
 
         J[0][0] +=  x*dpsi[0][i];
         J[0][1] +=  y*dpsi[0][i];
@@ -102,11 +109,11 @@ void ComputeTRI3Functions(double gp[], double qw, double *coords, double xyqp[2]
     Jinv[1][0] = -J[1][0]*invdetJ;
     Jinv[1][1] =  J[0][0]*invdetJ;
 
-    for(int i=0; i<3; i++)
+    for(int i=0; i<dphi.size(); i++)
     {
-        dphi[i][0] = Jinv[0][0]*dpsi[0][i] + Jinv[0][1]*dpsi[1][i];
-        dphi[i][1] = Jinv[1][0]*dpsi[0][i] + Jinv[1][1]*dpsi[1][i];
+        dphi[i](0) = Jinv[0][0]*dpsi[0][i] + Jinv[0][1]*dpsi[1][i];
+        dphi[i](1) = Jinv[1][0]*dpsi[0][i] + Jinv[1][1]*dpsi[1][i];
     }
 
-    *JxW = qw*detJ;
+    JxW = qw*detJ;
 }

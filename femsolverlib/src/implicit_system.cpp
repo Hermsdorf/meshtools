@@ -96,7 +96,7 @@ void ImplicitSystem::init()
     KSPCreate(MeshTools::Comm(), &this->_ksp);
     KSPSetOperators(this->_ksp, this->_A, this->_A);
     KSPSetType(this->_ksp, KSPGMRES);
-    KSPSetTolerances(this->_ksp, 1e-8, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
+    KSPSetTolerances(this->_ksp, 1e-12, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
     KSPSetFromOptions(this->_ksp);
 }
 
