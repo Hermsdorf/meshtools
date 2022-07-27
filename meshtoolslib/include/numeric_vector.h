@@ -1,6 +1,8 @@
 #ifndef NUMERIC_VECTOR_H__
 #define NUMERIC_VECTOR_H__
 
+#include <iostream>
+using namespace std;
 
 template <typename T>
 class NumericVector {

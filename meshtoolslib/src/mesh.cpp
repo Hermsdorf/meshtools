@@ -278,3 +278,18 @@ void Mesh::extract_boundary_nodes(std::vector<int>& tag)
         }
     }
 }
+
+void Mesh::get_element_coordinates(int element_id, std::vector<Point> &coordinates)
+{
+    int nnoel                = this->getElementConnSize(element_id);
+    const unsigned int* conn = this->getElementConn(element_id);
+
+    coordinates.resize(nnoel);
+
+    for(int ino = 0; ino < nnoel; ++ino)
+    {
+        coordinates[ino](0) = this->coord[conn[ino]*3+0];
+        coordinates[ino](1) = this->coord[conn[ino]*3+1];
+        coordinates[ino](2) = this->coord[conn[ino]*3+2];
+    }
+}

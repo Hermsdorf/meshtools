@@ -128,10 +128,8 @@ void ImplicitSystem::solve()
 
     this->apply_dirichlet_boundary_conditions();
 
-
     KSPSetUp(this->_ksp);
     KSPSolve(this->_ksp, this->_rhs, this->_solution);
-
 
     VecScatterBegin(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
     VecScatterEnd(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
@@ -244,4 +242,15 @@ void ImplicitSystem::apply_dirichlet_boundary_conditions()
 
     this->close();
 
+}
+
+void ImplicitSystem::write_vtk(string filename)
+{
+    //FIXME: implementar para sistemas com mais graus de liberdade
+    double *solution_ptr = get_local_solution_array();
+    MeshIODataAppended info;
+    std::string var = this->_variables_names[0];
+    info.addPointDataInfo(var.c_str(), Float64, solution_ptr);
+    this->_mesh.writePVTK(filename.c_str(), &info);
+    restore_local_solution_array(&solution_ptr);
 }

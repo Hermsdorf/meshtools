@@ -19,6 +19,8 @@ class ImplicitSystem
         void set_rhs_entry(std::vector<int>& row_indices, double *value);
         double* get_local_solution_array();
         void restore_local_solution_array(double** solution_array);
+        void write_vtk(std::string filename);
+        
 
         void apply_dirichlet_boundary_conditions();
 

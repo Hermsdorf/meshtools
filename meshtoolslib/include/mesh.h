@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 
+#include "numeric_vector.h"
 
 using namespace std;
 
@@ -510,6 +511,9 @@ class Mesh {
 
 
        void extract_boundary_nodes(std::vector<int>& tag);
+
+
+       void get_element_coordinates(int element_id, std::vector<Point> &coordinates);
 
 
     protected:
