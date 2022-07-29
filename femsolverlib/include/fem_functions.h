@@ -12,5 +12,10 @@ void TRI3ComputeFunctions( RealVector q_point, double qw, std::vector<Point> coo
                            std::vector<double>   &phi, 
                            std::vector<Gradient> &dphi ,
                            double &JxW);
+
+void QUAD4DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw);
+
+void QUAD4ComputeFunctions(RealVector qp, double qw, std::vector<Point> coords, RealVector &point, 
+                           std::vector<double> &phi, std::vector<Gradient> &dphi, double &JxW);
  
 #endif /* FEM_FUNCTIONS_H */

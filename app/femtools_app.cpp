@@ -38,8 +38,7 @@ double body_force(double x, double y)
     return fxy;
 }
 
-
-int poisson_tri3(int argc, char* argv[])
+int poisson(int argc, char* argv[], string element_type)
 {
     PetscErrorCode ierr;
     MeshPartition *parts = new MeshPartition();
@@ -114,16 +113,24 @@ int poisson_tri3(int argc, char* argv[])
 
         equation_manager.equation_indices(dof, nnoel, connectivity, equation_indices);
 
-        // calculando a função de forma e suas derivadas para elemento TRI3
-        TRI3DefaultQGauss(qp,qw);
+        // calculando a função de forma e suas derivadas para elemento QUAD4 ou TRI3
+        if(element_type == "quad4")
+            QUAD4DefaultQGauss(qp,qw);
+        else if(element_type == "tri3")
+            TRI3DefaultQGauss(qp,qw);
+        else
+            throw std::runtime_error("Element type not supported");
 
         // loop sobre os pontos de integração
         for(int q = 0; q < qp.size(); q++)
         {
 
             // calculando a função de forma e suas derivadas para o ponto de integração q
-            TRI3ComputeFunctions(qp[q],qw[q],coords_iel,qpoint,phi,dphi,JxW);
-    
+            if(element_type == "quad4")
+                QUAD4ComputeFunctions(qp[q],qw[q],coords_iel,qpoint,phi,dphi,JxW);
+            else if(element_type == "tri3")
+                TRI3ComputeFunctions(qp[q],qw[q],coords_iel,qpoint,phi,dphi,JxW);
+
             // calculando a matriz de rigidez e o vetor de forca local
             for(int i = 0; i < nnoel; i++)
             {
@@ -159,5 +166,5 @@ int poisson_tri3(int argc, char* argv[])
 
 int main(int argc, char *argv[])
 {
-    return poisson_tri3(argc, argv);
+    return poisson(argc, argv, "quad4");
 }

@@ -12,7 +12,7 @@ class NumericVector {
         T& operator()(int i);
         T  operator*(NumericVector<T>& v);
         T  operator*=(NumericVector<T>& v);
-         friend ostream& operator<<(ostream& os, const NumericVector<T>& v);
+        friend ostream& operator<<(ostream& os, const NumericVector<T>& v);
         ~NumericVector();
     private:
         T data[3];

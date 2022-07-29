@@ -14,26 +14,18 @@
 // (-1,-1)    (1,-1)
 //
 //
+
+//  This function computes the quadrature points and weights for a
+//  quadrilateral element.
+//
+//  @param nqp    number of quadrature points
+//  @param qp     quadrature points
+//  @param qw     quadrature weights
+//
+//  @return None
+//
 void QUAD4DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw)
 {
-  //
-  //  QGaussQuad4(nqp, qp, qw)
-  //
-  //  Purpose:
-  //  -------
-  //  This function computes the quadrature points and weights for a
-  //  quadrilateral element.
-  //
-  //  Parameters:
-  //  -----------
-  //  nqp    - number of quadrature points
-  //  qp     - quadrature points
-  //  qw     - quadrature weights
-  //
-  //  Return value:
-  //  -------------
-  //  None
-  //
   qpoints.resize(4);
   qw.resize(4);
   qpoints[0](0) =  -0.57735026919;
@@ -48,20 +40,20 @@ void QUAD4DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw)
 
 }
 
-void QUAD4Shape(double _xi[], double psi[])
+void QUAD4Shape(Point _xi, std::vector<double> & psi)
 {
-    double xi  = _xi[0];
-    double eta = _xi[1];
+    double xi  = _xi(0);
+    double eta = _xi(1);
     psi[0] = 0.25*(1.0-xi)*(1.0-eta); // N1
     psi[1] = 0.25*(1.0+xi)*(1.0-eta); // N2
     psi[2] = 0.25*(1.0+xi)*(1.0+eta); // N3
     psi[3] = 0.25*(1.0-xi)*(1.0+eta); // N4
 } 
 
-void QUAD4DShape(double _xi[], double dpsi[][4])
+void QUAD4DShape(Point _xi, double dpsi[][4])
 {
-    double xi  = _xi[0];
-    double eta = _xi[1];
+    double xi  = _xi(0);
+    double eta = _xi(1);
 
     dpsi[0][0] = -0.25*(1.0-eta);  // dN1/dxi
     dpsi[0][1] =  0.25*(1.0-eta);  // dN2/dxi
@@ -75,11 +67,11 @@ void QUAD4DShape(double _xi[], double dpsi[][4])
 
 }
 
-#define X(i) (coords[i*3+0])
-#define Y(i) (coords[i*3+1])
+#define X(i) (coords[i](0))
+#define Y(i) (coords[i](1))
 
-// TODO: refazer a chamada usando Point , Gradient. Veja TRI3. 
-void ComputeQuad4Functions(double qp[], double qw, double *coords, double *point, double phi[4], double dphi[4][2], double *JxW)
+void QUAD4ComputeFunctions(RealVector qp, double qw, std::vector<Point> coords, RealVector &point, 
+                           std::vector<double> &phi, std::vector<Gradient> &dphi, double &JxW)
 {
     double dpsi[2][4];
     double J[2][2]    = {{0.0, 0.0}, {0.0, 0.0}};
@@ -88,15 +80,15 @@ void ComputeQuad4Functions(double qp[], double qw, double *coords, double *point
     QUAD4Shape(qp, phi);
     QUAD4DShape(qp,dpsi);
 
-    point[0] = 0.0;
-    point[1] = 0.0;
+    point(0) = 0.0;
+    point(1) = 0.0;
     for(int i=0; i<4; i++)
     {
         double x = X(i);
         double y = Y(i);
 
-        point[0] += phi[i]*x;
-        point[1] += phi[i]*y;
+        point(0) += x*phi[i];
+        point(1) += y*phi[i];
 
         J[0][0] +=  x*dpsi[0][i];
         J[0][1] +=  y*dpsi[0][i];
@@ -119,9 +111,9 @@ void ComputeQuad4Functions(double qp[], double qw, double *coords, double *point
 
     for(int i=0; i<4; i++)
     {
-        dphi[i][0] = Jinv[0][0]*dpsi[0][i] + Jinv[0][1]*dpsi[1][i];
-        dphi[i][1] = Jinv[1][0]*dpsi[0][i] + Jinv[1][1]*dpsi[1][i];
+        dphi[i](0) = Jinv[0][0]*dpsi[0][i] + Jinv[0][1]*dpsi[1][i];
+        dphi[i](1) = Jinv[1][0]*dpsi[0][i] + Jinv[1][1]*dpsi[1][i];
     }
 
-    *JxW = qw*detJ;
+    JxW = qw*detJ;
 }

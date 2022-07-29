@@ -21,26 +21,17 @@ using namespace std;
 
 #include "numeric_vector.h"
 
-void TRI3DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw)
 
-  //
-  //  TRI3DefaultQGauss(nqp, qp, qw)
-  //
-  //  Purpose:
-  //  -------
-  //  This function computes the quadrature points and weights for a
-  //  triangular element.
-  //
-  //  Parameters:
-  //  -----------
-  //  nqp    - number of quadrature points
-  //  qp     - quadrature points
-  //  qw     - quadrature weights
-  //
-  //  Return value:
-  //  -------------
-  //  None
-  //
+//  This function computes the quadrature points and weights for a
+//  triangular element.
+//
+//  @param nqp    number of quadrature points
+//  @param qp     quadrature points
+//  @param qw     quadrature weights
+//
+//  @return None 
+//
+void TRI3DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw)
   {
      qpoints.resize(1);
      qw.resize(1);
