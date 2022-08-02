@@ -91,8 +91,8 @@ int getGmshElemTypeDim(int type)
 {
     switch (type)
     {
-        case 1: return 1;
-        case 2: return 2;
+        case 1: return 1; 
+        case 2: return 2; 
         case 3: return 2;
         case 4: return 3;
         case 5: return 3;
@@ -106,11 +106,11 @@ int GmshToVTKType(int type)
 {
     switch (type)
     {
-        case 1: return 3;
-        case 2: return 5;
-        case 3: return 9;
-        case 4: return 10;
-        case 5: return 12;
+        case 1: return 3; // EDGE2
+        case 2: return 5; // TRI3
+        case 3: return 9; // QUAD4
+        case 4: return 10; // TET4
+        case 5: return 12; // HEX8
         case 15: return 1;
         default: return -1;
         break;
@@ -263,8 +263,8 @@ void Mesh::MeshGmshReader(const char* filename)
                         for(unsigned int i = 0; i < num_elm_follow; i++)
                         {
                             this->type[elem_count] = GmshToVTKType(elm_type);
-                            int nnodes   = getGmshElemNNodes(elm_type);
-                            int elem_dim = getGmshElemTypeDim(elm_type);
+                            int nnodes             = getGmshElemNNodes(elm_type);
+                            int elem_dim           = getGmshElemTypeDim(elm_type);
 
                             int arr_size = 3 + nnodes;
                             int data[arr_size]; // num_i, physical, elementary, node_i_1, ... node_i_x
