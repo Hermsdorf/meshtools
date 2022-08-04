@@ -1503,7 +1503,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
             // Processing and sending local arrays and variables to each `p` processor other than 0
             for (int p = 1; p < this->n_partitions; p++)
             {
-                std::cout << "Sending data to processor " << p << endl;
+                //std::cout << "Sending data to processor " << p << endl;
                 this->GetAndSendLocalData(mesh,p,array_sizes,node_partition,coords,node_index,conn,offset,type,tag,neighbors,neighbors_offset,neighbors_nodes,true);
             }
 
@@ -1587,7 +1587,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
             // Broadcast Physical Groups
             MPI_Bcast(&n_physical,1, MPI_INT, 0, MPI_COMM_WORLD);
 
-            std::cout <<  "Receiving n_physical = " << n_physical <<std::endl;
+            //std::cout <<  "Receiving n_physical = " << n_physical <<std::endl;
 
             std::vector<int>  map_ids(2*n_physical);
             std::vector<char> map_names(n_physical*MAX_STR);

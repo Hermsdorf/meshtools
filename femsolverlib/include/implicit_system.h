@@ -7,30 +7,31 @@ class ImplicitSystem
 {
     public:
         ImplicitSystem(ParallelMesh &mesh, std::string name);
-        int add_variable(std::string name);
-        void add_dirichlet_boundary(DirichletBoundary &boundary);
-        void init();
-        void close();
-        void add_matrix_entry(std::vector<int>& row_indices,std::vector<int>& col_indices, double* values);
-        void add_matrix_entry(int nrows, int *row_indices, int ncols, int* col_indices, double* values);
-        void add_rhs_entry(std::vector<int>& row_indices, double *value);
-        void add_rhs_entry(int nrows, int* row_indices, double *value);
-        void set_matrix_entry(std::vector<int>& row_indices, std::vector<int>& col_indices, double* values);
-        void set_rhs_entry(std::vector<int>& row_indices, double *value);
+        int     add_variable(std::string name);
+        void    add_dirichlet_boundary(DirichletBoundary &boundary);
+        void    init();
+        void    close();
+        void    add_matrix_entry(std::vector<int>& row_indices,std::vector<int>& col_indices, double* values);
+        void    add_matrix_entry(int nrows, int *row_indices, int ncols, int* col_indices, double* values);
+        void    add_rhs_entry(std::vector<int>& row_indices, double *value);
+        void    add_rhs_entry(int nrows, int* row_indices, double *value);
+        void    set_matrix_entry(std::vector<int>& row_indices, std::vector<int>& col_indices, double* values);
+        void    set_rhs_entry(std::vector<int>& row_indices, double *value);
         double* get_local_solution_array();
-        void restore_local_solution_array(double** solution_array);
-        void write_vtk(std::string filename);
+        void    restore_local_solution_array(double** solution_array);
+        void    write_vtk(std::string filename);
+        double  compute_error_from_exact_solution(int idof, double(*func_exac)(double x,double y, double z, double t) );
         
-
-        void apply_dirichlet_boundary_conditions();
-
-        void print_matrix();
-        void print_rhs();
+        void    apply_dirichlet_boundary_conditions();
+        void    print_matrix();
+        void    print_rhs();
 
         EquationManager& get_equation_manager();
         
         //void assemble();
-        void solve();
+        void   solve();
+
+
         ~ImplicitSystem();
     private:
         std::vector<std::string> _variables_names;

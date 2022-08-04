@@ -142,8 +142,38 @@ void ImplicitSystem::solve()
     VecScatterBegin(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
     VecScatterEnd(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
 
-   
+
 }
+
+
+double ImplicitSystem::compute_error_from_exact_solution( int idof, double(*func_exac)(double x,double y, double z, double t) )
+{
+    auto coords  = this->_mesh.getCoord();
+    auto eqIndex = this->_equations.get_equation_indices();
+    int start, end;
+
+    Vec r;
+    VecDuplicate(this->_solution, &r);
+    VecGetOwnershipRange(this->_solution, &start, &end);
+    for(int ino = 0; ino < this->_mesh.get_n_nodes(); ino++)
+    {
+
+        double valor = func_exac(coords[ino*3], coords[ino*3+1],0.0, 0.0);
+        unsigned int idxLocal = eqIndex[ino*this->_n_dof + idof];
+        if(idxLocal >= start && idxLocal < end)
+                VecSetValue(r, idxLocal, valor, INSERT_VALUES);
+
+    }
+
+    double _error = 0.0;
+    VecAssemblyBegin(r);
+    VecAssemblyEnd(r);
+    VecAXPY(r, -1.0, this->_solution);
+    VecNorm(r, NORM_2, &_error);
+    VecDestroy(&r);
+    return _error;
+}
+        
 
 void ImplicitSystem::add_matrix_entry(std::vector<int>& row_indices, 
                                      std::vector<int>& col_indices, double* values)

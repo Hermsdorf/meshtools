@@ -21,7 +21,7 @@ static char help[] = "Empty Problem\n\n";
 // f(x,y) é tal que a solução exata é dada por
 //   100.0 * x * (1.0 - x) * y * (1.0 - y);
 //
-double exact_solution(double x, double y)
+double exact_solution(double x, double y, double z=0.0, double t=0.0)
 {
     return 100.0 * x * (1.0 - x) * y * (1.0 - y);
 }
@@ -145,8 +145,10 @@ int poisson(int argc, char* argv[], string element_type)
 
     // Resolve o sistema de equações
     implicit_system->solve();
-    
-    implicit_system->write_vtk("solution");
+
+    double erro = implicit_system->compute_error_from_exact_solution(0, exact_solution);
+    PetscPrintf(MeshTools::Comm(), "Erro |u - uxato| = : %e\n", erro);
+    //implicit_system->write_vtk("solution");
 
     delete implicit_system;
 
@@ -157,7 +159,6 @@ int poisson(int argc, char* argv[], string element_type)
     MeshTools::Finalize();
     return 0;
 }
-
 
 int main(int argc, char *argv[])
 {
