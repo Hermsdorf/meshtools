@@ -31,9 +31,8 @@ class ImplicitSystem
         //void assemble();
         void   solve();
 
-
         ~ImplicitSystem();
-    private:
+    protected:
         std::vector<std::string> _variables_names;
         std::string              _system_name;
         unsigned int             _n_dof; 

@@ -135,13 +135,12 @@ void ImplicitSystem::solve()
     double rnorm;
     KSPGetIterationNumber(this->_ksp,&its);
     KSPGetResidualNorm(this->_ksp, &rnorm);
-     if(MeshTools::processor_id() == 0) std::cout << "Solution computed" << std::endl;
     PetscPrintf(MeshTools::Comm(), "Number of iterations = %d\n", its);
     PetscPrintf(MeshTools::Comm(), "Final norm of residual: %g\n", rnorm);
 
+    // Realiza o scatter de solução global para local
     VecScatterBegin(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
-    VecScatterEnd(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
-
+    VecScatterEnd(this->_scatter  , this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
 
 }
 
@@ -280,13 +279,11 @@ void ImplicitSystem::apply_dirichlet_boundary_conditions()
             idx[inode]    = _n_dof*node_ids[nodes[inode]] + dof;
         }
 
-        MatZeroRows(this->_A, nodes.size(), &idx[0],1.0, 0, 0);
+        MatZeroRows( this->_A  , nodes.size(), &idx[0],1.0        , 0, 0);
         VecSetValues(this->_rhs, nodes.size(), &idx[0], &values[0], INSERT_VALUES);
 
     }
-
     this->close();
-
 }
 
 void ImplicitSystem::write_vtk(string filename)
