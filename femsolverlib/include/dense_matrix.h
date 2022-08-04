@@ -11,7 +11,7 @@ class DenseMatrix {
         DenseMatrix(int rows, int cols);
         T& operator()(int row, int col);
         void print();
-        friend ostream& operator<<(ostream& os, const DenseMatrix<T>& m);
+        //friend ostream& operator<<(ostream& os, const DenseMatrix<T>& m);
         ~DenseMatrix();
     private:
         int idx(int i, int j);

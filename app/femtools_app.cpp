@@ -75,7 +75,7 @@ int poisson(int argc, char* argv[], string element_type)
 
     // Adiciona uma condição de contorno ao sistema
     // Aplica a função g = 0 para a variável u no contorno identificado com 1.
-    DirichletBoundary bc(1,dof,"0.0","");
+    DirichletBoundary bc(1,dof,"100*x*y*(1-x)*(1-y)","x,y");
     implicit_system->add_dirichlet_boundary(bc);
 
     

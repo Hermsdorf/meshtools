@@ -258,6 +258,7 @@ void ImplicitSystem::apply_dirichlet_boundary_conditions()
 {
 
     std::vector<unsigned int>& node_ids = _mesh.getNodeIndexes();
+    auto coords = _mesh.getCoord();
 
     int nbc = this->_equations.get_number_of_dirichlet_boundaries();
     for(int ibc = 0; ibc < nbc; ibc++)
@@ -270,8 +271,12 @@ void ImplicitSystem::apply_dirichlet_boundary_conditions()
         int dof = bc.get_dof_id();
         for(unsigned int inode = 0; inode < nodes.size(); inode++)
         {
-            // TODO: usar fparser para avaliar o valor da condicao de contorno
-            values[inode] = 0.0;
+            int node_id = nodes[inode];
+            double x    = coords[node_id*3];
+            double y    = coords[node_id*3+1];
+            double z    = coords[node_id*3+2];  
+
+            values[inode] =  bc.get_value(x,y,z);
             idx[inode]    = _n_dof*node_ids[nodes[inode]] + dof;
         }
 

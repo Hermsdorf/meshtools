@@ -22,4 +22,11 @@ bool DirichletBoundary::operator==(const DirichletBoundary& db)
 }
 
 
+double DirichletBoundary::get_value(double x, double y, double z, double t)
+{
+    const double vars[] = {x,y,z,t};
+    return this->function_parser.Eval(vars);
+}
+
+
 DirichletBoundary::~DirichletBoundary() { }

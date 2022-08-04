@@ -11,6 +11,7 @@ class DirichletBoundary {
 		bool operator==(const DirichletBoundary& db);
 		int  get_boundary_id() { return _boundary_surface; };
 		int  get_dof_id() { return _dof_id; }; 
+		double get_value(double x, double y, double z=0, double t=0);
 
 	private:
 		int _boundary_surface;
