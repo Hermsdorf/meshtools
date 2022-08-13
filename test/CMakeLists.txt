@@ -1,1 +1,2 @@
 add_subdirectory(parallel_mesh)
+add_subdirectory(finite_element)

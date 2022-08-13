@@ -1,5 +1,5 @@
-#ifndef DENSE_MATRIX_H__
-#define DENSE_MATRIX_H__
+#ifndef DENSE_MATRIX_H
+#define DENSE_MATRIX_H
 
 #include <iostream>
 using namespace std;
@@ -12,6 +12,7 @@ class DenseMatrix {
         T& operator()(int row, int col);
         void print();
         ~DenseMatrix();
+        T* get_data();
     private:
         int idx(int i, int j);
         int nrows;
@@ -63,8 +64,13 @@ DenseMatrix<T>::~DenseMatrix() {
     delete[] data;
 }
 
+template <typename T>
+T* DenseMatrix<T>::get_data() {
+    return data;
+}
+
 
 typedef DenseMatrix<double> RealDenseMatrix;
 typedef DenseMatrix<int>     IntDenseMatrix;
 
-#endif /* DENSE_MATRIX_H__ */
+#endif /* DENSE_MATRIX_H */

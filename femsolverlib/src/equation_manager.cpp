@@ -31,6 +31,37 @@ unsigned int EquationManager::n_local_equations()
     return this->_n_local_equations;
 }
 
+void EquationManager::global_indices(int id_dof, std::vector<unsigned int>& conn, std::vector<int>& global_equation)
+{
+
+    global_equation.resize(conn.size());
+    for(int i = 0 ; i < conn.size() ; i++)
+    {
+        unsigned int node_id = conn[i];
+        for(int j = 0 ; j < _ndof; j++)
+        {
+            global_equation[i*_ndof+j] = _equation_indices[node_id*_ndof + id_dof];
+        }
+    }
+
+}
+
+
+void EquationManager::local_indices(int id_dof, std::vector<unsigned int>& conn, std::vector<int>& local_equation)
+{
+
+    local_equation.resize(conn.size());
+    for(int i = 0 ; i < conn.size() ; i++)
+    {
+        unsigned int node_id = conn[i];
+        for(int j = 0 ; j < _ndof; j++)
+        {
+            local_equation[i*_ndof+j] = node_id*_ndof + id_dof;
+        }
+    }
+
+}
+
 void EquationManager::equation_indices(int id_dof, int conn_size, const unsigned int *conn_local, int *global_equation)
 {
     std::vector<int> dof_required;

@@ -1,12 +1,5 @@
-project (pmesh_test)
-cmake_minimum_required(VERSION 3.10)
-
 
 add_executable(pmesh_test test_p_mesh.cpp)
-
-if(PETSc_FOUND)
-      include_directories(${PETSc_INCLUDE_DIRS})
-endif()
 
 
 if(MPI_ENABLE)
@@ -18,9 +11,14 @@ if(MPI_ENABLE)
 endif()
 
 target_link_libraries(pmesh_test 
-PRIVATE
-meshtoolslib
-${ADDITIONAL_ITEMS}
-${METIS_LIBRARIES}
-${PETSc_LINK_LIBRARIES}
-)
+   PRIVATE
+   meshtoolslib
+   femsolverlib
+   fparser
+   ${ADDITIONAL_ITEMS}
+   ${METIS_LIBRARIES}
+   ${PETSc_LINK_LIBRARIES}
+   )
+
+
+

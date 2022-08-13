@@ -1,5 +1,5 @@
-#ifndef NUMERIC_VECTOR_H__
-#define NUMERIC_VECTOR_H__
+#ifndef NUMERIC_VECTOR_H
+#define NUMERIC_VECTOR_H
 
 #include <iostream>
 using namespace std;
@@ -65,4 +65,4 @@ typedef NumericVector<double>    RealVector;
 typedef NumericVector<double>    Gradient;
 typedef NumericVector<double>    Point;
 
-#endif /* NUMERIC_VECTOR_H__ */
+#endif /* NUMERIC_VECTOR_H */

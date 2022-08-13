@@ -175,9 +175,9 @@ double ImplicitSystem::compute_error_from_exact_solution( int idof, double(*func
         
 
 void ImplicitSystem::add_matrix_entry(std::vector<int>& row_indices, 
-                                     std::vector<int>& col_indices, double* values)
+                                      std::vector<int>& col_indices, double* values)
 {
-    MatSetValues(this->_A,row_indices.size(),&row_indices[0], col_indices.size(), &col_indices[0],values,ADD_VALUES);
+    MatSetValues(this->_A,row_indices.size(),row_indices.data(), col_indices.size(), col_indices.data(),values,ADD_VALUES);
 }
 
 void ImplicitSystem::add_matrix_entry(int nrows, int *row_indices, 
@@ -305,4 +305,10 @@ void ImplicitSystem::write_vtk(string filename)
     }
     this->_mesh.writePVTK(filename.c_str(), &info);
     restore_local_solution_array(&solution_ptr);
+}
+
+
+ParallelMesh& ImplicitSystem::get_mesh()
+{
+    return this->_mesh;
 }

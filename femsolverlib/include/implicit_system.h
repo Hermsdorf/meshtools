@@ -11,7 +11,7 @@ class ImplicitSystem
         void    add_dirichlet_boundary(DirichletBoundary &boundary);
         void    init();
         void    close();
-        void    add_matrix_entry(std::vector<int>& row_indices,std::vector<int>& col_indices, double* values);
+        void    add_matrix_entry(std::vector<int>& row_indices, std::vector<int>& col_indices, double* values);
         void    add_matrix_entry(int nrows, int *row_indices, int ncols, int* col_indices, double* values);
         void    add_rhs_entry(std::vector<int>& row_indices, double *value);
         void    add_rhs_entry(int nrows, int* row_indices, double *value);
@@ -26,6 +26,7 @@ class ImplicitSystem
         void    print_matrix();
         void    print_rhs();
 
+        ParallelMesh& get_mesh();
         EquationManager& get_equation_manager();
         
         //void assemble();

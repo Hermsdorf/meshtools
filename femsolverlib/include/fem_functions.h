@@ -1,5 +1,5 @@
-#ifndef FEM_FUNCTIONS_H__
-#define FEM_FUNCTIONS_H__
+#ifndef FEM_FUNCTIONS_H
+#define FEM_FUNCTIONS_H
 
 #include <iostream>
 #include "parallel_mesh.h"
@@ -14,4 +14,4 @@ void FEMComputeFunctions(MeshElementType ele_type, RealVector qp, double qw, std
 
 
 
-#endif /* FEM_FUNCTIONS_H__ */
+#endif /* FEM_FUNCTIONS_H */

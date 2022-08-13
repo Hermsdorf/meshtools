@@ -293,3 +293,15 @@ void Mesh::get_element_coordinates(int element_id, std::vector<Point> &coordinat
         coordinates[ino](2) = this->coord[conn[ino]*3+2];
     }
 }
+
+void Mesh::get_element_connectivity(int element_id, std::vector<unsigned int> &connectivity)
+{
+    int nnoel                = this->getElementConnSize(element_id);
+    const unsigned int* conn = this->getElementConn(element_id);
+
+    connectivity.resize(nnoel);
+
+    for(int ino = 0; ino < nnoel; ++ino)
+        connectivity[ino] = conn[ino];
+}
+

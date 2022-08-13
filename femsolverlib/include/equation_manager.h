@@ -1,6 +1,6 @@
 
-#ifndef EQUATION_MANAGER_H__
-#define EQUATION_MANAGER_H__
+#ifndef EQUATION_MANAGER_H
+#define EQUATION_MANAGER_H
 
 #include "dirichlet_boundary.h"
 #include "parallel_mesh.h"
@@ -25,6 +25,8 @@ public:
      * @param global_equation  global equation numbering for dof id
      */
     void              equation_indices(int id_dof, int conn_size, const unsigned int *conn_local , int *global_equation);
+    void              global_indices(int id_dof, std::vector<unsigned int>& conn, std::vector<int>& global_equation);
+    void              local_indices(int id_dof, std::vector<unsigned int>& conn, std::vector<int>& local_equation);
     void              add_dirichlet_boundary(DirichletBoundary &boundary);
     void              prepare_to_use();
     void              calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::vector<unsigned int> &onnz);
@@ -52,4 +54,4 @@ private:
 
 };
 
-#endif /* EQUATION_MANAGER_H__ */
+#endif /* EQUATION_MANAGER_H */

@@ -518,6 +518,8 @@ class Mesh {
 
        void get_element_coordinates(int element_id, std::vector<Point> &coordinates);
 
+       void get_element_connectivity(int element_id, std::vector<unsigned int> &connectivity);
+
 
     protected:
         unsigned int                n_face_elements;            // Numero de elementos de superficie.
