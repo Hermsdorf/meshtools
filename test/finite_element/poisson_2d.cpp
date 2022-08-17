@@ -27,6 +27,19 @@ double exact_solution(double x, double y, double z=0.0, double t=0.0)
     return 100.0 * x * (1.0 - x) * y * (1.0 - y);
 }
 
+
+double derivative_exact_solution(unsigned int i, double x, double y, double z=0.0, double t=0.0)
+{
+    switch (i)
+    {
+        case 0: return 100.0 * (1.0 - 2.0 * x) * y * (1.0 - y);
+        case 1: return 100.0 * x * (1.0 - x) * (1.0 - 2.0 * y);
+        default: return 0.0;
+    }
+}
+
+
+
 // Calculado usando aproximação de diferencas finitas
 double body_force(double x, double y)
 {
@@ -39,7 +52,18 @@ double body_force(double x, double y)
     return fxy;
 }
 
-double compute_error_estimator(ImplicitSystem& system, int dof)
+
+// double compute_H1_error(ImplicitSystem& system, int dof)
+/*
+    // The error estimator is computed as the difference between the exact solution and the
+    // numerical solution.
+    //  - e = \int_\Omega_e ||(grad.u - grad.u_h)|| dx
+    //  -
+
+*/
+
+// 
+double compute_L2_error(ImplicitSystem& system, int dof)
 {
 
     ParallelMesh&         pmesh = system.get_mesh();
@@ -50,7 +74,7 @@ double compute_error_estimator(ImplicitSystem& system, int dof)
     //
     // The error estimator is computed as the difference between the exact solution and the
     // numerical solution.
-    //  - e = \int_\Omega (u - u_h)^2 dx
+    //  - e = \int_\Omega_e (u - u_h)^2 dx
     //  - E = \sqrt(e)
 
     // Get the solution vector
@@ -95,11 +119,18 @@ double compute_error_estimator(ImplicitSystem& system, int dof)
             FEMComputeFunctions(etype, qp[q],qw[q],coords_iel,qpoint,phi,dphi,JxW);
            
             double u_h = 0.0;
-            
-            for(int i = 0; i < nnoel; i++)
-                u_h      += solution[local_indices[i]] * phi[i];
+            Gradient gradu;
+            Gradient gradu_h;
+            for(int i = 0; i < nnoel; i++){
+                u_h        += solution[local_indices[i]] * phi[i];
+                gradu_h(0) += solution[local_indices[i]] * dphi[i](0);
+                gradu_h(1) += solution[local_indices[i]] * dphi[i](1);
+            }
 
+            gradu(0) = derivative_exact_solution(0, qpoint(0), qpoint(1));
+            gradu(1) = derivative_exact_solution(1, qpoint(0), qpoint(1));
 
+            //double h1_error  = (gradu - gradu_h).norm()
             double val_error = (u_h - exact_solution(qpoint(0), qpoint(1)));
             error_per_element += (val_error * val_error) * JxW;
 
@@ -115,6 +146,10 @@ double compute_error_estimator(ImplicitSystem& system, int dof)
     //printf("Error: %e\n", sqrt(error));
     return sqrt(error);
 }
+
+/*
+ *   p = std::log(std::fabs(erro[i - 1] / erro[i])) / std::log(2.0));
+ */
 
 int poisson(int argc, char* argv[])
 {
@@ -173,7 +208,7 @@ int poisson(int argc, char* argv[])
 
         std::vector<Point>            coords_iel;
         std::vector<unsigned int>     conn_iel;
-        const unsigned int *connectivity = pmesh->getElementConn(iel);
+        //const unsigned int *connectivity = pmesh->getElementConn(iel);
         pmesh->get_element_connectivity(iel, conn_iel);
         pmesh->get_element_coordinates(iel, coords_iel);
         int nnoel = conn_iel.size();
@@ -225,7 +260,7 @@ int poisson(int argc, char* argv[])
     // Resolve o sistema de equações
     implicit_system->solve();
 
-    double erro = compute_error_estimator(*implicit_system, 0);
+    double erro = compute_L2_estimator(*implicit_system, 0);
     PetscPrintf(MeshTools::Comm(), "Erro |u - uxato| = : %e\n", erro);
     //implicit_system->write_vtk("solution");
 
@@ -241,5 +276,7 @@ int poisson(int argc, char* argv[])
 
 int main(int argc, char *argv[])
 {
+
     return poisson(argc, argv);
 }
+
