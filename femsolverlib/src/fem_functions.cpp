@@ -17,6 +17,11 @@ void QUAD4DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw);
 
 void QUAD4ComputeFunctions(RealVector qp, double qw, std::vector<Point> coords, RealVector &point, 
                            std::vector<double> &phi, std::vector<Gradient> &dphi, double &JxW);
+
+void TET4DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw);
+
+void TET4ComputeFunctions(RealVector qp, double qw, std::vector<Point> coords, RealVector &point, 
+                           std::vector<double> &phi, std::vector<Gradient> &dphi, double &JxW);
  
 
 void FEMGetQGauss(MeshElementType elem_type, std::vector<RealVector> &points, std::vector<double> &qw)
@@ -28,6 +33,9 @@ void FEMGetQGauss(MeshElementType elem_type, std::vector<RealVector> &points, st
         break;
     case QUAD4:
         QUAD4DefaultQGauss(points,qw);
+        break;
+    case TET4:
+        TET4DefaultQGauss(points,qw);
         break;
     default:
         throw std::runtime_error("Element type not supported");
@@ -46,6 +54,9 @@ void FEMComputeFunctions(MeshElementType elem_type, RealVector qp, double qw, st
         break;
     case QUAD4:
         QUAD4ComputeFunctions(qp, qw,coords, point, phi,dphi,JxW);
+        break;
+    case TET4:
+        TET4ComputeFunctions(qp, qw,coords, point, phi,dphi,JxW);
         break;
     default:
          std::cout <<" Elemento: " << elem_type << std::endl;

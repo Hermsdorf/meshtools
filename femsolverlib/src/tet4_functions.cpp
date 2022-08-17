@@ -32,7 +32,8 @@ void TET4DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw)
   qw.resize(1);
   qpoints[0](0) =  0.25;
   qpoints[0](1) =  0.25;
-  qw[0] = 1;0/6.0;
+  qpoints[0](2) =  0.25;
+  qw[0] = 1.0/6.0;
 
 }
 
