@@ -66,6 +66,15 @@ class Mesh {
          * @param filename Nome do arquivo, formato msh, com os dados da malha.
         */
 
+        Mesh(std::string filename);
+        /**
+         * * OBJETIVO:
+         *     Construtor da classe Mesh, responsável por inicializar as variáveis e preencher
+         *     as informações da malha a partir do nome do arquivo chamando a função MeshGmshReader.
+         * * PARAMETROS:
+         * @param filename Nome do arquivo, formato msh, com os dados da malha.
+        */
+
         ~Mesh();
         /**
          * * OBJETIVO:

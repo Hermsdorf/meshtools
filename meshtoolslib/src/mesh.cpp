@@ -26,6 +26,19 @@ Mesh::Mesh(const char* filename)
     MeshGmshReader(filename);
 }
 
+Mesh::Mesh(std::string filename)
+{
+    const char * filename_converted = filename.c_str();
+
+    this->n_face_elements = 0;
+    this->n_elements = 0;
+    this->n_nodes = 0; 
+    this->dim = 0;
+    this->mesh_coloring_internal = nullptr;
+    this->n_internal_colors = 0;
+    MeshGmshReader(filename_converted);
+}
+
 Mesh::~Mesh()
 {
     this->conn.clear();

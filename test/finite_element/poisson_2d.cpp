@@ -55,11 +55,10 @@ double body_force(double x, double y)
 
 // double compute_H1_error(ImplicitSystem& system, int dof)
 /*
-    // The error estimator is computed as the difference between the exact solution and the
-    // numerical solution.
-    //  - e = \int_\Omega_e ||(grad.u - grad.u_h)|| dx
-    //  -
-
+    The error estimator is computed as the difference between the exact solution and the
+    numerical solution.
+     - e = \int_\Omega_e ||(grad.u - grad.u_h)|| dx
+     -
 */
 
 // 
@@ -151,7 +150,7 @@ double compute_L2_error(ImplicitSystem& system, int dof)
  *   p = std::log(std::fabs(erro[i - 1] / erro[i])) / std::log(2.0));
  */
 
-int poisson(int argc, char* argv[])
+int poisson(int argc, char* argv[], std::string mesh_path, std::string mesh_file)
 {
     PetscErrorCode ierr;
     MeshPartition *parts = new MeshPartition();
@@ -168,7 +167,7 @@ int poisson(int argc, char* argv[])
     {
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha. 
-        mesh = new Mesh(argv[1]);
+        mesh = new Mesh(mesh_path + mesh_file);
         
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha
@@ -276,7 +275,20 @@ int poisson(int argc, char* argv[])
 
 int main(int argc, char *argv[])
 {
+    std::string mesh_path = "../msh/";
+    std::vector<std::string> mesh_files = {"quadrangles/quad_8x8.msh", "quadrangles/quad_16x16.msh", "quadrangles/quad_32x32.msh",
+                                "quadrangles/quad_64x64.msh", "quadrangles/quad_128x128.msh", "quadrangles/quad_256x256.msh",
+                                "quadrangles/quad_512x512.msh", "triangles/tri_8x8.msh", "triangles/tri_16x16.msh",
+                                "triangles/tri_32x32.msh", "triangles/tri_64x64.msh", "triangles/tri_128x128.msh",
+                                "triangles/tri_256x256.msh", "triangles/tri_512x512.msh"};
+    
+    for(int i = 0 ; i < mesh_files.size(); i++)
+    {
+        std::string mesh_file = mesh_path + mesh_files[i];
+        std::cout << "Mesh file: " << mesh_file << std::endl;
+        poisson(argc, argv, mesh_path, mesh_files[i]);
+    }
 
-    return poisson(argc, argv);
+    return 0;
 }
 
