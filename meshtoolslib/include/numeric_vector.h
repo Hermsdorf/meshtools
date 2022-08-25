@@ -12,6 +12,11 @@ class NumericVector {
         T& operator()(int i);
         T  operator*(NumericVector<T>& v);
         T  operator*=(NumericVector<T>& v);
+        T  operator+(NumericVector<T>& v);
+        T  operator+=(NumericVector<T>& v);
+        T  operator-(NumericVector<T>& v);
+        T  operator-=(NumericVector<T>& v);
+        T  norm();
         //friend ostream& operator<<(ostream& os, const NumericVector<T>& v);
         ~NumericVector();
     private:
@@ -59,6 +64,52 @@ T NumericVector<T>::operator*=(NumericVector<T>& v) {
         result += data[i] * v.data[i];
     }
     return result;
+}
+
+template <typename T>
+T NumericVector<T>::operator+(NumericVector<T>& v) {
+    T result[3] = {0};
+    for (int i = 0; i < 3; i++) {
+        result[i] += data[i] + v.data[i];
+    }
+    return result;
+}
+
+template <typename T>
+T NumericVector<T>::operator+=(NumericVector<T>& v) {
+    T result[3] = {0};
+    for (int i = 0; i < 3; i++) {
+        result[i] += data[i] + v.data[i];
+    }
+    return result;
+}
+
+template <typename T>
+T NumericVector<T>::operator-(NumericVector<T>& v) {
+    T result[3] = {0};
+    for (int i = 0; i < 3; i++) {
+        result[i] += data[i] - v.data[i];
+    }
+    return result;
+}
+
+template <typename T>
+T NumericVector<T>::operator-=(NumericVector<T>& v) {
+    T result[3] = {0};
+    for (int i = 0; i < 3; i++) {
+        result[i] += data[i] - v.data[i];
+    }
+    return result;
+}
+
+template <typename T>
+T NumericVector<T>::norm()
+{
+    T result;
+    for (int i = 0; i < 3; i++) {
+        result += data[i]*data[i];
+    }
+    return sqrt(result);
 }
 
 typedef NumericVector<double>    RealVector;
