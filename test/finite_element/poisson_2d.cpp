@@ -373,8 +373,12 @@ int main(int argc, char *argv[])
 
         std::cout << std::endl;
         std::cout << "\nQuad mesh error L2 divided: ";
+        for (int i = 1; i < quad_mesh_files.size(); i++)
+            std::cout << error_quad_L2[i-1]/error_quad_L2[i] << "  ";
+        std::cout << "\nTri mesh error L2 divided: ";
         for (int i = 1; i < tri_mesh_files.size(); i++)
             std::cout << error_tri_L2[i-1]/error_tri_L2[i] << "  ";
+        std::cout << std::endl;
     }   
 
     MeshTools::Finalize();
