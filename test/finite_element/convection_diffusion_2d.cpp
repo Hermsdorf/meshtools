@@ -42,7 +42,7 @@ int convection_diffusion(int argc, char* argv[])
 
     pmesh = parts->DistributedMesh(mesh);
 
-    pmesh->writePVTK("mesh");
+    //pmesh->writePVTK("mesh");
 
     // Cria o sistema de equações implicito
     ImplicitSystem* implicit_system = new ImplicitSystem(*pmesh, "convection-diffusion");    
@@ -100,11 +100,11 @@ int convection_diffusion(int argc, char* argv[])
         FEMGetQGauss(etype,qp,qw);
 
         Gradient velocity;
-        velocity(0) = sqrt(2)/2.0;
+        velocity(0) = sqrt(2.0)/2.0;
         velocity(1) = velocity(0);
-        double kd = 1.0E-4;
+        double kd = 1.0E-2;
 
-        std::cout << "Iel = " << iel << std::endl;
+        //std::cout << "Iel = " << iel << std::endl;
 
         // loop sobre os pontos de integração
         for(int q = 0; q < qp.size(); q++)
@@ -118,7 +118,7 @@ int convection_diffusion(int argc, char* argv[])
             {
     
                 for(int j = 0; j < nnoel; j++)
-                    Ke(i,j) += JxW*(phi[i]*( velocity*dphi[j]) +   // w (a. grad u)
+                    Ke(i,j) += JxW*(phi[i]*( velocity*dphi[j]) +       // w (a. grad u)
                                             kd*(dphi[i]*dphi[j])  );   // Grad w Grad u
             }
         }

@@ -120,6 +120,7 @@ void EquationManager::prepare_to_use()
         int boundary_id = it->get_boundary_id(); // Gmsh id
         int dof_id      = it->get_dof_id();      // Meshtools id
 
+        
         std::set<int>  boundary_nodes;
 
         for(int iel = 0; iel < n_boundary_elements; iel++)
@@ -133,16 +134,19 @@ void EquationManager::prepare_to_use()
             }
         }
 
+       
         _boundary_nodes_map[bnd_id].resize(boundary_nodes.size());
 
         unsigned int ibcno = 0;
         for(auto bnd_node_iter =  boundary_nodes.begin(); bnd_node_iter != boundary_nodes.end(); ++bnd_node_iter)
         {
-            int node_id = *bnd_node_iter;
-            // flag indicanting that there is no equation to this node because it is a boundary node (with its respective boundary condition)
-            //_equation_indices[node_id*_ndof + dof_id] = -1;
-            _boundary_nodes_map[bnd_id][ibcno++] = node_id;
+                int node_id = *bnd_node_iter;
+                // flag indicanting that there is no equation to this node because it is a boundary node (with its respective boundary condition)
+                //_equation_indices[node_id*_ndof + dof_id] = -1;
+                _boundary_nodes_map[bnd_id][ibcno++] = node_id;
         }
+        bnd_id++;
+
     }
 
 

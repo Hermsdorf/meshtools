@@ -262,11 +262,13 @@ void ImplicitSystem::apply_dirichlet_boundary_conditions()
     int nbc = this->_equations.get_number_of_dirichlet_boundaries();
     for(int ibc = 0; ibc < nbc; ibc++)
     {
-        if(MeshTools::processor_id() == 0)   std::cout << "Applying dirichlet boundary condition " << ibc << std::endl;
         DirichletBoundary &bc            = this->_equations.get_dirichlet_boundary(ibc);
         std::vector<unsigned int>& nodes = this->_equations.get_boundary_nodes(ibc);
         std::vector<PetscScalar> values(nodes.size());
         std::vector<PetscInt> idx(nodes.size());
+
+        if(MeshTools::processor_id() == 0)   std::cout << "Applying dirichlet boundary condition " << ibc << " in " << nodes.size() <<" nodes"<<std::endl;
+        
         int dof = bc.get_dof_id();
         for(unsigned int inode = 0; inode < nodes.size(); inode++)
         {
