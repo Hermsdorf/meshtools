@@ -27,14 +27,24 @@ Line(5) = {4, 5};
 //+
 Line(6) = {5, 1};
 
+//+
+Line(7) = {5, 6};
 
 //+
-Curve Loop(1) = {4, 5, 6, 1, 2, 3};
+Curve Loop(1) = {5, 7, 3, 4};
 //+
 Plane Surface(1) = {1};
 //+
-Physical Curve("U0", 1) = {6, 1};
+Curve Loop(2) = {6, 1, 2, -7};
+//+
+Plane Surface(2) = {2};
+//+
+Transfinite Surface {1};
+//+
+Transfinite Surface {2};
 //+
 Physical Curve("U1", 2) = {5};
 //+
-Physical Surface("DOMAIN", 3) = {1};
+Physical Curve("U0", 1) = {6, 1};
+//+
+Physical Surface("DOMAIN", 3) = {1, 2};

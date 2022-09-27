@@ -102,9 +102,8 @@ int convection_diffusion(int argc, char* argv[])
         Gradient velocity;
         velocity(0) = sqrt(2.0)/2.0;
         velocity(1) = velocity(0);
-        double kd = 1.0E-2;
+        double kd   = 1.0E-3;
 
-        //std::cout << "Iel = " << iel << std::endl;
 
         // loop sobre os pontos de integração
         for(int q = 0; q < qp.size(); q++)
@@ -118,8 +117,8 @@ int convection_diffusion(int argc, char* argv[])
             {
     
                 for(int j = 0; j < nnoel; j++)
-                    Ke(i,j) += JxW*(phi[i]*( velocity*dphi[j]) +       // w (a. grad u)
-                                            kd*(dphi[i]*dphi[j])  );   // Grad w Grad u
+                    Ke(i,j) += JxW*(phi[i]*( velocity*dphi[j]) +       // w (a. grad u) - Termo convectivo
+                                            kd*(dphi[i]*dphi[j])  );   // Grad w Grad u - Termo difusivo 
             }
         }
 

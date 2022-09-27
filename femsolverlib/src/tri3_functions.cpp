@@ -108,3 +108,33 @@ void TRI3ComputeFunctions( RealVector q_point, double qw, std::vector<Point> coo
     }
     JxW = qw*detJ;
 }
+
+/*
+void TRI3Stab( RealVector q_point, std::vector<Point> coords, NumericVector<double> &g,  DenseMatrix<double> &G, double &JxW)
+{
+    double dpsi[2][3];
+    double dxidx = 0.0, dxidy=0.0;
+    double detadx = 0.0, detady=0.0;
+    double x[3], y[3];
+   
+    TRI3DShape(q_point,dpsi);
+    for(int i=0; i<3; i++)
+    {
+        x[i] = X(i);
+        y[i] = Y(i);
+
+        dxidx +=  x[i]*dpsi[0][i]; // dxi/dx
+        dxidy +=  y[i]*dpsi[0][i]; // dxi/dy
+        detadx +=  x[i]*dpsi[1][i]; // deta/dx
+        detady +=  y[i]*dpsi[1][i]; // deta/dy
+    }
+
+    g(0) = dxidx + detadx;
+    g(1) = dxidy + detady;
+
+    G(0,0) = dxidx*dxidx + detadx*detadx;
+    G(0,1) = G(1,0) = dxidx*dxidy + detadx*detady;
+    G(1,1) = dxidy*dxidy + detady*detady;
+   
+}
+*/
