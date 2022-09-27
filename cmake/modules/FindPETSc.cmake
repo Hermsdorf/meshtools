@@ -200,8 +200,8 @@ show :
     endif (petsc_cc_flags MATCHES "-MT")
   endif (WIN32)
 
-  include (CorrectWindowsPaths)
-  convert_cygwin_path(petsc_lib_dir)
+  #include (CorrectWindowsPaths)
+  #convert_cygwin_path(petsc_lib_dir)
   message (STATUS "petsc_lib_dir ${petsc_lib_dir}")
 
   macro (PETSC_FIND_LIBRARY suffix name)

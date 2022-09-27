@@ -2,8 +2,15 @@
  *   Meshtools configuration file....
  */
 #define MPI_ENABLE
-/* #undef USE_MPI */
+#define USE_MPI 1
+
+#define PETSC_ENABLE
 
 /* #undef CATALYST_ENABLE */
 /* #undef USE_CATALYST */
+
+/* #undef DEBUG_ */
+
+
+
 
