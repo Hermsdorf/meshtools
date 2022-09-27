@@ -4,6 +4,13 @@
 #cmakedefine MPI_ENABLE
 #cmakedefine USE_MPI @USE_MPI@
 
+#cmakedefine PETSC_ENABLE
+
 #cmakedefine CATALYST_ENABLE
 #cmakedefine USE_CATALYST @USE_CATALYST@
+
+#cmakedefine DEBUG_
+
+
+
 

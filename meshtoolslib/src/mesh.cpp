@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cassert>
+#include <set>
 #include "mesh.h" 
 
 using namespace std;
@@ -7,10 +8,11 @@ using namespace std;
 Mesh::Mesh()
 {
     this->n_face_elements = 0;
-    this->n_elements = 0;
-    this->n_nodes = 0; 
-    this->dim = 0;
+    this->n_elements      = 0;
+    this->n_nodes         = 0; 
+    this->dim             = 0;
     this->mesh_coloring_internal = nullptr;
+    this->n_internal_colors = 0;
 }
 
 Mesh::Mesh(const char* filename)
@@ -20,7 +22,21 @@ Mesh::Mesh(const char* filename)
     this->n_nodes = 0; 
     this->dim = 0;
     this->mesh_coloring_internal = nullptr;
+    this->n_internal_colors = 0;
     MeshGmshReader(filename);
+}
+
+Mesh::Mesh(std::string filename)
+{
+    const char * filename_converted = filename.c_str();
+
+    this->n_face_elements = 0;
+    this->n_elements = 0;
+    this->n_nodes = 0; 
+    this->dim = 0;
+    this->mesh_coloring_internal = nullptr;
+    this->n_internal_colors = 0;
+    MeshGmshReader(filename_converted);
 }
 
 Mesh::~Mesh()
@@ -77,7 +93,7 @@ std::vector<unsigned short>& Mesh::getType()
     return this->type;
 }
 
-std::vector<int>& Mesh::get_physical_tag()
+std::vector<int>& Mesh::getPhysicalTag()
 {
     return this->physical_tag;
 }
@@ -87,7 +103,7 @@ int* Mesh::get_mesh_coloring_internal()
     return this->mesh_coloring_internal;
 }
 
-std::map<int, physical_data_t> Mesh::get_physical_map()
+std::map<int, physical_data_t>& Mesh::getPhysicalMap()
 {
     return this->physical_map;
 }
@@ -196,6 +212,7 @@ void Mesh::set_n_nodes(unsigned int n_nodes)
     this->n_nodes = n_nodes;
 }
 
+
 void Mesh::setDim(int dim)
 {
     this->dim = dim;
@@ -252,5 +269,52 @@ unsigned int Mesh::getSurfaceElementConnSize(unsigned int element_num)
     assert(element_num < this->n_face_elements);
     return (this->offset[element_num + 1] - this->offset[element_num]);
 
+}
+
+void Mesh::extract_boundary_nodes(std::vector<int>& tag)
+{  
+    for(auto it = physical_map.begin(); it != physical_map.end(); ++it)
+    {
+        if(it->second.first != (dim-1)) continue;
+
+        std::set<int>  node_on_boundary;
+
+        for(int iel=0; iel < this->n_face_elements; iel++)
+        {
+            if(tag[iel] == it->first)
+            {
+                unsigned int connsize = getSurfaceElementConnSize(iel); 
+                unsigned int* conn     = getSurfaceElementConn(iel); 
+                for(int ino = 0; ino < connsize; ++ino)
+                    node_on_boundary.insert(conn[ino]);
+            }
+        }
+    }
+}
+
+void Mesh::get_element_coordinates(int element_id, std::vector<Point> &coordinates)
+{
+    int nnoel                = this->getElementConnSize(element_id);
+    const unsigned int* conn = this->getElementConn(element_id);
+
+    coordinates.resize(nnoel);
+
+    for(int ino = 0; ino < nnoel; ++ino)
+    {
+        coordinates[ino](0) = this->coord[conn[ino]*3+0];
+        coordinates[ino](1) = this->coord[conn[ino]*3+1];
+        coordinates[ino](2) = this->coord[conn[ino]*3+2];
+    }
+}
+
+void Mesh::get_element_connectivity(int element_id, std::vector<unsigned int> &connectivity)
+{
+    int nnoel                = this->getElementConnSize(element_id);
+    const unsigned int* conn = this->getElementConn(element_id);
+
+    connectivity.resize(nnoel);
+
+    for(int ino = 0; ino < nnoel; ++ino)
+        connectivity[ino] = conn[ino];
 }
 

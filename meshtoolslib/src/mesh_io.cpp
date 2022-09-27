@@ -1,11 +1,72 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cstring>
 #include <sstream>
+#include <cassert>
 
+#include "meshtools.h"
 #include "metis.h"
 #include "mesh.h"
 #include "rcm.hpp"
+
+size_t get_mesh_type_size(MeshDataType type)
+{
+    switch(type)
+    {
+        case UInt8: return sizeof(unsigned short);
+        case Int8: return sizeof(short);
+        case UInt32: return sizeof(unsigned int);
+        case Int32: return sizeof(int);
+        case Float32: return sizeof(float);
+        case Float64: return sizeof(double);
+        default:
+            return 0;
+    }
+}
+
+
+bool is_mesh_data_type_valid(MeshDataType type)
+{
+    switch(type)
+    {
+        case UInt8:
+        case Int8:
+        case UInt32:
+        case Int32:
+        case Float32:
+        case Float64:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+MeshIODataAppended::MeshIODataAppended()
+{
+    
+}
+
+void MeshIODataAppended::addPointDataInfo(const char* name, MeshDataType type, void *data_ptr)
+{
+    PointData tmp;
+    assert(is_mesh_data_type_valid(type));
+    tmp.name = name;
+    tmp.data = data_ptr;
+    tmp.type = type;
+    this->list_point_data.push_back(tmp);
+}
+
+void MeshIODataAppended::addCellDataInfo(const char* name, MeshDataType type, void *data_ptr)
+{
+    CellData tmp;
+    assert(is_mesh_data_type_valid(type));
+    tmp.name = name;
+    tmp.data = data_ptr;
+    tmp.type = type;
+    this->list_cell_data.push_back(tmp);
+}
+
 
 
 static int element_type[6] = {-1, 2, 3, 4, 4, 8};
@@ -30,8 +91,8 @@ int getGmshElemTypeDim(int type)
 {
     switch (type)
     {
-        case 1: return 1;
-        case 2: return 2;
+        case 1: return 1; 
+        case 2: return 2; 
         case 3: return 2;
         case 4: return 3;
         case 5: return 3;
@@ -45,11 +106,11 @@ int GmshToVTKType(int type)
 {
     switch (type)
     {
-        case 1: return 3;
-        case 2: return 5;
-        case 3: return 9;
-        case 4: return 10;
-        case 5: return 12;
+        case 1: return 3; // EDGE2
+        case 2: return 5; // TRI3
+        case 3: return 9; // QUAD4
+        case 4: return 10; // TET4
+        case 5: return 12; // HEX8
         case 15: return 1;
         default: return -1;
         break;
@@ -133,6 +194,7 @@ void Mesh::MeshGmshReader(const char* filename)
                 in >> num_nodes;
                 this->n_nodes = num_nodes;
 
+                this->node_index.resize(num_nodes);
                 this->coord.resize(num_nodes*3);
 
                 int node_id;
@@ -144,8 +206,8 @@ void Mesh::MeshGmshReader(const char* filename)
                     in.seekg(current_pos+1); // i dont know why but it is necessary to get one position ahead of the file to get the correct data
 
                     for(unsigned int i = 0; i < num_nodes; i++){
-                        in.read((char*)&node_id, sizeof(int)); // reading node_id
-                        in.read((char*)xyz, 3*sizeof(double)); // reading node_i_x, node_i_y and node_i_z
+                        in.read((char*)&node_index[i], sizeof(int)); // reading node_id
+                        in.read((char*)xyz, 3*sizeof(double));       // reading node_i_x, node_i_y and node_i_z
 
                         this->coord[(i*3)+0] = xyz[0];
                         this->coord[(i*3)+1] = xyz[1];
@@ -157,6 +219,7 @@ void Mesh::MeshGmshReader(const char* filename)
                     double x, y, z;
                     for(unsigned int i = 0; i < num_nodes; i++) {
                         in >> node_id >> x >> y >> z;
+                        node_index[i]  = node_id;
                         this->coord[(i*3)+0] = x;
                         this->coord[(i*3)+1] = y;
                         this->coord[(i*3)+2] = z;
@@ -200,8 +263,8 @@ void Mesh::MeshGmshReader(const char* filename)
                         for(unsigned int i = 0; i < num_elm_follow; i++)
                         {
                             this->type[elem_count] = GmshToVTKType(elm_type);
-                            int nnodes   = getGmshElemNNodes(elm_type);
-                            int elem_dim = getGmshElemTypeDim(elm_type);
+                            int nnodes             = getGmshElemNNodes(elm_type);
+                            int elem_dim           = getGmshElemTypeDim(elm_type);
 
                             int arr_size = 3 + nnodes;
                             int data[arr_size]; // num_i, physical, elementary, node_i_1, ... node_i_x
@@ -300,22 +363,21 @@ void Mesh::MeshGmshReader(const char* filename)
        
     if(dim_count[3] != 0)
     {
-        this->n_elements = dim_count[3];
+        this->n_elements      = dim_count[3];
         this->n_face_elements = dim_count[2];
+        this->dim = 3;
     } else if (dim_count[2] != 0)
     {
         this->n_elements      = dim_count[2];
         this->n_face_elements = dim_count[1];
+        this->dim             = 2;
     } else
     {
         this->n_elements      = dim_count[1];
+        this->dim = 1;
     }
     
-    this->mesh_coloring_internal = new int [this->n_elements];
 
-    std::fill(&this->mesh_coloring_internal[0], &this->mesh_coloring_internal[n_elements], -1);
-
-    
     std::string str(filename);
     str.resize(str.length()-4);
 
@@ -329,6 +391,8 @@ void Mesh::MeshGmshReader(const char* filename)
     in.close();
 }
 
+// TODO: remover
+/*
 void Mesh::MeshVTKWriter(int timeStep, int *npart, int* epart, int* color, double* velocity, float* pressure)
 {
     std::cout << "Writing VTK boundary and internal elements...\n";
@@ -411,7 +475,7 @@ void Mesh::MeshVTKWriter(int timeStep, int *npart, int* epart, int* color, doubl
             fout << std::endl;
             fout << "\t\t\t\t </DataArray>\n";
         }
-        if(color)
+        if(this->n_internal_colors != 0)
         {
             fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"Color\" format=\"ascii\">\n";
             fout << "\t\t\t\t\t";
@@ -492,7 +556,7 @@ void Mesh::MeshVTKWriter(int timeStep, int *npart, int* epart, int* color, doubl
     }
 }
 
-
+// TODO: remover
 void Mesh::MeshVTKWriterInternal(int timeStep, int* npart, int* epart, int* color, double* velocity, float* pressure)
 {
     std::cout << "Writing VTK internal elements...\n";
@@ -573,7 +637,7 @@ void Mesh::MeshVTKWriterInternal(int timeStep, int* npart, int* epart, int* colo
             }
             fout << "\n\t\t\t\t </DataArray> \n";
         }
-        if(color)
+        if(this->n_internal_colors != 0 )
         {
             fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"Color\" format=\"ascii\">\n";
             fout << "\t\t\t\t\t";
@@ -647,6 +711,7 @@ void Mesh::MeshVTKWriterInternal(int timeStep, int* npart, int* epart, int* colo
         std::cout << "Writing completed successfully\n";
     }
 }
+*/
 
 bool BinaryBigEndian(void) 
 {
@@ -654,23 +719,21 @@ bool BinaryBigEndian(void)
     return ((char*)&_v)[0] ? false : true;
 }
 
-void Mesh::MeshVTKWriterInternalBinAppended(int timeStep, int* npart, int* epart, int* color, double* velocity, float* pressure)
+
+void Mesh::WriteVTK(const char* fname, MeshIODataAppended* info )
 {
-    std::cout << "Writing in binary VTK internal elements...\n";
+    if(MeshTools::processor_id() == 0)
+        std::cout << "Writing VTK ...\n";
     
     std::FILE*         fout;
+    char filename[256];
+
     unsigned int boffset = 0; /* Offset into binary file */
     const char *byte_order = BinaryBigEndian() ? "BigEndian" : "LittleEndian";
 
-    std::string str = this->getFilename();
-    if(timeStep >= 0)
-    {
-        std::string os;
-        os = std::to_string(timeStep);
-
-        str.insert(str.length(), "_" + os + ".vtu");
-    }
-    fout = fopen(str.c_str(), "wb");
+    sprintf(filename,"%s_%d_%d.vtu",fname,MeshTools::n_processors(),MeshTools::processor_id());
+    
+    fout = fopen(filename, "wb");
 
     if(fout)
     {
@@ -696,48 +759,46 @@ void Mesh::MeshVTKWriterInternalBinAppended(int timeStep, int* npart, int* epart
 
 
         fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","offsets",1, boffset);
-        sz = this->offset.size() - (this->n_face_elements + 1);
+        sz       = this->offset.size() - (this->n_face_elements + 1);
         boffset += sz*sizeof(int) + sizeof(unsigned long);
 
         fprintf(fout,"        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","UInt16","types",1, boffset);
         boffset += this->n_elements*sizeof(unsigned short) + sizeof(unsigned long);
         fprintf(fout, "   </Cells>\n");
-
-
-        // Writting nodal attribute data
         fprintf(fout, "   <PointData>\n");
-        if(npart)
+        fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","UInt32", "node-id",1,boffset);
+        boffset += this->n_nodes*sizeof(unsigned int) + sizeof(unsigned long);
+        if(info != nullptr)
         {
-            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","npart",1,boffset);
-            boffset += this->n_nodes*sizeof(int) + sizeof(unsigned long);
+            auto& point_data = info->GetPointDataInfo();
+            if( point_data.size() != 0)
+            {
+                // Writting nodal attribute data
+                // fprintf(fout, "   <PointData>\n");
+                for(int i= 0; i < point_data.size(); ++i)
+                {
+                   fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n",MeshDataTypeSTR[point_data[i].type].c_str(), point_data[i].name.c_str(),1,boffset);
+                   boffset += this->n_nodes*get_mesh_type_size(point_data[i].type) + sizeof(unsigned long);
+                }
+                
+            }
         }
-        if(velocity)
-        {
-            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Float64","velocity",3,boffset);
-            boffset += 3*this->n_nodes*sizeof(double) + sizeof(unsigned long);
-        }
-        if(pressure)
-        {
-            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Float32","pressure",1,boffset);
-            boffset += this->n_nodes*sizeof(float) + sizeof(unsigned long);
-        }
-
         fprintf(fout, "   </PointData>\n");
-        fprintf(fout, "   <CellData>\n");
-       
-        if(epart)
+        if(info != nullptr)
         {
-            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","epart",1, boffset);
-            boffset += this->n_elements*sizeof(int) + sizeof(unsigned long);
+              auto& cell_data = info->GetCellDataInfo();
+            if( cell_data.size() != 0)
+            {
+                // Writting nodal attribute data
+                fprintf(fout, "   <CellData>\n");
+                for(int i= 0; i < cell_data.size(); ++i)
+                {
+                   fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n",MeshDataTypeSTR[cell_data[i].type].c_str(),cell_data[i].name.c_str(),1,boffset);
+                   boffset += this->n_elements*get_mesh_type_size(cell_data[i].type) + sizeof(unsigned long);
+                }
+                fprintf(fout, "   </CellData>\n");
+            }
         }
-        if(color)
-        {
-                  
-            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","Color",1, boffset);
-            boffset += this->n_elements*sizeof(int) + sizeof(unsigned long);
-        }
-
-        fprintf(fout, "   </CellData>\n");
         fprintf(fout, "  </Piece>\n");
         fprintf(fout, " </UnstructuredGrid>\n");
         fprintf(fout, "  <AppendedData encoding=\"raw\">\n");
@@ -770,232 +831,91 @@ void Mesh::MeshVTKWriterInternalBinAppended(int timeStep, int* npart, int* epart
         nbytes = sizeof(unsigned short)*(ne);
         fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
         fwrite((void*)&this->type[nfe], sizeof(unsigned short),ne,fout);
+        // writing node indices
+        nbytes = sizeof(unsigned int)*this->n_nodes;
+        fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+        fwrite((void*)&this->node_index[0],sizeof(unsigned int),this->n_nodes,fout);
 
-        // Writing attribute data
-        if(npart)
+        if(info != nullptr)
         {
-            nbytes = sizeof(int)*this->n_nodes;
-            fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-            fwrite((void*)npart,sizeof(int), this->n_nodes,fout);
-        }
-        if(velocity)
-        {
-            nbytes = sizeof(double)*3*this->n_nodes;
-            fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-            fwrite((void*)velocity,sizeof(double), 3*this->n_nodes,fout);
-        }
-        if(pressure)
-        {
-            nbytes = sizeof(float)*this->n_nodes;
-            fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-            fwrite((void*)pressure,sizeof(float), this->n_nodes,fout);
-        }
-        if(epart)
-        {
-            nbytes = sizeof(int)*this->n_elements;
-            fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-            fwrite((void*)epart,sizeof(int), this->n_elements,fout);
-        }
-        if(color)
-        {
-            nbytes = sizeof(int)*this->n_elements;
-            fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-
-            for(int i = 0 ; i < this->n_internal_colors ; i++)
+            auto& point_data = info->GetPointDataInfo();
+            auto& cell_data   = info->GetCellDataInfo();
+            if( point_data.size() != 0)
             {
-                for(int j = 0 ; j < color[i] ; j++)
+                
+                for(int i= 0; i < point_data.size(); ++i)
                 {
-                    int colorAux = i+1;
-                    fwrite((void*)&colorAux,sizeof(int),1, fout);
+                    nbytes = get_mesh_type_size(point_data[i].type)*this->n_nodes;
+                    fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+                    fwrite((void*)point_data[i].data,get_mesh_type_size(point_data[i].type),this->n_nodes,fout);
+                }
+            }
+            if( cell_data.size() != 0)
+            {
+                
+                for(int i= 0; i < point_data.size(); ++i)
+                {
+                    nbytes = get_mesh_type_size(cell_data[i].type)*this->n_elements;
+                    fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+                    fwrite((void*)cell_data[i].data,get_mesh_type_size(cell_data[i].type),this->n_elements,fout);
                 }
             }
         }
-
-
     
         fprintf(fout,"\n </AppendedData>\n");
         fprintf(fout,"</VTKFile>");
-
-
         fclose(fout);
 
-        std::cout << "Writing completed successfully\n";
+        if(MeshTools::processor_id() == 0)
+            std::cout << "Writing completed successfully\n";
     }
 }
 
-void Mesh::MeshVTKWriterBinAppended(int timeStep, int* npart, int* epart, int* color, double* velocity, float* pressure)
+void Mesh::Write(const char *fname)
 {
-    std::cout << "Writing in binary VTK boundary and internal elements...\n";
-    
-    std::FILE*         fout;
-    unsigned int boffset = 0; /* Offset into binary file */
-    const char *byte_order = BinaryBigEndian() ? "BigEndian" : "LittleEndian";
+    char filename[256];
+    sprintf(filename,"%s_%04d.mts",fname,MeshTools::processor_id());
+    FILE* fout = fopen(filename,"w");
+    if(!fout) return ;
 
-    std::string str = this->getFilename();
-    if(timeStep >= 0) 
+
+    fprintf(fout, "# Mesh Tools File \n");
+    fprintf(fout, "1.0  0  0 # [version] [0:ascii - 1:binary] [0:serial - 1:parallel]\n");
+    fprintf(fout, "%d # num. faces   \n", this->n_face_elements);
+    fprintf(fout, "%d # num. elements\n", this->n_elements);
+    fprintf(fout, "%d # num. nodes \n",   this->n_nodes);
+    fprintf(fout, "%ld # num. physical region\n", this->physical_map.size());
+    fprintf(fout, "$BEGIN_PHYSICAL_DATA\n");
+    for(auto it = this->physical_map.begin(); it != this->physical_map.end(); it++)
+        fprintf(fout, "%d %d %s\n", it->first, it->second.first, it->second.second.c_str());
+    fprintf(fout, "$END_PHYSICAL_DATA\n"); 
+    fprintf(fout, "$BEGIN_NODE_DATA\n");
+    for(int n = 0; n < this->n_nodes; n++)
+        fprintf(fout,"%-4d %8.8e %8.8e %8.8e\n",n,coord[n*3],coord[n*3+1], coord[n*3+2]);
+    fprintf(fout, "$ENDNODE_DATA\n");
+    fprintf(fout,"$BEGIN_BOUNDARY_DATA\n");
+    for(int iel = 0; iel <  this->n_face_elements; iel++)
     {
-        std::string os;
-        os = std::to_string(timeStep);
-
-        str.insert(str.length(), "_" + os + ".vtu");
+        fprintf(fout,"%-4d %-4d", iel, this->physical_tag[iel]);
+        unsigned int connsize = this->getSurfaceElementConnSize(iel);
+        unsigned int *conn    = this->getSurfaceElementConn(iel);
+        for(int i = 0; i < connsize; ++i)
+            fprintf(fout, "%-4d ", conn[i]);
+        fprintf(fout,"\n");
     }
-    fout = fopen(str.c_str(), "wb");
-
-    if(fout)
+    fprintf(fout,"$END_BOUNDARY_DATA\n");
+    fprintf(fout,"$BEGIN_ELEMENT DATA\n");
+    for(int iel = 0; iel < this->n_elements; iel++)
     {
-        // Writting header info
-        fprintf(fout, "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"%s\" header_type=\"UInt64\">\n", byte_order);
-        fprintf(fout, " <UnstructuredGrid>\n");
-        fprintf(fout, "  <Piece NumberOfPoints=\"%d\" NumberOfCells=\"%d\">\n", this->n_nodes, this->n_elements + this->n_face_elements);
-
-        // writing mesh info
-        fprintf(fout, "   <Points>\n");
-        fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Float64","Points",3, boffset);
-        boffset += 3*this->n_nodes*sizeof(double) + sizeof(unsigned long);
-        
-        fprintf(fout, "   </Points>\n") ;
-        fprintf(fout, "   <Cells>\n");
-
-        fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","connectivity",1, boffset);
-        boffset += this->conn.size()*sizeof(int) + sizeof(unsigned long);
-
-
-        fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","offsets",1, boffset);
-        boffset += (this->offset.size()-1)*sizeof(int) + sizeof(unsigned long);
-
-        fprintf(fout,"        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","UInt16","types",1, boffset);
-        boffset += this->type.size()*sizeof(unsigned short) + sizeof(unsigned long);
-
-        fprintf(fout, "   </Cells>\n");
-
-        // Writting nodal attribute data
-        fprintf(fout, "   <PointData>\n");
-        if(npart)
-        {
-            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","npart",1,boffset);
-            boffset += this->n_nodes*sizeof(int) + sizeof(unsigned long);
-        }
-        if(velocity)
-        {
-            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Float64","velocity",3,boffset);
-            boffset += 3*this->n_nodes*sizeof(double) + sizeof(unsigned long);
-        }
-        if(pressure)
-        {
-            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Float32","pressure",1,boffset);
-            boffset += this->n_nodes*sizeof(float) + sizeof(unsigned long);
-        }
-
-        fprintf(fout, "   </PointData>\n");
-        fprintf(fout, "   <CellData>\n");
-        
-        // Writting element attribute data
-        if(epart)
-        {
-            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","epart",1, boffset);
-            boffset += (this->n_elements+this->n_face_elements)*sizeof(int) + sizeof(unsigned long);
-        }
-        if(color)
-        {
-            fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\"  NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","Color",1, boffset);
-            boffset += (this->n_elements+this->n_face_elements)*sizeof(int) + sizeof(unsigned long);
-        }
-
-        fprintf(fout, "   </CellData>\n");
-        fprintf(fout, "  </Piece>\n");
-        fprintf(fout, " </UnstructuredGrid>\n");
-        fprintf(fout, "  <AppendedData encoding=\"raw\">\n");
-        fprintf(fout, "_");
-
-        // writting nodes coordinates
-        unsigned long nbytes = sizeof(double)*this->n_nodes*3;
-        fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-        fwrite((void*)&this->coord[0], sizeof(double),this->n_nodes*3,fout);
-        
-        // writting element connectivity
-        nbytes = sizeof(int)*this->conn.size();
-        fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-        fwrite((void*)&this->conn[0], sizeof(int),this->conn.size(),fout);
-
-        // writting element offsets
-        nbytes = sizeof(int)*(this->offset.size()-1);
-        fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-        fwrite((void*)&this->offset[1], sizeof(int),this->offset.size()-1,fout);
-
-        // writting types
-        nbytes = sizeof(unsigned short)*(this->type.size());
-        fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-        fwrite((void*)&this->type[0], sizeof(unsigned short),this->type.size(),fout);
-
-        // Writing attribute data
-        if(npart)
-        {
-            nbytes = sizeof(int)*this->n_nodes;
-            fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-            fwrite((void*)npart,sizeof(int), this->n_nodes,fout);
-        }
-        if(velocity)
-        {
-            nbytes = sizeof(double)*3*this->n_nodes;
-            fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-            fwrite((void*)velocity,sizeof(double), 3*this->n_nodes,fout);
-        }
-        if(pressure)
-        {
-            nbytes = sizeof(float)*this->n_nodes;
-            fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-            fwrite((void*)pressure,sizeof(float), this->n_nodes,fout);
-        }
-        if(epart)
-        {
-            nbytes = sizeof(int)*(this->n_face_elements + this->n_elements);
-            fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-            fwrite((void*)epart,sizeof(int), this->n_face_elements + this->n_elements,fout);
-        }
-        if(color)
-        {
-            nbytes = sizeof(int)*(this->n_face_elements + this->n_elements);
-            fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-            int colorAux = -1; // cor dos elementos de superfície
-
-            for(int i = 0 ; i < this->n_face_elements ; i++)
-            {
-                fwrite((void*)&colorAux,sizeof(int),1, fout);
-            }
-
-            for(int i = 0 ; i < this->n_internal_colors ; i++)
-            {
-                for(int j = 0 ; j < color[i] ; j++)
-                {
-                    colorAux = i+1;
-                    fwrite((void*)&colorAux,sizeof(int),1, fout);
-                }
-            }
-        }
-
-    
-        fprintf(fout,"\n </AppendedData>\n");
-        fprintf(fout,"</VTKFile>");
-
-
-        fclose(fout);
-
-        std::cout << "Writing completed successfully\n";
+        fprintf(fout,"%-4d %-4d ", iel, this->physical_tag[iel+this->n_face_elements]);
+        unsigned int connsize = this->getElementConnSize(iel);
+        unsigned int *conn    = this->getElementConn(iel);
+        for(int i = 0; i < connsize; ++i)
+            fprintf(fout, "%-4d ", conn[i]);
+        fprintf(fout,"\n");
     }
+    fprintf(fout,"$END_ELEMENT DATA\n");
+    fclose(fout);
 }
-
-void Mesh::MeshVTKWriting(write_t writing)
-{
-    switch (writing)
-    {
-        case BINARY:
-            MeshVTKWriterInternalBinAppended(0, NULL, NULL, this->get_mesh_coloring_internal(),  NULL, NULL);
-            break;
-        case ASCII:
-            MeshVTKWriterInternal(0, NULL, NULL, this->get_mesh_coloring_internal(),  NULL, NULL);
-            break;
-    }
-}
-
 
 

@@ -128,6 +128,7 @@ void ApplyReorderMesh(Mesh *mesh, int *perm, int *iperm)
 {
     std::vector<double> newCoord;
     std::vector<double> &coordAux = mesh->getCoord();
+    std::vector<unsigned int>& node_index = mesh->getNodeIndexes();
     newCoord.resize(mesh->getCoord().size());
     std::cout << "  Applying reordering...\n";
 
@@ -135,7 +136,8 @@ void ApplyReorderMesh(Mesh *mesh, int *perm, int *iperm)
 #pragma ivdep
     for (unsigned int i = 0; i < mesh->get_n_nodes(); i++)
     {
-            newCoord[3 * i]      = coordAux[3 * perm[i]];
+            node_index[i]         = iperm[i];
+            newCoord[3 * i      ] = coordAux[3 * perm[i]];
             newCoord[(3 * i) + 1] = coordAux[(3 * perm[i]) + 1];
             newCoord[(3 * i) + 2] = coordAux[(3 * perm[i]) + 2];
     }
@@ -195,9 +197,6 @@ void MeshReorderingRCM(Mesh *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int *i
 {
     std::cout << "  Applyng RCM reordering\n";
     unsigned int nnodes = mesh->get_n_nodes();
-#ifdef DEBUG
-    WriteAIJ("adj_rcm.txt", nnodes, xadj, adjncy, 1);
-#endif
 
     genrcm(nnodes, xadj[nnodes], xadj, adjncy, perm);
     // função responsável por retornar o iperm a partir do numero de elementos permutados e do perm

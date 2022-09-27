@@ -1,10 +1,14 @@
-#ifndef C1D6AFE9_DE06_4F81_9D1F_8A4C41B5D464
-#define C1D6AFE9_DE06_4F81_9D1F_8A4C41B5D464
+#ifndef MESHTOOLS_H
+#define MESHTOOLS_H
 
 #include "meshtools_config.h"
 
 #if USE_MPI
 #include "mpi.h"
+#endif
+
+#ifdef PETSC_ENABLE
+#include "petsc.h"
 #endif
 
 #ifdef _OPENMP
@@ -17,16 +21,19 @@
 
 namespace MeshTools 
 {
-    static int processor_id;
-    static int n_processors;
 
-    void Init(int argc, char* argv[]);
-
+    void Init(int argc, char* argv[]);    
     void Finalize();
 
+    int& processor_id();
+    int& n_processors();
+
+    MPI_Comm Comm();    
+
     void Exit();
+
 }
 
 
 
-#endif /* C1D6AFE9_DE06_4F81_9D1F_8A4C41B5D464 */
+#endif /* MESHTOOLS_H */

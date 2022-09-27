@@ -6,10 +6,8 @@
 #include "meshtools.h"
 #include "mesh.h"
 #include "mesh_part.h"
-#include "alglin.h"
 #include "parallel_mesh.h"
 
-//#include "petsc.h"
 
 using namespace std;
 
@@ -58,12 +56,14 @@ int main(int argc, char* argv[])
     int processor_id = 0;
 
     MeshTools::Init(argc,argv);
+    processor_id = MeshTools::processor_id();
+    n_processors = MeshTools::n_processors();
 
     // Obrigatorio ter ao menos 3 argumentos:
     // ./meshtools -m <filename>
     if(argc < 3)
     {
-        if(MeshTools::processor_id==0) 
+        if(processor_id==0) 
             usage(argv[0]);
         MeshTools::Finalize();
         return 0;
@@ -129,17 +129,18 @@ int main(int argc, char* argv[])
 
     if(!flg_gmsh)
     {
-        if(MeshTools::processor_id==0) 
+        if(processor_id==0) 
             usage(argv[0]);
+
         MeshTools::Finalize();
         return 0;
     }
 
     Mesh             *mesh  = nullptr;
     ParallelMesh     *pmesh = nullptr;
-    Mesh_partition_t *parts = new Mesh_partition_t();
+    MeshPartition *parts = new MeshPartition();
 
-    if(MeshTools::processor_id == 0)
+    if(processor_id == 0)
     {
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha. 
@@ -152,27 +153,22 @@ int main(int argc, char* argv[])
     
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha
-        if(MeshTools::n_processors > 1 ) {
-            parts->MeshPartitionerInternal(mesh, MeshTools::n_processors);
+        if(n_processors > 1 ) {
+            parts->ApplyPartitioner(mesh,n_processors);
         }
     }
 
-    if(MeshTools::n_processors > 1 ) 
+    if(n_processors > 1 ) 
     {
         // Malha gerada pelo processo mestre é distribuida
         // para os demais processos. 
-        pmesh = parts->DistributedMeshInternal(mesh, processor_id, n_processors);
+        pmesh = parts->DistributedMesh(mesh);
+        
         std::string str(gmsh_filename);
         str.resize(str.length()-4);
-        pmesh->setFilename(str);
-
-        // Aplica em cada partição a coloração
-        pmesh->MeshColoring(color_alg, block_size);
-
-        //FiniteElementKernels::run(*pmesh);
 
         //Escreve partição na arquivo 
-        pmesh->writeParallelMesh();
+        pmesh->WritePMesh(str.c_str());
     }
     else
     {
@@ -181,10 +177,8 @@ int main(int argc, char* argv[])
         mesh->MeshColoring(color_alg, block_size);
 
         // Escreve a malha em arquivo.
-        if(flg_write)
-            mesh->MeshVTKWriting(writing);
-
-        //FiniteElementKernels::run(*mesh);
+        //if(flg_write)
+        //    mesh->MeshVTKWriting(writing);
 
     }
 

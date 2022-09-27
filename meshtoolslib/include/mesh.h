@@ -1,9 +1,47 @@
-#include <iostream>
-#include <map>
-#include <vector>
 
 #ifndef MESH_H__
 #define MESH_H__
+
+#include <iostream>
+#include <map>
+#include <vector>
+#include <string>
+
+#include "numeric_vector.h"
+
+using namespace std;
+
+
+typedef enum {EDGE2=3, TRI3=5, QUAD4=9, TET4=10, HEX8=12} MeshElementType;
+
+typedef enum {Int8=0, UInt8=1,Int32=2, UInt32=3, Float32=4,Float64=5} MeshDataType;
+static string MeshDataTypeSTR[6] = {"Int8","UInt8","Int32", "UInt32", "Float32","Float64"}; 
+
+typedef struct 
+{
+    string        name;
+    MeshDataType  type;
+    void          *data;
+
+} MeshIODataInfo;
+
+
+typedef MeshIODataInfo PointData;
+typedef MeshIODataInfo CellData;
+
+class MeshIODataAppended{
+    
+    public:
+        MeshIODataAppended();
+        void addPointDataInfo(const char* name, MeshDataType type, void *data_ptr);
+        void addCellDataInfo(const char* name, MeshDataType type, void *data_ptr);
+        std::vector<PointData>& GetPointDataInfo() { return list_point_data; };
+        std::vector<CellData>& GetCellDataInfo() { return list_cell_data;};
+    private:
+        std::vector<PointData> list_point_data;
+        std::vector<CellData>  list_cell_data;
+};
+
 
 typedef std::pair<int, std::string> physical_data_t;
 
@@ -20,6 +58,15 @@ class Mesh {
         */
 
         Mesh(const char* filename);
+        /**
+         * * OBJETIVO:
+         *     Construtor da classe Mesh, responsável por inicializar as variáveis e preencher
+         *     as informações da malha a partir do nome do arquivo chamando a função MeshGmshReader.
+         * * PARAMETROS:
+         * @param filename Nome do arquivo, formato msh, com os dados da malha.
+        */
+
+        Mesh(std::string filename);
         /**
          * * OBJETIVO:
          *     Construtor da classe Mesh, responsável por inicializar as variáveis e preencher
@@ -107,7 +154,7 @@ class Mesh {
          *     Referência a um vector do tipo unsigned short.
         */
 
-        std::vector<int>& get_physical_tag();
+        std::vector<int>& getPhysicalTag();
         /**
          * * OBJETIVO:
          *     Obter a array phyisical_tag a qual armazena as tags dos grupos físicos da malha.
@@ -125,7 +172,7 @@ class Mesh {
          *     Array do tipo int.
         */
 
-        std::map<int, physical_data_t> get_physical_map();
+        std::map<int, physical_data_t>& getPhysicalMap();
         /**
          * * OBJETIVO:
          *     Obter a variável phyisical_map a qual armazena o mapeamento dos grupos físicos da malha.
@@ -422,7 +469,7 @@ class Mesh {
          * @param velocity Array do tipo double com informações das velocidades da malha.
          * @param pressure Array do tipo float com informações das pressões da malha.
         */
-        void MeshVTKWriterInternal(int timeStep=0, int *nparts=NULL, int *epart=NULL, int* color=NULL, double* velocity=NULL, float* pressure=NULL);
+        //void MeshVTKWriterInternal(int timeStep=0, int *nparts=NULL, int *epart=NULL, int* color=NULL, double* velocity=NULL, float* pressure=NULL);
         /**
          * * OBJETIVO:
          *     Escrita da malha somente com elementos internos no formato VTK.
@@ -437,35 +484,12 @@ class Mesh {
          * @param pressure Array do tipo float com informações das pressões da malha.
         */
 
-        void MeshVTKWriterBinAppended(int timeStep=0, int* npart=NULL, int* epart=NULL, int* color=NULL, double* velocity=NULL, float* pressure=NULL);
-        /**
-         * * OBJETIVO:
-         *     Escrita da malha completa em binário, com elementos internos e de superfície, no formato VTK.
-         * 
-         * * PARAMETROS:
-         * @param timeStep Variável para criar uma sequência de arquivos a serem abertos no ParaView. 
-         *                 (Para gerar somente um arquivo da malha, inserir 0 no valor do timeStep)
-         * @param npart Array do tipo inteiro com as informações nodais de partição.
-         * @param epart Array do tipo inteiro com as informações elementares de partição.
-         * @param color Array do tipo inteiro com as informações de coloração dos elementos internos.
-         * @param velocity Array do tipo double com informações das velocidades da malha.
-         * @param pressure Array do tipo float com informações das pressões da malha.
-        */
-        void MeshVTKWriterInternalBinAppended(int timeStep=0, int* npart=NULL, int* epart=NULL, int* color=NULL, double* velocity=NULL, float* pressure=NULL);
-        /**
-         * * OBJETIVO:
-         *     Escrita da malha em binário somente com elementos internos no formato VTK.
-         * 
-         * * PARAMETROS:
-         * @param timeStep Variável para criar uma sequência de arquivos a serem abertos no ParaView.
-         *                 (Para gerar somente um arquivo da malha, inserir 0 no valor do timeStep)
-         * @param npart Array do tipo inteiro com as informações nodais de partição.
-         * @param epart Array do tipo inteiro com as informações elementares de partição.
-         * @param color Array do tipo inteiro com as informações de coloração dos elementos internos.
-         * @param velocity Array do tipo double com informações das velocidades da malha.
-         * @param pressure Array do tipo float com informações das pressões da malha.
-        */
 
+       std::vector<unsigned int>& getNodeIndexes()
+       {
+            return this->node_index;
+       }
+       
         void MeshReordering(reorder_t reorder);
         /**
          * * OBJETIVO:
@@ -490,23 +514,45 @@ class Mesh {
          * * OBJETIVO:
          *     Testar se a coloração calculada no algoritmo está correta.
         */
+       // TODO: remover
+       //void MeshVTKWriting(write_t writing);
 
-       void MeshVTKWriting(write_t writing);
+       void WriteVTK(const char* filename, MeshIODataAppended* info = nullptr);
+
+       void Write(const char* filename);
+
+
+       void extract_boundary_nodes(std::vector<int>& tag);
+
+
+       void get_element_coordinates(int element_id, std::vector<Point> &coordinates);
+
+       void get_element_connectivity(int element_id, std::vector<unsigned int> &connectivity);
+
 
     protected:
-        unsigned int n_face_elements;            // Numero de elementos de superficie.
-        unsigned int n_elements;                 // Numero de elementos internos.
-        unsigned int n_nodes;                    // Numero de nós.
-        std::vector<double> coord;               // Coordenadas nodais.
-        std::vector<unsigned int> conn;          // Conectividade dos elementos.
-        std::vector<unsigned int> offset;        // Mapeia a localização de cada elemento no array conn.
-        std::vector<unsigned short> type;        // Array indicando o tipo de cada elemento.
-        std::vector<int> physical_tag;           // Array indicando o physical tag de cada elemento.
+        unsigned int                n_face_elements;            // Numero de elementos de superficie.
+        unsigned int                n_elements;                 // Numero de elementos internos.
+        unsigned int                n_nodes;                    // Numero de nós.
+        std::vector<double>         coord;                      // Coordenadas nodais.
+        std::vector<unsigned int>   conn;                       // Conectividade dos elementos.
+        std::vector<unsigned int>   offset;                     // Mapeia a localização de cada elemento no array conn.
+        std::vector<unsigned short> type;                       // Array indicando o tipo de cada elemento.
+        std::vector<int>            physical_tag;               // Array indicando o physical tag de cada elemento.
+        std::vector<int>            boundary_nodes;
+        std::vector<unsigned int>   node_index;                 // Array indicando o índice de cada nó.
+
+        std::map<int, physical_data_t>  physical_map;
+        unsigned int dim;                                       // Dimensão da malha.
+        
+        // TODO: remover 
+        std::string filename;                    // Nome do arquvios de entrada de tipo msh
+#ifdef HAVE_HDF5
+        void write_hdf5(const char* filename, MeshIOData* append)
+#endif
+        // TODO: Criar uma classe para Coloração
         int* mesh_coloring_internal;             // Array indicando as cores dos elementos.
         unsigned int n_internal_colors;          // Número total de cores dos elementos internos da malha.
-        std::map<int, physical_data_t>  physical_map;
-        unsigned int dim;                        // Dimensão da malha.
-        std::string filename;                    // Nome do arquvios de entrada de tipo msh
 };
 
 #endif // MESH_H

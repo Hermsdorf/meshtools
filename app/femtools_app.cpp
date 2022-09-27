@@ -1,8 +1,9 @@
+#include <iostream>
+using namespace std;
 
-#include "meshtools.h"
-
-
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
-    return 0;
+   std::cout << "FemTools app: \n";
+   std::cout << "  Please see sample code in test/finite_element folder!" << std::endl;
+   return 0;
 }

@@ -1,5 +1,5 @@
-#ifndef FEADAPTOR_HEADER
-#define FEADAPTOR_HEADER
+#ifndef FEADAPTOR_H
+#define FEADAPTOR_H
 
 #include "mesh.h"
 #include "meshtools_config.h"
@@ -19,4 +19,4 @@ void CatalystCoProcess(Mesh* mesh, double* velocityData, float* pressureData, do
 }
 #endif
 #endif
-#endif
+#endif /* FEADAPTOR_H */
