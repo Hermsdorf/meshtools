@@ -46,7 +46,7 @@ class MeshIODataAppended{
 typedef std::pair<int, std::string> physical_data_t;
 
 typedef enum {METIS_ND=0, RCM, FF} reorder_t;
-typedef enum {COLOR_DEFAULT=0, COLOR_DEFAULT_BLOCK, COLOR_ROKOS, COLOR_ROKOS_BLOCK} color_mode_t;
+typedef enum {COLOR_DEFAULT=0, COLOR_DEFAULT_BLOCK} color_mode_t;
 typedef enum {BINARY=0, ASCII} write_t;
 
 class Mesh {
@@ -109,7 +109,7 @@ class Mesh {
         */
 
         
-        unsigned int get_n_internal_colors();
+        unsigned int get_n_colors();
         /**
          * * OBJETIVO:
          *     Obter o número total de cores dos elementos internas da malha.
@@ -163,7 +163,7 @@ class Mesh {
          *     Referência a um vector do tipo int.
         */
 
-        int* get_mesh_coloring_internal();
+        std::vector<unsigned int>& getColoring();
         /**
          * * OBJETIVO:
          *     Obter a a array mesh_coloring_internal que armazena as cores dos elementos internos da malha.
@@ -374,16 +374,7 @@ class Mesh {
          * @param phyisical_tag Vector do tipo int com as novas informações de phyisical tag da malha.
         */
 
-        void set_mesh_coloring_internal(int* mesh_coloring_internal);
-        /**
-         * * OBJETIVO:
-         *     Alterar o array de cores da malha.
-         * 
-         * * PARAMETROS:
-         * @param mesh_coloring_internal Array do tipo int* com a nova informação de coloração dos elementos internos da malha.
-        */
-
-        void set_n_internal_colors(unsigned int n_internal_colors);
+        void set_n_colors(unsigned int n_colors);
         /**
          * * OBJETIVO:
          *     Alterar o número total de cores nos elementos internos da malha.
@@ -551,8 +542,9 @@ class Mesh {
         void write_hdf5(const char* filename, MeshIOData* append)
 #endif
         // TODO: Criar uma classe para Coloração
-        int* mesh_coloring_internal;             // Array indicando as cores dos elementos.
-        unsigned int n_internal_colors;          // Número total de cores dos elementos internos da malha.
+        //int* mesh_coloring_internal;            // Array indicando as cores dos elementos.
+        std::vector<unsigned int> coloring;
+        unsigned int              n_colors;       // Número total de cores dos elementos internos da malha.
 };
 
 #endif // MESH_H

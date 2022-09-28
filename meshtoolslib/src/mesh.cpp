@@ -11,8 +11,8 @@ Mesh::Mesh()
     this->n_elements      = 0;
     this->n_nodes         = 0; 
     this->dim             = 0;
-    this->mesh_coloring_internal = nullptr;
-    this->n_internal_colors = 0;
+    //this->mesh_coloring_internal = nullptr;
+    this->n_colors = 0;
 }
 
 Mesh::Mesh(const char* filename)
@@ -21,8 +21,8 @@ Mesh::Mesh(const char* filename)
     this->n_elements = 0;
     this->n_nodes = 0; 
     this->dim = 0;
-    this->mesh_coloring_internal = nullptr;
-    this->n_internal_colors = 0;
+    //this->mesh_coloring_internal = nullptr;
+    this->n_colors = 0;
     MeshGmshReader(filename);
 }
 
@@ -34,8 +34,8 @@ Mesh::Mesh(std::string filename)
     this->n_elements = 0;
     this->n_nodes = 0; 
     this->dim = 0;
-    this->mesh_coloring_internal = nullptr;
-    this->n_internal_colors = 0;
+    //this->mesh_coloring_internal = nullptr;
+    this->n_colors = 0;
     MeshGmshReader(filename_converted);
 }
 
@@ -48,9 +48,10 @@ Mesh::~Mesh()
     this->physical_tag.clear();
     this->physical_map.clear();
     this->filename.clear();
+    this->coloring.clear();
 
-    if(this->mesh_coloring_internal)
-        delete [] this->mesh_coloring_internal;
+    //if(this->mesh_coloring_internal)
+    //    delete [] this->mesh_coloring_internal;
 }
 
 unsigned int Mesh::get_n_face_elements()
@@ -68,9 +69,9 @@ unsigned int Mesh::get_n_nodes()
     return this->n_nodes;
 }
 
-unsigned int Mesh::get_n_internal_colors()
+unsigned int Mesh::get_n_colors()
 {
-    return this->n_internal_colors;
+    return this->n_colors;
 }
 
 std::vector<double>& Mesh::getCoord()
@@ -98,9 +99,9 @@ std::vector<int>& Mesh::getPhysicalTag()
     return this->physical_tag;
 }
 
-int* Mesh::get_mesh_coloring_internal()
+std::vector<unsigned int>& Mesh::getColoring()
 {
-    return this->mesh_coloring_internal;
+    return this->coloring;
 }
 
 std::map<int, physical_data_t>& Mesh::getPhysicalMap()
@@ -179,14 +180,9 @@ void Mesh::set_physical_tag(std::vector<int> &physical_tag)
     std::copy(physical_tag.begin(), physical_tag.end(), this->physical_tag.begin());
 }
 
-void Mesh::set_mesh_coloring_internal(int* mesh_coloring_internal)
+void Mesh::set_n_colors(unsigned int n_colors)
 {
-    this->mesh_coloring_internal = mesh_coloring_internal;
-}
-
-void Mesh::set_n_internal_colors(unsigned int n_internal_colors)
-{
-    this->n_internal_colors = n_internal_colors;
+    this->n_colors = n_colors;
 }
 
 void Mesh::set_physical_map(std::map<int, physical_data_t> &physical_map)

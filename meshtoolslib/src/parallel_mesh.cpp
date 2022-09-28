@@ -12,7 +12,7 @@ ParallelMesh::ParallelMesh()
     this->n_elements                 = 0;
     this->n_nodes                    = 0;
     this->internal_mesh              = false;
-    this->mesh_coloring_internal     = nullptr;
+    //this->mesh_coloring_internal     = nullptr;
     this->processor_id               = MeshTools::processor_id();
     this->n_processors               = MeshTools::n_processors();
     this->n_global_elements          = 0;

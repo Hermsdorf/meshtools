@@ -10,12 +10,12 @@ class NumericVector {
     public:
         NumericVector();
         T&               operator()(int i);
-        T                operator*(NumericVector<T>& v);
-        T                operator*=(NumericVector<T>& v);
-        NumericVector<T> operator+(NumericVector<T>& v);
-        NumericVector<T> operator+=(NumericVector<T>& v);
-        NumericVector<T> operator-(NumericVector<T>& v);
-        NumericVector<T> operator-=(NumericVector<T>& v);
+        T                operator*(NumericVector<T> v);
+        T                operator*=(NumericVector<T> v);
+        NumericVector<T> operator+(NumericVector<T> v);
+        NumericVector<T> operator+=(NumericVector<T> v);
+        NumericVector<T> operator-(NumericVector<T> v);
+        NumericVector<T> operator-=(NumericVector<T> v);
         T                norm();
         //friend ostream& operator<<(ostream& os, const NumericVector<T>& v);
         ~NumericVector();
@@ -49,7 +49,7 @@ NumericVector<T>::~NumericVector() {
 
 
 template <typename T>
-T NumericVector<T>::operator*(NumericVector<T>& v) {
+T NumericVector<T>::operator*(NumericVector<T> v) {
     T result = 0;
     for (int i = 0; i < 3; i++) {
         result += data[i] * v.data[i];
@@ -58,7 +58,7 @@ T NumericVector<T>::operator*(NumericVector<T>& v) {
 }
 
 template <typename T>
-T NumericVector<T>::operator*=(NumericVector<T>& v) {
+T NumericVector<T>::operator*=(NumericVector<T> v) {
     T result = 0;
     for (int i = 0; i < 3; i++) {
         result += data[i] * v.data[i];
@@ -67,7 +67,7 @@ T NumericVector<T>::operator*=(NumericVector<T>& v) {
 }
 
 template <typename T>
-NumericVector<T> NumericVector<T>::operator+(NumericVector<T>& v) 
+NumericVector<T> NumericVector<T>::operator+(NumericVector<T> v) 
 {
     NumericVector<T> result;
     for (int i = 0; i < 3; i++) {
@@ -77,7 +77,7 @@ NumericVector<T> NumericVector<T>::operator+(NumericVector<T>& v)
 }
 
 template <typename T>
-NumericVector<T> NumericVector<T>::operator+=(NumericVector<T>& v)
+NumericVector<T> NumericVector<T>::operator+=(NumericVector<T> v)
 {
     NumericVector<T> result;
     for (int i = 0; i < 3; i++) {
@@ -87,7 +87,7 @@ NumericVector<T> NumericVector<T>::operator+=(NumericVector<T>& v)
 }
 
 template <typename T>
-NumericVector<T> NumericVector<T>::operator-(NumericVector<T>& v) 
+NumericVector<T> NumericVector<T>::operator-(NumericVector<T> v) 
 {
     NumericVector<T> result;
     for (int i = 0; i < 3; i++) {
@@ -97,7 +97,7 @@ NumericVector<T> NumericVector<T>::operator-(NumericVector<T>& v)
 }
 
 template <typename T>
-NumericVector<T> NumericVector<T>::operator-=(NumericVector<T>& v) 
+NumericVector<T> NumericVector<T>::operator-=(NumericVector<T> v) 
 {
     NumericVector<T> result;
     for (int i = 0; i < 3; i++) {

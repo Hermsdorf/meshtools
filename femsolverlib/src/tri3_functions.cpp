@@ -20,6 +20,7 @@
 using namespace std;
 
 #include "numeric_vector.h"
+#include "tensor.h"
 
 
 //  This function computes the quadrature points and weights for a
@@ -109,8 +110,8 @@ void TRI3ComputeFunctions( RealVector q_point, double qw, std::vector<Point> coo
     JxW = qw*detJ;
 }
 
-/*
-void TRI3Stab( RealVector q_point, std::vector<Point> coords, NumericVector<double> &g,  DenseMatrix<double> &G, double &JxW)
+
+void TRI3Stab(RealVector q_point, std::vector<Point> coords, RealVector &g,  RealTensor &G)
 {
     double dpsi[2][3];
     double dxidx = 0.0, dxidy=0.0;
@@ -118,23 +119,31 @@ void TRI3Stab( RealVector q_point, std::vector<Point> coords, NumericVector<doub
     double x[3], y[3];
    
     TRI3DShape(q_point,dpsi);
-    for(int i=0; i<3; i++)
+    for(int i=0; i<coords.size(); i++)
     {
         x[i] = X(i);
         y[i] = Y(i);
 
-        dxidx +=  x[i]*dpsi[0][i]; // dxi/dx
-        dxidy +=  y[i]*dpsi[0][i]; // dxi/dy
-        detadx +=  x[i]*dpsi[1][i]; // deta/dx
-        detady +=  y[i]*dpsi[1][i]; // deta/dy
+        dxidx  +=  x[i]*dpsi[0][i];  // dxi/dx
+        dxidy  +=  y[i]*dpsi[0][i];  // dxi/dy
+        detadx +=  x[i]*dpsi[1][i];  // deta/dx
+        detady +=  y[i]*dpsi[1][i];  // deta/dy
     }
 
     g(0) = dxidx + detadx;
     g(1) = dxidy + detady;
 
-    G(0,0) = dxidx*dxidx + detadx*detadx;
+    G(0,0)          = dxidx*dxidx + detadx*detadx;
     G(0,1) = G(1,0) = dxidx*dxidy + detadx*detady;
-    G(1,1) = dxidy*dxidy + detady*detady;
+    G(1,1)          = dxidy*dxidy + detady*detady;
    
 }
-*/
+
+// Real compute_tau_M(RealGradient g, RealTensor G, Gradient U, Real k, Real dt, Real dt_stab)
+// {
+//     Real tau = (U)*(G*U) + (k*k)*(G.contract(G)) + dt_stab*4.0/(dt*dt);
+//     return 1.0/std::sqrt(tau);
+    
+// }
+
+

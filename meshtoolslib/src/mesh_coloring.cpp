@@ -81,15 +81,15 @@ void CheckColoring(idx_t** xadj, idx_t** adjncy, int** elements_color, int ne, i
     }
 }
 
-void UpdateMeshArrays(Mesh* mesh, unsigned int*& new_conn, unsigned int*& new_offset, unsigned short*& new_type)
+void UpdateMeshArrays(Mesh* mesh, std::vector<unsigned int>& elememts_color, std::vector<unsigned int>& new_conn, std::vector<unsigned int>& new_offset, std::vector<unsigned short>& new_type)
 {
     unsigned int ne       = mesh->get_n_elements();
     unsigned int nfe      = mesh->get_n_face_elements();
-    unsigned int n_colors = mesh->get_n_internal_colors();
-    int* mesh_coloring    = mesh->get_mesh_coloring_internal();
+    unsigned int n_colors = mesh->get_n_colors();
+    std::vector<unsigned int>& coloring    = mesh->getColoring();
 
     unsigned int* start_elem_offset = mesh->getElementOffset(0);
-    unsigned int* end_elem_offset = mesh->getElementOffset(ne);
+    unsigned int* end_elem_offset   = mesh->getElementOffset(ne);
     int loopsize = nfe + ne;
 
     for(unsigned int i = nfe, j = 0 ; i <= loopsize ; i++, j++)
@@ -110,32 +110,28 @@ void UpdateMeshArrays(Mesh* mesh, unsigned int*& new_conn, unsigned int*& new_of
         mesh->setTypePosition(value_type, i);
     }
 
-    int* mesh_coloringAux = new int [n_colors];
-    
-    std::fill(&mesh_coloringAux[0], &mesh_coloringAux[n_colors], 0);
+
+    coloring.resize(n_colors);
+    std::fill(coloring.begin(), coloring.end(), 0);
 
     for(unsigned int i = 0 ; i < ne ; i++)
     {
-        mesh_coloringAux[mesh_coloring[i]-1]++;
+        coloring[elememts_color[i]-1]++;
     }
-
-    if(mesh->get_mesh_coloring_internal())
-        delete [] mesh->get_mesh_coloring_internal();
-    mesh->set_mesh_coloring_internal(mesh_coloringAux);
 
 }
 
-void ReorderElements(Mesh* mesh, unsigned int* sort, unsigned int*& new_conn, unsigned int*& new_offset, unsigned short*& new_type)
+void ReorderElements(Mesh* mesh, std::vector<unsigned int>& sort, std::vector<unsigned int>& new_conn, std::vector<unsigned int>& new_offset, std::vector<unsigned short>& new_type)
 {
     unsigned int ne           = mesh->get_n_elements();
     unsigned int nfe          = mesh->get_n_face_elements();
     unsigned int* elem_offset = mesh->getElementOffset(0);
-    std::vector<unsigned int> &connAux = mesh->getConn();
+    std::vector<unsigned int>   &connAux = mesh->getConn();
     std::vector<unsigned short> &typeAux = mesh->getType();
 
-    new_conn = new unsigned int [mesh->getOffset().back() - elem_offset[0]];
-    new_offset = new unsigned int [ne + 1];
-    new_type = new unsigned short [ne];
+    new_conn.resize(mesh->getOffset().back() - elem_offset[0]);
+    new_offset.resize(ne + 1);
+    new_type.resize(ne);
 
     unsigned int count_conn = 0;
     unsigned int count_type = 0;
@@ -151,7 +147,7 @@ void ReorderElements(Mesh* mesh, unsigned int* sort, unsigned int*& new_conn, un
         new_offset[count_offset] = new_offset[count_offset - 1] + (end-start);
         count_offset++;
         
-        new_type[count_type] = typeAux[nfe + sort[i]];
+        new_type[count_type]    = typeAux[nfe + sort[i]];
         count_type++;
 
         for(unsigned int j = start ; j < end ; j++)
@@ -162,11 +158,12 @@ void ReorderElements(Mesh* mesh, unsigned int* sort, unsigned int*& new_conn, un
     }
 }
 
-void CreateSort(Mesh* mesh, unsigned int* sort)
+/*
+void CreateSort(Mesh* mesh,std::vector<unsigned int>& sort)
 {
     unsigned int ne           = mesh->get_n_elements();
     unsigned int aux_n_colors = mesh->get_n_internal_colors();
-    int* mesh_coloring        = mesh->get_mesh_coloring_internal();
+    std::vector<unsigned int> = mesh->getColoring();
 
     unsigned int count = 0;
 
@@ -174,7 +171,7 @@ void CreateSort(Mesh* mesh, unsigned int* sort)
     {
         for(unsigned int j = 0 ; j < ne ; j++)
         {
-            if(mesh_coloring[j] == i)
+            if(coloring[j] == i)
             {
                 sort[count] = j;
                 count++;
@@ -182,6 +179,7 @@ void CreateSort(Mesh* mesh, unsigned int* sort)
         }
     }
 }
+*/
 
 void DecreasingAdj(Mesh* mesh, idx_t** xadj, idx_t** adjncy, int** sequence)
 {
@@ -224,6 +222,7 @@ void DecreasingAdj(Mesh* mesh, idx_t** xadj, idx_t** adjncy, int** sequence)
     std::cout << "  Adjacencies calculated succesfully\n";
 }
 
+/*
 unsigned int ColoringOpenMP_RokosOpt(Mesh* mesh)
 {
     idx_t* xadj;
@@ -344,29 +343,29 @@ unsigned int ColoringOpenMP_RokosOpt(Mesh* mesh)
 
     return n_colors;
 } 
+*/
 
-unsigned int ColoringAutoralOpt(Mesh* mesh, unsigned int *sort_internal)
+unsigned int Coloring(Mesh* mesh, std::vector<unsigned int> &elements_color,std::vector<unsigned int>& sort)
 { 
-    int n_nodes             = mesh->get_n_nodes();
-    unsigned int nelem      = mesh->get_n_elements();
-    unsigned int nsurf_elem = mesh->get_n_face_elements();
-    int* elements_color     = mesh->get_mesh_coloring_internal();
-    int* conn_proibido      = new int [n_nodes];
+    int n_nodes                           = mesh->get_n_nodes();
+    unsigned int nelem                    = mesh->get_n_elements();
+    unsigned int nsurf_elem               = mesh->get_n_face_elements();
+    elements_color.resize(nelem);
+    std::vector<unsigned short> conn_proibido(n_nodes);
 
     int nelem_colored       = 0;
 
-    std::memset(elements_color,-1,nelem*sizeof(int));
+    std::memset(elements_color.data(),0,nelem*sizeof(int));
 
     int color = 1;
-
-    std::memset(conn_proibido,0, n_nodes*sizeof(int));
+    std::memset(conn_proibido.data(),0, n_nodes*sizeof(unsigned short));
 
     int istart = 0;
     while(nelem_colored < nelem) 
     {
         for(int iel = istart; iel < nelem ; ++iel)
         {
-            if(elements_color[iel] == -1)
+            if(elements_color[iel] == 0)
             {
                 unsigned int* conn_elem = mesh->getElementConn(iel);
                 unsigned int connsize = mesh->getElementConnSize(iel);
@@ -378,7 +377,7 @@ unsigned int ColoringAutoralOpt(Mesh* mesh, unsigned int *sort_internal)
                 if(sum == 0)
                 {
                     elements_color[iel] = color;
-                    sort_internal[nelem_colored] = iel;
+                    sort[nelem_colored] = iel;
                     nelem_colored++;
                     if(iel == istart)
                         istart++;
@@ -389,15 +388,14 @@ unsigned int ColoringAutoralOpt(Mesh* mesh, unsigned int *sort_internal)
         }
         
         color++;
-
-        std::memset(conn_proibido,0, n_nodes*sizeof(int));
+        std::memset(conn_proibido.data(),0, n_nodes*sizeof(unsigned short));
 
     }
 
-    delete [] conn_proibido;
     return color-1;
 }
 
+/*
 unsigned int ColoringAutoral(Mesh* mesh, unsigned int* sort_internal)
 { 
 
@@ -446,25 +444,25 @@ unsigned int ColoringAutoral(Mesh* mesh, unsigned int* sort_internal)
     delete [] conn_proibido;
     return color-1;
 }
+*/
 
 
-unsigned int ColoringAutoralLimit(Mesh* mesh, unsigned int* sort_internal, int block_size) 
+unsigned int BlockedColoring(Mesh* mesh, std::vector<unsigned int> &elements_color,std::vector<unsigned int>& sort, int block_size) 
 { 
     
     int n_nodes             = mesh->get_n_nodes();
     unsigned int nelem      = mesh->get_n_elements();
     unsigned int nsurf_elem = mesh->get_n_face_elements();
-    int* elements_color     = mesh->get_mesh_coloring_internal();
+    elements_color.resize(nelem);
 
     int nelem_colored            = 0;
     int color                    = 1;
     unsigned int nelem_thiscolor = 0;
     unsigned int max_nelem       = block_size; // numero maximo de elementos por cor
-    int* conn_proibido           = new int [n_nodes];
+    std::vector<unsigned short> conn_proibido(n_nodes);
 
-    std::memset(elements_color, -1, nelem*sizeof(int));
-     
-    std::memset(conn_proibido, 0, n_nodes*sizeof(int));
+    std::fill(elements_color.begin(), elements_color.end(), 0);
+    std::fill(conn_proibido.begin(), conn_proibido.end(), 0);
 
     int istart = 0;
     while(nelem_colored < nelem) 
@@ -473,7 +471,7 @@ unsigned int ColoringAutoralLimit(Mesh* mesh, unsigned int* sort_internal, int b
         for(int iel = istart ; iel < nelem ; ++iel)
         {
             // se o elemento nao estiver colorido, tenta colorir
-            if(elements_color[iel] == -1)
+            if(elements_color[iel] == 0)
             {
                 unsigned int* conn_elem = mesh->getElementConn(iel);
                 unsigned int connsize   = mesh->getElementConnSize(iel);
@@ -485,8 +483,8 @@ unsigned int ColoringAutoralLimit(Mesh* mesh, unsigned int* sort_internal, int b
                 // nenhuma conectividade proibida, logo colore o elemento
                 if(sum == 0)
                 {
-                    elements_color[iel] = color;
-                    sort_internal[nelem_colored] = iel;
+                    elements_color[iel]          = color;
+                    sort[nelem_colored]          = iel;
 
                     //cont++;
                     nelem_colored++;
@@ -509,10 +507,9 @@ unsigned int ColoringAutoralLimit(Mesh* mesh, unsigned int* sort_internal, int b
         if(!nelem_reachlimit)
             color++;
 
-        std::fill(conn_proibido, conn_proibido+n_nodes, 0);
+        std::fill(conn_proibido.begin(), conn_proibido.end(), 0);
     }
 
-    delete [] conn_proibido;
     return color-1;
 }
 
@@ -520,38 +517,26 @@ void Mesh::MeshColoring(color_mode_t color_mode, int block_size)
 {
     std::cout << "Starting mesh coloring...\n";
     
-    unsigned int* sort_internal = new unsigned int [n_elements];
-    unsigned int* new_conn;
-    unsigned int* new_offset;
-    unsigned short* new_type;
+    std::vector<unsigned int>   sort(n_elements);
+    std::vector<unsigned int>   elements_color(n_elements);
+    std::vector<unsigned int>   new_conn;
+    std::vector<unsigned int>   new_offset;
+    std::vector<unsigned short> new_type;
 
-    if(this->mesh_coloring_internal == nullptr) 
-        this->mesh_coloring_internal = new int[n_elements];
-    std::fill(this->mesh_coloring_internal,this->mesh_coloring_internal+n_elements, -1);
-    
     switch (color_mode)
     {
-    case COLOR_DEFAULT:
-        std::cout << "  Applying Greedy algorithm...\n";
-        this->n_internal_colors = ColoringAutoralOpt(this, sort_internal);
-        break;
-    case COLOR_DEFAULT_BLOCK:
-        std::cout << "  Applying Blocked algorithm with "<< block_size << " elements per color...\n";
-        this->n_internal_colors = ColoringAutoralLimit(this, sort_internal, block_size);
-        break;
-    case COLOR_ROKOS:
-        std::cout << "  Applying Rokos algorithm...\n";
-        this->n_internal_colors = ColoringOpenMP_RokosOpt(this);
-        CreateSort(this, sort_internal);
-        break;
-    default:
-        std::cout << "  Applying Blocked algorithm with "<< block_size << " elements per color...\n";
-        this->n_internal_colors = ColoringAutoralLimit(this, sort_internal, block_size);
-        break;
+        case COLOR_DEFAULT:
+            std::cout << "  Applying Greedy algorithm...\n";
+            this->n_colors = Coloring(this, elements_color, sort);
+            break;
+        default:
+            std::cout << "  Applying Blocked algorithm with "<< block_size << " elements per color...\n";
+            this->n_colors = BlockedColoring(this, elements_color, sort, block_size);
+            break;
     }
 
-    ReorderElements(this, sort_internal, new_conn, new_offset, new_type);
-    UpdateMeshArrays(this, new_conn, new_offset, new_type);
+    ReorderElements(this, sort, new_conn, new_offset, new_type);
+    UpdateMeshArrays(this, elements_color, new_conn, new_offset, new_type);
 
 #ifdef DEBUG
     std::cout << "  # elements per color: \n";
@@ -561,14 +546,12 @@ void Mesh::MeshColoring(color_mode_t color_mode, int block_size)
         if((i+1)%12==0) std::cout << std::endl;
     }
 #endif
-    std::cout << "\n  # n colors: " << n_internal_colors << "\n";
+    std::cout << "\n  # n colors: " << n_colors << "\n";
     std::cout << "\nFinished mesh coloring...\n";
 
-    delete [] sort_internal;
-    delete [] new_conn;
-    delete [] new_offset; 
 }
 
+/*
 void Mesh::MeshColoring_test()
 {
     idx_t* xadj;
@@ -584,4 +567,5 @@ void Mesh::MeshColoring_test()
         std::cout << "Coloring test mesh completed\n";
     }
 }
+*/
 
