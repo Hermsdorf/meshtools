@@ -1,4 +1,7 @@
 
+#ifndef IMPLICIT_SYSTEM_H
+#define IMPLICIT_SYSTEM_H
+
 #include "equation_manager.h"
 #include "petsc.h"
 
@@ -26,10 +29,11 @@ class ImplicitSystem
         void    print_matrix();
         void    print_rhs();
 
-        ParallelMesh& get_mesh();
+        const ParallelMesh& get_mesh();
         EquationManager& get_equation_manager();
         
-        //void assemble();
+        void   attach_assemble(void _assemble(ImplicitSystem*) );
+        
         void   solve();
 
         ~ImplicitSystem();
@@ -45,5 +49,12 @@ class ImplicitSystem
         EquationManager          _equations;
         ParallelMesh&            _mesh;
         VecScatter               _scatter;
+        void   solve_linear_system();
+        
+    private:
+
+        void (* _assemble_function)(ImplicitSystem*  _system);
 
 };
+
+#endif

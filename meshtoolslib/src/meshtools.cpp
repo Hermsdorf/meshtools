@@ -64,4 +64,14 @@ MPI_Comm Comm()
     return _mpi_comm;
 }
 
+void Printf(const char format[],...)
+{
+    if (_processor_id == 0) {
+        va_list Argp;
+        va_start(Argp, format);
+        fprintf(stdout, format, Argp);
+        va_end(Argp);
+     }
+}
+
 }

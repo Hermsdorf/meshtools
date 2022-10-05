@@ -6,7 +6,7 @@ using namespace std;
 #include "meshtools.h"
 
 ImplicitSystem::ImplicitSystem(ParallelMesh &mesh, std::string name):
-    _mesh(mesh), _system_name(name), _n_dof(0), _equations(mesh)
+    _mesh(mesh), _system_name(name), _n_dof(0), _equations(mesh), _assemble_function(nullptr)
     {
 
     }   
@@ -92,6 +92,9 @@ void ImplicitSystem::init()
     ISDestroy(&is_local);
     ISDestroy(&is_global);
 
+    VecSet(this->_solution, 0.0);
+    VecSet(this->_solution_local, 0.0);
+
     // Create the KSP solver
     KSPCreate(MeshTools::Comm(), &this->_ksp);
     KSPSetOperators(this->_ksp, this->_A, this->_A);
@@ -120,7 +123,13 @@ ImplicitSystem::~ImplicitSystem()
 
 void ImplicitSystem::solve()
 {
+    this->_assemble_function(this);
+    solve_linear_system();
+}
 
+
+void ImplicitSystem::solve_linear_system()
+{
     MatAssemblyBegin(_A,MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(_A, MAT_FINAL_ASSEMBLY);
     VecAssemblyBegin(this->_rhs);
@@ -310,7 +319,12 @@ void ImplicitSystem::write_vtk(string filename)
 }
 
 
-ParallelMesh& ImplicitSystem::get_mesh()
+const ParallelMesh& ImplicitSystem::get_mesh()
 {
     return this->_mesh;
+}
+
+void ImplicitSystem::attach_assemble(void _assemble(ImplicitSystem* _system))
+{
+    this->_assemble_function = _assemble;
 }

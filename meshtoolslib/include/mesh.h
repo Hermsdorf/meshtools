@@ -49,6 +49,22 @@ typedef enum {METIS_ND=0, RCM, FF} reorder_t;
 typedef enum {COLOR_DEFAULT=0, COLOR_DEFAULT_BLOCK} color_mode_t;
 typedef enum {BINARY=0, ASCII} write_t;
 
+class Mesh;
+class Element
+{
+    friend class Mesh;
+    public:
+        Element();
+        std::vector<unsigned int> & Connectivity();
+        std::vector<Point>        & Points();
+        unsigned short            & type();
+    private:
+        std::vector<unsigned int> _conn;
+        std::vector<Point>        _coords;
+        unsigned short            _type;
+};
+
+
 class Mesh {
     public:
         Mesh();
@@ -520,6 +536,8 @@ class Mesh {
 
        void get_element_connectivity(int element_id, std::vector<unsigned int> &connectivity);
 
+       void getElement(int element_id, Element& elem);
+
 
     protected:
         unsigned int                n_face_elements;            // Numero de elementos de superficie.
@@ -541,8 +559,6 @@ class Mesh {
 #ifdef HAVE_HDF5
         void write_hdf5(const char* filename, MeshIOData* append)
 #endif
-        // TODO: Criar uma classe para Coloração
-        //int* mesh_coloring_internal;            // Array indicando as cores dos elementos.
         std::vector<unsigned int> coloring;
         unsigned int              n_colors;       // Número total de cores dos elementos internos da malha.
 };

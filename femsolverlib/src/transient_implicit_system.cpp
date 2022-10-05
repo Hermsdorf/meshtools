@@ -5,16 +5,19 @@
 TransientImplicitSystem::TransientImplicitSystem(ParallelMesh &mesh, std::string name):
     ImplicitSystem(mesh, name)
     {
-
+        _t = 0.0;
+        _dt = 0.0;
     }
 
 void TransientImplicitSystem::init()
 {
     
     ImplicitSystem::init();
-    apply_initial_conditions();
     VecDuplicate(_solution_local, &_old_solution_local);
     VecDuplicate(_solution_local, &_older_solution_local);
+
+    apply_initial_conditions();
+
     timestep = 0;
 }
 
@@ -42,12 +45,23 @@ void TransientImplicitSystem::restore_older_solution_array(double** solution_arr
     VecRestoreArray(this->_older_solution_local, solution_array);
 }
 
-void TransientImplicitSystem::solve()
+void TransientImplicitSystem::solve_time_step()
 {
-    ImplicitSystem::solve();
+    _t += _dt;
     VecCopy(_old_solution_local, _older_solution_local);
     VecCopy(_solution_local, _old_solution_local);
+
+    this->_assemble_function(this);
+
+    // getting solution at t+dt
+    ImplicitSystem::solve_linear_system();
     timestep++;
+    update_time_step();
+}
+
+void TransientImplicitSystem::update_time_step()
+{
+    //TODO: Implement timestep control based on CFL condition
 }
 
 void TransientImplicitSystem::add_initial_condition(InitialCondition ic)
@@ -86,14 +100,20 @@ void TransientImplicitSystem::apply_initial_conditions()
         auto region_id = _initial_conditions[i].get_region_id();
         for(auto it    = nodelist[i].begin(); it != nodelist[i].end(); it++)
         {
-            double     x = coords[*it*3];
-            double     y = coords[*it*3+1];
-            double     z = coords[*it*3+2];
+            int  node_id = *it;
+            double     x = coords[node_id*3];
+            double     y = coords[node_id*3+1];
+            double     z = coords[node_id*3+2];
             double     value = _initial_conditions[i].get_value(x,y,z,0);
-            solution[*it*_n_dof + dof_id] = value;
+            solution[node_id*_n_dof + dof_id] = value;
         }
     }
     this->restore_local_solution_array(&solution);
 }
 
+
+void TransientImplicitSystem::attach_assemble(void _assemble(TransientImplicitSystem*))
+{
+    _assemble_function = _assemble;
+}
 

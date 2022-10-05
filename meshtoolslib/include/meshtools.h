@@ -1,6 +1,8 @@
 #ifndef MESHTOOLS_H
 #define MESHTOOLS_H
 
+
+#include "GetPot.hpp"
 #include "meshtools_config.h"
 
 #if USE_MPI
@@ -24,6 +26,7 @@ namespace MeshTools
 
     void Init(int argc, char* argv[]);    
     void Finalize();
+    void Printf(const char format[],...);
 
     int& processor_id();
     int& n_processors();

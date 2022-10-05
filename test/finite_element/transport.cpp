@@ -1,4 +1,3 @@
-
 #include "petsc.h"
 
 #include "meshtools.h"
@@ -6,15 +5,17 @@
 #include "mesh_part.h"
 #include "parallel_mesh.h"
 #include "implicit_system.h"
+#include "transient_implicit_system.h"
 #include "dirichlet_boundary.h"
 #include "fem_functions.h"
 #include "dense_matrix.h"
 #include "numeric_vector.h"
 #include "tensor.h"
 
-static char help[] = "Convecção-difusão-reaçao\n\n";
+static char help[] = "Convecção-difusão-reaçao transiente\n\n";
 
-void assemble_convection_diffusion_reaction(ImplicitSystem* system)
+
+void assemble_transport(TransientImplicitSystem* system)
 {
     auto pmesh = system->get_mesh();
     int  ndim  =  pmesh.getDim();
@@ -25,6 +26,8 @@ void assemble_convection_diffusion_reaction(ImplicitSystem* system)
 
     int n_elements = pmesh.get_n_elements();
     bool flag = true;
+
+    double *old_solution = system->get_old_solution_array();
 
     // loop sobre os elementos da malha por cores
     for (int iel = 0; iel < n_elements; iel++)
@@ -37,6 +40,7 @@ void assemble_convection_diffusion_reaction(ImplicitSystem* system)
         int nnoel = conn_iel.size();
 
         std::vector<int>        global_indices;
+        std::vector<int>        local_indices;
         std::vector<Point>      qp;                // coordenadas do ponto de integração
         std::vector<double>     qw;                // peso do ponto de integração
         DenseMatrix<double>     Ke(nnoel, nnoel);  // matriz de rigidez do elemento
@@ -50,6 +54,7 @@ void assemble_convection_diffusion_reaction(ImplicitSystem* system)
         double JxW = 0.0;
 
         equation_manager.global_indices(dof, conn_iel, global_indices);
+        equation_manager.local_indices(dof, conn_iel, local_indices);
 
         // calculando a função de forma e suas derivadas para elemento QUAD4 ou TRI3
         FEMGetQGauss(etype, qp, qw);
@@ -59,6 +64,8 @@ void assemble_convection_diffusion_reaction(ImplicitSystem* system)
         velocity(1)  = 1.0 / 2.0 ;
         double kd    = 1.0E-4;
         double sigma = 0.0;
+        double theta = 0.5;
+        double dt    = system->get_time_step();
 
         RealVector g;
         RealTensor G;
@@ -71,22 +78,49 @@ void assemble_convection_diffusion_reaction(ImplicitSystem* system)
             FEMStab(etype, qp[q], coords_iel, g, G);
 
             // SUPG stabilization parameters
-            double tau = (velocity) * (G.mult(velocity)) + (kd * kd) * (G.contract(G)); // + dt_stab*4.0/(dt*dt);
+            double tau = (velocity) * (G.mult(velocity)) + (kd * kd) * (G.contract(G)) + 4.0/(dt*dt);
+            double u_old = 0.0;
+            Gradient grad_u_old;
+
+            for (int i = 0; i < local_indices.size(); i++)
+            {
+                u_old += old_solution[local_indices[i]]*phi[i];
+                grad_u_old(0) +=  old_solution[local_indices[i]]*dphi[i](0);
+                grad_u_old(1) +=  old_solution[local_indices[i]]*dphi[i](1);
+            }
 
             // calculando a matriz de rigidez e o vetor de forca local
-            for (int i = 0; i < nnoel; i++)
+            for (int i = 0; i < local_indices.size(); i++)
             {
-                for (int j = 0; j < nnoel; j++)
+                // Galerkin 
+                Fe[i]   +=  JxW*(phi[i]*u_old -
+                                     (1.0-theta)*dt*(phi[i]*(velocity * grad_u_old) +
+                                                   kd*(dphi[i] * grad_u_old)  +
+                                                   sigma*phi[i]*u_old)
+                                   );
+
+                // SUPG 
+                Fe[i]  +=  JxW * tau * (velocity * dphi[i])*(
+                                     u_old - (1.0-theta)*dt*(
+                                                                phi[i]*(velocity * grad_u_old) +
+                                                                sigma*phi[i]*u_old)
+                                                            );
+
+                for (int j = 0; j < local_indices.size(); j++)
                 {
                     // Galerkin Formulation
-                    Ke(i, j) += JxW * (phi[i] * (velocity * dphi[j]) + // w (a. grad u) - Termo convectivo
-                                       kd * (dphi[i] * dphi[j])      + // Grad w Grad u - Termo difusivo
-                                       sigma*phi[i]*phi[j]             // \sigma* w  u  -  Termo reação
+                    Ke(i, j) += JxW * ( phi[i]*phi[j] +
+                                        theta*dt*(phi[i] * (velocity * dphi[j]) + // w (a. grad u) - Termo convectivo
+                                            kd * (dphi[i] * dphi[j])      +       // Grad w Grad u - Termo difusivo
+                                            sigma*phi[i]*phi[j]                   // \sigma* w  u  -  Termo reação
+                                        )           
                                        );
 
                     // SUPG Formulation
-                    Ke(i, j) += JxW * tau * (velocity * dphi[i]) * (velocity * dphi[j] +      // Termo SUPG convecção
-                                              sigma*phi[j]);                                  // Termo SUPG reação
+                    Ke(i, j) += JxW * tau * (velocity * dphi[i]) * (
+                                     phi[j]             +     // Termo de massa SUPG
+                                     velocity * dphi[j] +     // Termo SUPG convecção
+                                     sigma*phi[j]);           // Termo SUPG reação
                 }
             }
         }
@@ -95,17 +129,15 @@ void assemble_convection_diffusion_reaction(ImplicitSystem* system)
         system->add_rhs_entry(global_indices, Fe.data());
     }
 
+    system->restore_old_solution_array(&old_solution);
+
 }
 
-int run_convection_diffusion_reaction(int argc, char *argv[])
+
+int transport(int argc, char *argv[])
 {
     PetscErrorCode ierr;
     MeshPartition *parts = new MeshPartition();
-
-    if(argc < 2)
-    {
-        return 0;
-    }
 
     Mesh *mesh;          // serial mesh
     ParallelMesh *pmesh; // parallel mesh
@@ -118,7 +150,6 @@ int run_convection_diffusion_reaction(int argc, char *argv[])
     {
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha.
-    
         mesh = new Mesh(argv[1]);
 
         // Se houver mais um processo, o processo mestre irá
@@ -131,43 +162,53 @@ int run_convection_diffusion_reaction(int argc, char *argv[])
 
     pmesh = parts->DistributedMesh(mesh);
 
-
     // Cria o sistema de equações implicito
-    ImplicitSystem *implicit_system = new ImplicitSystem(*pmesh, "convection-diffusion");
+    TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "transport");
 
     // Adiciona uma variável ao sistema
-    int dof = implicit_system->add_variable("u");
+    int dof = system->add_variable("u");
 
     // Adiciona uma condição de contorno ao sistema
     // Aplica a função g = 0 para a variável u no contorno identificado com 1.
     DirichletBoundary bc1(1, dof, "0.0", "x,y");
-    DirichletBoundary bc2(2, dof, "1.0", "x,y");
-    implicit_system->add_dirichlet_boundary(bc1);
-    implicit_system->add_dirichlet_boundary(bc2);
-    implicit_system->attach_assemble(assemble_convection_diffusion_reaction);
+    InitialCondition  ic1(2, dof, "1.0", "x,y");
+
+    system->add_dirichlet_boundary(bc1);
+    system->add_initial_condition(ic1);
+    system->attach_assemble(assemble_transport);
+
 
     // Inicializar o sistema 
-    implicit_system->init();
+    system->init();
+    system->set_final_time(1.0);
+    system->set_time_step(0.005);
+    system->write_vtk("initial");
+/*
+    while(system->get_time() < system->get_final_time())
+    {
+        system->solve_time_step();
+        MeshTools::Printf("Solved time : %.3f\n", system->get_time());
+    }
+
 
     // Resolve o sistema de equações
-    implicit_system->solve();
 
-    implicit_system->write_vtk("solution");
+    system->write_vtk("solution");
+*/
 
-    delete implicit_system;
+    delete system;
 
     if (MeshTools::processor_id() == 0)
         delete mesh;
     delete pmesh;
     delete parts;
 
-    
     return 0;
 }
 
 int main(int argc, char *argv[])
 {
-    MeshTools::Init(argc, argv);
-    run_convection_diffusion_reaction(argc, argv);
+    MeshTools::Init(argc,argv);
+    transport(argc, argv);
     MeshTools::Finalize();
 }

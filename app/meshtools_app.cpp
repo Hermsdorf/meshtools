@@ -173,10 +173,6 @@ int main(int argc, char* argv[])
         // em toda a malha
         mesh->MeshColoring(color_alg, block_size);
 
-        // Escreve a malha em arquivo.
-        //if(flg_write)
-        //    mesh->MeshVTKWriting(writing);
-
     }
 
     // Desaloca as estruturas criadas.
