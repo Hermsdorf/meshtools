@@ -1,5 +1,6 @@
 
 #include <set>
+#include "meshtools.h"
 #include "transient_implicit_system.h"
 
 TransientImplicitSystem::TransientImplicitSystem(ParallelMesh &mesh, std::string name):
@@ -17,7 +18,7 @@ void TransientImplicitSystem::init()
     VecDuplicate(_solution_local, &_older_solution_local);
 
     apply_initial_conditions();
-
+    _t       = 0.0;
     timestep = 0;
 }
 
@@ -48,6 +49,8 @@ void TransientImplicitSystem::restore_older_solution_array(double** solution_arr
 void TransientImplicitSystem::solve_time_step()
 {
     _t += _dt;
+
+    PetscPrintf(MeshTools::Comm(),"Solving time %0.4f\n", _t);
     VecCopy(_old_solution_local, _older_solution_local);
     VecCopy(_solution_local, _old_solution_local);
 
@@ -56,10 +59,10 @@ void TransientImplicitSystem::solve_time_step()
     // getting solution at t+dt
     ImplicitSystem::solve_linear_system();
     timestep++;
-    update_time_step();
+    update_deltat();
 }
 
-void TransientImplicitSystem::update_time_step()
+void TransientImplicitSystem::update_deltat()
 {
     //TODO: Implement timestep control based on CFL condition
 }
@@ -74,14 +77,14 @@ void TransientImplicitSystem::apply_initial_conditions()
 {
 
     std::vector< std::set<unsigned int> > nodelist(_initial_conditions.size());
-    auto region_ids = _mesh.getPhysicalTag();
+    
     for(int iel=0; iel < this->_mesh.get_n_elements(); iel++)
     {
         auto *conn  = this->_mesh.getElementConn(iel);
         auto  connsz = _mesh.getElementConnSize(iel);
         for(int i=0; i < _initial_conditions.size(); i++)
         {
-            if(_initial_conditions[i].get_region_id() == region_ids[iel])
+            if(_initial_conditions[i].get_region_id() == _mesh.getElementTag(iel))
             {
                 for(int j=0; j < connsz; j++)
                 {

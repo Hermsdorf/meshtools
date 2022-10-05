@@ -538,6 +538,10 @@ class Mesh {
 
        void getElement(int element_id, Element& elem);
 
+       inline int getElementTag(int iel) { return physical_tag[iel+n_face_elements]; };
+
+       int getSurfaceElementTag(int iel) { return physical_tag[iel]; };
+
 
     protected:
         unsigned int                n_face_elements;            // Numero de elementos de superficie.

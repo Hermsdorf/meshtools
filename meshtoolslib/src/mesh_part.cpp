@@ -1291,15 +1291,15 @@ ParallelMesh* MeshPartition::RecvLocalDataFromMaster()
     _shared_nodes_offset.resize(neigh_ofs);
     _shared_nodes.resize(neigh_nodes);
 
-    MPI_Recv(&_coords[0]              , _coords.size(), MPI_DOUBLE  , 0, 0, MPI_COMM_WORLD, &status);
-    MPI_Recv(&_l2g[0]                 , _l2g.size()   , MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &status);
-    MPI_Recv(&_conn[0]                , _conn.size()  , MPI_UNSIGNED      , 0, 0, MPI_COMM_WORLD, &status);
-    MPI_Recv(&_offset[0]              , _offset.size(), MPI_UNSIGNED      , 0, 0, MPI_COMM_WORLD, &status);
-    MPI_Recv(&_type[0]                , _type.size()  , MPI_UNSIGNED_SHORT, 0, 0, MPI_COMM_WORLD, &status);
-    MPI_Recv(&_neighbors[0]           , _neighbors.size()    , MPI_UNSIGNED      , 0, 0, MPI_COMM_WORLD, &status);
+    MPI_Recv(&_coords[0], _coords.size(), MPI_DOUBLE  , 0, 0, MPI_COMM_WORLD, &status);
+    MPI_Recv(&_l2g[0]   , _l2g.size()   , MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &status);
+    MPI_Recv(&_conn[0]        , _conn.size()  , MPI_UNSIGNED      , 0, 0, MPI_COMM_WORLD, &status);
+    MPI_Recv(&_offset[0]      , _offset.size(), MPI_UNSIGNED      , 0, 0, MPI_COMM_WORLD, &status);
+    MPI_Recv(&_type[0]        , _type.size()  , MPI_UNSIGNED_SHORT, 0, 0, MPI_COMM_WORLD, &status);
+    MPI_Recv(&_neighbors[0]   , _neighbors.size()    , MPI_UNSIGNED      , 0, 0, MPI_COMM_WORLD, &status);
     MPI_Recv(&_shared_nodes_offset[0] , _shared_nodes_offset.size() , MPI_UNSIGNED      , 0, 0, MPI_COMM_WORLD, &status);
-    MPI_Recv(&_shared_nodes[0]        , _shared_nodes.size()     , MPI_UNSIGNED      , 0, 0, MPI_COMM_WORLD, &status);
-    MPI_Recv(&_tag[0]                 , _tag.size()     , MPI_UNSIGNED      , 0, 0, MPI_COMM_WORLD, &status);
+    MPI_Recv(&_shared_nodes[0]  , _shared_nodes.size()     , MPI_UNSIGNED      , 0, 0, MPI_COMM_WORLD, &status);
+    MPI_Recv(&_tag[0]  , _tag.size()     , MPI_INT      , 0, 0, MPI_COMM_WORLD, &status);
 
     return pmesh;
 

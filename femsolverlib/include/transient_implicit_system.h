@@ -36,15 +36,16 @@ class TransientImplicitSystem: public ImplicitSystem
 {
     public:
         TransientImplicitSystem(ParallelMesh &mesh, std::string name);
-        void    set_time_step(double dt) { _dt = dt; }
-        double  get_time_step() { return _dt; }
+        void    set_deltat(double dt) { _dt = dt; }
+        double  get_deltat() {return _dt; };
+        int     get_time_step() { return timestep; }
         void    set_time(double t) { _t = t; }
         double  get_time() { return _t; }
         void    set_final_time(double t) { _final_time = t; }
         double  get_final_time() { return _final_time; }
         void    add_initial_condition(InitialCondition ic);
         void    solve_time_step();
-        void    update_time_step();
+        void    update_deltat();
         void    init();
         double* get_old_solution_array();
         double* get_older_solution_array();

@@ -17,17 +17,20 @@ static char help[] = "Convecção-difusão-reaçao transiente\n\n";
 
 void assemble_transport(TransientImplicitSystem* system)
 {
+
     auto pmesh = system->get_mesh();
     int  ndim  =  pmesh.getDim();
+
 
     // Gerencia as numerações das equações do sistema
     auto equation_manager = system->get_equation_manager();
     int dof  = 0;
 
     int n_elements = pmesh.get_n_elements();
-    bool flag = true;
 
     double *old_solution = system->get_old_solution_array();
+
+   
 
     // loop sobre os elementos da malha por cores
     for (int iel = 0; iel < n_elements; iel++)
@@ -60,12 +63,12 @@ void assemble_transport(TransientImplicitSystem* system)
         FEMGetQGauss(etype, qp, qw);
 
         Gradient velocity;
-        velocity(0)  = sqrt(3.0) / 2.0;
-        velocity(1)  = 1.0 / 2.0 ;
-        double kd    = 1.0E-4;
+        velocity(0)  = 1.0;
+        velocity(1)  = 0.0 ;
+        double kd    = 1.0E-3;
         double sigma = 0.0;
-        double theta = 0.5;
-        double dt    = system->get_time_step();
+        double theta = 1.0;
+        double dt    = system->get_deltat();
 
         RealVector g;
         RealTensor G;
@@ -78,13 +81,13 @@ void assemble_transport(TransientImplicitSystem* system)
             FEMStab(etype, qp[q], coords_iel, g, G);
 
             // SUPG stabilization parameters
-            double tau = (velocity) * (G.mult(velocity)) + (kd * kd) * (G.contract(G)) + 4.0/(dt*dt);
+            double tau = (velocity) * (G.mult(velocity)) + (kd * kd) * (G.contract(G));
             double u_old = 0.0;
             Gradient grad_u_old;
 
             for (int i = 0; i < local_indices.size(); i++)
             {
-                u_old += old_solution[local_indices[i]]*phi[i];
+                u_old         += old_solution[local_indices[i]]*phi[i];
                 grad_u_old(0) +=  old_solution[local_indices[i]]*dphi[i](0);
                 grad_u_old(1) +=  old_solution[local_indices[i]]*dphi[i](1);
             }
@@ -162,41 +165,47 @@ int transport(int argc, char *argv[])
 
     pmesh = parts->DistributedMesh(mesh);
 
+    pmesh->WritePMesh("mesh");
+
+
     // Cria o sistema de equações implicito
     TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "transport");
+    system->add_variable("u");
+    DirichletBoundary  bc(1,0,"0.0","x,y,z");
+    InitialCondition   ic(2,0,"1.0","x,y,z");
 
-    // Adiciona uma variável ao sistema
-    int dof = system->add_variable("u");
-
-    // Adiciona uma condição de contorno ao sistema
-    // Aplica a função g = 0 para a variável u no contorno identificado com 1.
-    DirichletBoundary bc1(1, dof, "0.0", "x,y");
-    InitialCondition  ic1(2, dof, "1.0", "x,y");
-
-    system->add_dirichlet_boundary(bc1);
-    system->add_initial_condition(ic1);
+    system->add_dirichlet_boundary(bc);
+    system->add_initial_condition(ic);
     system->attach_assemble(assemble_transport);
-
-
-    // Inicializar o sistema 
     system->init();
-    system->set_final_time(1.0);
-    system->set_time_step(0.005);
-    system->write_vtk("initial");
-/*
+    system->set_final_time(10.0);
+    system->set_deltat(0.01);
+
+     system->write_vtk("inital");
+
+
+    char filename[100];
+    int n_write = 0;
+    sprintf(filename,"solution_%04d",n_write++);
+    system->write_vtk(filename);
+
+    // Adiciona uma variável ao sistema    
     while(system->get_time() < system->get_final_time())
     {
         system->solve_time_step();
-        MeshTools::Printf("Solved time : %.3f\n", system->get_time());
+
+        if(system->get_time_step()%5 == 0 )
+        {
+            sprintf(filename,"solution_%04d",n_write++);
+            system->write_vtk(filename);
+        }
     }
 
-
-    // Resolve o sistema de equações
-
-    system->write_vtk("solution");
-*/
+    sprintf(filename,"solution_%04d",n_write++);
+    system->write_vtk(filename);
 
     delete system;
+
 
     if (MeshTools::processor_id() == 0)
         delete mesh;

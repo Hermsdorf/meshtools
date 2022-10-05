@@ -391,328 +391,6 @@ void Mesh::MeshGmshReader(const char* filename)
     in.close();
 }
 
-// TODO: remover
-/*
-void Mesh::MeshVTKWriter(int timeStep, int *npart, int* epart, int* color, double* velocity, float* pressure)
-{
-    std::cout << "Writing VTK boundary and internal elements...\n";
-    std::ofstream fout;
-
-    if(timeStep >= 0)
-    {
-        std::string os;
-        os = std::to_string(timeStep);
-
-        std::string str = this->getFilename();
-        str.insert(str.length(), "_" + os + ".vtu");
-
-        fout.open(str.c_str());
-    }
-    else{
-            fout.open(this->getFilename());
-    }
-
-    if(fout.is_open())
-    {
-        int nnodes = this->n_nodes;
-        int nelem = this->n_elements + this->n_face_elements;
-        fout << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n";
-        fout << "\t<UnstructuredGrid>\n";
-        fout << "\t\t<Piece NumberOfPoints=\"" << nnodes  <<"\" NumberOfCells=\""<< nelem << "\">\n";
-        fout << "\t\t\t<PointData>\n";
-        if(npart)
-        {
-            fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"npart\" format=\"ascii\" >\n";
-            fout << "\t\t\t\t\t";
-            for(int i = 0 ; i < nnodes ; i++)
-            {
-                if(i % 18 == 0 && i != 0)
-                    fout << "\n\t\t\t\t\t";
-                
-                fout << npart[i] << " ";
-            }
-            fout << "\n\t\t\t\t </DataArray>\n";
-        }
-        if(velocity)
-        {
-            fout << "\t\t\t\t <DataArray type=\"Float64\" Name=\"velocity\" format=\"ascii\">\n";
-            fout << "\t\t\t\t\t";
-            for(int i = 0 ; i < this->n_nodes * 3 ; i++)
-            {
-                if(i % 18 == 0 && i != 0)
-                    fout << "\n\t\t\t\t\t";
-
-                fout << velocity[i] << " ";
-            }
-            fout << "\n\t\t\t\t </DataArray>\n";
-        }
-        if(pressure)
-        {
-            fout << "\t\t\t\t <DataArray type=\"Float32\" Name=\"pressure\" format=\"ascii\">\n";
-            fout << "\t\t\t\t\t";
-            for(int i = 0 ; i < this->n_nodes ; i++)
-            {
-                if(i % 18 == 0 && i != 0)
-                    fout << "\n\t\t\t\t\t";
-
-                fout << pressure[i] << " ";
-            }
-            fout << "\n\t\t\t\t </DataArray>\n";
-        }
-        fout << "\t\t\t</PointData>\n";
-        fout << "\t\t\t<CellData>\n";
-        if(epart)
-        {
-            fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"epart\" format=\"ascii\">\n";
-            fout << "\t\t\t\t\t";
-            for(int i = 0 ; i < nelem ; i++)
-            {
-                if(i % 18 == 0 && i != 0)
-                    fout << "\n\t\t\t\t\t";
-                
-                fout << epart[i] << " ";
-            }
-            fout << std::endl;
-            fout << "\t\t\t\t </DataArray>\n";
-        }
-        if(this->n_internal_colors != 0)
-        {
-            fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"Color\" format=\"ascii\">\n";
-            fout << "\t\t\t\t\t";
-            for(int i = 0 ; i < this->n_face_elements ; i++)
-            {
-                if(i % 18 == 0 && i != 0)
-                    fout << "\n\t\t\t\t\t";
-                fout << -1 << " "; // cor dos elementos de superficie
-            }
-            for(int i = 0 ; i < this->n_internal_colors ; i++)
-            {
-                for(int j = 0 ; j < color[i] ; j++)
-                {
-                    if(j % 18 == 0 && j != 0)
-                        fout << "\n\t\t\t\t\t";
-
-                    fout << i+1 << " ";
-                }
-            }
-            fout << "\n\t\t\t\t </DataArray>\n";
-        }
-        fout << "\t\t\t</CellData>\n";
-        fout << "\t\t\t<Points>\n";
-        fout << "\t\t\t\t<DataArray type=\"Float64\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n";
-        fout << "\t\t\t\t\t";
-        
-        for(int i = 0 ; i < this->coord.size() ; i++)
-        {
-            if(i % 18 == 0 && i != 0)
-                fout << "\n\t\t\t\t\t";
-
-            fout << this->coord[i] << " ";
-        }
-        fout << std::endl;
-        fout << "\t\t\t\t</DataArray>\n";
-        fout << "\t\t\t</Points>\n";
-        fout << "\t\t\t<Cells>\n";
-        fout << "\t\t\t\t<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
-        fout << "\t\t\t\t\t";
-        
-        for(int i = 0 ; i < this->conn.size() ; i++)
-        {
-            if(i % 18 == 0 && i != 0)
-                fout << "\n\t\t\t\t\t";
-
-            fout << this->conn[i] << " ";
-        }
-        fout << std::endl;
-        fout << "\t\t\t\t</DataArray>\n";
-        fout << "\t\t\t\t<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n";
-        fout << "\t\t\t\t\t";
-        for(int i = 1 ; i < this->offset.size() ; i++)
-        {
-            if(i % 18 == 0 && i != 0)
-                fout << "\n\t\t\t\t\t";
-
-            fout << this->offset[i] << " ";
-        }
-        fout << "\n\t\t\t\t</DataArray>\n";
-        fout << "\t\t\t\t<DataArray type=\"Int32\" Name=\"types\" format=\"ascii\">\n";
-        fout << "\t\t\t\t\t";
-        
-        for(int i = 0 ; i < this->type.size() ; i++)
-        { 
-            if(i % 18 == 0 && i != 0)
-                fout << "\n\t\t\t\t\t";
-
-            fout << this->type[i] << " ";
-        }
-        fout << "\n\t\t\t\t</DataArray>\n";
-        fout << "\t\t\t</Cells>\n";
-        fout << "\t\t</Piece>\n";
-        fout << "\t</UnstructuredGrid>\n";
-        fout << "</VTKFile>\n";
-
-        fout.close();
-        std::cout << "Writing completed successfully\n";
-    }
-}
-
-// TODO: remover
-void Mesh::MeshVTKWriterInternal(int timeStep, int* npart, int* epart, int* color, double* velocity, float* pressure)
-{
-    std::cout << "Writing VTK internal elements...\n";
-    std::ofstream fout;
-
-    if(timeStep >= 0)
-    {
-        std::string os;
-        os = std::to_string(timeStep);
-
-        std::string str = this->getFilename();
-        str.insert(str.length(), "_" + os + ".vtu");
-
-        fout.open(str.c_str());
-    }
-    else{
-            fout.open(this->getFilename());
-    }
-
-    if(fout.is_open())
-    {
-
-        fout << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n";
-        fout << "\t<UnstructuredGrid>\n";
-        fout << "\t\t<Piece NumberOfPoints=\"" << this->n_nodes <<"\" NumberOfCells=\""<< this->n_elements << "\">\n";
-        fout << "\t\t\t<PointData>\n";
-        if(npart)
-        {
-            fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"npart\" format=\"ascii\">\n";
-            fout << "\t\t\t\t\t";
-            for(int i = 0 ; i < this->n_nodes ; i++)
-            {
-                if(i % 18 == 0 && i != 0)
-                    fout << "\n\t\t\t\t\t";
-
-                fout << npart[i] << " ";
-            }
-            fout << "\n\t\t\t\t </DataArray> \n";
-        }
-        if(velocity)
-        {
-            fout << "\t\t\t\t <DataArray type=\"Float64\" Name=\"velocity\" format=\"ascii\">\n";
-            fout << "\t\t\t\t\t";
-            for(int i = 0 ; i < this->n_nodes * 3 ; i++)
-            {
-                if(i % 18 == 0 && i != 0)
-                    fout << "\n\t\t\t\t\t";
-
-                fout << velocity[i] << " ";
-            }
-            fout << "\n\t\t\t\t </DataArray> \n";
-        }
-        if(pressure)
-        {
-            fout << "\t\t\t\t <DataArray type=\"Float32\" Name=\"pressure\" format=\"ascii\">\n";
-            fout << "\t\t\t\t\t";
-            for(int i = 0 ; i < this->n_nodes ; i++)
-            {
-                if(i % 18 == 0 && i != 0)
-                    fout << "\n\t\t\t\t\t";
-
-                fout << pressure[i] << " ";
-            }
-            fout << "\n\t\t\t\t </DataArray> \n";
-        }
-        fout << "\t\t\t</PointData>\n";
-        fout << "\t\t\t<CellData>\n";
-        if(epart)
-        {
-            fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"epart\" format=\"ascii\">\n";
-            fout << "\t\t\t\t\t";
-            for(int i = 0 ; i < this->n_elements ; i++)
-            {
-                if(i % 18 == 0 && i != 0)
-                    fout << "\n\t\t\t\t\t";
-                
-                fout << epart[i] << " ";
-            }
-            fout << "\n\t\t\t\t </DataArray> \n";
-        }
-        if(this->n_internal_colors != 0 )
-        {
-            fout << "\t\t\t\t <DataArray type=\"Int32\" Name=\"Color\" format=\"ascii\">\n";
-            fout << "\t\t\t\t\t";
-            for(int i = 0 ; i < this->n_internal_colors ; i++)
-            {
-                for(int j = 0 ; j < color[i] ; j++)
-                {
-                    if(j % 18 == 0 && j != 0)
-                        fout << "\n\t\t\t\t\t";
-
-                    fout << i+1 << " ";
-                }
-            }
-            fout << "\n\t\t\t\t </DataArray> \n";
-        }
-        fout << "\t\t\t</CellData>\n";
-        fout << "\t\t\t<Points>\n";
-        fout << "\t\t\t\t<DataArray type=\"Float64\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n";
-        fout << "\t\t\t\t\t";
-        for(int i = 0 ; i < this->coord.size() ; i++)
-        {
-            if(i % 18 == 0 && i != 0)
-                fout << "\n\t\t\t\t\t";
-
-            fout << this->coord[i] << " ";
-        }
-        fout << "\n\t\t\t\t</DataArray>\n";
-        fout << "\t\t\t</Points>\n";
-        fout << "\t\t\t<Cells>\n";
-        fout << "\t\t\t\t<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
-        fout << "\t\t\t\t\t";
-        
-        int ofs = this->offset[this->n_face_elements];
-
-        for(int i = ofs ; i < this->conn.size() ; i++)
-        {
-            if(i % 18 == 0 )
-                fout << "\n\t\t\t\t\t";
-
-            fout << this->conn[i] << " ";
-        }
-        fout << "\n\t\t\t\t</DataArray>\n";
-        fout << "\t\t\t\t<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n";
-        fout << "\t\t\t\t\t";
-        
-        for(int i = this->n_face_elements ; i < this->offset.size()-1 ; i++)
-        {
-            if(i % 18 == 0 && i != 0)
-                fout << "\n\t\t\t\t\t";
-
-            fout << this->offset[i+1] - ofs << " ";
-        }
-        fout << "\n\t\t\t\t</DataArray>\n";
-        fout << "\t\t\t\t<DataArray type=\"Int32\" Name=\"types\" format=\"ascii\">\n";
-        fout << "\t\t\t\t\t";
-        
-        for(int i = this->n_face_elements ; i < this->type.size() ; i++)
-        { 
-            if(i % 18 == 0 && i != 0)
-                fout << "\n\t\t\t\t\t";
-
-            fout << this->type[i] << " ";
-        }
-        fout << "\n\t\t\t\t</DataArray>\n";
-        fout << "\t\t\t</Cells>\n";
-        fout << "\t\t</Piece>\n";
-        fout << "\t</UnstructuredGrid>\n";
-        fout << "</VTKFile>\n";
-
-        fout.close();
-        std::cout << "Writing completed successfully\n";
-    }
-}
-*/
-
 bool BinaryBigEndian(void) 
 {
     long _v = 1; 
@@ -784,21 +462,25 @@ void Mesh::WriteVTK(const char* fname, MeshIODataAppended* info )
             }
         }
         fprintf(fout, "   </PointData>\n");
+        fprintf(fout, "   <CellData>\n");
+        fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","UInt32", "tag-id",1,boffset);
+        boffset += this->n_elements*sizeof(unsigned int) + sizeof(unsigned long);
         if(info != nullptr)
         {
               auto& cell_data = info->GetCellDataInfo();
             if( cell_data.size() != 0)
             {
                 // Writting nodal attribute data
-                fprintf(fout, "   <CellData>\n");
+               
                 for(int i= 0; i < cell_data.size(); ++i)
                 {
                    fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n",MeshDataTypeSTR[cell_data[i].type].c_str(),cell_data[i].name.c_str(),1,boffset);
                    boffset += this->n_elements*get_mesh_type_size(cell_data[i].type) + sizeof(unsigned long);
                 }
-                fprintf(fout, "   </CellData>\n");
+               
             }
         }
+        fprintf(fout, "   </CellData>\n");
         fprintf(fout, "  </Piece>\n");
         fprintf(fout, " </UnstructuredGrid>\n");
         fprintf(fout, "  <AppendedData encoding=\"raw\">\n");
@@ -839,7 +521,7 @@ void Mesh::WriteVTK(const char* fname, MeshIODataAppended* info )
         if(info != nullptr)
         {
             auto& point_data = info->GetPointDataInfo();
-            auto& cell_data   = info->GetCellDataInfo();
+            
             if( point_data.size() != 0)
             {
                 
@@ -850,10 +532,16 @@ void Mesh::WriteVTK(const char* fname, MeshIODataAppended* info )
                     fwrite((void*)point_data[i].data,get_mesh_type_size(point_data[i].type),this->n_nodes,fout);
                 }
             }
+        }
+        fwrite((void*)&this->physical_tag[n_face_elements],sizeof(unsigned int),this->n_elements,fout);
+
+        if(info != nullptr)
+        {
+            auto& cell_data   = info->GetCellDataInfo();
             if( cell_data.size() != 0)
             {
                 
-                for(int i= 0; i < point_data.size(); ++i)
+                for(int i= 0; i < cell_data.size(); ++i)
                 {
                     nbytes = get_mesh_type_size(cell_data[i].type)*this->n_elements;
                     fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);

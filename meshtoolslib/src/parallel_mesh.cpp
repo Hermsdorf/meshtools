@@ -431,17 +431,20 @@ void ParallelMesh::writePVTK(const char* fname, MeshIODataAppended* info)
         }
     }
     fout << "</PPointData>\n";
+    fout << "\t\t<PCellData>\n";
+    fout << "<PDataArray type=\"UInt32\" Name=\"tag-id\"/>\n";
     if(info != nullptr)
     {
         auto & cell_data  = info->GetCellDataInfo();
         if(cell_data.size()!= 0 )
         {
-            fout << "\t\t<PCellData>\n";
+            
             for(int i = 0; i < cell_data.size(); ++i)
                 fout << "\t\t\t<PDataArray type=\""<<MeshDataTypeSTR[cell_data[i].type]<<"\" Name=\""<<cell_data[i].name<<"\"/>\n";               
-            fout << "\t\t</PCellData>\n";
+           
         }
     }
+    fout << "\t\t</PCellData>\n";
     
 
     for(int p = 0 ; p < MeshTools::n_processors() ; p++)

@@ -46,8 +46,12 @@ Plane Surface(1) = {1, 2};
 //+
 Plane Surface(2) = {2};
 //+
-Physical Curve("CONTORNO") = {3, 4, 1, 2};
-//+
+
+Physical Curve("BC1", 1) = {4};
+
 Physical Surface("IC1", 2) = {2};
+
 //+
 Physical Surface("IC2", 3) = {1};
+//+
+
