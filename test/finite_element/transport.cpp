@@ -14,13 +14,51 @@
 
 static char help[] = "Convecção-difusão-reaçao transiente\n\n";
 
+double exact_solution (const double x,
+                       const double y,
+                       const double t)
+{
+  const double xo = 0.2;
+  const double yo = 0.2;
+  const double u  = 0.8;
+  const double v  = 0.8;
+
+  const double num =
+    pow(x - u*t - xo, 2.) +
+    pow(y - v*t - yo, 2.);
+
+  const double den =
+    0.01*(4.*t + 1.);
+
+  return exp(-num/den)/(4.*t + 1.);
+}
+
+void init_transport(TransientImplicitSystem* system)
+{
+
+    auto mesh   = system->get_mesh();
+    auto coords = mesh.getCoord();
+    int n_nodes = mesh.get_n_nodes();
+
+    int ndof = system->get_equation_manager().get_n_dofs();
+    int dof  = system->get_variable_id("u");
+
+    double* solution = system->get_local_solution_array();
+    for(int i=0; i < n_nodes; i++)
+    {
+        const double x = coords[i*3 + 0];
+        const double y = coords[i*3 + 1];
+        solution[i*ndof+dof]    =  exact_solution(x,y,0.0);
+    }
+    system->restore_local_solution_array(&solution);
+
+}
 
 void assemble_transport(TransientImplicitSystem* system)
 {
 
     auto pmesh = system->get_mesh();
     int  ndim  =  pmesh.getDim();
-
 
     // Gerencia as numerações das equações do sistema
     auto equation_manager = system->get_equation_manager();
@@ -29,8 +67,6 @@ void assemble_transport(TransientImplicitSystem* system)
     int n_elements = pmesh.get_n_elements();
 
     double *old_solution = system->get_old_solution_array();
-
-   
 
     // loop sobre os elementos da malha por cores
     for (int iel = 0; iel < n_elements; iel++)
@@ -63,11 +99,11 @@ void assemble_transport(TransientImplicitSystem* system)
         FEMGetQGauss(etype, qp, qw);
 
         Gradient velocity;
-        velocity(0)  = 1.0;
-        velocity(1)  = 0.0 ;
-        double kd    = 1.0E-3;
+        velocity(0)  = 0.8;
+        velocity(1)  = 0.8;
+        double kd    = 1.0E-2;
         double sigma = 0.0;
-        double theta = 1.0;
+        double theta = 0.5;
         double dt    = system->get_deltat();
 
         RealVector g;
@@ -81,49 +117,53 @@ void assemble_transport(TransientImplicitSystem* system)
             FEMStab(etype, qp[q], coords_iel, g, G);
 
             // SUPG stabilization parameters
-            double tau = (velocity) * (G.mult(velocity)) + (kd * kd) * (G.contract(G));
+            double tau = (velocity) * (G.mult(velocity)) + (kd * kd) * (G.contract(G)) + 4.0/(dt*dt);
             double u_old = 0.0;
             Gradient grad_u_old;
 
             for (int i = 0; i < local_indices.size(); i++)
             {
-                u_old         += old_solution[local_indices[i]]*phi[i];
+                u_old         +=  old_solution[local_indices[i]]*phi[i];
                 grad_u_old(0) +=  old_solution[local_indices[i]]*dphi[i](0);
                 grad_u_old(1) +=  old_solution[local_indices[i]]*dphi[i](1);
             }
 
+            const double  adt1 = (1.0-theta)*dt;
+            const double adt   = theta*dt;
             // calculando a matriz de rigidez e o vetor de forca local
             for (int i = 0; i < local_indices.size(); i++)
             {
                 // Galerkin 
-                Fe[i]   +=  JxW*(phi[i]*u_old -
-                                     (1.0-theta)*dt*(phi[i]*(velocity * grad_u_old) +
-                                                   kd*(dphi[i] * grad_u_old)  +
-                                                   sigma*phi[i]*u_old)
-                                   );
+                Fe[i]   +=  JxW*(phi[i]*u_old - adt1*phi[i]*(velocity * grad_u_old) 
+                                              - adt1*kd*(dphi[i] * grad_u_old)  
+                                              - adt1*sigma*phi[i]*u_old
+                                );
 
                 // SUPG 
+                /*
                 Fe[i]  +=  JxW * tau * (velocity * dphi[i])*(
                                      u_old - (1.0-theta)*dt*(
                                                                 phi[i]*(velocity * grad_u_old) +
                                                                 sigma*phi[i]*u_old)
                                                             );
+                */
 
                 for (int j = 0; j < local_indices.size(); j++)
                 {
                     // Galerkin Formulation
-                    Ke(i, j) += JxW * ( phi[i]*phi[j] +
-                                        theta*dt*(phi[i] * (velocity * dphi[j]) + // w (a. grad u) - Termo convectivo
-                                            kd * (dphi[i] * dphi[j])      +       // Grad w Grad u - Termo difusivo
-                                            sigma*phi[i]*phi[j]                   // \sigma* w  u  -  Termo reação
-                                        )           
+                    Ke(i, j) += JxW * ( phi[i]*phi[j]
+                                           + adt*(phi[i] * (velocity * dphi[j]))  // w (a. grad u) - Termo convectivo
+                                           + adt*kd*(dphi[i] * dphi[j])           // Grad w Grad u - Termo difusivo
+                                           + adt*sigma*phi[i]*phi[j]              // \sigma* w  u  -  Termo reação          
                                        );
 
                     // SUPG Formulation
+                    /*
                     Ke(i, j) += JxW * tau * (velocity * dphi[i]) * (
                                      phi[j]             +     // Termo de massa SUPG
                                      velocity * dphi[j] +     // Termo SUPG convecção
                                      sigma*phi[j]);           // Termo SUPG reação
+                                     */
                 }
             }
         }
@@ -165,31 +205,27 @@ int transport(int argc, char *argv[])
 
     pmesh = parts->DistributedMesh(mesh);
 
-    pmesh->WritePMesh("mesh");
+
 
 
     // Cria o sistema de equações implicito
     TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "transport");
     system->add_variable("u");
     DirichletBoundary  bc(1,0,"0.0","x,y,z");
-    InitialCondition   ic(2,0,"1.0","x,y,z");
-
     system->add_dirichlet_boundary(bc);
-    system->add_initial_condition(ic);
+    system->attach_init_function(init_transport);
     system->attach_assemble(assemble_transport);
+
     system->init();
-    system->set_final_time(10.0);
-    system->set_deltat(0.01);
-
-     system->write_vtk("inital");
-
+    system->set_final_time(2.0);
+    system->set_deltat(0.0025);
 
     char filename[100];
     int n_write = 0;
     sprintf(filename,"solution_%04d",n_write++);
     system->write_vtk(filename);
 
-    // Adiciona uma variável ao sistema    
+    // Time integratiom
     while(system->get_time() < system->get_final_time())
     {
         system->solve_time_step();
@@ -205,7 +241,6 @@ int transport(int argc, char *argv[])
     system->write_vtk(filename);
 
     delete system;
-
 
     if (MeshTools::processor_id() == 0)
         delete mesh;

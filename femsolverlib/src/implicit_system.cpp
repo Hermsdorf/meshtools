@@ -21,6 +21,14 @@ int ImplicitSystem::add_variable(std::string name)
     return this->_variables_names.size() - 1;
 }
 
+int ImplicitSystem::get_variable_id(std::string name)
+{
+    for(int i = 0; i < this->_variables_names.size();i++)
+        if( this->_variables_names[i]==name)
+            return i;
+    return -1;
+}
+
 void ImplicitSystem::add_dirichlet_boundary(DirichletBoundary &boundary)
 {
     this->_equations.add_dirichlet_boundary(boundary);

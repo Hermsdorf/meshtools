@@ -52,6 +52,7 @@ class TransientImplicitSystem: public ImplicitSystem
         void    restore_old_solution_array(double** solution_array);
         void    restore_older_solution_array(double** solution_array);
         void    attach_assemble(void _assemble_function(TransientImplicitSystem*));
+        void    attach_init_function(void _init(TransientImplicitSystem*));
 
     private:
         double       _dt;             // timestep size
@@ -64,6 +65,7 @@ class TransientImplicitSystem: public ImplicitSystem
 
         void apply_initial_conditions();
         void (* _assemble_function)(TransientImplicitSystem*  _system);
+        void (* _init_function)(TransientImplicitSystem*  _system);
 
 };
 

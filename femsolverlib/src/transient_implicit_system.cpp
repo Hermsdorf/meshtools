@@ -8,6 +8,7 @@ TransientImplicitSystem::TransientImplicitSystem(ParallelMesh &mesh, std::string
     {
         _t = 0.0;
         _dt = 0.0;
+        _init_function = nullptr;
     }
 
 void TransientImplicitSystem::init()
@@ -76,6 +77,12 @@ void TransientImplicitSystem::add_initial_condition(InitialCondition ic)
 void TransientImplicitSystem::apply_initial_conditions()
 {
 
+    if(this->_init_function)
+    {
+        this->_init_function(this);
+        return;
+    }
+
     std::vector< std::set<unsigned int> > nodelist(_initial_conditions.size());
     
     for(int iel=0; iel < this->_mesh.get_n_elements(); iel++)
@@ -119,4 +126,9 @@ void TransientImplicitSystem::attach_assemble(void _assemble(TransientImplicitSy
 {
     _assemble_function = _assemble;
 }
+
+ void   TransientImplicitSystem::attach_init_function(void _init(TransientImplicitSystem*))
+ {
+    _init_function = _init;
+ }
 
