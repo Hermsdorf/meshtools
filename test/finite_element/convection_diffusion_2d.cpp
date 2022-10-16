@@ -152,7 +152,7 @@ int run_convection_diffusion_reaction(int argc, char *argv[])
     // Resolve o sistema de equações
     implicit_system->solve();
 
-    implicit_system->write_vtk("solution");
+    implicit_system->write_result("solution");
 
     delete implicit_system;
 

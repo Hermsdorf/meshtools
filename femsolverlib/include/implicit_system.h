@@ -23,7 +23,7 @@ class ImplicitSystem
         void    set_rhs_entry(std::vector<int>& row_indices, double *value);
         double* get_local_solution_array();
         void    restore_local_solution_array(double** solution_array);
-        void    write_vtk(std::string filename);
+        void    write_result(std::string filename);
         //void    write_xdmf(std::string filename);
         double  compute_error_from_exact_solution(int idof, double(*func_exac)(double x,double y, double z, double t) );
         

@@ -165,7 +165,7 @@ int main(int argc, char* argv[])
         str.resize(str.length()-4);
 
         //Escreve partição na arquivo 
-        pmesh->WritePMesh(str.c_str());
+        pmesh->WritePMeshMTS(str.c_str());
     }
     else
     {

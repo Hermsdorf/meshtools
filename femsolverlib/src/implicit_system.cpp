@@ -305,7 +305,7 @@ void ImplicitSystem::apply_dirichlet_boundary_conditions()
     this->close();
 }
 
-void ImplicitSystem::write_vtk(string filename)
+void ImplicitSystem::write_result(string filename)
 {
     auto n_nodes = _mesh.get_n_nodes();
     

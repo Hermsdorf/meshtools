@@ -35,11 +35,16 @@ class MeshIODataAppended{
         MeshIODataAppended();
         void addPointDataInfo(const char* name, MeshDataType type, void *data_ptr);
         void addCellDataInfo(const char* name, MeshDataType type, void *data_ptr);
-        std::vector<PointData>& GetPointDataInfo() { return list_point_data; };
-        std::vector<CellData>& GetCellDataInfo() { return list_cell_data;};
+        void addTimeDataInfo(double time, int time_step);
+        std::vector<PointData>& getPointDataInfo() { return list_point_data; };
+        std::vector<CellData>& getCellDataInfo() { return list_cell_data;};
+        double& getTime() { return time; };
+        int& getTimeStep() { return time_step; };
     private:
         std::vector<PointData> list_point_data;
         std::vector<CellData>  list_cell_data;
+        double time;
+        int time_step;
 };
 
 
@@ -462,36 +467,6 @@ class Mesh {
          * @param filename Variável do tipo const char* com o nome do arquivo de entrada extensão msh.
         */
 
-        void MeshVTKWriter(int timeStep=0, int *npart=NULL, int* epart=NULL, int* color=NULL, double* velocity=NULL, float* pressure=NULL);
-        /**
-         * * OBJETIVO:
-         *     Escrita da malha completa, com elementos internos e de superfície, no formato VTK.
-         * 
-         * * PARAMETROS:
-         * @param timeStep Variável para criar uma sequência de arquivos a serem abertos no ParaView.
-         *                 (Para gerar somente um arquivo da malha, inserir 0 no valor do timeStep)
-         * @param npart Array do tipo inteiro com as informações nodais de partição.
-         * @param epart Array do tipo inteiro com as informações elementares de partição.
-         * @param color Array do tipo inteiro com as informações de coloração dos elementos internos.
-         * @param velocity Array do tipo double com informações das velocidades da malha.
-         * @param pressure Array do tipo float com informações das pressões da malha.
-        */
-        //void MeshVTKWriterInternal(int timeStep=0, int *nparts=NULL, int *epart=NULL, int* color=NULL, double* velocity=NULL, float* pressure=NULL);
-        /**
-         * * OBJETIVO:
-         *     Escrita da malha somente com elementos internos no formato VTK.
-         * 
-         * * PARAMETROS:
-         * @param timeStep Variável para criar uma sequência de arquivos a serem abertos no ParaView.
-         *                 (Para gerar somente um arquivo da malha, inserir 0 no valor do timeStep)
-         * @param npart Array do tipo inteiro com as informações nodais de partição.
-         * @param epart Array do tipo inteiro com as informações elementares de partição.
-         * @param color Array do tipo inteiro com as informações de coloração dos elementos internos.
-         * @param velocity Array do tipo double com informações das velocidades da malha.
-         * @param pressure Array do tipo float com informações das pressões da malha.
-        */
-
-
        std::vector<unsigned int>& getNodeIndexes()
        {
             return this->node_index;
@@ -521,12 +496,10 @@ class Mesh {
          * * OBJETIVO:
          *     Testar se a coloração calculada no algoritmo está correta.
         */
-       // TODO: remover
-       //void MeshVTKWriting(write_t writing);
 
        void WriteVTK(const char* filename, MeshIODataAppended* info = nullptr);
 
-       void Write(const char* filename);
+       void WriteMTS(const char* filename);
 
 
        void extract_boundary_nodes(std::vector<int>& tag);

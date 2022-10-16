@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
         info.addPointDataInfo("Index", UInt32, (void *)&l2g[0]);
         pmesh->update();
         pmesh->writePVTK("parallel", &info);
-        pmesh->WritePMesh("mesh");
+        pmesh->WritePMeshMTS("mesh");
     }
 
     if (mesh)

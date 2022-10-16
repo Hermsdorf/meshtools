@@ -21,7 +21,7 @@ class ParallelMesh : public Mesh{
         void readParallelMeshBin(const char* filename);
 
         void writePVTK(const char* fname, MeshIODataAppended* info = nullptr);
-        void WritePMesh(const char *fname);
+        void WritePMeshMTS(const char *fname);
         
         unsigned int                get_n_global_nodes(); 
         void                        set_n_global_nodes(unsigned int n_global_nodes);

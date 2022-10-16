@@ -46,6 +46,7 @@ class TransientImplicitSystem: public ImplicitSystem
         void    add_initial_condition(InitialCondition ic);
         void    solve_time_step();
         void    update_deltat();
+        void    write_result(string filename, int n_write);
         void    init();
         double* get_old_solution_array();
         double* get_older_solution_array();
