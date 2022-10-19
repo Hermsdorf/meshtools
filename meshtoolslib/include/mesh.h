@@ -6,7 +6,7 @@
 #include <map>
 #include <vector>
 #include <string>
-
+#include "meshtools.h"
 #include "numeric_vector.h"
 
 using namespace std;
@@ -56,12 +56,14 @@ class Element
     public:
         Element();
         std::vector<unsigned int> & Connectivity();
-        std::vector<Point>        & Points();
-        unsigned short            & type();
+        std::vector<Point>        & Node();
+        unsigned short            type();
+        unsigned int              region();
     private:
         std::vector<unsigned int> _conn;
         std::vector<Point>        _coords;
         unsigned short            _type;
+        unsigned int              _tag;
 };
 
 
@@ -536,7 +538,7 @@ class Mesh {
 
        void get_element_connectivity(int element_id, std::vector<unsigned int> &connectivity);
 
-       void getElement(int element_id, Element& elem);
+       void getElement(unsigned int element_id, Element& elem);
 
        inline int getElementTag(int iel) { return physical_tag[iel+n_face_elements]; };
 
@@ -554,14 +556,16 @@ class Mesh {
         std::vector<int>            physical_tag;               // Array indicando o physical tag de cada elemento.
         std::vector<int>            boundary_nodes;
         std::vector<unsigned int>   node_index;                 // Array indicando o índice de cada nó.
+        MeshElementType             element_type;
+        MeshElementType             boundary_element_type;
 
         std::map<int, physical_data_t>  physical_map;
         unsigned int dim;                                       // Dimensão da malha.
         
         // TODO: remover 
         std::string filename;                    // Nome do arquvios de entrada de tipo msh
-#ifdef HAVE_HDF5
-        void write_hdf5(const char* filename, MeshIOData* append)
+#ifdef HDF5_ENABLE
+        void write_hdf5(const char* filename);
 #endif
         std::vector<unsigned int> coloring;
         unsigned int              n_colors;       // Número total de cores dos elementos internos da malha.

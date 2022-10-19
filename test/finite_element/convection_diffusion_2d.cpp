@@ -79,8 +79,8 @@ void assemble_convection_diffusion_reaction(ImplicitSystem* system)
                 for (int j = 0; j < nnoel; j++)
                 {
                     // Galerkin Formulation
-                    Ke(i, j) += JxW * (phi[i] * (velocity * dphi[j]) + // w (a. grad u) - Termo convectivo
-                                       kd * (dphi[i] * dphi[j])      + // Grad w Grad u - Termo difusivo
+                    Ke(i, j) += JxW * (phi[i] * (velocity * dphi[j]) + // Na (a. grad Nb) - Termo convectivo
+                                       kd * (dphi[i] * dphi[j])      + // GradNa Grad Nb - Termo difusivo
                                        sigma*phi[i]*phi[j]             // \sigma* w  u  -  Termo reação
                                        );
 

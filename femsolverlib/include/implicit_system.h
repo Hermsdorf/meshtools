@@ -5,7 +5,7 @@
 #include "equation_manager.h"
 #include "petsc.h"
 
-// Ax = b
+
 class ImplicitSystem 
 {
     public:
@@ -53,6 +53,7 @@ class ImplicitSystem
         ParallelMesh&            _mesh;
         VecScatter               _scatter;
         void   solve_linear_system();
+        void   write_hdf5(unsigned int nfile);
         
     private:
 

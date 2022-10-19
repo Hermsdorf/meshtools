@@ -6,7 +6,7 @@
 TransientImplicitSystem::TransientImplicitSystem(ParallelMesh &mesh, std::string name):
     ImplicitSystem(mesh, name)
     {
-        _t = 0.0;
+        _t  = 0.0;
         _dt = 0.0;
         _init_function = nullptr;
     }

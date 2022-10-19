@@ -314,10 +314,11 @@ void Mesh::get_element_connectivity(int element_id, std::vector<unsigned int> &c
         connectivity[ino] = conn[ino];
 }
 
-void Mesh::getElement(int elemen_it, Element& elem)
+void Mesh::getElement(unsigned int elemen_it, Element& elem)
 {
     get_element_connectivity(elemen_it,elem._conn);
     get_element_coordinates(elemen_it,elem._coords);
     elem._type= this->getElementType(elemen_it);
+    elem._tag = this->getElementTag(elemen_it);
 }
 

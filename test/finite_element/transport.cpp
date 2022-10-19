@@ -151,7 +151,7 @@ void assemble_transport(TransientImplicitSystem* system)
                 for (int j = 0; j < local_indices.size(); j++)
                 {
                     // Galerkin Formulation
-                    Ke(i, j) += JxW * ( phi[i]*phi[j]
+                    Ke(i, j) += JxW * ( phi[i]*phi[j]                              // termo de massa
                                            + adt*(phi[i] * (velocity * dphi[j]))  // w (a. grad u) - Termo convectivo
                                            + adt*kd*(dphi[i] * dphi[j])           // Grad w Grad u - Termo difusivo
                                            + adt*sigma*phi[i]*phi[j]              // \sigma* w  u  -  Termo reação          

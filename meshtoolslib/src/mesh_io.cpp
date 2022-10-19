@@ -10,6 +10,8 @@
 #include "mesh.h"
 #include "rcm.hpp"
 
+#include "hdf5_helper.h"
+
 size_t get_mesh_type_size(MeshDataType type)
 {
     switch(type)
@@ -366,6 +368,8 @@ void Mesh::MeshGmshReader(const char* filename)
         this->n_elements      = dim_count[3];
         this->n_face_elements = dim_count[2];
         this->dim = 3;
+ 
+
     } else if (dim_count[2] != 0)
     {
         this->n_elements      = dim_count[2];
@@ -376,6 +380,9 @@ void Mesh::MeshGmshReader(const char* filename)
         this->n_elements      = dim_count[1];
         this->dim = 1;
     }
+
+    this->element_type          = this->type[this->n_face_elements];
+    this->boundary_element_type = this->type[0];
     
 
     std::string str(filename);
@@ -605,5 +612,29 @@ void Mesh::Write(const char *fname)
     fprintf(fout,"$END_ELEMENT DATA\n");
     fclose(fout);
 }
+
+#ifdef HDF5_ENABLE
+void Mesh::write_hdf5(const char* root_name)
+{
+    hid_t   file;
+    char filename[256];
+    sprintf(filename,"%s_%04d_mesh.h5",root_name,MeshTools::processor_id());
+
+    unsigned int nfe = this->n_face_elements;
+    unsigned int ne  = this->n_elements;
+    unsigned int ofs = this->offset[nfe];
+    unsigned int sz1 = (this->conn.size() - ofs);
+
+    
+    file = H5Fcreate (filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+
+    hdf5_helper::writeHDF5DoubleDataSet(file,"coords",this->coord.size(),this->coord.data());
+    hdf5_helper::writeHDF5UIntegerDataSet(file,"conn",sz1,&this->conn[ofs]);
+
+    H5Fclose (file);
+
+
+}
+#endif
 
 
