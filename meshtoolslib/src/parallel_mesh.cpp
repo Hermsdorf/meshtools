@@ -387,16 +387,19 @@ void ParallelMesh::readParallelMeshHDF5(const char* filename)
 #endif
 
 void ParallelMesh::writePVTK(const char* fname, MeshIODataAppended* info)
-{
-    if(MeshTools::processor_id == 0)
-        std::cout << "Writing VTK parallel mesh...\n";
-    
+{   
     this->WriteVTK(fname, info);
 
-    if(MeshTools::processor_id() != 0 ) return;
+    if(MeshTools::processor_id() != 0) return;
+
+    int timestep = info->getTimeStep();
 
     char filename[256];
-    sprintf(filename,"%s_%d.pvtu", fname, MeshTools::n_processors());
+
+    if (timestep != -1)
+        sprintf(filename,"%s_%d_%04d.pvtu", fname, MeshTools::n_processors(), timestep);
+    else
+        sprintf(filename,"%s_%d.pvtu", fname, MeshTools::n_processors());
 
     std::ofstream fout;
 
@@ -415,45 +418,50 @@ void ParallelMesh::writePVTK(const char* fname, MeshIODataAppended* info)
     fout << "   <PDataArray type=\"Int32\" Name=\"connectivity\" NumberOfComponents=\"1\"/>\n"; 
     fout << "   <PDataArray type=\"Int32\" Name=\"offsets\"      NumberOfComponents=\"1\"/>\n"; 
     fout << "   <PDataArray type=\"UInt16\" Name=\"types\"       NumberOfComponents=\"1\"/>\n"; 
-    fout << " </PCells>\n";
-    fout << "<PPointData>\n";
-    fout << "<PDataArray type=\"UInt32\" Name=\"node-id\"/>\n";
+    fout << "  </PCells>\n";
+    fout << "  <PPointData>\n";
+    fout << "   <PDataArray type=\"UInt32\" Name=\"node-id\"/>\n";
    
     if(info != nullptr)
     {
-        auto & point_data = info->GetPointDataInfo();
+        auto & point_data = info->getPointDataInfo();
             
         if(point_data.size()!= 0 )
         {
             for(int i = 0; i < point_data.size(); ++i)
-                fout << "\t\t\t<PDataArray type=\""<<MeshDataTypeSTR[point_data[i].type]<<"\" Name=\""<<point_data[i].name<<"\"/>\n";
+                fout << "   <PDataArray type=\""<<MeshDataTypeSTR[point_data[i].type]<<"\" Name=\""<<point_data[i].name<<"\"/>\n";
                 
         }
     }
-    fout << "</PPointData>\n";
-    fout << "\t\t<PCellData>\n";
-    fout << "<PDataArray type=\"UInt32\" Name=\"tag-id\"/>\n";
+    fout << "  </PPointData>\n";
+    fout << "  <PCellData>\n";
+    fout << "   <PDataArray type=\"UInt32\" Name=\"tag-id\"/>\n";
     if(info != nullptr)
     {
-        auto & cell_data  = info->GetCellDataInfo();
+        auto & cell_data  = info->getCellDataInfo();
         if(cell_data.size()!= 0 )
         {
             
             for(int i = 0; i < cell_data.size(); ++i)
-                fout << "\t\t\t<PDataArray type=\""<<MeshDataTypeSTR[cell_data[i].type]<<"\" Name=\""<<cell_data[i].name<<"\"/>\n";               
+                fout << "   <PDataArray type=\""<<MeshDataTypeSTR[cell_data[i].type]<<"\" Name=\""<<cell_data[i].name<<"\"/>\n";               
            
         }
     }
-    fout << "\t\t</PCellData>\n";
+    fout << "  </PCellData>\n";
     
-
     for(int p = 0 ; p < MeshTools::n_processors() ; p++)
     {
         char  str_aux[256];
-        sprintf(str_aux,"%s_%d_%d.vtu", fname,  MeshTools::n_processors(),p);
-        fout << "    <Piece Source=\"" << str_aux << "\"/>\n";
+
+        if (timestep != -1)
+            sprintf(str_aux,"%s_%d_%d_%04d.vtu", fname,  MeshTools::n_processors(), p, timestep);
+        else
+            sprintf(str_aux,"%s_%d_%d.vtu", fname, MeshTools::n_processors(), p);
+            
+        fout << "  <Piece Source=\"" << str_aux << "\"/>\n";
 
     }
+
     fout << " </PUnstructuredGrid>\n";
     fout << "</VTKFile>\n";
 
@@ -739,7 +747,7 @@ void ParallelMesh::update()
 }
 
 
-void ParallelMesh::WritePMesh(const char *fname)
+void ParallelMesh::WritePMeshMTS(const char *fname)
 {
     char filename[256];
     sprintf(filename,"%s_%04d_%04d.mts",fname,MeshTools::n_processors(),MeshTools::processor_id());

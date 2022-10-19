@@ -127,8 +127,31 @@ void TransientImplicitSystem::attach_assemble(void _assemble(TransientImplicitSy
     _assemble_function = _assemble;
 }
 
- void   TransientImplicitSystem::attach_init_function(void _init(TransientImplicitSystem*))
+ void TransientImplicitSystem::attach_init_function(void _init(TransientImplicitSystem*))
  {
     _init_function = _init;
  }
 
+void TransientImplicitSystem::write_result(string filename, int n_write)
+{
+    auto n_nodes = _mesh.get_n_nodes();
+    
+    std::vector<double> solution(n_nodes*_n_dof);
+    unsigned int offset  = 0;
+    double *solution_ptr = get_local_solution_array();
+    MeshIODataAppended info;
+    for(int i = 0; i < _n_dof; i++)
+    {
+        for(int ino = 0; ino < n_nodes; ino++)
+            solution[ino+offset] = solution_ptr[ino*_n_dof + i];
+
+        std::string var = this->_variables_names[0];
+        info.addPointDataInfo(var.c_str(), Float64, &solution[offset]);
+        offset += n_nodes;
+    }
+    info.addTimeDataInfo(n_write*this->get_deltat(), n_write);
+    
+    this->_mesh.writePVTK(filename.c_str(), &info);
+
+    restore_local_solution_array(&solution_ptr);
+}

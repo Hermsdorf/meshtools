@@ -206,8 +206,6 @@ int transport(int argc, char *argv[])
     pmesh = parts->DistributedMesh(mesh);
 
 
-
-
     // Cria o sistema de equações implicito
     TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "transport");
     system->add_variable("u");
@@ -217,13 +215,13 @@ int transport(int argc, char *argv[])
     system->attach_assemble(assemble_transport);
 
     system->init();
-    system->set_final_time(2.0);
+    system->set_final_time(1.0);
     system->set_deltat(0.0025);
 
     char filename[100];
     int n_write = 0;
-    sprintf(filename,"solution_%04d",n_write++);
-    system->write_vtk(filename);
+    sprintf(filename,"solution");
+    system->write_result(filename, n_write);
 
     // Time integratiom
     while(system->get_time() < system->get_final_time())
@@ -232,13 +230,13 @@ int transport(int argc, char *argv[])
 
         if(system->get_time_step()%5 == 0 )
         {
-            sprintf(filename,"solution_%04d",n_write++);
-            system->write_vtk(filename);
+            sprintf(filename,"solution");
+            system->write_result(filename, ++n_write);
         }
     }
 
-    sprintf(filename,"solution_%04d",n_write++);
-    system->write_vtk(filename);
+    sprintf(filename,"solution");
+    system->write_result(filename, ++n_write);
 
     delete system;
 

@@ -46,7 +46,8 @@ bool is_mesh_data_type_valid(MeshDataType type)
 
 MeshIODataAppended::MeshIODataAppended()
 {
-    
+    this->time = -1.0;
+    this->time_step = -1;
 }
 
 void MeshIODataAppended::addPointDataInfo(const char* name, MeshDataType type, void *data_ptr)
@@ -69,7 +70,11 @@ void MeshIODataAppended::addCellDataInfo(const char* name, MeshDataType type, vo
     this->list_cell_data.push_back(tmp);
 }
 
-
+void MeshIODataAppended::addTimeDataInfo(double time, int timestep)
+{
+    this->time = time;
+    this->time_step = timestep;
+}
 
 static int element_type[6] = {-1, 2, 3, 4, 4, 8};
 static int element_dim[6]  = { 0, 1, 2, 2, 3, 3};
@@ -416,7 +421,12 @@ void Mesh::WriteVTK(const char* fname, MeshIODataAppended* info )
     unsigned int boffset = 0; /* Offset into binary file */
     const char *byte_order = BinaryBigEndian() ? "BigEndian" : "LittleEndian";
 
-    sprintf(filename,"%s_%d_%d.vtu",fname,MeshTools::n_processors(),MeshTools::processor_id());
+    int timestep = info->getTimeStep();
+
+    if (timestep != -1)
+        sprintf(filename,"%s_%d_%d_%04d.vtu",fname,MeshTools::n_processors(),MeshTools::processor_id(), timestep);
+    else
+        sprintf(filename,"%s_%d_%d.vtu",fname,MeshTools::n_processors(),MeshTools::processor_id());
     
     fout = fopen(filename, "wb");
 
@@ -455,11 +465,10 @@ void Mesh::WriteVTK(const char* fname, MeshIODataAppended* info )
         boffset += this->n_nodes*sizeof(unsigned int) + sizeof(unsigned long);
         if(info != nullptr)
         {
-            auto& point_data = info->GetPointDataInfo();
+            auto& point_data = info->getPointDataInfo();
             if( point_data.size() != 0)
             {
                 // Writting nodal attribute data
-                // fprintf(fout, "   <PointData>\n");
                 for(int i= 0; i < point_data.size(); ++i)
                 {
                    fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n",MeshDataTypeSTR[point_data[i].type].c_str(), point_data[i].name.c_str(),1,boffset);
@@ -474,11 +483,10 @@ void Mesh::WriteVTK(const char* fname, MeshIODataAppended* info )
         boffset += this->n_elements*sizeof(unsigned int) + sizeof(unsigned long);
         if(info != nullptr)
         {
-              auto& cell_data = info->GetCellDataInfo();
+            auto& cell_data = info->getCellDataInfo();
             if( cell_data.size() != 0)
             {
                 // Writting nodal attribute data
-               
                 for(int i= 0; i < cell_data.size(); ++i)
                 {
                    fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n",MeshDataTypeSTR[cell_data[i].type].c_str(),cell_data[i].name.c_str(),1,boffset);
@@ -527,7 +535,7 @@ void Mesh::WriteVTK(const char* fname, MeshIODataAppended* info )
 
         if(info != nullptr)
         {
-            auto& point_data = info->GetPointDataInfo();
+            auto& point_data = info->getPointDataInfo();
             
             if( point_data.size() != 0)
             {
@@ -544,7 +552,7 @@ void Mesh::WriteVTK(const char* fname, MeshIODataAppended* info )
 
         if(info != nullptr)
         {
-            auto& cell_data   = info->GetCellDataInfo();
+            auto& cell_data   = info->getCellDataInfo();
             if( cell_data.size() != 0)
             {
                 
@@ -566,7 +574,7 @@ void Mesh::WriteVTK(const char* fname, MeshIODataAppended* info )
     }
 }
 
-void Mesh::Write(const char *fname)
+void Mesh::WriteMTS(const char *fname)
 {
     char filename[256];
     sprintf(filename,"%s_%04d.mts",fname,MeshTools::processor_id());
