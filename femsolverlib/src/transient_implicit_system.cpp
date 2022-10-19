@@ -8,6 +8,7 @@ TransientImplicitSystem::TransientImplicitSystem(ParallelMesh &mesh, std::string
     {
         _t  = 0.0;
         _dt = 0.0;
+        _n_write = 0;
         _init_function = nullptr;
     }
 
@@ -132,7 +133,7 @@ void TransientImplicitSystem::attach_assemble(void _assemble(TransientImplicitSy
     _init_function = _init;
  }
 
-void TransientImplicitSystem::write_result(string filename, int n_write)
+void TransientImplicitSystem::write_result(string filename)
 {
     auto n_nodes = _mesh.get_n_nodes();
     
@@ -149,7 +150,7 @@ void TransientImplicitSystem::write_result(string filename, int n_write)
         info.addPointDataInfo(var.c_str(), Float64, &solution[offset]);
         offset += n_nodes;
     }
-    info.addTimeDataInfo(n_write*this->get_deltat(), n_write);
+    info.addTimeDataInfo(this->get_time(), _n_write++);
     
     this->_mesh.writePVTK(filename.c_str(), &info);
 

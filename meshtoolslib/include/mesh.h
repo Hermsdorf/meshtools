@@ -529,8 +529,8 @@ class Mesh {
         std::vector<int>            physical_tag;               // Array indicando o physical tag de cada elemento.
         std::vector<int>            boundary_nodes;
         std::vector<unsigned int>   node_index;                 // Array indicando o índice de cada nó.
-        MeshElementType             element_type;
-        MeshElementType             boundary_element_type;
+        unsigned short              element_type;
+        unsigned short              boundary_element_type;
 
         std::map<int, physical_data_t>  physical_map;
         unsigned int dim;                                       // Dimensão da malha.

@@ -46,7 +46,7 @@ class TransientImplicitSystem: public ImplicitSystem
         void    add_initial_condition(InitialCondition ic);
         void    solve_time_step();
         void    update_deltat();
-        void    write_result(string filename, int n_write);
+        void    write_result(string filename);
         void    init();
         double* get_old_solution_array();
         double* get_older_solution_array();
@@ -63,6 +63,7 @@ class TransientImplicitSystem: public ImplicitSystem
         Vec _old_solution_local;      // solution at t-dt
         Vec _older_solution_local;    //  solution at t - 2*dt (needed fot BFD2 time solver)
         std::vector<InitialCondition> _initial_conditions;
+        unsigned int _n_write;
 
         void apply_initial_conditions();
         void (* _assemble_function)(TransientImplicitSystem*  _system);

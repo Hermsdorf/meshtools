@@ -20,8 +20,8 @@ double exact_solution (const double x,
 {
   const double xo = 0.2;
   const double yo = 0.2;
-  const double u  = 0.8;
-  const double v  = 0.8;
+  const double u  = 1;
+  const double v  = 1;
 
   const double num =
     pow(x - u*t - xo, 2.) +
@@ -116,6 +116,8 @@ void assemble_transport(TransientImplicitSystem* system)
             FEMComputeFunctions(etype, qp[q], qw[q], coords_iel, qpoint, phi, dphi, JxW);
             FEMStab(etype, qp[q], coords_iel, g, G);
 
+            //velocity(0)  = qpoint(1);
+            //velocity(1)  = -qpoint(0);            
             // SUPG stabilization parameters
             double tau = (velocity) * (G.mult(velocity)) + (kd * kd) * (G.contract(G)) + 4.0/(dt*dt);
             double u_old = 0.0;
@@ -131,6 +133,8 @@ void assemble_transport(TransientImplicitSystem* system)
             const double  adt1 = (1.0-theta)*dt;
             const double adt   = theta*dt;
             // calculando a matriz de rigidez e o vetor de forca local
+            // TODO: Verificar sinais dos termos da matriz Ke e vetor Fe
+            //       Olhar capitulo 3 do livro do Donea. 
             for (int i = 0; i < local_indices.size(); i++)
             {
                 // Galerkin 
@@ -140,30 +144,29 @@ void assemble_transport(TransientImplicitSystem* system)
                                 );
 
                 // SUPG 
-                /*
-                Fe[i]  +=  JxW * tau * (velocity * dphi[i])*(
-                                     u_old - (1.0-theta)*dt*(
-                                                                phi[i]*(velocity * grad_u_old) +
-                                                                sigma*phi[i]*u_old)
-                                                            );
-                */
+            
+                // Fe[i]  +=  JxW * tau * (velocity * dphi[i])*(
+                //                      u_old - adt1*(
+                //                                         phi[i]*(velocity * grad_u_old) +
+                //                                         sigma*phi[i]*u_old)
+                //                                    );
+                
 
                 for (int j = 0; j < local_indices.size(); j++)
                 {
                     // Galerkin Formulation
                     Ke(i, j) += JxW * ( phi[i]*phi[j]                              // termo de massa
-                                           + adt*(phi[i] * (velocity * dphi[j]))  // w (a. grad u) - Termo convectivo
-                                           + adt*kd*(dphi[i] * dphi[j])           // Grad w Grad u - Termo difusivo
-                                           + adt*sigma*phi[i]*phi[j]              // \sigma* w  u  -  Termo reação          
+                                           + adt*(phi[i] * (velocity * dphi[j]))  // Na (vel. grad Nb) - Termo convectivo
+                                           + adt*kd*(dphi[i] * dphi[j])           // Grad Na Grad Nb - Termo difusivo
+                                           + adt*sigma*phi[i]*phi[j]              // \sigma* Na  Nb  - Termo reação          
                                        );
 
-                    // SUPG Formulation
-                    /*
-                    Ke(i, j) += JxW * tau * (velocity * dphi[i]) * (
-                                     phi[j]             +     // Termo de massa SUPG
-                                     velocity * dphi[j] +     // Termo SUPG convecção
-                                     sigma*phi[j]);           // Termo SUPG reação
-                                     */
+                    // SUPG Formulation                  
+                    // Ke(i, j) += JxW * tau * (velocity * dphi[i]) * (
+                    //                  phi[j]                   +     // Termo de massa SUPG
+                    //                  adt*(velocity * dphi[j]) +     // Termo SUPG convecção
+                    //                  adt*sigma*phi[j]);           // Termo SUPG reação
+                                     
                 }
             }
         }
@@ -215,28 +218,29 @@ int transport(int argc, char *argv[])
     system->attach_assemble(assemble_transport);
 
     system->init();
-    system->set_final_time(1.0);
-    system->set_deltat(0.0025);
+    system->set_final_time(5.0);
+    system->set_deltat(0.01);
+    unsigned int write_interval = 10;
+
 
     char filename[100];
-    int n_write = 0;
     sprintf(filename,"solution");
-    system->write_result(filename, n_write);
+    system->write_result(filename);
 
     // Time integratiom
     while(system->get_time() < system->get_final_time())
     {
         system->solve_time_step();
 
-        if(system->get_time_step()%5 == 0 )
+        if(system->get_time_step()%write_interval == 0 )
         {
             sprintf(filename,"solution");
-            system->write_result(filename, ++n_write);
+            system->write_result(filename);
         }
     }
 
     sprintf(filename,"solution");
-    system->write_result(filename, ++n_write);
+    system->write_result(filename);
 
     delete system;
 
