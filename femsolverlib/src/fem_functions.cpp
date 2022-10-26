@@ -22,6 +22,8 @@ void QUAD4DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw);
 void QUAD4ComputeFunctions(RealVector qp, double qw, std::vector<Point> coords, RealVector &point, 
                            std::vector<double> &phi, std::vector<Gradient> &dphi, double &JxW);
 
+void QUAD4Stab(RealVector q_point, std::vector<Point> coords, RealVector &g,  RealTensor &G);
+
 void TET4DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw);
 
 void TET4ComputeFunctions(RealVector qp, double qw, std::vector<Point> coords, RealVector &point, 
@@ -76,6 +78,9 @@ void FEMStab(MeshElementType elem_type, RealVector qp, std::vector<Point> &coord
     {
     case TRI3:
         TRI3Stab(qp, coords,g,G);
+        break;
+    case QUAD4:
+        QUAD4Stab(qp,coords,g,G);
         break;
     default:
          std::cout <<" Elemento: " << elem_type << std::endl;
