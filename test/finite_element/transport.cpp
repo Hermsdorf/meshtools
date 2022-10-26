@@ -99,12 +99,12 @@ void assemble_transport(TransientImplicitSystem* system)
         FEMGetQGauss(etype, qp, qw);
 
         Gradient velocity;
-        velocity(0)  = 0.8;
-        velocity(1)  = 0.8;
-        double kd    = 1.0E-2;
-        double sigma = 0.0;
-        double theta = 0.5;
-        double dt    = system->get_deltat();
+        velocity(0)         = 0.8;
+        velocity(1)         = 0.8;
+        double k            = 1.0E-3;
+        double sigma        = 0.0;
+        double theta        = 0.5;
+        double dt           = system->get_deltat();
 
         RealVector g;
         RealTensor G;
@@ -115,12 +115,10 @@ void assemble_transport(TransientImplicitSystem* system)
             // calculando a função de forma e suas derivadas para o ponto de integração q
             FEMComputeFunctions(etype, qp[q], qw[q], coords_iel, qpoint, phi, dphi, JxW);
             FEMStab(etype, qp[q], coords_iel, g, G);
-
-            //velocity(0)  = qpoint(1);
-            //velocity(1)  = -qpoint(0);            
+        
             // SUPG stabilization parameters
-            double tau = (velocity) * (G.mult(velocity)) + (kd * kd) * (G.contract(G)) + 4.0/(dt*dt);
-            double u_old = 0.0;
+            double tau = (velocity) * (G.mult(velocity)) + (k * k) * (G.contract(G)) + 4.0/(dt*dt);
+            double u_old  = 0.0;
             Gradient grad_u_old;
 
             for (int i = 0; i < local_indices.size(); i++)
@@ -139,17 +137,17 @@ void assemble_transport(TransientImplicitSystem* system)
             {
                 // Galerkin 
                 Fe[i]   +=  JxW*(phi[i]*u_old - adt1*phi[i]*(velocity * grad_u_old) 
-                                              - adt1*kd*(dphi[i] * grad_u_old)  
+                                              - adt1*k*(dphi[i] * grad_u_old)  
                                               - adt1*sigma*phi[i]*u_old
                                 );
 
                 // SUPG 
             
-                // Fe[i]  +=  JxW * tau * (velocity * dphi[i])*(
-                //                      u_old - adt1*(
-                //                                         phi[i]*(velocity * grad_u_old) +
-                //                                         sigma*phi[i]*u_old)
-                //                                    );
+                Fe[i]  +=  JxW * tau * (velocity * dphi[i])*(
+                                      u_old - adt1*(
+                                                        phi[i]*(velocity * grad_u_old) +
+                                                        sigma*phi[i]*u_old)
+                                                   );
                 
 
                 for (int j = 0; j < local_indices.size(); j++)
@@ -157,15 +155,15 @@ void assemble_transport(TransientImplicitSystem* system)
                     // Galerkin Formulation
                     Ke(i, j) += JxW * ( phi[i]*phi[j]                              // termo de massa
                                            + adt*(phi[i] * (velocity * dphi[j]))  // Na (vel. grad Nb) - Termo convectivo
-                                           + adt*kd*(dphi[i] * dphi[j])           // Grad Na Grad Nb - Termo difusivo
+                                           + adt*k*(dphi[i] * dphi[j])           // Grad Na Grad Nb - Termo difusivo
                                            + adt*sigma*phi[i]*phi[j]              // \sigma* Na  Nb  - Termo reação          
                                        );
 
                     // SUPG Formulation                  
-                    // Ke(i, j) += JxW * tau * (velocity * dphi[i]) * (
-                    //                  phi[j]                   +     // Termo de massa SUPG
-                    //                  adt*(velocity * dphi[j]) +     // Termo SUPG convecção
-                    //                  adt*sigma*phi[j]);           // Termo SUPG reação
+                    Ke(i, j) += JxW * tau * (velocity * dphi[i]) * (
+                                     phi[j]                   +     // Termo de massa SUPG
+                                     adt*(velocity * dphi[j]) +     // Termo SUPG convecção
+                                     adt*sigma*phi[j]);           // Termo SUPG reação
                                      
                 }
             }
@@ -218,8 +216,8 @@ int transport(int argc, char *argv[])
     system->attach_assemble(assemble_transport);
 
     system->init();
-    system->set_final_time(5.0);
-    system->set_deltat(0.01);
+    system->set_final_time(0.5);
+    system->set_deltat(0.001);
     unsigned int write_interval = 10;
 
 

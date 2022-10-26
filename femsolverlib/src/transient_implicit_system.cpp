@@ -55,11 +55,18 @@ void TransientImplicitSystem::solve_time_step()
     PetscPrintf(MeshTools::Comm(),"Solving time %0.4f\n", _t);
     VecCopy(_old_solution_local, _older_solution_local);
     VecCopy(_solution_local, _old_solution_local);
+    
+ 
+
 
     this->_assemble_function(this);
 
     // getting solution at t+dt
     ImplicitSystem::solve_linear_system();
+
+    MatZeroEntries(this->_A);
+    VecZeroEntries(this->_rhs);
+    
     timestep++;
     update_deltat();
 }

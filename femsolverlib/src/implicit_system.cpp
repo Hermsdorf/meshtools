@@ -140,6 +140,7 @@ void ImplicitSystem::solve_linear_system()
 {
     MatAssemblyBegin(_A,MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(_A, MAT_FINAL_ASSEMBLY);
+    
     VecAssemblyBegin(this->_rhs);
     VecAssemblyEnd(this->_rhs);
 
