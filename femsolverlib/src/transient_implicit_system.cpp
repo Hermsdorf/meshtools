@@ -57,8 +57,6 @@ void TransientImplicitSystem::solve_time_step()
     VecCopy(_solution_local, _old_solution_local);
     
  
-
-
     this->_assemble_function(this);
 
     // getting solution at t+dt
@@ -66,7 +64,7 @@ void TransientImplicitSystem::solve_time_step()
 
     MatZeroEntries(this->_A);
     VecZeroEntries(this->_rhs);
-    
+
     timestep++;
     update_deltat();
 }

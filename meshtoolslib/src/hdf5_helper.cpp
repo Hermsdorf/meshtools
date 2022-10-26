@@ -4,14 +4,15 @@
 namespace hdf5_helper 
 {
 
-static hid_t cpid = H5P_DEFAULT;
 
-hid_t setup_compressor(hsize_t n, hsize_t *chunk, uint prec=0)
+
+hid_t setupHDF5Compressor(hsize_t n, hsize_t *chunk, uint prec=0)
 {
     
     unsigned int cd_values[10];
     int i, cd_nelmts = 10;
-
+    hid_t cpid = H5P_DEFAULT;
+    
     /* setup dataset creation properties */
     if (0 > (cpid = H5Pcreate(H5P_DATASET_CREATE))) ERROR(H5Pcreate);
     if (0 > H5Pset_chunk(cpid, n, chunk)) ERROR(H5Pset_chunk);
@@ -31,13 +32,13 @@ hid_t setup_compressor(hsize_t n, hsize_t *chunk, uint prec=0)
 }
 
 
-void writeHDF5DoubleDataSet(hid_t file, const char* datasetname, hsize_t dimsf, double* buffer)
+void writeHDF5DoubleDataSet(hid_t file,hid_t cpid, const char* datasetname, hsize_t dimsf, double* buffer)
 {
     hid_t      dataspace, dataset;   /* handles */
     herr_t     status;   
 
     dataspace = H5Screate_simple(1, &dimsf, NULL); 
-    dataset   = H5Dcreate(file,datasetname, H5T_NATIVE_DOUBLE, dataspace,H5P_DEFAULT ,H5P_DEFAULT,H5P_DEFAULT);
+    dataset   = H5Dcreate(file,datasetname, H5T_NATIVE_DOUBLE, dataspace,H5P_DEFAULT ,cpid,H5P_DEFAULT);
     /*
      * Write the data to the dataset using default transfer properties.
      */
@@ -75,7 +76,7 @@ void writeHDF5IntegerDataSet(hid_t file, const char* datasetname, hsize_t dimsf,
     herr_t     status;   
 
     dataspace = H5Screate_simple(1, &dimsf, NULL); 
-    dataset   = H5Dcreate(file,datasetname, H5T_NATIVE_UINT, dataspace, H5P_DEFAULT ,H5P_DEFAULT,H5P_DEFAULT);
+    dataset   = H5Dcreate(file,datasetname, H5T_NATIVE_INT, dataspace, H5P_DEFAULT ,H5P_DEFAULT,H5P_DEFAULT);
     /*
      * Write the data to the dataset using default transfer properties.
      */

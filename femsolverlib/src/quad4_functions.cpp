@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include "numeric_vector.h"
+#include "tensor.h"
 
 //  Linear Quadrilateral element functions
 //  (-,1)     (1,1)
@@ -116,4 +117,33 @@ void QUAD4ComputeFunctions(RealVector qp, double qw, std::vector<Point> coords, 
     }
 
     JxW = qw*detJ;
+}
+
+
+void QUAD4Stab(RealVector q_point, std::vector<Point> coords, RealVector &g,  RealTensor &G)
+{
+    double dpsi[2][4];
+    double dxidx  = 0.0, dxidy =0.0;
+    double detadx = 0.0, detady=0.0;
+    double x[3], y[3];
+   
+    QUAD4DShape(q_point,dpsi);
+    for(int i=0; i<coords.size(); i++)
+    {
+        x[i] = X(i);
+        y[i] = Y(i);
+
+        dxidx  +=  x[i]*dpsi[0][i];  // dxi/dx
+        dxidy  +=  y[i]*dpsi[0][i];  // dxi/dy
+        detadx +=  x[i]*dpsi[1][i];  // deta/dx
+        detady +=  y[i]*dpsi[1][i];  // deta/dy
+    }
+
+    g(0) = dxidx + detadx;
+    g(1) = dxidy + detady;
+
+    G(0,0)          = dxidx*dxidx + detadx*detadx;
+    G(0,1) = G(1,0) = dxidx*dxidy + detadx*detady;
+    G(1,1)          = dxidy*dxidy + detady*detady;
+   
 }

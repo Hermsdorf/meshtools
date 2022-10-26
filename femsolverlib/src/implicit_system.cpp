@@ -21,6 +21,12 @@ int ImplicitSystem::add_variable(std::string name)
     return this->_variables_names.size() - 1;
 }
 
+std::string ImplicitSystem::get_variable_name(int idx)
+{
+    assert(idx < this->_variables_names.size());
+    return this->_variables_names[idx];
+}
+
 int ImplicitSystem::get_variable_id(std::string name)
 {
     for(int i = 0; i < this->_variables_names.size();i++)
@@ -140,7 +146,7 @@ void ImplicitSystem::solve_linear_system()
 {
     MatAssemblyBegin(_A,MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(_A, MAT_FINAL_ASSEMBLY);
-    
+
     VecAssemblyBegin(this->_rhs);
     VecAssemblyEnd(this->_rhs);
 

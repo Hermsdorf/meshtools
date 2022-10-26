@@ -101,10 +101,11 @@ void assemble_transport(TransientImplicitSystem* system)
         Gradient velocity;
         velocity(0)         = 0.8;
         velocity(1)         = 0.8;
-        double k            = 1.0E-3;
+        double k            = 1.0E-2;
         double sigma        = 0.0;
         double theta        = 0.5;
         double dt           = system->get_deltat();
+        double dt_stab       = 0.1;
 
         RealVector g;
         RealTensor G;
@@ -117,16 +118,25 @@ void assemble_transport(TransientImplicitSystem* system)
             FEMStab(etype, qp[q], coords_iel, g, G);
         
             // SUPG stabilization parameters
-            double tau = (velocity) * (G.mult(velocity)) + (k * k) * (G.contract(G)) + 4.0/(dt*dt);
+            double tau = (velocity) * (G.mult(velocity)) + (k * k) * (G.contract(G)) + dt_stab*4.0/(dt*dt);
             double u_old  = 0.0;
             Gradient grad_u_old;
 
+            
             for (int i = 0; i < local_indices.size(); i++)
             {
                 u_old         +=  old_solution[local_indices[i]]*phi[i];
                 grad_u_old(0) +=  old_solution[local_indices[i]]*dphi[i](0);
                 grad_u_old(1) +=  old_solution[local_indices[i]]*dphi[i](1);
             }
+
+           // radius = (0.75d0*VOL*ONEPI)**(ONE3)
+           // he     = 2.d0*radius
+           // aux0 = (2.d0/dt)
+           // aux1 = (2.d0*unorm/he)
+           // aux2 = ((4.d0*diffusion_trace)/(he*he))
+           // tau = 1.d0/sqrt( aux0*aux0 + aux1*aux1 + aux2*aux2 )
+
 
             const double  adt1 = (1.0-theta)*dt;
             const double adt   = theta*dt;
@@ -141,13 +151,10 @@ void assemble_transport(TransientImplicitSystem* system)
                                               - adt1*sigma*phi[i]*u_old
                                 );
 
-                // SUPG 
-            
-                Fe[i]  +=  JxW * tau * (velocity * dphi[i])*(
-                                      u_old - adt1*(
-                                                        phi[i]*(velocity * grad_u_old) +
-                                                        sigma*phi[i]*u_old)
-                                                   );
+                // // SUPG 
+                // Fe[i] += JxW * tau * (u_old * (velocity * dphi[i]))
+                //         -adt1 * (grad_u_old * velocity)*(velocity * dphi[i]);
+
                 
 
                 for (int j = 0; j < local_indices.size(); j++)
@@ -159,12 +166,11 @@ void assemble_transport(TransientImplicitSystem* system)
                                            + adt*sigma*phi[i]*phi[j]              // \sigma* Na  Nb  - Termo reação          
                                        );
 
-                    // SUPG Formulation                  
-                    Ke(i, j) += JxW * tau * (velocity * dphi[i]) * (
-                                     phi[j]                   +     // Termo de massa SUPG
-                                     adt*(velocity * dphi[j]) +     // Termo SUPG convecção
-                                     adt*sigma*phi[j]);           // Termo SUPG reação
-                                     
+                    // Ke(i, j) += JxW * tau * (
+                    //         phi[j]*(velocity * dphi[i]) +
+                    //         adt * (velocity * dphi[j])*(velocity * dphi[i])
+                    //         );
+
                 }
             }
         }

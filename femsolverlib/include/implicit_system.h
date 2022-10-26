@@ -11,6 +11,7 @@ class ImplicitSystem
     public:
         ImplicitSystem(ParallelMesh &mesh, std::string name);
         int     add_variable(std::string name);
+        std::string  get_variable_name(int id);
         int     get_variable_id(std::string name);
         void    add_dirichlet_boundary(DirichletBoundary &boundary);
         void    init();

@@ -34,3 +34,5 @@ Transfinite Surface {1};
 Physical Curve("BC", 1) = {4, 3, 2, 1};
 //+
 Physical Surface("DOMAIN", 2) = {1};
+//+
+Recombine Surface {1};

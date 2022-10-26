@@ -517,6 +517,10 @@ class Mesh {
 
        int getSurfaceElementTag(int iel) { return physical_tag[iel]; };
 
+       unsigned int get_mesh_element_type(){ return element_type; }
+
+       unsigned int get_boundary_mesh_element_type() {return boundary_element_type; }
+
 
     protected:
         unsigned int                n_face_elements;            // Numero de elementos de superficie.
@@ -537,9 +541,6 @@ class Mesh {
         
         // TODO: remover 
         std::string filename;                    // Nome do arquvios de entrada de tipo msh
-#ifdef HDF5_ENABLE
-        void write_hdf5(const char* filename);
-#endif
         std::vector<unsigned int> coloring;
         unsigned int              n_colors;       // Número total de cores dos elementos internos da malha.
 };

@@ -29,8 +29,9 @@ do {                                                              \
 } while(0)
 
 
+hid_t setupHDF5Compressor(hsize_t n, hsize_t *chunk, uint prec);
 
-void writeHDF5DoubleDataSet(hid_t file, const char* datasetname, hsize_t dimsf, double* buffer);
+void writeHDF5DoubleDataSet(hid_t file, hid_t cpid, const char* datasetname, hsize_t dimsf, double* buffer);
 
 void writeHDF5UIntegerDataSet(hid_t file, const char* datasetname, hsize_t dimsf, unsigned int* buffer);
 
