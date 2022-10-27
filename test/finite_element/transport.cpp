@@ -101,7 +101,7 @@ void assemble_transport(TransientImplicitSystem* system)
         Gradient velocity;
         velocity(0)         = 0.8;
         velocity(1)         = 0.8;
-        double k            = 1.0E-3;
+        double k            = 1.0E-4;
         double sigma        = 0.0;
         double theta        = 0.5;
         double dt           = system->get_deltat();
@@ -157,10 +157,11 @@ void assemble_transport(TransientImplicitSystem* system)
                                               - adt1*sigma*phi[i]*u_old
                                 );
 
-                // // SUPG 
+                //  SUPG contribution
                 Fe[i] += JxW * tau * (
-                                         u_old * (velocity * dphi[i]) +
+                                         u_old * (velocity * dphi[i])+
                                          -adt1 * (grad_u_old * velocity)*(velocity * dphi[i])
+                                         -adt1 * (sigma*u_old)*(velocity * dphi[i])
                                      );
 
                 
@@ -169,14 +170,16 @@ void assemble_transport(TransientImplicitSystem* system)
                 {
                     // Galerkin Formulation
                     Ke(i, j) += JxW * ( phi[i]*phi[j]                              // termo de massa
-                                           + adt*(phi[i] * (velocity * dphi[j]))  // Na (vel. grad Nb) - Termo convectivo
-                                           + adt*k*(dphi[i] * dphi[j])           // Grad Na Grad Nb - Termo difusivo
+                                           + adt*(phi[i] * (velocity * dphi[j]))   // Na (vel. grad Nb) - Termo convectivo
+                                           + adt*k*(dphi[i] * dphi[j])             // Grad Na Grad Nb - Termo difusivo
                                            + adt*sigma*phi[i]*phi[j]              // \sigma* Na  Nb  - Termo reação          
                                        );
 
+                    // SUPG contribution
                     Ke(i, j) += JxW * tau * (
                                     phi[j]*(velocity * dphi[i]) +
-                                     adt * (velocity * dphi[j])*(velocity * dphi[i])
+                                     adt * (velocity * dphi[j])*(velocity * dphi[i]) +
+                                     adt * (sigma * phi[j] )*(velocity * dphi[i])
                             );
 
                 }
