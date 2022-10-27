@@ -101,7 +101,7 @@ void assemble_transport(TransientImplicitSystem* system)
         Gradient velocity;
         velocity(0)         = 0.8;
         velocity(1)         = 0.8;
-        double k            = 1.0E-2;
+        double k            = 1.0E-3;
         double sigma        = 0.0;
         double theta        = 0.5;
         double dt           = system->get_deltat();
@@ -119,6 +119,10 @@ void assemble_transport(TransientImplicitSystem* system)
         
             // SUPG stabilization parameters
             double tau = (velocity) * (G.mult(velocity)) + (k * k) * (G.contract(G)) + dt_stab*4.0/(dt*dt);
+            tau = 1.0/sqrt(tau);
+
+            
+
             double u_old  = 0.0;
             Gradient grad_u_old;
 
@@ -129,6 +133,8 @@ void assemble_transport(TransientImplicitSystem* system)
                 grad_u_old(0) +=  old_solution[local_indices[i]]*dphi[i](0);
                 grad_u_old(1) +=  old_solution[local_indices[i]]*dphi[i](1);
             }
+
+
 
            // radius = (0.75d0*VOL*ONEPI)**(ONE3)
            // he     = 2.d0*radius
@@ -152,8 +158,10 @@ void assemble_transport(TransientImplicitSystem* system)
                                 );
 
                 // // SUPG 
-                // Fe[i] += JxW * tau * (u_old * (velocity * dphi[i]))
-                //         -adt1 * (grad_u_old * velocity)*(velocity * dphi[i]);
+                Fe[i] += JxW * tau * (
+                                         u_old * (velocity * dphi[i]) +
+                                         -adt1 * (grad_u_old * velocity)*(velocity * dphi[i])
+                                     );
 
                 
 
@@ -166,10 +174,10 @@ void assemble_transport(TransientImplicitSystem* system)
                                            + adt*sigma*phi[i]*phi[j]              // \sigma* Na  Nb  - Termo reação          
                                        );
 
-                    // Ke(i, j) += JxW * tau * (
-                    //         phi[j]*(velocity * dphi[i]) +
-                    //         adt * (velocity * dphi[j])*(velocity * dphi[i])
-                    //         );
+                    Ke(i, j) += JxW * tau * (
+                                    phi[j]*(velocity * dphi[i]) +
+                                     adt * (velocity * dphi[j])*(velocity * dphi[i])
+                            );
 
                 }
             }
