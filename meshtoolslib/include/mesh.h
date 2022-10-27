@@ -59,16 +59,18 @@ class Element
 {
     friend class Mesh;
     public:
-        Element();
-        std::vector<unsigned int> & Connectivity();
-        std::vector<Point>        & Node();
-        unsigned short            type();
-        unsigned int              region();
+        Element(){};
+        std::vector<unsigned int> & connectivity() {return _conn; };
+        Point        &              node(int i) {return _coords[i]; } ;
+        unsigned short&            type() {return _type; } ;
+        unsigned int&              region()  {return _tag; } ;
+        unsigned int               n_nodes() {return _conn.size(); };
     private:
         std::vector<unsigned int> _conn;
         std::vector<Point>        _coords;
         unsigned short            _type;
         unsigned int              _tag;
+        
 };
 
 

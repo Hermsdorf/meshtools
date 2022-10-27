@@ -51,7 +51,6 @@ XDMFWriter::XDMFWriter(std::string filename):
 
 XDMFWriter::~XDMFWriter()
 {
-
 }
 
 
@@ -135,12 +134,13 @@ int XDMFWriter::write(ImplicitSystem * system, double time=0.0)
     }
 
 #ifdef HDF5_ENABLE
-    hid_t   cpid = 0;
+    hid_t   cpid = H5P_DEFAULT;
     hid_t   fid;
     herr_t  status;
     hsize_t chunk = 512;
 
-    cpid = hdf5_helper::setupHDF5Compressor(this->n_local_nodes,&chunk,0);
+    if(this->using_compression)
+        cpid = hdf5_helper::setupHDF5Compressor(this->n_local_nodes,&chunk,0);
 
     sprintf(filename,"%s/%s_%d_%03d_%05d.h5",stepdir,this->basename.c_str(),n_processors,processor_id, this->n_timestep);
     if (0 > (fid = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT))) ERROR(H5Fcreate);
@@ -235,16 +235,16 @@ void XDMFWriter::write_spatial_collection(ImplicitSystem* system, double time)
             int lelem  = local_data[p*2+1];
             fprintf(fxml," <Grid Name=\"%s_%d_%03d\" Type=\"Uniform\"> \n",this->basename.c_str(), n_processors, p);  
             fprintf(fxml,"  <Topology Type=\"%s\" NumberOfElements=\"%d\"  BaseOffset=\"0\">\n",elem_name.c_str(),lelem);
-#ifdef HAVE_HDF5
-            fprintf(fxml,"    <DataItem Dimensions=\"%d\" NumberType=\"Int\" Format=\"HDF\"> %s_%d_%03d_%05d.h5:/conn</DataItem>\n",lelem*nnoel,meshfile,n_processors,p,this->mesh_counter);
+#ifdef HDF5_ENABLE
+            fprintf(fxml,"    <DataItem Dimensions=\"%d\" NumberType=\"Int\" Format=\"HDF\"> %s_%d_%03d.h5:/conn</DataItem>\n",lelem*nnoel,meshfile,n_processors,p);
 #else
            fprintf(fxml,"    <DataItem Dimensions=\"%d\" NumberType=\"Int\" Format=\"Binary\" Endian=\"Little\"> %s.con.%d.%03d.bin </DataItem>\n",lelem*nnoel,meshfile,n_processors,p);
 #endif
 
             fprintf(fxml,"  </Topology>\n");
             fprintf(fxml,"  <Geometry Type=\"XYZ\">\n");
-#ifdef HAVE_HDF5
-            fprintf(fxml,"    <DataItem Dimensions=\"%d\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\">%s_%d_%03d_%05d.h5:/coords</DataItem>\n",lnodes*3,meshfile,n_processors,p,this->mesh_counter);
+#ifdef HDF5_ENABLE
+            fprintf(fxml,"    <DataItem Dimensions=\"%d\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\">%s_%d_%03d.h5:/coords</DataItem>\n",lnodes*3,meshfile,n_processors,p);
 #else
             fprintf(fxml,"    <DataItem Dimensions=\"%d\" NumberType=\"Float\" Precision=\"8\" Format=\"Binary\" Endian=\"Little\">%s.coords.%d.%03d.bin </DataItem>\n",lnodes*3,meshfile,n_processors,p);
 #endif
@@ -256,7 +256,7 @@ void XDMFWriter::write_spatial_collection(ImplicitSystem* system, double time)
                 std::string dataset_name = system->get_variable_name(nv);
 
                 fprintf(fxml,"  <Attribute Name=\"%s\" AttributeType=\"Scalar\" Center=\"Node\">\n", dataset_name.c_str());
-#ifdef HAVE_HDF5
+#ifdef HDF5_ENABLE
                 fprintf(fxml,"    <DataItem Dimensions=\"%d\" NumberType=\"Float\" Precision=\"8\" Format=\"HDF\"> %s_%d_%03d_%05d.h5:/%s</DataItem>\n",lnodes,stepfile,n_processors,p,this->n_timestep, dataset_name.c_str());
 #else
 		        fprintf(fxml,"    <DataItem Dimensions=\"%d\" NumberType=\"Float\" Precision=\"8\" Format=\"Binary\" Endian=\"Little\">%s.%s.%d.%03d.%05d.bin </DataItem>\n",lnodes,stepfile,dataset_name.c_str(),n_processors,p,this->n_timestep);
@@ -298,40 +298,19 @@ void XDMFWriter::write_temporal_collection()
 }
 
 
-
-   
-
 void XDMFWriter::get_variable_solution(ImplicitSystem* system, int ivar, std::vector<double> &solution)
 {
     auto mesh        = system->get_mesh();
- 
- /*
-    std::vector<dof_id_type> dof_indices;
-    std::vector<double>       nodal_soln;
-    std::vector<double>       elem_soln;
-    
-    const FEType & fe_type    = system.variable_type(ivar);
-    
-    NumericVector<Number> & sys_soln(*system.current_local_solution);
+    auto dof_manager = system->get_equation_manager();
+    auto n_dof       = dof_manager.get_n_dofs();
 
-    for (const auto & elem : mesh.active_local_element_ptr_range())
-    {
-   
-        dof_map.dof_indices (elem, dof_indices, ivar);
-        elem_soln.resize(dof_indices.size());
-        for(int i = 0; i < dof_indices.size(); ++i)
-            elem_soln[i] = sys_soln(dof_indices[i]);
-        
-        
-        FEInterface::nodal_soln (dim,fe_type, elem, elem_soln,nodal_soln);
-        
-        libmesh_assert_equal_to (nodal_soln.size(), elem->n_nodes());
-        for (unsigned int n=0; n<elem->n_nodes(); n++) {
-            int local_id = g2l[elem->node_id(n)];
-            solution[local_id] = nodal_soln[n];
-        }
-    }
-    */
+    double *solution_ptr = system->get_local_solution_array();
+
+    for(int ino = 0; ino < mesh.get_n_nodes(); ino++)
+        solution[ino] = solution_ptr[ino*n_dof+ivar];
+ 
+    system->restore_local_solution_array(&solution_ptr);
+    
 }
 
 

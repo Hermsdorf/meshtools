@@ -11,6 +11,7 @@
 #include "dense_matrix.h"
 #include "numeric_vector.h"
 #include "tensor.h"
+#include "xdmf_writer.h"
 
 static char help[] = "Convecção-difusão-reaçao transiente\n\n";
 
@@ -68,35 +69,37 @@ void assemble_transport(TransientImplicitSystem* system)
 
     double *old_solution = system->get_old_solution_array();
 
+    QGauss qrule;
+    FEMFunction fem;
+
     // loop sobre os elementos da malha por cores
     for (int iel = 0; iel < n_elements; iel++)
     {
-        std::vector<Point> coords_iel;
-        std::vector<unsigned int> conn_iel;
+        Element elem;
+        pmesh.getElement(iel,elem);
+        
 
-        pmesh.get_element_connectivity(iel, conn_iel);
-        pmesh.get_element_coordinates(iel, coords_iel);
-        int nnoel = conn_iel.size();
+
+        int nnoel = elem.n_nodes();
 
         std::vector<int>        global_indices;
         std::vector<int>        local_indices;
-        std::vector<Point>      qp;                // coordenadas do ponto de integração
-        std::vector<double>     qw;                // peso do ponto de integração
         DenseMatrix<double>     Ke(nnoel, nnoel);  // matriz de rigidez do elemento
         std::vector<double>     Fe(nnoel);         // vetor de força do elemento
-        std::vector<double>    phi(nnoel);
-        std::vector<Gradient> dphi(nnoel);
+        std::vector<double>   & phi = fem.get_phi();
+        std::vector<Gradient> & dphi= fem.get_dphi();
+        double                & JxW = fem.get_JxW();
+        RealVector            & g   = fem.get_g();
+        RealTensor            & G   = fem.get_G();
 
-        MeshElementType etype = (MeshElementType)pmesh.getElementType(iel);
 
         Point qpoint; // coordenadas do ponto de integracao
-        double JxW = 0.0;
+        
+        equation_manager.global_indices(dof, elem.connectivity(), global_indices);
+        equation_manager.local_indices(dof,  elem.connectivity(), local_indices);
 
-        equation_manager.global_indices(dof, conn_iel, global_indices);
-        equation_manager.local_indices(dof, conn_iel, local_indices);
-
-        // calculando a função de forma e suas derivadas para elemento QUAD4 ou TRI3
-        FEMGetQGauss(etype, qp, qw);
+        // Obtem pontos de integração para elemento
+        qrule.reset(elem);
 
         Gradient velocity;
         velocity(0)         = 0.8;
@@ -107,34 +110,26 @@ void assemble_transport(TransientImplicitSystem* system)
         double dt           = system->get_deltat();
         double dt_stab       = 0.1;
 
-        RealVector g;
-        RealTensor G;
 
         // loop sobre os pontos de integração
-        for (int q = 0; q < qp.size(); q++)
+        for (int q = 0; q < qrule.n_points(); q++)
         {
-            // calculando a função de forma e suas derivadas para o ponto de integração q
-            FEMComputeFunctions(etype, qp[q], qw[q], coords_iel, qpoint, phi, dphi, JxW);
-            FEMStab(etype, qp[q], coords_iel, g, G);
+            // Calcula funções para elemento
+            fem.ComputeFunction(elem,qrule.get(q));
         
             // SUPG stabilization parameters
-            double tau = (velocity) * (G.mult(velocity)) + (k * k) * (G.contract(G)) + dt_stab*4.0/(dt*dt);
-            tau = 1.0/sqrt(tau);
-
-            
+            const double tmp = (velocity) * (G.mult(velocity)) + (k * k) * (G.contract(G)) + dt_stab*4.0/(dt*dt);
+            const double tau = 1.0/sqrt(tmp);
 
             double u_old  = 0.0;
             Gradient grad_u_old;
 
-            
             for (int i = 0; i < local_indices.size(); i++)
             {
                 u_old         +=  old_solution[local_indices[i]]*phi[i];
                 grad_u_old(0) +=  old_solution[local_indices[i]]*dphi[i](0);
                 grad_u_old(1) +=  old_solution[local_indices[i]]*dphi[i](1);
             }
-
-
 
            // radius = (0.75d0*VOL*ONEPI)**(ONE3)
            // he     = 2.d0*radius
@@ -143,12 +138,9 @@ void assemble_transport(TransientImplicitSystem* system)
            // aux2 = ((4.d0*diffusion_trace)/(he*he))
            // tau = 1.d0/sqrt( aux0*aux0 + aux1*aux1 + aux2*aux2 )
 
-
             const double  adt1 = (1.0-theta)*dt;
             const double adt   = theta*dt;
             // calculando a matriz de rigidez e o vetor de forca local
-            // TODO: Verificar sinais dos termos da matriz Ke e vetor Fe
-            //       Olhar capitulo 3 do livro do Donea. 
             for (int i = 0; i < local_indices.size(); i++)
             {
                 // Galerkin 
@@ -241,6 +233,9 @@ int transport(int argc, char *argv[])
     char filename[100];
     sprintf(filename,"solution");
     system->write_result(filename);
+    // XDMFWriter xdmf("transport");
+    // xdmf.set_dir_path("output");
+    // xdmf.write(system,system->get_time());
 
     // Time integratiom
     while(system->get_time() < system->get_final_time())
@@ -251,11 +246,13 @@ int transport(int argc, char *argv[])
         {
             sprintf(filename,"solution");
             system->write_result(filename);
+            //xdmf.write(system,system->get_time());
         }
     }
 
     sprintf(filename,"solution");
     system->write_result(filename);
+    //xdmf.write(system,system->get_time());
 
     delete system;
 

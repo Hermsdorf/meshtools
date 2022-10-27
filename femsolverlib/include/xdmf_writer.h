@@ -25,7 +25,6 @@ class XDMFWriter
         int                  n_timestep;
         int                  n_local_nodes;
         int                  n_local_elem;
-        //const ImplicitSystem & system;
         int                  processor_id;
         int                  n_processors;
         bool                 using_compression;

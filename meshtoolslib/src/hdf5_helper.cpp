@@ -5,7 +5,6 @@ namespace hdf5_helper
 {
 
 
-
 hid_t setupHDF5Compressor(hsize_t n, hsize_t *chunk, uint prec=0)
 {
     
@@ -88,7 +87,6 @@ void writeHDF5IntegerDataSet(hid_t file, const char* datasetname, hsize_t dimsf,
     H5Sclose(dataspace);
     H5Dclose(dataset);
 }
-
 
 
 void writeHDF5UshortDataSet(hid_t file, const char* datasetname, hsize_t dimsf, unsigned short* buffer)
