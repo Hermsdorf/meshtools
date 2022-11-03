@@ -322,3 +322,32 @@ void Mesh::getElement(unsigned int elemen_it, Element& elem)
     elem._tag = this->getElementTag(elemen_it);
 }
 
+unsigned int Mesh::getElementConnectivitySize()
+{
+    return this->coord.size() - this->offset[this->n_face_elements];
+}
+
+unsigned int Mesh::getBoundaryElementConnectivitySize()
+{
+    return this->offset[this->n_face_elements];
+}
+
+unsigned int* Mesh::getElementConnectivityData()
+{
+    unsigned int nfo = this->offset[this->n_face_elements];
+    return &this->conn[nfo];
+}
+
+unsigned int* Mesh::getBoundaryElementsConnectivityData()
+{
+    return &this->conn[0];
+}
+
+double * Mesh::getCoordinatesData()
+{
+    return &this->coord[0];
+}
+
+
+
+

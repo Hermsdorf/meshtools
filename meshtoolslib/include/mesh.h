@@ -495,6 +495,7 @@ class Mesh {
          *     First-Fit Coloring.
         */
 
+        // TODO: removing this function
         void MeshColoring_test();
         /**
          * * OBJETIVO:
@@ -515,13 +516,24 @@ class Mesh {
 
        void getElement(unsigned int element_id, Element& elem);
 
-       inline int getElementTag(int iel) { return physical_tag[iel+n_face_elements]; };
+        inline int getElementTag(int iel) { return physical_tag[iel+n_face_elements]; };
 
-       int getSurfaceElementTag(int iel) { return physical_tag[iel]; };
+        int getSurfaceElementTag(int iel) { return physical_tag[iel]; };
 
-       unsigned int get_mesh_element_type(){ return element_type; }
+        unsigned int get_mesh_element_type(){ return element_type; }
 
-       unsigned int get_boundary_mesh_element_type() {return boundary_element_type; }
+        unsigned int get_boundary_mesh_element_type() {return boundary_element_type; }
+
+        unsigned int getElementConnectivitySize();
+
+        unsigned int getBoundaryElementConnectivitySize();
+
+        unsigned int *getElementConnectivityData();
+
+        unsigned int *getBoundaryElementsConnectivityData() ;
+
+        double       *getCoordinatesData(); 
+    
 
 
     protected:

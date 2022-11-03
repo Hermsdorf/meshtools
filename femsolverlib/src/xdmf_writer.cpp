@@ -63,12 +63,15 @@ void XDMFWriter::set_dir_path(std::string path)
     }
 }
 
+int XDMFWriter::write(ImplicitSystem * system)
+{
+    return this->write(system,0.0);
+}
 
-int XDMFWriter::write(ImplicitSystem * system, double time=0.0)
+int XDMFWriter::write(ImplicitSystem * system, double time)
 {
     char filename[XDMF_FILE_SIZE];
     char xdmf_filename[XDMF_FILE_SIZE];
-    //string* files = new string[2];
         
     std::vector<double> coords;
     std::vector<int>    conn;
@@ -89,15 +92,10 @@ int XDMFWriter::write(ImplicitSystem * system, double time=0.0)
             mkdir(meshdir, 0700);
         }
 
-        unsigned int *ptr_conn = mesh.getElementConn(0);
-        auto offset = mesh.getOffset();
-        auto conn   = mesh.getConn();
-        auto coord  = mesh.getCoord();
-        // writting element connectivity
-        unsigned int nfe = mesh.get_n_face_elements();
-        unsigned int ofs = offset[nfe];
-
-        unsigned int conn_size = conn.size() - ofs;
+    
+        unsigned int  conn_size    = mesh.getElementConnectivitySize();
+        unsigned int *ptr_conn     = mesh.getElementConnectivityData();
+        auto coords                = mesh.getCoord();
 #ifdef HDF5_ENABLE
         hid_t   cpid = 0;
         hid_t   fid;
@@ -236,9 +234,9 @@ void XDMFWriter::write_spatial_collection(ImplicitSystem* system, double time)
             fprintf(fxml," <Grid Name=\"%s_%d_%03d\" Type=\"Uniform\"> \n",this->basename.c_str(), n_processors, p);  
             fprintf(fxml,"  <Topology Type=\"%s\" NumberOfElements=\"%d\"  BaseOffset=\"0\">\n",elem_name.c_str(),lelem);
 #ifdef HDF5_ENABLE
-            fprintf(fxml,"    <DataItem Dimensions=\"%d\" NumberType=\"Int\" Format=\"HDF\"> %s_%d_%03d.h5:/conn</DataItem>\n",lelem*nnoel,meshfile,n_processors,p);
+            fprintf(fxml,"    <DataItem Dimensions=\"%d\" NumberType=\"UInt\" Format=\"HDF\"> %s_%d_%03d.h5:/conn</DataItem>\n",lelem*nnoel,meshfile,n_processors,p);
 #else
-           fprintf(fxml,"    <DataItem Dimensions=\"%d\" NumberType=\"Int\" Format=\"Binary\" Endian=\"Little\"> %s.con.%d.%03d.bin </DataItem>\n",lelem*nnoel,meshfile,n_processors,p);
+           fprintf(fxml,"    <DataItem Dimensions=\"%d\" NumberType=\"UInt\" Format=\"Binary\" Endian=\"Little\"> %s.con.%d.%03d.bin </DataItem>\n",lelem*nnoel,meshfile,n_processors,p);
 #endif
 
             fprintf(fxml,"  </Topology>\n");

@@ -72,6 +72,12 @@ void assemble_transport(TransientImplicitSystem* system)
     QGauss qrule;
     FEMFunction fem;
 
+    std::vector<double>   & phi = fem.get_phi();
+    std::vector<Gradient> & dphi= fem.get_dphi();
+    double                & JxW = fem.get_JxW();
+    RealVector            & g   = fem.get_g();
+    RealTensor            & G   = fem.get_G();
+
     // loop sobre os elementos da malha por cores
     for (int iel = 0; iel < n_elements; iel++)
     {
@@ -86,11 +92,7 @@ void assemble_transport(TransientImplicitSystem* system)
         std::vector<int>        local_indices;
         DenseMatrix<double>     Ke(nnoel, nnoel);  // matriz de rigidez do elemento
         std::vector<double>     Fe(nnoel);         // vetor de força do elemento
-        std::vector<double>   & phi = fem.get_phi();
-        std::vector<Gradient> & dphi= fem.get_dphi();
-        double                & JxW = fem.get_JxW();
-        RealVector            & g   = fem.get_g();
-        RealTensor            & G   = fem.get_G();
+ 
 
 
         Point qpoint; // coordenadas do ponto de integracao
@@ -98,7 +100,7 @@ void assemble_transport(TransientImplicitSystem* system)
         equation_manager.global_indices(dof, elem.connectivity(), global_indices);
         equation_manager.local_indices(dof,  elem.connectivity(), local_indices);
 
-        // Obtem pontos de integração para elemento
+        // Obtem pontos de integração para elemento elem
         qrule.reset(elem);
 
         Gradient velocity;
@@ -130,13 +132,6 @@ void assemble_transport(TransientImplicitSystem* system)
                 grad_u_old(0) +=  old_solution[local_indices[i]]*dphi[i](0);
                 grad_u_old(1) +=  old_solution[local_indices[i]]*dphi[i](1);
             }
-
-           // radius = (0.75d0*VOL*ONEPI)**(ONE3)
-           // he     = 2.d0*radius
-           // aux0 = (2.d0/dt)
-           // aux1 = (2.d0*unorm/he)
-           // aux2 = ((4.d0*diffusion_trace)/(he*he))
-           // tau = 1.d0/sqrt( aux0*aux0 + aux1*aux1 + aux2*aux2 )
 
             const double  adt1 = (1.0-theta)*dt;
             const double adt   = theta*dt;
@@ -183,7 +178,6 @@ void assemble_transport(TransientImplicitSystem* system)
     }
 
     system->restore_old_solution_array(&old_solution);
-
 }
 
 
@@ -233,6 +227,7 @@ int transport(int argc, char *argv[])
     char filename[100];
     sprintf(filename,"solution");
     system->write_result(filename);
+
     // XDMFWriter xdmf("transport");
     // xdmf.set_dir_path("output");
     // xdmf.write(system,system->get_time());
