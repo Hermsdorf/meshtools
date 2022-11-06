@@ -2,10 +2,12 @@
 add_executable(poisson poisson_2d.cpp)
 add_executable(conv2d convection_diffusion_2d.cpp)
 add_executable(transport transport.cpp)
+add_executable(benchmark_rotation_pulse benchmark_rotation_pulse.cpp)
 
 include_directories(poisson   ${MESHTOOLS_INCLUDE_DIR})
 include_directories(conv2d    ${MESHTOOLS_INCLUDE_DIR})
 include_directories(transport ${MESHTOOLS_INCLUDE_DIR})
+include_directories(benchmark_rotation_pulse ${MESHTOOLS_INCLUDE_DIR})
 
 # if(MPI_FOUND)
 # include_directories(poisson ${MPI_C_INCLUDE_PATH})
@@ -37,6 +39,14 @@ ${MESHTOOLS_LIBS}
 )
 
 target_link_libraries(transport 
+PRIVATE
+meshtoolslib
+femsolverlib
+fparser
+${MESHTOOLS_LIBS}
+)
+
+target_link_libraries(benchmark_rotation_pulse 
 PRIVATE
 meshtoolslib
 femsolverlib

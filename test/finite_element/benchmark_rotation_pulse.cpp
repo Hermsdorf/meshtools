@@ -20,16 +20,9 @@ double exact_solution (const double x,
                        const double y,
                        const double t)
 { 
-    double aux;
+    double r = (x - 5.0)*(x - 5.0) + (y - 7.5)*(y - 7.5);
 
-    if(sqrt(((x - 0.3)*(x - 0.3)) + ((y - 0.3)*(y - 0.3))) <= 0.3)
-        aux = cos((M_PI/2)*sqrt((x*x) + (y*y)));
-    else
-        aux = 0.0;
-
-    double value = exp(-pow(t, 10))*aux;
-
-    return value;
+    return exp(-0.5*r);
 }
 
 void init_transport(TransientImplicitSystem* system)
@@ -95,7 +88,7 @@ void assemble_transport(TransientImplicitSystem* system)
         qrule.reset(elem);
 
         Gradient velocity;
-        double k            = 1.0E-5;
+        double k            = 0.0;
         double sigma        = 0.0;
         double theta        = 0.5;
         double dt           = system->get_deltat();
@@ -108,8 +101,8 @@ void assemble_transport(TransientImplicitSystem* system)
             // Calcula funções para elemento
             fem.ComputeFunction(elem,qrule.get(q));
 
-            velocity(0) = -qrule.point(q)(1); // V_x = -y
-            velocity(1) =  qrule.point(q)(0); // V_y = +x
+            velocity(0) = -(qrule.point(q)(1) - 5.0); // V_x = -y - 5 
+            velocity(1) =   qrule.point(q)(0) - 5.0; // V_y  =  x - 5
 
             // SUPG stabilization parameters
             const double tmp = (velocity) * (G.mult(velocity)) + (k * k) * (G.contract(G)) + dt_stab*4.0/(dt*dt);
@@ -213,7 +206,7 @@ int rotation_pulse(int argc, char *argv[])
 
     system->init();
     system->set_final_time(2*M_PI);
-    system->set_deltat(0.001);
+    system->set_deltat(0.04);
     unsigned int write_interval = 10;
 
 
