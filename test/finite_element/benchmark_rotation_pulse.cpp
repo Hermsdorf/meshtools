@@ -80,6 +80,7 @@ void assemble_transport(TransientImplicitSystem* system)
         double                & JxW = fem.get_JxW();
         RealVector            & g   = fem.get_g();
         RealTensor            & G   = fem.get_G();
+        Point                 & xyz = fem.get_xyz();
         
         equation_manager.global_indices(dof, elem.connectivity(), global_indices);
         equation_manager.local_indices(dof,  elem.connectivity(), local_indices);
@@ -87,12 +88,12 @@ void assemble_transport(TransientImplicitSystem* system)
         // Obtem pontos de integração para elemento
         qrule.reset(elem);
 
-        Gradient velocity;
+        
         double k            = 0.0;
         double sigma        = 0.0;
         double theta        = 0.5;
         double dt           = system->get_deltat();
-        double dt_stab       = 0.1;
+        double dt_stab       = 1.0;
 
 
         // loop sobre os pontos de integração
@@ -101,22 +102,23 @@ void assemble_transport(TransientImplicitSystem* system)
             // Calcula funções para elemento
             fem.ComputeFunction(elem,qrule.get(q));
 
-            velocity(0) = -(qrule.point(q)(1) - 5.0); // V_x = -y - 5 
-            velocity(1) =   qrule.point(q)(0) - 5.0; // V_y  =  x - 5
-
-            // SUPG stabilization parameters
-            const double tmp = (velocity) * (G.mult(velocity)) + (k * k) * (G.contract(G)) + dt_stab*4.0/(dt*dt);
-            const double tau = 1.0/sqrt(tmp);
-
+            RealVector velocity;
+       
             double u_old  = 0.0;
             Gradient grad_u_old;
 
             for (int i = 0; i < local_indices.size(); i++)
             {
+                velocity(0) += -(elem.node(i)(1) - 5.0)*phi[i]; // V_x = -y - 5 
+                velocity(1) +=  (elem.node(i)(0) - 5.0)*phi[i]; // V_y =  x - 5
                 u_old         +=  old_solution[local_indices[i]]*phi[i];
                 grad_u_old(0) +=  old_solution[local_indices[i]]*dphi[i](0);
                 grad_u_old(1) +=  old_solution[local_indices[i]]*dphi[i](1);
             }
+
+            // SUPG stabilization parameters
+            const double tmp = (velocity) * (G.mult(velocity)) + (k * k) * (G.contract(G)) + dt_stab*4.0/(dt*dt);
+            const double tau = 1.0/sqrt(tmp);
 
             const double adt1 = (1.0-theta)*dt;
             const double adt  = theta*dt;
@@ -199,7 +201,7 @@ int rotation_pulse(int argc, char *argv[])
     // Cria o sistema de equações implicito
     TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_1");
     system->add_variable("u");
-    DirichletBoundary  bc(1,0,"0.0","x,y,z");
+    DirichletBoundary  bc(6,0,"0.0","x,y,z");
     system->add_dirichlet_boundary(bc);
     system->attach_init_function(init_transport);
     system->attach_assemble(assemble_transport);
