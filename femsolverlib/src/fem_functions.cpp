@@ -102,7 +102,9 @@ void FEMFunction::ComputeFunction(Element& elem, QGaussData qp)
     case TRI3:
             TRI3Function(elem,qp);
         break;
-    
+    case QUAD4:
+            QUAD4Function(elem,qp);
+        break;
     default:
         break;
     }
@@ -252,3 +254,80 @@ void FEMFunction::QUAD4Function(Element& elem, QGaussData qp)
    
 }
 
+/*
+void FEMFunction::TRI3FaceFunction(Element& elem, QGaussData qp)
+{
+    double dpsi[2][3];
+    double J[2][2]    = {{0.0, 0.0}, {0.0, 0.0}};
+    double Jinv[2][2] = {{0.0, 0.0}, {0.0, 0.0}};
+    double x[3], y[3];
+   
+    _phi.resize(3);
+    _dphi.resize(3);
+
+    double xi  = qp.first(0);
+    double eta = qp.first(1);
+
+    // shape function
+    _phi[0] = 1.0 - xi - eta; // N1
+    _phi[1] = xi;             // N2
+    _phi[2] = eta;            // N3
+
+    // shape function derivative 
+    dpsi[0][0] = -1.0;  // dN1/dxi 
+    dpsi[0][1] =  1.0;  // dN2/dxi 
+    dpsi[0][2] =  0.0;  // dN3/dxi 
+    dpsi[1][0] = -1.0;  // dN1/deta
+    dpsi[1][1] =  0.0;  // dN2/deta
+    dpsi[1][2] =  1.0;  // dN3/deta
+
+    for(int i=0; i<elem.n_nodes(); i++)
+    {
+        x[i] = elem.node(i)(0);
+        y[i] = elem.node(i)(1);
+        z[i] = elem.node(i)(2);
+
+        _xyz(0) += x[i]*_phi[i];
+        _xyz(1) += y[i]*_phi[i];
+        _xyz(2) += z[i]*_phi[i];
+
+        J[0][0] +=  x[i]*dpsi[0][i]; //dxidx
+        J[0][1] +=  y[i]*dpsi[0][i]; //dxidy
+        J[0][2] +=  z[i]*dpsi[0][i]; //dxidz
+
+        J[1][0] +=  x[i]*dpsi[1][i]; //detadx
+        J[1][1] +=  y[i]*dpsi[1][i]; //detady
+        J[1][2] +=  z[i]*dpsi[1][i]; //detadz
+
+    }
+
+    double detJ = J[0][0]*J[1][1] - J[0][1]*J[1][0];
+    if(detJ < 0.0)
+    {
+        std::cout << "Error: detJ < 0.0  -- det = " << detJ << std::endl;
+        exit(1);
+    }
+
+    double invdetJ = 1.0/detJ;
+    Jinv[0][0] =  J[1][1]*invdetJ;
+    Jinv[0][1] = -J[0][1]*invdetJ;
+    Jinv[1][0] = -J[1][0]*invdetJ;
+    Jinv[1][1] =  J[0][0]*invdetJ;
+
+    for(int i=0; i<_dphi.size(); i++)
+    {
+        _dphi[i](0) = Jinv[0][0]*dpsi[0][i] + Jinv[0][1]*dpsi[1][i]; // dphi_i/dx
+        _dphi[i](1) = Jinv[1][0]*dpsi[0][i] + Jinv[1][1]*dpsi[1][i]; // dphi_i/dy
+    }
+
+    _JxW = qp.second*detJ;
+
+    _g(0) = J[0][0] + J[1][0];
+    _g(1) = J[0][1] + J[1][1];
+
+    _G(0,0)          = J[0][0]*J[0][0] + J[1][0]*J[1][0];
+    _G(0,1) = _G(1,0) = J[0][0]*J[0][1] + J[1][0]*J[1][1];
+    _G(1,1)          = J[0][1]*J[0][1] + J[1][1]*J[1][1];
+   
+}
+*/

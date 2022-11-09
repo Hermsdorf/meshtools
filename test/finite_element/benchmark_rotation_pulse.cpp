@@ -22,6 +22,7 @@ double exact_solution (const double x,
 { 
     double r = (x - 5.0)*(x - 5.0) + (y - 7.5)*(y - 7.5);
 
+    
     return exp(-0.5*r);
 }
 

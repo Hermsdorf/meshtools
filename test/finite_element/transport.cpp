@@ -69,6 +69,7 @@ void assemble_transport(TransientImplicitSystem* system)
 
     double *old_solution = system->get_old_solution_array();
 
+
     QGauss qrule;
     FEMFunction fem;
 
@@ -131,6 +132,10 @@ void assemble_transport(TransientImplicitSystem* system)
                 u_old         +=  old_solution[local_indices[i]]*phi[i];
                 grad_u_old(0) +=  old_solution[local_indices[i]]*dphi[i](0);
                 grad_u_old(1) +=  old_solution[local_indices[i]]*dphi[i](1);
+                //
+                // grad_u_old  += old_solution[local_indices[i]]*dphi[i];
+
+
             }
 
             const double  adt1 = (1.0-theta)*dt;
