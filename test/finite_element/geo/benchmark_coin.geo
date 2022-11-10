@@ -1,17 +1,21 @@
+pts_box    = 0.1;
+pts_circle = 0.05;
+
 //+
-Point(1) = {0, 0, 0, 1.0};
+Point(1) = {0, 0, 0, pts_box};
 //+
-Point(2) = {0, 1, 0, 1.0};
+Point(2) = {0, 1, 0, pts_box};
 //+
-Point(3) = {1, 1, 0, 1.0};
+Point(3) = {1, 1, 0, pts_box};
 //+
-Point(4) = {1, 0, 0, 1.0};
+Point(4) = {1, 0, 0, pts_box};
+
 //+
-Point(5) = {0.5, 0.85, 0, 1.0};
+Point(5) = {0.5, 0.85, 0, pts_circle};
 //+
-Point(6) = {0.5, 0.75, 0, 1.0};
+Point(6) = {0.5, 0.75, 0, pts_circle};
 //+
-Point(7) = {0.5, 0.65, 0, 1.0};
+Point(7) = {0.5, 0.65, 0, pts_circle};
 //+
 Line(1) = {1, 4};
 //+
