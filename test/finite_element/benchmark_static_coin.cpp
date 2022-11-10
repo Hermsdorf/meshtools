@@ -14,15 +14,16 @@
 #include "xdmf_writer.h"
 #include <math.h>
 
-static char help[] = "Benchmark with Transient Rotation Pulse experiment\n\n";
+static char help[] = "Benchmark with Static Coin experiment\n\n";
 
-double exact_solution (const double x,
-                       const double y,
-                       const double t)
+double initial_condition (const double x,
+                          const double y,
+                          const double t)
 { 
-    double r = (x - 5.0)*(x - 5.0) + (y - 7.5)*(y - 7.5);
-
-    return exp(-0.5*r);
+    if ((x - 0.5)*(x - 0.5) + (y - 0.75)*(y - 0.75) <= 0.01)
+        return 1.0;
+    else
+        return 0.0;
 }
 
 void init_transport(TransientImplicitSystem* system)
@@ -40,7 +41,7 @@ void init_transport(TransientImplicitSystem* system)
     {
         const double x = coords[i*3 + 0];
         const double y = coords[i*3 + 1];
-        solution[i*ndof+dof]    =  exact_solution(x, y, 0.0);
+        solution[i*ndof+dof]    =  initial_condition(x, y, 0.0);
     }
     system->restore_local_solution_array(&solution);
 
@@ -88,11 +89,13 @@ void assemble_transport(TransientImplicitSystem* system)
         qrule.reset(elem);
 
         Gradient velocity;
-        double k            = 0.0;
+        velocity(0) = 0.0; // V_y =  0
+        velocity(1) = 0.0; // V_y =  0
+        double k            = 1E-5;
         double sigma        = 0.0;
         double theta        = 0.5;
         double dt           = system->get_deltat();
-        double dt_stab       = 0.1;
+        double dt_stab      = 0.1;
 
 
         // loop sobre os pontos de integração
@@ -110,8 +113,6 @@ void assemble_transport(TransientImplicitSystem* system)
 
             for (int i = 0; i < local_indices.size(); i++)
             {
-                velocity(0) += -(elem.node(i)(1) - 5.0)*phi[i]; // V_x = -y - 5 
-                velocity(1) +=  (elem.node(i)(0) - 5.0)*phi[i]; // V_y =  x - 5
                 u_old         +=  old_solution[local_indices[i]]*phi[i];
                 grad_u_old(0) +=  old_solution[local_indices[i]]*dphi[i](0);
                 grad_u_old(1) +=  old_solution[local_indices[i]]*dphi[i](1);
@@ -166,7 +167,7 @@ void assemble_transport(TransientImplicitSystem* system)
 }
 
 
-int rotation_pulse(int argc, char *argv[])
+int static_coin(int argc, char *argv[])
 {
     PetscErrorCode ierr;
     MeshPartition *parts = new MeshPartition();
@@ -196,7 +197,7 @@ int rotation_pulse(int argc, char *argv[])
 
 
     // Cria o sistema de equações implicito
-    TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_rotation_pulse");
+    TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_static_coin");
     system->add_variable("u");
     DirichletBoundary  bc(1,0,"0.0","x,y,z");
     system->add_dirichlet_boundary(bc);
@@ -204,7 +205,7 @@ int rotation_pulse(int argc, char *argv[])
     system->attach_assemble(assemble_transport);
 
     system->init();
-    system->set_final_time(2*M_PI);
+    system->set_final_time(5.0);
     system->set_deltat(0.04);
     unsigned int write_interval = 10;
 
@@ -241,6 +242,6 @@ int rotation_pulse(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     MeshTools::Init(argc,argv);
-    rotation_pulse(argc, argv);
+    static_coin(argc, argv);
     MeshTools::Finalize();
 }
