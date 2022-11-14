@@ -14,7 +14,7 @@
 #include "xdmf_writer.h"
 #include <math.h>
 
-static char help[] = "Benchmark with Static Coin experiment\n\n";
+static char help[] = "Benchmark with Stretching Disk experiment\n\n";
 
 double initial_condition (const double x,
                           const double y,
@@ -171,7 +171,7 @@ void assemble_transport(TransientImplicitSystem* system)
 }
 
 
-int static_coin(int argc, char *argv[])
+int stretching_disk(int argc, char *argv[])
 {
     PetscErrorCode ierr;
     MeshPartition *parts = new MeshPartition();
@@ -201,7 +201,7 @@ int static_coin(int argc, char *argv[])
 
 
     // Cria o sistema de equações implicito
-    TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_static_coin");
+    TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_stretching_disk");
     system->add_variable("u");
     DirichletBoundary  bc(1,0,"0.0","x,y,z");
     system->add_dirichlet_boundary(bc);
@@ -246,6 +246,6 @@ int static_coin(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     MeshTools::Init(argc,argv);
-    static_coin(argc, argv);
+    stretching_disk(argc, argv);
     MeshTools::Finalize();
 }
