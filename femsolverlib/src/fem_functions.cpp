@@ -110,50 +110,6 @@ void FEMFunction::ComputeFunction(Element& elem, QGaussData qp)
     }
 }
 
-void FEMFunction::EDGEFaceFunction(Element& elem, QGaussData qp)
-{
-    _phi.resize(2);
-    _dphi.resize(2);
-    double dpsi[1][2];
-    double J[2][2]    = {{0.0, 0.0}, {0.0, 0.0}};
-
-    double xi = qp.q_point(0);
-
-    // EDGE2 H1 shape functions
-    _phi[0] = 0.5*(1-xi); // N1
-    _phi[1] = 0.5*(1+xi); // N2
-
-    // EDGE2 H1 shape functions derivatives
-    dpsi[0][0] = -0.5;  //dN1/dxi
-    dpsi[0][1] =  0.5;  //dN2/dxi
-
-    // compute x, dxdxi at the quadrature points
-    for(int i=0; i<elem.n_nodes(); i++)
-    {
-        x[i] = elem.node(i)(0);
-        y[i] = elem.node(i)(1);
-        _xyz(0) += x[i]*_phi[i];
-        _xyz(1) += y[i]*_phi[i];
-
-        J[0][0] += x[i]*dpsi[0][i]; //dxidx
-        J[0][1] += y[i]*dpsi[0][i]; //dxidy
-    }
-
-    // compute the determinant of the Jacobian
-    double jac = sqrt(J[0][0]*J[0][0] + J[0][1]*J[0][1]);
-
-    // compute the inverse of the Jacobian
-    double invjac = 1.0/jac;
-
-    // for(int i=0; i<_dphi.size(); i++)
-    // {
-    //     _dphi[i](0) = Jinv[0][0]*dpsi[0][i] + Jinv[0][1]*dpsi[1][i]; // dphi_i/dx
-    //     _dphi[i](1) = Jinv[1][0]*dpsi[0][i] + Jinv[1][1]*dpsi[1][i]; // dphi_i/dy
-    // }
-
-    _JxW = qp.qw*jac;
-
-}
 
 void FEMFunction::TRI3Function(Element& elem, QGaussData qp)
 {
