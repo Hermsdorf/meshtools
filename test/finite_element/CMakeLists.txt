@@ -3,13 +3,15 @@ add_executable(poisson poisson_2d.cpp)
 add_executable(conv2d convection_diffusion_2d.cpp)
 add_executable(transport transport.cpp)
 add_executable(benchmark_rotation_pulse benchmark_rotation_pulse.cpp)
-add_executable(benchmark_static_coin benchmark_static_coin.cpp)
+add_executable(benchmark_rotation_coin benchmark_rotation_coin.cpp)
+add_executable(benchmark_disk_stretching benchmark_disk_stretching.cpp)
+
 
 include_directories(poisson   ${MESHTOOLS_INCLUDE_DIR})
 include_directories(conv2d    ${MESHTOOLS_INCLUDE_DIR})
 include_directories(transport ${MESHTOOLS_INCLUDE_DIR})
 include_directories(benchmark_rotation_pulse ${MESHTOOLS_INCLUDE_DIR})
-include_directories(benchmark_static_coin ${MESHTOOLS_INCLUDE_DIR})
+include_directories(benchmark_disk_stretching ${MESHTOOLS_INCLUDE_DIR})
 
 # if(MPI_FOUND)
 # include_directories(poisson ${MPI_C_INCLUDE_PATH})
@@ -56,7 +58,15 @@ fparser
 ${MESHTOOLS_LIBS}
 )
 
-target_link_libraries(benchmark_static_coin
+target_link_libraries(benchmark_rotation_coin
+PRIVATE
+meshtoolslib
+femsolverlib
+fparser
+${MESHTOOLS_LIBS}
+)
+
+target_link_libraries(benchmark_disk_stretching
 PRIVATE
 meshtoolslib
 femsolverlib

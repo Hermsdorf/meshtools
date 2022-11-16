@@ -14,15 +14,21 @@
 #include "xdmf_writer.h"
 #include <math.h>
 
-static char help[] = "Benchmark with Static Coin experiment\n\n";
+static char help[] = "Benchmark with Disk Stretching experiment\n\n";
+
+double function_g(const double t)
+{
+    const int T = 8;
+    return cos(2.0 * M_PI * t/T);
+}
 
 double initial_condition (const double x,
                           const double y,
                           const double t)
 { 
-
+    
     double dist = (x - 0.5)*(x - 0.5) + (y - 0.75)*(y - 0.75);
-    if(dist-0.01 < 0.0001) 
+    if(dist-0.0225 < 0.0001) 
         return 1.0;
     return 0.0;
 }
@@ -55,7 +61,7 @@ void assemble_transport(TransientImplicitSystem* system)
     int  ndim  =  pmesh.getDim();
 
     // Gerencia as numerações das equações do sistema
-    auto equation_manager = system->get_equation_manager();
+    EquationManager &equation_manager = system->get_equation_manager();
     int dof  = 0;
 
     int n_elements = pmesh.get_n_elements();
@@ -82,6 +88,7 @@ void assemble_transport(TransientImplicitSystem* system)
         double                & JxW = fem.get_JxW();
         RealVector            & g   = fem.get_g();
         RealTensor            & G   = fem.get_G();
+        Point                 & xyz = fem.get_xyz();
         
         equation_manager.global_indices(dof, elem.connectivity(), global_indices);
         equation_manager.local_indices(dof,  elem.connectivity(), local_indices);
@@ -94,6 +101,7 @@ void assemble_transport(TransientImplicitSystem* system)
         double sigma        = 0.0;
         double theta        = 0.5;
         double dt           = system->get_deltat();
+        double t            = system->get_time();
         double dt_stab      = 0.5;
 
 
@@ -104,15 +112,14 @@ void assemble_transport(TransientImplicitSystem* system)
             fem.ComputeFunction(elem,qrule.get(q));
 
 
-
             RealVector velocity;
             double u_old  = 0.0;
             Gradient grad_u_old;
 
+            velocity(0)   =  function_g(t)*sin(2 * M_PI * xyz(1)) * sin(M_PI * xyz(0)) * sin(M_PI * xyz(0)); 
+            velocity(1)   = -function_g(t)*sin(2 * M_PI * xyz(0)) * sin(M_PI * xyz(1)) * sin(M_PI * xyz(1));
             for (int i = 0; i < local_indices.size(); i++)
             {
-                velocity(0)   += -(elem.node(i)(1) - 0.5)*phi[i]; // V_x = -y - 5 
-                velocity(1)   +=  (elem.node(i)(0) - 0.5)*phi[i]; // V_y =  x - 5
                 u_old         +=  old_solution[local_indices[i]]*phi[i];
                 grad_u_old(0) +=  old_solution[local_indices[i]]*dphi[i](0);
                 grad_u_old(1) +=  old_solution[local_indices[i]]*dphi[i](1);
@@ -171,12 +178,12 @@ void assemble_transport(TransientImplicitSystem* system)
 }
 
 
-int static_coin(int argc, char *argv[])
+int disk_stretching(int argc, char *argv[])
 {
     PetscErrorCode ierr;
     MeshPartition *parts = new MeshPartition();
 
-    Mesh         *mesh;  // serial   mesh
+    Mesh *mesh;          // serial mesh
     ParallelMesh *pmesh; // parallel mesh
     int processor_id, n_processors;
 
@@ -199,8 +206,9 @@ int static_coin(int argc, char *argv[])
 
     pmesh = parts->DistributedMesh(mesh);
 
+
     // Cria o sistema de equações implicito
-    TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_static_coin");
+    TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_disk_stretching");
     system->add_variable("u");
     DirichletBoundary  bc(1,0,"0.0","x,y,z");
     system->add_dirichlet_boundary(bc);
@@ -208,9 +216,9 @@ int static_coin(int argc, char *argv[])
     system->attach_assemble(assemble_transport);
 
     system->init();
-    system->set_final_time(5.0);
-    system->set_deltat(0.04);
-    unsigned int write_interval = 10;
+    system->set_final_time(8.0);
+    system->set_deltat(0.1);
+    unsigned int write_interval = 1;
 
 
     char filename[100];
@@ -245,6 +253,6 @@ int static_coin(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     MeshTools::Init(argc,argv);
-    static_coin(argc, argv);
+    disk_stretching(argc, argv);
     MeshTools::Finalize();
 }
