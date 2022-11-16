@@ -20,7 +20,7 @@ double initial_condition (const double x,
                           const double y,
                           const double t)
 { 
-    
+
     double dist = (x - 0.5)*(x - 0.5) + (y - 0.75)*(y - 0.75);
     if(dist-0.01 < 0.0001) 
         return 1.0;
@@ -176,7 +176,7 @@ int static_coin(int argc, char *argv[])
     PetscErrorCode ierr;
     MeshPartition *parts = new MeshPartition();
 
-    Mesh *mesh;          // serial mesh
+    Mesh         *mesh;  // serial   mesh
     ParallelMesh *pmesh; // parallel mesh
     int processor_id, n_processors;
 
@@ -198,7 +198,6 @@ int static_coin(int argc, char *argv[])
     }
 
     pmesh = parts->DistributedMesh(mesh);
-
 
     // Cria o sistema de equações implicito
     TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_static_coin");
