@@ -28,7 +28,7 @@ double initial_condition (const double x,
 { 
     
     double dist = (x - 0.5)*(x - 0.5) + (y - 0.75)*(y - 0.75);
-    if(dist-0.0225 < 0.0001) 
+    if(dist-0.01 < 0.0001) 
         return 1.0;
     return 0.0;
 }
@@ -102,8 +102,8 @@ void assemble_transport(TransientImplicitSystem* system)
         double theta        = 0.5;
         double dt           = system->get_deltat();
         double t            = system->get_time();
-        double dt_stab      = 0.5;
-
+        double dt_stab      = 1.0;
+        double gt = function_g(t);
 
         // loop sobre os pontos de integração
         for (int q = 0; q < qrule.n_points(); q++)
@@ -116,10 +116,19 @@ void assemble_transport(TransientImplicitSystem* system)
             double u_old  = 0.0;
             Gradient grad_u_old;
 
-            velocity(0)   =  function_g(t)*sin(2 * M_PI * xyz(1)) * sin(M_PI * xyz(0)) * sin(M_PI * xyz(0)); 
-            velocity(1)   = -function_g(t)*sin(2 * M_PI * xyz(0)) * sin(M_PI * xyz(1)) * sin(M_PI * xyz(1));
+            velocity(0)   = 0.0;  //function_g(t)*sin(2 * M_PI * xyz(1)) * sin(M_PI * xyz(0)) * sin(M_PI * xyz(0)); 
+            velocity(1)   = 0.0; //-function_g(t)*sin(2 * M_PI * xyz(0)) * sin(M_PI * xyz(1)) * sin(M_PI * xyz(1));
+           
             for (int i = 0; i < local_indices.size(); i++)
             {
+                double x      = elem.node(i)(0);
+                double y      = elem.node(i)(1);
+                double velx_x = gt*sin(2 * M_PI * y) * sin(M_PI * x) * sin(M_PI *x);
+                double velx_y = -gt*sin(2 * M_PI * x) * sin(M_PI * y) * sin(M_PI *y);
+
+                velocity(0) += velx_x * phi[i];
+                velocity(1) += velx_y * phi[i];
+                
                 u_old         +=  old_solution[local_indices[i]]*phi[i];
                 grad_u_old(0) +=  old_solution[local_indices[i]]*dphi[i](0);
                 grad_u_old(1) +=  old_solution[local_indices[i]]*dphi[i](1);
@@ -217,8 +226,8 @@ int disk_stretching(int argc, char *argv[])
 
     system->init();
     system->set_final_time(8.0);
-    system->set_deltat(0.1);
-    unsigned int write_interval = 1;
+    system->set_deltat(0.0025);
+    unsigned int write_interval = 20;
 
 
     char filename[100];

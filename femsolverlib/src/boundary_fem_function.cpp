@@ -29,23 +29,25 @@ void BoundaryFEMFunction::ComputeFunction(Element& elem, QGaussData qp)
 
 void BoundaryFEMFunction::EDGEFaceFunction(Element& elem, QGaussData qp)
 {
-    /*
+    
     _phi.resize(2);
     _dphi.resize(2);
+    double x[2], y[2];
     double dpsi[1][2];
-    double J[2][2]    = {{0.0, 0.0}, {0.0, 0.0}};
+    double J[1][2]    = {{0.0, 0.0}};
 
-    double xi = qp.q_point(0);
+    double xi = qp.first(0);
 
-    // EDGE2 H1 shape functions
+    // EDGE2 shape functions
     _phi[0] = 0.5*(1-xi); // N1
     _phi[1] = 0.5*(1+xi); // N2
 
-    // EDGE2 H1 shape functions derivatives
+    // EDGE2 shape functions derivatives
     dpsi[0][0] = -0.5;  //dN1/dxi
     dpsi[0][1] =  0.5;  //dN2/dxi
 
     // compute x, dxdxi at the quadrature points
+
     for(int i=0; i<elem.n_nodes(); i++)
     {
         x[i] = elem.node(i)(0);
@@ -69,8 +71,8 @@ void BoundaryFEMFunction::EDGEFaceFunction(Element& elem, QGaussData qp)
     //     _dphi[i](1) = Jinv[1][0]*dpsi[0][i] + Jinv[1][1]*dpsi[1][i]; // dphi_i/dy
     // }
 
-    _JxW = qp.qw*jac;
-*/
+    _JxW = qp.second*jac;
+
 }
 
 void BoundaryFEMFunction::TRI3FaceFunction(Element& elem, QGaussData qp)

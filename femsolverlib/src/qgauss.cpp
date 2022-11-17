@@ -11,6 +11,13 @@ void   QGauss::reset(Element& elem)
 {
     switch (elem.type())
     {
+    case EDGE2:
+        this->npoints = 1;
+        _gauss_p.resize(1);
+        _gauss_w.resize(1);
+        _gauss_p[0](0) = 0.5;
+        _gauss_w[0]    = 1.0;
+        break;
     case TRI3:
         this->npoints = 1;
         _gauss_p.resize(1);
@@ -33,6 +40,15 @@ void   QGauss::reset(Element& elem)
         _gauss_p[3](0) =  -0.57735026919;
         _gauss_p[3](1) =   0.57735026919;
         _gauss_w[0] = _gauss_w[1] = _gauss_w[2] = _gauss_w[3] = 1.0;
+        break;
+    case TET4:
+        this->npoints = 1;
+        _gauss_p.resize(1);
+        _gauss_w.resize(1);
+        _gauss_p[0](0) = 0.25;
+        _gauss_p[0](1) = 0.25;
+        _gauss_p[0](2) = 0.25;
+        _gauss_w[0]   = 1.0/6.0;
     default:
         break;
     }

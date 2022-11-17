@@ -549,6 +549,7 @@ class Mesh {
         std::vector<unsigned int>   node_index;                 // Array indicando o índice de cada nó.
         unsigned short              element_type;
         unsigned short              boundary_element_type;
+        std::vector<unsigned int>   face_to_element;             // Array indicando  qual elemento interno pertence o elemento de superfície.
 
         std::map<int, physical_data_t>  physical_map;
         unsigned int dim;                                       // Dimensão da malha.
