@@ -73,11 +73,15 @@ void BoundaryFEMFunction::EDGEFaceFunction(Element& elem, QGaussData qp)
 
     _JxW = qp.second*jac;
 
+    this->_normal(0) = -J[0][1];
+    this->_normal(1) =  J[0][0];
+    this->_normal.unit();
+
 }
 
 void BoundaryFEMFunction::TRI3FaceFunction(Element& elem, QGaussData qp)
 {
-    /*
+    
     double dpsi[2][3];
     double J[2][3]    = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
     double Jinv[2][2] = {{0.0, 0.0}, {0.0, 0.0}};
@@ -85,7 +89,7 @@ void BoundaryFEMFunction::TRI3FaceFunction(Element& elem, QGaussData qp)
    
     _phi.resize(3);
     _dphi.resize(3);
-
+    /*
     double xi  = qp.first(0);
     double eta = qp.first(1);
 

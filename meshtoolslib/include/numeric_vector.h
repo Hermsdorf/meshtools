@@ -17,6 +17,7 @@ class NumericVector {
         NumericVector<T> operator-(NumericVector<T> v);
         NumericVector<T> operator-=(NumericVector<T> v);
         T                norm();
+        void             unit();
         //friend ostream& operator<<(ostream& os, const NumericVector<T>& v);
         ~NumericVector();
     private:
@@ -115,6 +116,17 @@ T NumericVector<T>::norm()
     }
     return sqrt(result);
 }
+
+template <typename T>
+void NumericVector<T>::unit()
+{
+    T result = norm();
+    for (int i = 0; i < 3; i++) {
+      this->data[i] /= result;
+    }
+}
+
+
 
 typedef NumericVector<double>    RealVector;
 typedef NumericVector<double>    Gradient;
