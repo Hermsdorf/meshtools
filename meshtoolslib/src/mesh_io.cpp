@@ -76,39 +76,6 @@ void MeshIODataAppended::addTimeDataInfo(double time, int timestep)
     this->time_step = timestep;
 }
 
-static int element_type[6] = {-1, 2, 3, 4, 4, 8};
-static int element_dim[6]  = { 0, 1, 2, 2, 3, 3};
-
-int getGmshElemNNodes(int type)
-{
-    switch (type)
-    {
-        case 1: return 2;
-        case 2: return 3;
-        case 3: return 4;
-        case 4: return 4;
-        case 5: return 8;
-        case 15: return 1;
-        default: return -1;
-        break;
-    }
-}
-
-int getGmshElemTypeDim(int type)
-{
-    switch (type)
-    {
-        case 1: return 1; 
-        case 2: return 2; 
-        case 3: return 2;
-        case 4: return 3;
-        case 5: return 3;
-        case 15: return 0;
-        default: return -1;
-        break;
-    }
-}
-
 int GmshToVTKType(int type)
 {
     switch (type)
@@ -124,7 +91,6 @@ int GmshToVTKType(int type)
 
     }
 }
-
 
 void Mesh::MeshGmshReader(const char* filename)
 {
@@ -389,7 +355,6 @@ void Mesh::MeshGmshReader(const char* filename)
     this->element_type          = this->type[this->n_face_elements];
     this->boundary_element_type = this->type[0];
     
-
     std::string str(filename);
     str.resize(str.length()-4);
 

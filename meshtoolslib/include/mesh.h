@@ -533,6 +533,13 @@ class Mesh {
         unsigned int *getBoundaryElementsConnectivityData() ;
 
         double       *getCoordinatesData(); 
+
+        std::vector<int> getFaceToElement() { return face_to_element; };
+        void             setFaceToElement(std::vector<int> face_to_element) { this->face_to_element = face_to_element; };
+        int              getElemContourNNodes(int type);
+        int              getGmshElemNNodes(int type);
+        int              getGmshElemTypeDim(int type);
+        void             process_face_to_element();
     
 
 
@@ -549,7 +556,7 @@ class Mesh {
         std::vector<unsigned int>   node_index;                 // Array indicando o índice de cada nó.
         unsigned short              element_type;
         unsigned short              boundary_element_type;
-        std::vector<unsigned int>   face_to_element;             // Array indicando  qual elemento interno pertence o elemento de superfície.
+        std::vector<int>            face_to_element;             // Array indicando  qual elemento interno pertence o elemento de superfície.
 
         std::map<int, physical_data_t>  physical_map;
         unsigned int dim;                                       // Dimensão da malha.
