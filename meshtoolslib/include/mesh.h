@@ -539,6 +539,7 @@ class Mesh {
         int              getElemContourNNodes(int type);
         int              getGmshElemNNodes(int type);
         int              getGmshElemTypeDim(int type);
+        void             process_face_to_element();
     
 
 
