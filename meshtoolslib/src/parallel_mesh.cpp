@@ -617,6 +617,82 @@ void ParallelMesh::build_communication_map()
         std::cout << "fininshing communication map\n";
 }
 
+
+// Hash function to fill face_to_element array
+unsigned int cantor_pairing(unsigned int a, unsigned int b) {
+   return (a + b + 1) * (a + b) / 2 + b;
+}
+
+void ParallelMesh::process_face_to_element(){
+    int n_face_elements = this->get_n_face_elements();
+    int n_elements = this->get_n_elements();
+    int dim = this->getDim();
+
+    std::vector<int> face_to_element(n_face_elements, -1); // -1 means no element yet
+    int face_elements_hash[n_face_elements];
+
+    // Calculating hash to each surface element
+    for (int i = 0; i < n_face_elements; i++) {
+        unsigned short surf_element_nnodes = this->getSurfaceElementConnSize(i);
+        unsigned int* surf_element_conn = this->getSurfaceElementConn(i);
+
+        unsigned int element_hash = surf_element_conn[0];
+        for (unsigned short conn_i = 1 ; conn_i < surf_element_nnodes ; conn_i++){
+            element_hash = cantor_pairing(element_hash, surf_element_conn[conn_i]);
+        }
+        face_elements_hash[i] = element_hash;
+    }
+
+    // Filling face_to_element array
+    for (unsigned int i = 0; i < n_elements; i++) {
+        unsigned short element_nnodes = this->getElementConnSize(i);
+        unsigned int* element_conn = this->getElementConn(i);
+        unsigned short element_type = this->getElementType(i);
+
+        int contour_nnodes = getElemContourNNodes(element_type);
+
+        // For all element nodes
+        for(unsigned short conn_i = 0 ; conn_i < element_nnodes ; conn_i++)
+        {
+            unsigned int element_hash = element_conn[conn_i];
+            int count = 1;
+            for (unsigned short conn_j = conn_i+1 ; ; conn_j++) {
+                if(count == contour_nnodes)
+                    break;
+
+                // As a circular array
+                if (conn_j >= element_nnodes)
+                    conn_j -= element_nnodes;
+
+                element_hash = cantor_pairing(element_hash, element_conn[conn_j]);
+                count++;
+            }
+
+            for (int face_i = 0; face_i < n_face_elements; face_i++) {
+                if (face_elements_hash[face_i] == element_hash) {
+                    face_to_element[face_i] = i;
+                    break;
+                }
+            }
+        }
+        
+        // Verifying if all the faces are related with its internal elements
+        bool all_faces_found = true;
+        for (int face_i = 0; face_i < n_face_elements; face_i++) {
+            if (face_to_element[face_i] == -1){
+                all_faces_found = false;
+                break;
+            }
+        }
+
+        if (all_faces_found){
+            this->setFaceToElement(face_to_element);
+            break;
+        }
+    }
+}
+
+
 void ParallelMesh::update()
 {
     // Indicates local node, what means that it is not shared with other process
@@ -744,6 +820,8 @@ void ParallelMesh::update()
         } 
         offset += n_shared_nodes; 
     }
+
+    process_face_to_element();
 }
 
 

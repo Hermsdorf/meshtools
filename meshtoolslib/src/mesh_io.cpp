@@ -44,94 +44,6 @@ bool is_mesh_data_type_valid(MeshDataType type)
     }
 }
 
-// By the element type this method returns the number of nodes at the element's faces
-int getElemContourNNodes(int type)
-{
-    switch (type)
-    {
-        case 1: return 1; // EDGE2
-        case 2: return 2; // TRI3
-        case 3: return 2; // QUAD4
-        case 4: return 3; // TET4
-        case 5: return 4; // HEX8
-        default: return -1;
-        break;
-    }
-}
-
-// Hash function to fill face_to_element array
-int cantor_pairing(unsigned int a, unsigned int b) {
-   return (a + b + 1) * (a + b) / 2 + b;
-}
-
-void process_face_to_element(Mesh& mesh)
-{
-    int n_face_elements = mesh.get_n_face_elements();
-    int n_elements = mesh.get_n_elements();
-    int conn = mesh.getConn();
-    int offset = mesh.getOffset();
-    int dim = mesh.getDim();
-
-    std::vector<int> face_to_element(n_face_elements, -1); // -1 means no element yet
-    int face_elements_hash[n_face_elements];
-
-    // Calculating hash to each surface element
-    for (int i = 0; i < n_face_elements; i++) {
-        unsigned short surf_element_nnodes = mesh.getSurfaceElementConnSize(i);
-        unsigned int* surf_element_conn = mesh.getSurfaceElementConn(i);
-
-        unsigned int element_hash = surf_element_conn[0];
-        for (unsigned short conn_i = 1 ; conn_i < surf_element_nnodes ; conn_i++){
-            element_hash = cantor_pairing(element_hash, surf_element_conn[conn_i]);
-        }
-        face_elements_hash[i] = element_hash;
-    }
-
-    // Filling face_to_element array
-    for (int i = 0; i < n_elements; i++) {
-        unsigned short element_nnodes = mesh.getElementConnSize(i);
-        unsigned int* element_conn = mesh.getElementConn(i);
-        unsigned short element_type = mesh.getElementType(i);
-
-        int contour_nnodes = getElemContourNNodes(element_type);
-
-        for(unsigned short conn_i = 0 ; conn_i < element_nnodes ; conn_i++)
-        {
-            unsigned int element_hash = element_conn[conn_i];
-            int count = 1;
-            for (unsigned short conn_j = conn_i+1 ; ; conn_j++) {
-                if(count == contour_nnodes)
-                    break;
-
-                element_hash = cantor_pairing(element_hash, element_conn[conn_j]);
-                count++;
-            }
-
-            // TODO: falta formar as hashs com o final da conectividade tipo: conn = [1, 4, 3]
-            // TODO: devemos testar 1 com 4, 4 com 3 e 3 com 1
-
-            for (int face_i = 0; face_i < n_face_elements; face_i++) {
-                if (face_elements_hash[face_i] == element_hash) {
-                    face_to_element[face_i] = i;
-                    break;
-                }
-            }
-        }
-        
-        // Verifying if all the faces are related with its internal elements
-        bool all_faces_found = true;
-        for (int face_i = 0; face_i < n_face_elements; face_i++) {
-            if (face_to_element[face_i] == -1)
-                all_faces_found = false;
-        }
-
-        if (all_faces_found){
-            mesh.setFaceToElement(face_to_element);
-            break;
-        }
-    }
-}
-
 MeshIODataAppended::MeshIODataAppended()
 {
     this->time = -1.0;
@@ -164,39 +76,6 @@ void MeshIODataAppended::addTimeDataInfo(double time, int timestep)
     this->time_step = timestep;
 }
 
-static int element_type[6] = {-1, 2, 3, 4, 4, 8};
-static int element_dim[6]  = { 0, 1, 2, 2, 3, 3};
-
-int getGmshElemNNodes(int type)
-{
-    switch (type)
-    {
-        case 1: return 2;
-        case 2: return 3;
-        case 3: return 4;
-        case 4: return 4;
-        case 5: return 8;
-        case 15: return 1;
-        default: return -1;
-        break;
-    }
-}
-
-int getGmshElemTypeDim(int type)
-{
-    switch (type)
-    {
-        case 1: return 1; // EDGE2
-        case 2: return 2; // TRI3
-        case 3: return 2; // QUAD4
-        case 4: return 3; // TET4
-        case 5: return 3; // HEX8
-        case 15: return 0;
-        default: return -1;
-        break;
-    }
-}
-
 int GmshToVTKType(int type)
 {
     switch (type)
@@ -212,7 +91,6 @@ int GmshToVTKType(int type)
 
     }
 }
-
 
 void Mesh::MeshGmshReader(const char* filename)
 {
@@ -477,7 +355,6 @@ void Mesh::MeshGmshReader(const char* filename)
     this->element_type          = this->type[this->n_face_elements];
     this->boundary_element_type = this->type[0];
     
-    process_face_to_element(this);
     std::string str(filename);
     str.resize(str.length()-4);
 

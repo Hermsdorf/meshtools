@@ -348,6 +348,49 @@ double * Mesh::getCoordinatesData()
     return &this->coord[0];
 }
 
+// By the element type this method returns the number of nodes at the element's faces
+int Mesh::getElemContourNNodes(int type)
+{
+    switch (type)
+    {
+        case 1: return 1; // EDGE2
+        case 2: return 2; // TRI3
+        case 3: return 2; // QUAD4
+        case 4: return 3; // TET4
+        case 5: return 4; // HEX8
+        default: return -1;
+        break;
+    }
+}
 
+int Mesh::getGmshElemNNodes(int type)
+{
+    switch (type)
+    {
+        case 1: return 2; // EDGE2
+        case 2: return 3; // TRI3
+        case 3: return 4; // QUAD4
+        case 4: return 4; // TET4
+        case 5: return 8; // HEX8
+        case 15: return 1;
+        default: return -1;
+        break;
+    }
+}
+
+int Mesh::getGmshElemTypeDim(int type)
+{
+    switch (type)
+    {
+        case 1: return 1; // EDGE2
+        case 2: return 2; // TRI3
+        case 3: return 2; // QUAD4
+        case 4: return 3; // TET4
+        case 5: return 3; // HEX8
+        case 15: return 0;
+        default: return -1;
+        break;
+    }
+}
 
 

@@ -58,6 +58,7 @@ class ParallelMesh : public Mesh{
         void getGhostNodesIds(std::vector<unsigned int>& local_ghosts_nodes, std::vector<unsigned int>& global_ghosts_nodes);
         void update();
         void build_communication_map();
+        void process_face_to_element();
     private:
         
         bool internal_mesh;
