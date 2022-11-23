@@ -5,6 +5,11 @@
 
 using namespace std;
 
+static unsigned int quad4_faces[4][2] = {{0,1},{1,2},{2,3},{3,0}};
+static unsigned int tri3_faces[3][2] = {{0,1},{1,2},{2,0}};
+static unsigned int tet4_faces[4][3] = {{0,1,2},{0,2,3},{0,3,1},{1,3,2}};
+static unsigned int hex8_faces[6][4] = {{0,1,2,3},{4,5,6,7},{0,1,5,4},{1,2,6,5},{2,3,7,6},{3,0,4,7}};
+
 Mesh::Mesh()
 {
     this->n_face_elements = 0;
@@ -394,16 +399,22 @@ int Mesh::getGmshElemTypeDim(int type)
 }
 
 // Hash function to fill face_to_element array
+// TODO: usar unsigned long para hash
+// Referencia: cantor pairing function
+//  http://stackoverflow.com/questions/919612/mapping-two-integers-to-one-in-a-unique-and-deterministic-way
 unsigned int cantor_pairing(unsigned int a, unsigned int b) {
    return (a + b + 1) * (a + b) / 2 + b;
 }
 
-void Mesh::process_face_to_element(){
+void Mesh::process_face_to_element()
+{
     int n_face_elements = this->get_n_face_elements();
     int n_elements = this->get_n_elements();
     int dim = this->getDim();
 
     std::vector<int> face_to_element(n_face_elements, -1); // -1 means no element yet
+
+    //TODO: usar unordeed_map
     int face_elements_hash[n_face_elements];
 
     // Calculating hash to each surface element
@@ -415,6 +426,8 @@ void Mesh::process_face_to_element(){
         for (unsigned short conn_i = 1 ; conn_i < surf_element_nnodes ; conn_i++){
             element_hash = cantor_pairing(element_hash, surf_element_conn[conn_i]);
         }
+
+        // map[hash] = face_id
         face_elements_hash[i] = element_hash;
     }
 
@@ -426,7 +439,12 @@ void Mesh::process_face_to_element(){
 
         int contour_nnodes = getElemContourNNodes(element_type);
 
-        // For all element nodes
+        // loop nas faces do elemento
+        //   internamente, o loop é feito nos nos da face
+        //      para cada no da face, pega o hash do face
+        //        se o hash já existe no map, significa que a face é contorno,
+        //          então, face_to_element[face_id] = element_id
+
         for(unsigned short conn_i = 0 ; conn_i < element_nnodes ; conn_i++)
         {
             unsigned int element_hash = element_conn[conn_i];
