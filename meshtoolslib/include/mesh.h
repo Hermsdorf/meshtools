@@ -536,7 +536,7 @@ class Mesh {
 
         std::vector<int> getFaceToElement() { return face_to_element; };
         void             setFaceToElement(std::vector<int> face_to_element) { this->face_to_element = face_to_element; };
-        int              getElemContourNNodes(int type);
+        int              getVTKElemContourNNodes(int vtk_type);
         int              getGmshElemNNodes(int type);
         int              getGmshElemTypeDim(int type);
         void             process_face_to_element();

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cassert>
 #include <set>
+#include <unordered_map>
 #include "mesh.h" 
 
 using namespace std;
@@ -16,7 +17,6 @@ Mesh::Mesh()
     this->n_elements      = 0;
     this->n_nodes         = 0; 
     this->dim             = 0;
-    //this->mesh_coloring_internal = nullptr;
     this->n_colors = 0;
 }
 
@@ -26,7 +26,6 @@ Mesh::Mesh(const char* filename)
     this->n_elements = 0;
     this->n_nodes = 0; 
     this->dim = 0;
-    //this->mesh_coloring_internal = nullptr;
     this->n_colors = 0;
     MeshGmshReader(filename);
 }
@@ -39,7 +38,6 @@ Mesh::Mesh(std::string filename)
     this->n_elements = 0;
     this->n_nodes = 0; 
     this->dim = 0;
-    //this->mesh_coloring_internal = nullptr;
     this->n_colors = 0;
     MeshGmshReader(filename_converted);
 }
@@ -54,9 +52,7 @@ Mesh::~Mesh()
     this->physical_map.clear();
     this->filename.clear();
     this->coloring.clear();
-
-    //if(this->mesh_coloring_internal)
-    //    delete [] this->mesh_coloring_internal;
+    this->face_to_element.clear();
 }
 
 unsigned int Mesh::get_n_face_elements()
@@ -138,12 +134,10 @@ void Mesh::setCoord(std::vector<double> &coord)
 {
     this->coord.resize(coord.size());
     std::copy(coord.begin(),coord.end(), this->coord.begin());
-    //this->coord = coord;
 }
 
 void Mesh::setConn(std::vector<unsigned int> &conn)
 {
-    //this->conn = conn;
     this->conn.resize(conn.size());
     std::copy(conn.begin(),conn.end(), this->conn.begin());
 }
@@ -157,7 +151,6 @@ void Mesh::setOffset(std::vector<unsigned int> &offset)
 {
     this->offset.resize(offset.size());
     std::copy(offset.begin(), offset.end(), this->offset.begin());
-    //this->offset = offset;
 }
 
 void Mesh::setOffsetPosition(unsigned int value, unsigned int position)
@@ -354,15 +347,15 @@ double * Mesh::getCoordinatesData()
 }
 
 // By the element type this method returns the number of nodes at the element's faces
-int Mesh::getElemContourNNodes(int type)
+int Mesh::getVTKElemContourNNodes(int vtk_type)
 {
-    switch (type)
+    switch (vtk_type)
     {
-        case 1: return 1; // EDGE2
-        case 2: return 2; // TRI3
-        case 3: return 2; // QUAD4
-        case 4: return 3; // TET4
-        case 5: return 4; // HEX8
+        case 3: return 2; // EDGE2
+        case 5: return 2; // TRI3
+        case 9: return 2; // QUAD4
+        case 10: return 3; // TET4
+        case 12: return 4; // HEX8
         default: return -1;
         break;
     }
@@ -399,11 +392,11 @@ int Mesh::getGmshElemTypeDim(int type)
 }
 
 // Hash function to fill face_to_element array
-// TODO: usar unsigned long para hash
 // Referencia: cantor pairing function
 //  http://stackoverflow.com/questions/919612/mapping-two-integers-to-one-in-a-unique-and-deterministic-way
-unsigned int cantor_pairing(unsigned int a, unsigned int b) {
-   return (a + b + 1) * (a + b) / 2 + b;
+unsigned long cantor_pairing(unsigned int a, unsigned int b) {
+    unsigned long hash = (a + b + 1) * (a + b) / 2 + b; 
+    return hash;
 }
 
 void Mesh::process_face_to_element()
@@ -414,30 +407,29 @@ void Mesh::process_face_to_element()
 
     std::vector<int> face_to_element(n_face_elements, -1); // -1 means no element yet
 
-    //TODO: usar unordeed_map
-    int face_elements_hash[n_face_elements];
+    unordered_map<unsigned long, int> face_elements_hash;
 
     // Calculating hash to each surface element
     for (int i = 0; i < n_face_elements; i++) {
         unsigned short surf_element_nnodes = this->getSurfaceElementConnSize(i);
         unsigned int* surf_element_conn = this->getSurfaceElementConn(i);
 
-        unsigned int element_hash = surf_element_conn[0];
+        unsigned long element_hash = surf_element_conn[0];
         for (unsigned short conn_i = 1 ; conn_i < surf_element_nnodes ; conn_i++){
             element_hash = cantor_pairing(element_hash, surf_element_conn[conn_i]);
         }
 
-        // map[hash] = face_id
-        face_elements_hash[i] = element_hash;
+        // unordered_map[hash] = face_id
+        face_elements_hash[element_hash] = i;
     }
 
     // Filling face_to_element array
-    for (unsigned int i = 0; i < n_elements; i++) {
-        unsigned short element_nnodes = this->getElementConnSize(i);
-        unsigned int* element_conn = this->getElementConn(i);
-        unsigned short element_type = this->getElementType(i);
+    for (unsigned int elem_i = 0; elem_i < n_elements; elem_i++) {
+        unsigned short element_nnodes = this->getElementConnSize(elem_i);
+        unsigned int* element_conn = this->getElementConn(elem_i);
+        unsigned short element_type = this->getElementType(elem_i);
 
-        int contour_nnodes = getElemContourNNodes(element_type);
+        int contour_nnodes = getVTKElemContourNNodes(element_type);
 
         // loop nas faces do elemento
         //   internamente, o loop é feito nos nos da face
@@ -461,22 +453,17 @@ void Mesh::process_face_to_element()
                 count++;
             }
 
-            for (int face_i = 0; face_i < n_face_elements; face_i++) {
-                if (face_elements_hash[face_i] == element_hash) {
-                    face_to_element[face_i] = i;
-                    break;
-                }
+            // unordered_map[hash] = face_id
+            if (face_elements_hash.find(element_hash) != face_elements_hash.end()) {
+                unsigned int face_id = face_elements_hash[element_hash];
+                face_to_element[face_id] = elem_i;
             }
         }
         
         // Verifying if all the faces are related with its internal elements
         bool all_faces_found = true;
-        for (int face_i = 0; face_i < n_face_elements; face_i++) {
-            if (face_to_element[face_i] == -1){
-                all_faces_found = false;
-                break;
-            }
-        }
+        if( std::find(face_to_element.begin(), face_to_element.end(), -1) != face_to_element.end() )
+            all_faces_found = false;
 
         if (all_faces_found){
             this->setFaceToElement(face_to_element);

@@ -662,6 +662,7 @@ void ParallelMesh::update()
     if(MeshTools::n_processors() == 1)
     {
          this->start_node_index = 0;
+         process_face_to_element();
          return;
     }
     // Sends from predecessor process the value of `n_nodes_local` to `n_nodes_offset` variable`

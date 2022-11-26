@@ -1455,13 +1455,13 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
 {
 
     int processor_id = MeshTools::processor_id();
-    int n_procesors  = MeshTools::n_processors(); 
+    int n_processors  = MeshTools::n_processors(); 
         
     ParallelMesh *pmesh ; 
     if(!this->applied)
-        this->ApplyPartitioner(mesh,n_procesors);
+        this->ApplyPartitioner(mesh,n_processors);
 
-    if(n_procesors > 0)
+    if(n_processors > 1)
     {
         int array_sizes[12];
 
