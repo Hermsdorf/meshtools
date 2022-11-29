@@ -467,9 +467,11 @@ void Mesh::process_face_to_element()
 
         if (all_faces_found){
             this->setFaceToElement(face_to_element);
-            break;
+            return ;
         }
     }
+    std::cout << "Face to element relation wasn't calculated correctly, exiting..." << std::endl;
+    exit(1);
 }
 
 

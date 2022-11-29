@@ -132,10 +132,7 @@ void assemble_transport(TransientImplicitSystem* system)
                 u_old         +=  old_solution[local_indices[i]]*phi[i];
                 grad_u_old(0) +=  old_solution[local_indices[i]]*dphi[i](0);
                 grad_u_old(1) +=  old_solution[local_indices[i]]*dphi[i](1);
-                //
-                // grad_u_old  += old_solution[local_indices[i]]*dphi[i];
-
-
+                if(ndim == 3) grad_u_old(2)  += old_solution[local_indices[i]]*dphi[i](2);
             }
 
             const double  adt1 = (1.0-theta)*dt;

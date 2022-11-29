@@ -47,6 +47,7 @@ class FEMFunction
         void TRI3Function(Element& elem, QGaussData qp);
         void QUAD4Function(Element& elem, QGaussData qp);
         void EDGEFaceFunction(Element& elem, QGaussData qp);
+        void TET4Function(Element& elem, QGaussData qp);
         
 };
 

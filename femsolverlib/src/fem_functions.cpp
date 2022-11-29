@@ -105,11 +105,101 @@ void FEMFunction::ComputeFunction(Element& elem, QGaussData qp)
     case QUAD4:
             QUAD4Function(elem,qp);
         break;
+    case TET4:
+            TET4Function(elem, qp);
     default:
         break;
     }
 }
 
+void FEMFunction::TET4Function(Element& elem, QGaussData qp)
+{
+    double dpsi[3][4];
+    double J[3][3]    = {{0.0, 0.0, 0.0}, {0.0, 0.0,  0.0}, {0.0, 0.0, 0.0}};
+    double Jinv[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+    double x[4], y[4], z[4];
+
+    _phi.resize(4);
+    _dphi.resize(4);
+
+    double xi   = qp.first(0);
+    double eta  = qp.first(1);
+    double zeta = qp.first(2);
+
+    // shape functions
+    _phi[0] = 1.0 - xi - eta - zeta; // N1
+    _phi[1] = xi;                    // N2
+    _phi[2] = eta;                   // N3
+    _phi[3] = zeta;                  // N4
+    
+    // shape function derivatives
+    dpsi[0][0] = -1.0;  // dN1/dxi
+    dpsi[0][1] =  1.0;  // dN2/dxi
+    dpsi[0][2] =  0.0;  // dN3/dxi
+    dpsi[0][3] =  0.0;  // dN4/dxi
+
+    dpsi[1][0] = -1.0;  // dN1/deta
+    dpsi[1][1] =  0.0;  // dN2/deta
+    dpsi[1][2] =  1.0;  // dN3/deta
+    dpsi[1][3] =  0.0;  // dN4/deta
+
+    dpsi[2][0] = -1.0;  // dN1/dzeta
+    dpsi[2][1] =  0.0;  // dN2/dzeta
+    dpsi[2][2] =  0.0;  // dN3/dzeta
+    dpsi[2][3] =  1.0;  // dN4/dzeta
+
+
+    // compute Jacobian
+    for(int i=0; i<elem.n_nodes(); i++)
+    {
+        x[i] = elem.node(i)(0);
+        y[i] = elem.node(i)(1);
+        z[i] = elem.node(i)(2);
+
+        _xyz(0) += x[i]*_phi[i];
+        _xyz(1) += y[i]*_phi[i];
+        _xyz(2) += z[i]*_phi[i];
+
+        J[0][0] +=  x[i]*dpsi[0][i]; // dxi/dx
+        J[0][1] +=  y[i]*dpsi[0][i]; // dxi/dy
+        J[0][2] +=  z[i]*dpsi[0][i]; // dxi/dz
+        J[1][0] +=  x[i]*dpsi[1][i]; // deta/dx
+        J[1][1] +=  y[i]*dpsi[1][i]; // deta/dy
+        J[1][2] +=  z[i]*dpsi[1][i]; // deta/dz
+        J[2][0] +=  x[i]*dpsi[2][i]; // dzeta/dx
+        J[2][1] +=  y[i]*dpsi[2][i]; // dzeta/dy
+        J[2][2] +=  z[i]*dpsi[2][i]; // dzeta/dz
+
+    }
+
+    // TODO: check if this is correct
+    double detJ = J[0][0]*(J[1][1]*J[2][2]-J[1][2]*J[2][1]) - J[0][1]*(J[1][0]*J[2][2]-J[1][2]*J[2][0]) + J[0][2]*(J[1][0]*J[2][1]-J[1][1]*J[2][0]);
+    if(detJ < 0.0)
+    {
+        std::cout << "Error: detJ < 0.0\n" << std::endl;
+        exit(1);
+    }
+
+    double invdetJ = 1.0/detJ;
+    Jinv[0][0] = (J[1][1]*J[2][2]-J[1][2]*J[2][1])*invdetJ;
+    Jinv[0][1] = (J[0][2]*J[2][1]-J[0][1]*J[2][2])*invdetJ;
+    Jinv[0][2] = (J[0][1]*J[1][2]-J[0][2]*J[1][1])*invdetJ;
+    Jinv[1][0] = (J[1][2]*J[2][0]-J[1][0]*J[2][2])*invdetJ;
+    Jinv[1][1] = (J[0][0]*J[2][2]-J[0][2]*J[2][0])*invdetJ;
+    Jinv[1][2] = (J[0][2]*J[1][0]-J[0][0]*J[1][2])*invdetJ;
+    Jinv[2][0] = (J[1][0]*J[2][1]-J[1][1]*J[2][0])*invdetJ;
+    Jinv[2][1] = (J[0][1]*J[2][0]-J[0][0]*J[2][1])*invdetJ;
+    Jinv[2][2] = (J[0][0]*J[1][1]-J[0][1]*J[1][0])*invdetJ;
+
+    for(int i=0; i<4; i++)
+    {
+        _dphi[i](0) = Jinv[0][0]*dpsi[0][i] + Jinv[0][1]*dpsi[1][i] + Jinv[0][2]*dpsi[2][i];
+        _dphi[i](1) = Jinv[1][0]*dpsi[0][i] + Jinv[1][1]*dpsi[1][i] + Jinv[1][2]*dpsi[2][i];
+        _dphi[i](2) = Jinv[2][0]*dpsi[0][i] + Jinv[2][1]*dpsi[1][i] + Jinv[2][2]*dpsi[2][i];
+    }
+
+    _JxW = qp.second*detJ;
+}
 
 void FEMFunction::TRI3Function(Element& elem, QGaussData qp)
 {
@@ -186,7 +276,7 @@ void FEMFunction::QUAD4Function(Element& elem, QGaussData qp)
     double dpsi[2][4];
     double J[2][2]    = {{0.0, 0.0}, {0.0, 0.0}};
     double Jinv[2][2] = {{0.0, 0.0}, {0.0, 0.0}};
-    double x[3], y[3];
+    double x[4], y[4];
     
     _phi.resize(4);
     _dphi.resize(4);
