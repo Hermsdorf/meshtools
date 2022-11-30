@@ -8,7 +8,7 @@ using namespace std;
 
 static unsigned int quad4_faces[4][2] = {{0,1},{1,2},{2,3},{3,0}};
 static unsigned int tri3_faces[3][2] = {{0,1},{1,2},{2,0}};
-static unsigned int tet4_faces[4][3] = {{0,1,2},{0,2,3},{0,3,1},{1,3,2}};
+static unsigned int tet4_faces[4][3] = {{0,2,1},{0,3,2},{0,1,3},{1,2,3}};
 static unsigned int hex8_faces[6][4] = {{0,1,2,3},{4,5,6,7},{0,1,5,4},{1,2,6,5},{2,3,7,6},{3,0,4,7}};
 
 Mesh::Mesh()
@@ -414,7 +414,14 @@ void Mesh::process_face_to_element()
         unsigned short surf_element_nnodes = this->getSurfaceElementConnSize(i);
         unsigned int* surf_element_conn = this->getSurfaceElementConn(i);
 
-        unsigned long element_hash = surf_element_conn[0];
+        std::vector<unsigned int> surf_element_conn_vec(surf_element_nnodes);
+        for (int j = 0; j < surf_element_nnodes; j++) {
+            surf_element_conn_vec[j] = surf_element_conn[j];
+        }
+
+        std::sort(surf_element_conn_vec.begin(), surf_element_conn_vec.end());
+
+        unsigned long element_hash = surf_element_conn_vec[0];
         for (unsigned short conn_i = 1 ; conn_i < surf_element_nnodes ; conn_i++){
             element_hash = cantor_pairing(element_hash, surf_element_conn[conn_i]);
         }
@@ -425,9 +432,38 @@ void Mesh::process_face_to_element()
 
     // Filling face_to_element array
     for (unsigned int elem_i = 0; elem_i < n_elements; elem_i++) {
-        unsigned short element_nnodes = this->getElementConnSize(elem_i);
-        unsigned int* element_conn = this->getElementConn(elem_i);
+         unsigned short element_nnodes = this->getElementConnSize(elem_i);
+         unsigned int* element_conn = this->getElementConn(elem_i);
         unsigned short element_type = this->getElementType(elem_i);
+
+        // Getting element's faces
+        // TODO: implementar para outros tipos de elementos
+        int n_faces = 4;
+        for(int f=0; f < n_faces; f++)
+        {
+            // getting face nodes
+            // TODO: implementar para outros tipos de elementos
+            int n_faces_nodes = 2;
+            std::vector<unsigned int> face_nodes(n_faces_nodes);
+            for(int nf=0; nf <n_faces_nodes; nf++)
+            {
+                int local_node = tet4_faces[f][0];
+                face_nodes[nf] = element_conn[local_node];
+
+            }
+
+            std::sort(face_nodes.begin(), face_nodes.end());
+            unsigned long element_hash = face_nodes[0];
+            for (unsigned short conn_i = 1 ; conn_i < face_nodes.size() ; conn_i++){
+                element_hash = cantor_pairing(element_hash, surf_element_conn[conn_i]);
+
+            if (face_elements_hash.find(element_hash) != face_elements_hash.end()) {
+                unsigned int face_id = face_elements_hash[element_hash];
+                face_to_element[face_id] = elem_i;
+        }
+
+
+        }
 
         int contour_nnodes = getVTKElemContourNNodes(element_type);
 
@@ -437,28 +473,28 @@ void Mesh::process_face_to_element()
         //        se o hash já existe no map, significa que a face é contorno,
         //          então, face_to_element[face_id] = element_id
 
-        for(unsigned short conn_i = 0 ; conn_i < element_nnodes ; conn_i++)
-        {
-            unsigned int element_hash = element_conn[conn_i];
-            int count = 1;
-            for (unsigned short conn_j = conn_i+1 ; ; conn_j++) {
-                if(count == contour_nnodes)
-                    break;
+        // for(unsigned short conn_i = 0 ; conn_i < element_nnodes ; conn_i++)
+        // {
+        //     unsigned int element_hash = element_conn[conn_i];
+        //     int count = 1;
+        //     for (unsigned short conn_j = conn_i+1 ; ; conn_j++) {
+        //         if(count == contour_nnodes)
+        //             break;
 
-                // As a circular array
-                if (conn_j >= element_nnodes)
-                    conn_j -= element_nnodes;
+        //         // As a circular array
+        //         if (conn_j >= element_nnodes)
+        //             conn_j -= element_nnodes;
 
-                element_hash = cantor_pairing(element_hash, element_conn[conn_j]);
-                count++;
-            }
+        //         element_hash = cantor_pairing(element_hash, element_conn[conn_j]);
+        //         count++;
+        //     }
 
-            // unordered_map[hash] = face_id
-            if (face_elements_hash.find(element_hash) != face_elements_hash.end()) {
-                unsigned int face_id = face_elements_hash[element_hash];
-                face_to_element[face_id] = elem_i;
-            }
-        }
+        //     // unordered_map[hash] = face_id
+        //     if (face_elements_hash.find(element_hash) != face_elements_hash.end()) {
+        //         unsigned int face_id = face_elements_hash[element_hash];
+        //         face_to_element[face_id] = elem_i;
+        //     }
+        // }
         
         // Verifying if all the faces are related with its internal elements
         bool all_faces_found = true;
