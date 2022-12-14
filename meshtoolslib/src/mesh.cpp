@@ -6,11 +6,22 @@
 
 using namespace std;
 
-static unsigned int edge2_faces[2][1] = {{0},{1}};
-static unsigned int quad4_faces[4][2] = {{0,1},{1,2},{2,3},{3,0}};
-static unsigned int tri3_faces[3][2]  = {{0,1},{1,2},{2,0}};
-static unsigned int tet4_faces[4][3]  = {{0,2,1},{0,3,2},{0,1,3},{1,2,3}};
-static unsigned int hex8_faces[6][4]  = {{0,1,2,3},{4,5,6,7},{0,1,5,4},{1,2,6,5},{2,3,7,6},{3,0,4,7}};
+//unsigned int edge2_faces[2][1] = {{0},{1}};
+
+unsigned int edge2_faces[2] = {0,1};
+
+//unsigned int quad4_faces[4][2] = {{0,1},{1,2},{2,3},{3,0}};
+unsigned int quad4_faces[8] = {0,1,1,2,2,3,3,0}; // 2D
+
+
+//unsigned int tri3_faces[3][2]  = {{0,1},{1,2},{2,0}};
+unsigned int tri3_faces[6]  = {0,1,1,2,2,0}; // 2D
+
+//unsigned int tet4_faces[4][3]  = {{0,2,1},{0,3,2},{0,1,3},{1,2,3}};
+unsigned int tet4_faces[12]  = {0,2,1,0,3,2,0,1,3,1,2,3}; // 3D
+
+//unsigned int hex8_faces[6][4]  = {{0,1,2,3},{4,5,6,7},{0,1,5,4},{1,2,6,5},{2,3,7,6},{3,0,4,7}};
+unsigned int hex8_faces[24]  = {0,1,2,3,4,5,6,7,0,1,5,4,1,2,6,5,2,3,7,6,3,0,4,7}; // 3D
 
 Mesh::Mesh()
 {
@@ -378,13 +389,13 @@ int Mesh::getVTKElemContourNFaces(int vtk_type)
 }
 
 // By the element type this method returns the number of element's faces
-void* Mesh::getVTKElemConnSequence(int vtk_type)
+unsigned int* getVTKElemConnSequence(int vtk_type)
 {
     switch (vtk_type)
     {
-        case 3: return edge2_faces; // EDGE2
-        case 5: return tri3_faces; // TRI3
-        case 9: return quad4_faces; // QUAD4
+        case 3:  return edge2_faces; // EDGE2
+        case 5:  return tri3_faces; // TRI3
+        case 9:  return quad4_faces; // QUAD4
         case 10: return tet4_faces; // TET4
         case 12: return hex8_faces; // HEX8
         default: return nullptr;
@@ -446,21 +457,29 @@ void Mesh::process_face_to_element()
         unsigned short surf_element_nnodes = this->getSurfaceElementConnSize(i);
         unsigned int* surf_element_conn = this->getSurfaceElementConn(i);
 
-        std::vector<unsigned int> surf_element_conn_vec(surf_element_nnodes);
+        std::vector<unsigned int> conn_tmp(surf_element_nnodes);
         for (int j = 0; j < surf_element_nnodes; j++) {
-            surf_element_conn_vec[j] = surf_element_conn[j];
+            conn_tmp[j] = surf_element_conn[j];
         }
 
-        std::sort(surf_element_conn_vec.begin(), surf_element_conn_vec.end());
+        std::sort(conn_tmp.begin(), conn_tmp.end());
 
-        unsigned long element_hash = surf_element_conn_vec[0];
+        unsigned long element_hash = conn_tmp[0];
         for (unsigned short conn_i = 1 ; conn_i < surf_element_nnodes ; conn_i++){
-            element_hash = cantor_pairing(element_hash, surf_element_conn[conn_i]);
+            element_hash = cantor_pairing(element_hash, conn_tmp[conn_i]);
         }
 
         // unordered_map[hash] = face_id
         face_elements_hash[element_hash] = i;
+#ifdef NDEGUG
+        std::cout << "Element " << i << " hash: " << element_hash << " Nodes: ";
+        for(int j = 0; j < surf_element_nnodes; j++) {
+            std::cout << " " << conn_tmp[j];
+        }
+        std::cout << std::endl;
+#endif
     }
+
 
     // Filling face_to_element array
     for(unsigned int elem_i = 0; elem_i < n_elements; elem_i++) {
@@ -472,27 +491,35 @@ void Mesh::process_face_to_element()
         for (int j = 0; j < element_nnodes; j++) 
             element_conn_vec[j] = element_conn[j];
 
-        std::sort(element_conn_vec.begin(), element_conn_vec.end());
+        //std::sort(element_conn_vec.begin(), element_conn_vec.end());
 
         // Getting element's faces
         int n_faces = getVTKElemContourNFaces(element_type);
         for(int face_i = 0; face_i < n_faces; face_i++)
         {
             // getting face nodes
-            int n_face_nodes = getVTKElemContourNNodes(element_type);
-            auto node_sequence = tri3_faces;
+            int  n_face_nodes = getVTKElemContourNNodes(element_type);
+            auto face_map = getVTKElemConnSequence(element_type);
 
             std::vector<unsigned int> face_nodes(n_face_nodes);
             for(int face_node_i = 0; face_node_i < n_face_nodes ; face_node_i++)
             {
-                int local_node = node_sequence[face_i][face_node_i];
+                int local_node = face_map[face_i*n_face_nodes + face_node_i];
                 face_nodes[face_node_i] = element_conn_vec[local_node];
             }
 
             std::sort(face_nodes.begin(), face_nodes.end());
             unsigned long element_hash = face_nodes[0];
             for (unsigned short conn_i = 1 ; conn_i < face_nodes.size() ; conn_i++)
-                element_hash = cantor_pairing(element_hash, element_conn[conn_i]);
+                element_hash = cantor_pairing(element_hash, face_nodes[conn_i]);
+
+#ifdef NDEGUG
+            std::cout << "Element " << elem_i << " face " << face_i << " hash: " << element_hash << " Nodes: ";
+            for(int j = 0; j < face_nodes.size(); j++) {
+                std::cout << " " << face_nodes[j];
+            }
+            std::cout << std::endl;
+#endif
 
             if (face_elements_hash.find(element_hash) != face_elements_hash.end()) {
                 unsigned int face_id = face_elements_hash[element_hash];
@@ -500,10 +527,12 @@ void Mesh::process_face_to_element()
             }
         }
 
+
         // Verifying if all the faces are related with its internal elements
         bool all_faces_found = true;
         if( std::find(face_to_element.begin(), face_to_element.end(), -1) != face_to_element.end() )
             all_faces_found = false;
+
 
         if (all_faces_found){
             this->setFaceToElement(face_to_element);
