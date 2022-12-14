@@ -6,10 +6,11 @@
 
 using namespace std;
 
+static unsigned int edge2_faces[2][1] = {{0},{1}};
 static unsigned int quad4_faces[4][2] = {{0,1},{1,2},{2,3},{3,0}};
-static unsigned int tri3_faces[3][2] = {{0,1},{1,2},{2,0}};
-static unsigned int tet4_faces[4][3] = {{0,2,1},{0,3,2},{0,1,3},{1,2,3}};
-static unsigned int hex8_faces[6][4] = {{0,1,2,3},{4,5,6,7},{0,1,5,4},{1,2,6,5},{2,3,7,6},{3,0,4,7}};
+static unsigned int tri3_faces[3][2]  = {{0,1},{1,2},{2,0}};
+static unsigned int tet4_faces[4][3]  = {{0,2,1},{0,3,2},{0,1,3},{1,2,3}};
+static unsigned int hex8_faces[6][4]  = {{0,1,2,3},{4,5,6,7},{0,1,5,4},{1,2,6,5},{2,3,7,6},{3,0,4,7}};
 
 Mesh::Mesh()
 {
@@ -361,6 +362,37 @@ int Mesh::getVTKElemContourNNodes(int vtk_type)
     }
 }
 
+// By the element type this method returns the number of element's faces
+int Mesh::getVTKElemContourNFaces(int vtk_type)
+{
+    switch (vtk_type)
+    {
+        case 3: return 2; // EDGE2
+        case 5: return 3; // TRI3
+        case 9: return 4; // QUAD4
+        case 10: return 4; // TET4
+        case 12: return 6; // HEX8
+        default: return -1;
+        break;
+    }
+}
+
+// By the element type this method returns the number of element's faces
+void* Mesh::getVTKElemConnSequence(int vtk_type)
+{
+    switch (vtk_type)
+    {
+        case 3: return edge2_faces; // EDGE2
+        case 5: return tri3_faces; // TRI3
+        case 9: return quad4_faces; // QUAD4
+        case 10: return tet4_faces; // TET4
+        case 12: return hex8_faces; // HEX8
+        default: return nullptr;
+        break;
+    }
+}
+
+
 int Mesh::getGmshElemNNodes(int type)
 {
     switch (type)
@@ -431,71 +463,43 @@ void Mesh::process_face_to_element()
     }
 
     // Filling face_to_element array
-    for (unsigned int elem_i = 0; elem_i < n_elements; elem_i++) {
-         unsigned short element_nnodes = this->getElementConnSize(elem_i);
-         unsigned int* element_conn = this->getElementConn(elem_i);
+    for(unsigned int elem_i = 0; elem_i < n_elements; elem_i++) {
+        unsigned short element_nnodes = this->getElementConnSize(elem_i);
+        unsigned int*  element_conn = this->getElementConn(elem_i);
         unsigned short element_type = this->getElementType(elem_i);
 
+        std::vector<unsigned int> element_conn_vec(element_nnodes);
+        for (int j = 0; j < element_nnodes; j++) 
+            element_conn_vec[j] = element_conn[j];
+
+        std::sort(element_conn_vec.begin(), element_conn_vec.end());
+
         // Getting element's faces
-        // TODO: implementar para outros tipos de elementos
-        int n_faces = 4;
-        for(int f=0; f < n_faces; f++)
+        int n_faces = getVTKElemContourNFaces(element_type);
+        for(int face_i = 0; face_i < n_faces; face_i++)
         {
             // getting face nodes
-            // TODO: implementar para outros tipos de elementos
-            int n_faces_nodes = 2;
-            std::vector<unsigned int> face_nodes(n_faces_nodes);
-            for(int nf=0; nf <n_faces_nodes; nf++)
-            {
-                int local_node = tet4_faces[f][0];
-                face_nodes[nf] = element_conn[local_node];
+            int n_face_nodes = getVTKElemContourNNodes(element_type);
+            auto node_sequence = tri3_faces;
 
+            std::vector<unsigned int> face_nodes(n_face_nodes);
+            for(int face_node_i = 0; face_node_i < n_face_nodes ; face_node_i++)
+            {
+                int local_node = node_sequence[face_i][face_node_i];
+                face_nodes[face_node_i] = element_conn_vec[local_node];
             }
 
             std::sort(face_nodes.begin(), face_nodes.end());
             unsigned long element_hash = face_nodes[0];
-            for (unsigned short conn_i = 1 ; conn_i < face_nodes.size() ; conn_i++){
-                element_hash = cantor_pairing(element_hash, surf_element_conn[conn_i]);
+            for (unsigned short conn_i = 1 ; conn_i < face_nodes.size() ; conn_i++)
+                element_hash = cantor_pairing(element_hash, element_conn[conn_i]);
 
             if (face_elements_hash.find(element_hash) != face_elements_hash.end()) {
                 unsigned int face_id = face_elements_hash[element_hash];
                 face_to_element[face_id] = elem_i;
+            }
         }
 
-
-        }
-
-        int contour_nnodes = getVTKElemContourNNodes(element_type);
-
-        // loop nas faces do elemento
-        //   internamente, o loop é feito nos nos da face
-        //      para cada no da face, pega o hash do face
-        //        se o hash já existe no map, significa que a face é contorno,
-        //          então, face_to_element[face_id] = element_id
-
-        // for(unsigned short conn_i = 0 ; conn_i < element_nnodes ; conn_i++)
-        // {
-        //     unsigned int element_hash = element_conn[conn_i];
-        //     int count = 1;
-        //     for (unsigned short conn_j = conn_i+1 ; ; conn_j++) {
-        //         if(count == contour_nnodes)
-        //             break;
-
-        //         // As a circular array
-        //         if (conn_j >= element_nnodes)
-        //             conn_j -= element_nnodes;
-
-        //         element_hash = cantor_pairing(element_hash, element_conn[conn_j]);
-        //         count++;
-        //     }
-
-        //     // unordered_map[hash] = face_id
-        //     if (face_elements_hash.find(element_hash) != face_elements_hash.end()) {
-        //         unsigned int face_id = face_elements_hash[element_hash];
-        //         face_to_element[face_id] = elem_i;
-        //     }
-        // }
-        
         // Verifying if all the faces are related with its internal elements
         bool all_faces_found = true;
         if( std::find(face_to_element.begin(), face_to_element.end(), -1) != face_to_element.end() )
