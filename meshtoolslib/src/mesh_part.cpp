@@ -76,7 +76,7 @@ void MeshPartition::ApplyPartitioner(Mesh *mesh, int nparts)
     this->face_part    = new int[nfe];
 
     for (int i = 0; i < nfe; i++)
-        this->face_part[i] = 0;
+        this->face_part[i] = -1;
     for (int i = 0; i < nelem; i++)
         this->elem_part[i] = 0;
     for (int i = 0; i < nnodes; i++)
@@ -159,10 +159,14 @@ void MeshPartition::ApplyPartitioner(Mesh *mesh, int nparts)
             }
         }
 
+
         std::vector<int> mapnode(nnodes);
+        std::vector<std::set<int> > mapface(nfe);
         // searching for elements present in partition `p` and mapping it on mapnode vector
         for(int p = 0; p < this->n_partitions; ++p)
         {
+            std::fill(mapnode.begin(), mapnode.end(), -1);
+
             for(int iel = 0; iel < nelem; iel++)
             {
                 if(this->elem_part[iel] == p) {
@@ -170,7 +174,7 @@ void MeshPartition::ApplyPartitioner(Mesh *mesh, int nparts)
                      unsigned int *connptr = mesh->getElementConn(iel);
                      for(int ino = 0; ino < connsz; ino++)
                      {
-                         mapnode[connptr[ino]] = p;
+                        mapnode[connptr[ino]] = p;
                      }
 
                 }
@@ -188,10 +192,38 @@ void MeshPartition::ApplyPartitioner(Mesh *mesh, int nparts)
                 }
 
                 // if all conectivities in surface element `iel` is a part of partition p, it will be considered of partition p
-                if(conn_in_partition_p == connsz) this->face_part[iel] = p;
+                if(conn_in_partition_p == connsz) {
+                    this->face_part[iel] = p;
+                    mapface[iel].insert(p);
+                }
             }
         }
+
+        // TODO: processar os elementos  de superficie marcados em dois processos
+        //       descobrir em qual elemento ele pertence.
+        for(int i = 0; i < mapface.size(); i++)
+        {
+            std::cout << "Face element " << i << " is in partitions: ";
+            for(auto it = mapface[i].begin(); it != mapface[i].end(); ++it)
+            {
+                std::cout << *it << " ";
+            }
+            std::cout << "\n";
+        }
     }
+
+    for(int p = 0; p < this->n_partitions; ++p)
+    {
+            int nfe_local = 0;
+            for(int iel = 0; iel < nfe; iel++)
+            {
+                if(this->face_part[iel]==p) nfe_local++;
+            }
+
+            std::cout << "Partition " << p << " has " << nfe_local << " face elements\n";  
+    }
+
+
     this->applied = true;
 }
 
@@ -982,6 +1014,7 @@ void MeshPartition::WritePartitionBin(Mesh *mesh)
 
 void MeshPartition::GetNodePartition(Mesh* mesh, std::map<unsigned int, std::set<unsigned int> > &node_partition)
 {
+    
     for (int iel = 0; iel < mesh->get_n_elements(); ++iel)
     {
             unsigned int *conn    = mesh->getElementConn(iel);

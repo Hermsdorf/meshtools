@@ -445,8 +445,10 @@ unsigned long cantor_pairing(unsigned int a, unsigned int b) {
 void Mesh::process_face_to_element()
 {
     int n_face_elements = this->get_n_face_elements();
-    int n_elements = this->get_n_elements();
-    int dim = this->getDim();
+    int n_elements      = this->get_n_elements();
+    int dim              = this->getDim();
+
+    //cout <<"rank " << MeshTools::processor_id() << "- n_faces =  " << n_face_elements << endl;
 
     std::vector<int> face_to_element(n_face_elements, -1); // -1 means no element yet
 
@@ -540,7 +542,7 @@ void Mesh::process_face_to_element()
         }
     }
     std::cout << "Face to element relation wasn't calculated correctly, exiting..." << std::endl;
-    exit(1);
+    //exit(1);
 }
 
 

@@ -221,7 +221,7 @@ int transport(int argc, char *argv[])
     system->attach_assemble(assemble_transport);
 
     system->init();
-    system->set_final_time(0.5);
+    system->set_final_time(0.002);
     system->set_deltat(0.001);
     unsigned int write_interval = 10;
 

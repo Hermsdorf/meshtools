@@ -1,7 +1,6 @@
 
 add_executable(pmesh_test test_p_mesh.cpp)
 
-
 if(MPI_ENABLE)
       find_package(MPI)
       if(MPI_FOUND)
