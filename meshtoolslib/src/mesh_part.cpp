@@ -62,7 +62,6 @@ void MeshPartition::ApplyPartitioner(Mesh *mesh, int nparts)
     if(MeshTools::processor_id() != 0 )
         return;
 
-    //this->_use_bnd_elements = use_bnd_elem;
     int nelem  = (int)mesh->get_n_elements();
     int nfe    = (int)mesh->get_n_face_elements();
     int nnodes = (int)mesh->get_n_nodes();
@@ -100,14 +99,6 @@ void MeshPartition::ApplyPartitioner(Mesh *mesh, int nparts)
             eptr[i+1] = eptr[i] + mesh->getElementConnSize(i);
         }
 
-        /*
-        idx_t *vwgt = new idx_t[nelem+1];
-
-        for (int i =0; i < nelem; i++)
-        {
-            vwgt[i] = mesh->getElementConnSize(i);
-        }
-        */
         idx_t *vwgt    = 0;
         idx_t *vsize   = 0;
         real_t *tpwgts = 0;
@@ -158,71 +149,26 @@ void MeshPartition::ApplyPartitioner(Mesh *mesh, int nparts)
                 }
             }
         }
-
-
-        std::vector<int> mapnode(nnodes);
-        std::vector<std::set<int> > mapface(nfe);
-        // searching for elements present in partition `p` and mapping it on mapnode vector
-        for(int p = 0; p < this->n_partitions; ++p)
+        
+        // partitioning face elements
+        for(int iel = 0; iel < nfe; iel++)
         {
-            std::fill(mapnode.begin(), mapnode.end(), -1);
-
-            for(int iel = 0; iel < nelem; iel++)
-            {
-                if(this->elem_part[iel] == p) {
-                     int connsz            = mesh->getElementConnSize(iel);
-                     unsigned int *connptr = mesh->getElementConn(iel);
-                     for(int ino = 0; ino < connsz; ino++)
-                     {
-                        mapnode[connptr[ino]] = p;
-                     }
-
-                }
-               
-            }
-            // partitioning face elements
-            for(int iel = 0; iel < nfe; iel++)
-            {
-                int conn_in_partition_p = 0;
-                unsigned int connsz   = mesh->getSurfaceElementConnSize(iel);
-                unsigned int *connptr = mesh->getSurfaceElementConn(iel);
-                for(int ino =0; ino < connsz; ino++)
-                {
-                    if(mapnode[connptr[ino]] == p) conn_in_partition_p++;
-                }
-
-                // if all conectivities in surface element `iel` is a part of partition p, it will be considered of partition p
-                if(conn_in_partition_p == connsz) {
-                    this->face_part[iel] = p;
-                    mapface[iel].insert(p);
-                }
-            }
-        }
-
-        // TODO: processar os elementos  de superficie marcados em dois processos
-        //       descobrir em qual elemento ele pertence.
-        for(int i = 0; i < mapface.size(); i++)
-        {
-            std::cout << "Face element " << i << " is in partitions: ";
-            for(auto it = mapface[i].begin(); it != mapface[i].end(); ++it)
-            {
-                std::cout << *it << " ";
-            }
-            std::cout << "\n";
+            std::vector<int> face_to_element = mesh->getFaceToElement();
+            unsigned int internal_element = face_to_element[iel];
+            this->face_part[iel] = this->elem_part[internal_element];
         }
     }
 
     for(int p = 0; p < this->n_partitions; ++p)
     {
-            int nfe_local = 0;
-            for(int iel = 0; iel < nfe; iel++)
-            {
-                if(this->face_part[iel]==p) nfe_local++;
-            }
+        int nfe_local = 0;
+        for(int iel = 0; iel < nfe; iel++)
+        {
+            if(this->face_part[iel]==p) nfe_local++;
+        }
 
-            std::cout << "Partition " << p << " has " << nfe_local << " face elements\n";  
+        std::cout << "Partition " << p << " has " << nfe_local << " face elements\n";  
     }
-
 
     this->applied = true;
 }
@@ -1501,8 +1447,6 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
         // process 0 is responsible to generate local arrays and send it to each processor
         if (processor_id == 0)
         {
- 
-
             std::vector<double>          coords;
             std::vector<unsigned int>    node;
             std::vector<unsigned int>    conn;
@@ -1644,7 +1588,6 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
         }
 
         pmesh->build_communication_map();
-        
     }
     else
     {
@@ -1698,7 +1641,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
         pmesh->set_start_node_index(0);
 
     }
-    //
+
     pmesh->update();
     return pmesh;
 }
