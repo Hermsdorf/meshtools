@@ -745,8 +745,6 @@ void ParallelMesh::update()
         } 
         offset += n_shared_nodes; 
     }
-
-    process_face_to_element();
 }
 
 

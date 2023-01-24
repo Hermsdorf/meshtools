@@ -94,7 +94,6 @@ int GmshToVTKType(int type)
 
 void Mesh::MeshGmshReader(const char* filename)
 {
-
     int format=0, size=0;
     double version = 1.0;
     bool binary_file = false;
@@ -366,6 +365,8 @@ void Mesh::MeshGmshReader(const char* filename)
     std::cout << " Connectivity size: " << this->conn.size() << "\n";
 
     in.close();
+
+    this->process_face_to_element();
 }
 
 bool BinaryBigEndian(void) 

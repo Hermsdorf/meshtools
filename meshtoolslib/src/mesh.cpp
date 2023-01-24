@@ -198,9 +198,6 @@ void Mesh::set_n_colors(unsigned int n_colors)
 void Mesh::set_physical_map(std::map<int, physical_data_t> &physical_map)
 {
     this->physical_map = physical_map;
-    //physical_map.
-    //this->physical_map.resize(physical_map.size());
-    //std::copy(physical_map.begin(), physical_map.end(), this->physical_map.begin());
 }
 
 void Mesh::set_n_face_elements(unsigned int n_face_elements)
@@ -436,7 +433,7 @@ int Mesh::getGmshElemTypeDim(int type)
 
 // Hash function to fill face_to_element array
 // Referencia: cantor pairing function
-//  http://stackoverflow.com/questions/919612/mapping-two-integers-to-one-in-a-unique-and-deterministic-way
+// http://stackoverflow.com/questions/919612/mapping-two-integers-to-one-in-a-unique-and-deterministic-way
 unsigned long cantor_pairing(unsigned int a, unsigned int b) {
     unsigned long hash = (a + b + 1) * (a + b) / 2 + b; 
     return hash;
@@ -447,8 +444,6 @@ void Mesh::process_face_to_element()
     int n_face_elements = this->get_n_face_elements();
     int n_elements      = this->get_n_elements();
     int dim              = this->getDim();
-
-    //cout <<"rank " << MeshTools::processor_id() << "- n_faces =  " << n_face_elements << endl;
 
     std::vector<int> face_to_element(n_face_elements, -1); // -1 means no element yet
 
@@ -541,8 +536,9 @@ void Mesh::process_face_to_element()
             return ;
         }
     }
+    
     std::cout << "Face to element relation wasn't calculated correctly, exiting..." << std::endl;
-    //exit(1);
+    exit(1);
 }
 
 
