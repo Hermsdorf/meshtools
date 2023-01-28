@@ -534,7 +534,7 @@ class Mesh {
 
         double       *getCoordinatesData(); 
 
-        std::vector<int> getFaceToElement() { return face_to_element; };
+        std::vector<int>& getFaceToElement() { return face_to_element; };
         void             setFaceToElement(std::vector<int> face_to_element) { this->face_to_element = face_to_element; };
         int              getVTKElemContourNNodes(int vtk_type);
         int              getVTKElemContourNFaces(int vtk_type);

@@ -112,6 +112,7 @@ class MeshPartition
             std::vector<unsigned int>   & neighbors,
             std::vector<unsigned int>   & neighbors_offset,
             std::vector<unsigned int>   & neighbors_nodes,
+            std::vector<int>            & face_to_element,
             bool                        enable_send
         );
 

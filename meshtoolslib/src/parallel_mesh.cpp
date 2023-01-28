@@ -12,7 +12,6 @@ ParallelMesh::ParallelMesh()
     this->n_elements                 = 0;
     this->n_nodes                    = 0;
     this->internal_mesh              = false;
-    //this->mesh_coloring_internal     = nullptr;
     this->processor_id               = MeshTools::processor_id();
     this->n_processors               = MeshTools::n_processors();
     this->n_global_elements          = 0;
@@ -21,32 +20,22 @@ ParallelMesh::ParallelMesh()
     shared_nodes_offset.push_back(0);
 }
 
-
-
-ParallelMesh::~ParallelMesh()
-{
-    //local_to_global.clear();
-}
-
+ParallelMesh::~ParallelMesh() { }
 
 void ParallelMesh::setNeighborProcessors(std::vector<unsigned int> neighbors_processors)
 {
     this->neighbor_processors = neighbor_processors;
 }
+
 void ParallelMesh::setSharedNodesOffset(std::vector<unsigned int> shared_nodes_offset)
 {
     this->shared_nodes_offset = shared_nodes_offset;
 }
+
 void ParallelMesh::setSharedNodes(std::vector<unsigned int> shared_nodes)
 {
     this->shared_nodes = shared_nodes;
 }
-/*
-void ParallelMesh::setLocal2Global(std::vector<unsigned int> local2global)
-{
-    this->local_to_global = local2global;
-}
-*/
 
 void ParallelMesh::set_n_local_nodes(unsigned int n_local_nodes)
 {
