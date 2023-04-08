@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <string.h>
 
+#ifdef HDF5_ENABLE
 #include "hdf5.h" 
 
 #ifdef H5Z_ZFP_USE_PLUGIN
@@ -41,4 +42,5 @@ void writeHDF5UshortDataSet(hid_t file, const char* datasetname, hsize_t dimsf, 
 
 }
 
+#endif /* HDF5_ENABLE */
 #endif /* AA1E2F72_C987_46B6_84C1_4766F456EAEB */

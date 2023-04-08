@@ -5,7 +5,7 @@
 #include "tensor.h"
 
 //  Linear Quadrilateral element functions
-//  (-,1)     (1,1)
+// (-1,1)     (1,1)
 //  +----------+
 //  |          |
 //  |          |
@@ -16,15 +16,15 @@
 //
 //
 
-//  This function computes the quadrature points and weights for a
-//  quadrilateral element.
-//
-//  @param nqp    number of quadrature points
-//  @param qp     quadrature points
-//  @param qw     quadrature weights
-//
-//  @return None
-//
+/**
+ *  This function computes the quadrature points and weights for a
+ *  quadrilateral element.
+ *
+ *  @param[out] qpoints  quadrature points
+ *  @param[out] qw  quadrature weights
+ *
+ *  @return None
+ */
 void QUAD4DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw)
 {
   qpoints.resize(4);
@@ -38,9 +38,15 @@ void QUAD4DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw)
   qpoints[3](0) =  -0.57735026919;
   qpoints[3](1) =   0.57735026919;
   qw[0] = qw[1] = qw[2] = qw[3] = 1.0;
-
 }
 
+/**
+ * This function computes the shape functions at quadrature point.
+ * @param[in] _xi   quadrature point
+ * @param[out] psi   shape functions
+ *
+ * @return None
+ */
 void QUAD4Shape(Point _xi, std::vector<double> & psi)
 {
     double xi  = _xi(0);
@@ -51,6 +57,13 @@ void QUAD4Shape(Point _xi, std::vector<double> & psi)
     psi[3] = 0.25*(1.0-xi)*(1.0+eta); // N4
 } 
 
+/**
+ * This function computes the shape function derivatives at quadrature point.
+ * @param[in] _xi   quadrature point
+ * @param[out] dpsi   shape function derivatives
+ *
+ * @return None
+ */
 void QUAD4DShape(Point _xi, double dpsi[][4])
 {
     double xi  = _xi(0);
@@ -71,6 +84,19 @@ void QUAD4DShape(Point _xi, double dpsi[][4])
 #define X(i) (coords[i](0))
 #define Y(i) (coords[i](1))
 
+/**
+ * This function computes the shape functions, shape function derivatives
+ * and Jacobian at quadrature point.
+ * @param[in] qp   quadrature point
+ * @param[in] qw   quadrature weight
+ * @param[in] coords   nodal coordinates
+ * @param[out] point   quadrature point
+ * @param[out] phi   shape functions
+ * @param[out] dphi   shape function derivatives
+ * @param[out] JxW   Jacobian
+ *
+ * @return None
+ */
 void QUAD4ComputeFunctions(RealVector qp, double qw, std::vector<Point> coords, RealVector &point, 
                            std::vector<double> &phi, std::vector<Gradient> &dphi, double &JxW)
 {

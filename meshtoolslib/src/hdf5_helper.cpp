@@ -1,4 +1,4 @@
-
+#ifdef HDF5_ENABLE
 #include "hdf5_helper.h"
 
 namespace hdf5_helper 
@@ -109,3 +109,5 @@ void writeHDF5UshortDataSet(hid_t file, const char* datasetname, hsize_t dimsf, 
 }
 
 }
+
+#endif // HDF5_ENABLE

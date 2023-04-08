@@ -16,6 +16,7 @@ class NumericVector {
         NumericVector<T> operator+=(NumericVector<T> v);
         NumericVector<T> operator-(NumericVector<T> v);
         NumericVector<T> operator-=(NumericVector<T> v);
+        NumericVector<T> cross_product(NumericVector<T> v);
         T                norm();
         void             unit();
         //friend ostream& operator<<(ostream& os, const NumericVector<T>& v);
@@ -124,6 +125,16 @@ void NumericVector<T>::unit()
     for (int i = 0; i < 3; i++) {
       this->data[i] /= result;
     }
+}
+
+template <typename T>
+NumericVector<T> NumericVector<T>::cross_product(NumericVector<T> v)
+{
+    NumericVector<T> result;
+    result.data[0] = data[1]*v.data[2] - data[2]*v.data[1];
+    result.data[1] = data[2]*v.data[0] - data[0]*v.data[2];
+    result.data[2] = data[0]*v.data[1] - data[1]*v.data[0];
+    return result;
 }
 
 

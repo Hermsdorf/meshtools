@@ -5,27 +5,43 @@
 
 //  Linear Tetrahedral element functions
 // 
-//   *
-//   |\
-//   | \
-//   |  \
-//   |   *
-//   |  / 
-//   | /           
+//   *\
+//   |\ \
+//   | \  \
+//   |  \   \
+//   |   *    \
+//   |  /   \   \
+//   | /        \ \       
 //   *-------------*
 // (-1,-1)    (1,-1)
 //
 //
 
-//  This function computes the quadrature points and weights for a
-//  quadrilateral element.
-//
-//  @param nqp    number of quadrature points
-//  @param qp     quadrature points
-//  @param qw     quadrature weights
-//
-//  @return None
-//
+/**
+ * This function computes the centroid of a tetrahedral element.
+ *
+ *  @param[in] coords  coordinates of the nodes
+ *
+ *  @return Centroid point
+ */
+Point TET4Centroid(std::vector<Point> &coords)
+{
+  Point centroid;
+  centroid(0) = 0.25*(coords[0](0) + coords[1](0) + coords[2](0) + coords[3](0));
+  centroid(1) = 0.25*(coords[0](1) + coords[1](1) + coords[2](1) + coords[3](1));
+  centroid(2) = 0.25*(coords[0](2) + coords[1](2) + coords[2](2) + coords[3](2));
+  return centroid;
+}
+
+/**
+ *  This function computes the quadrature points and weights for a
+ *  quadrilateral element.
+ *
+ *  @param[out] qpoints     quadrature points
+ *  @param[out] qw     quadrature weights
+ *
+ *  @return None
+ */
 void TET4DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw)
 {
   qpoints.resize(1);
@@ -34,9 +50,15 @@ void TET4DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw)
   qpoints[0](1) =  0.25;
   qpoints[0](2) =  0.25;
   qw[0] = 1.0/6.0;
-
 }
 
+/**
+ * This function computes the shape functions at quadrature point.
+ * @param[in] _xi   quadrature point
+ * @param[out] psi   shape functions
+ *
+ * @return None
+ */
 void TET4Shape(Point _xi, std::vector<double> & psi)
 {
     double xi   = _xi(0);
@@ -50,6 +72,13 @@ void TET4Shape(Point _xi, std::vector<double> & psi)
 
 } 
 
+/**
+ * This function computes the shape function derivatives at quadrature point.
+ * @param[in] _xi   quadrature point
+ * @param[out] dpsi   shape function derivatives
+ *
+ * @return None
+ */
 void TET4DShape(Point _xi, double dpsi[][4])
 {
     double xi   = _xi(0);
@@ -77,6 +106,19 @@ void TET4DShape(Point _xi, double dpsi[][4])
 #define Y(i) (coords[i](1))
 #define Z(i) (coords[i](2))
 
+/**
+ * This function computes the shape functions, shape function derivatives,
+ * and Jacobian at quadrature point.
+ * @param[in] qp   quadrature point
+ * @param[in] qw   quadrature weight
+ * @param[in] coords   coordinates of the nodes
+ * @param[out] point   quadrature point in physical space
+ * @param[out] phi   shape functions
+ * @param[out] dphi   shape function derivatives
+ * @param[out] JxW   Jacobian times quadrature weight
+ *
+ * @return None
+ */
 void TET4ComputeFunctions(RealVector qp, double qw, std::vector<Point> coords, RealVector &point, 
                            std::vector<double> &phi, std::vector<Gradient> &dphi, double &JxW)
 {

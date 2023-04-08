@@ -23,25 +23,32 @@ using namespace std;
 #include "tensor.h"
 
 
-//  This function computes the quadrature points and weights for a
-//  triangular element.
-//
-//  @param nqp    number of quadrature points
-//  @param qp     quadrature points
-//  @param qw     quadrature weights
-//
-//  @return None 
-//
+/**
+ *   This function computes the quadrature points and weights for a
+ *  triangular element.
+ *
+ *  @param[out] qpoints     quadrature points
+ *  @param[out] qw     quadrature weights
+ *
+ *  @return None 
+ */
 void TRI3DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw)
-  {
-     qpoints.resize(1);
-     qw.resize(1);
-     qpoints[0](0) = 1.0/3.0;
-     qpoints[0](1) = 1.0/3.0;
-     qpoints[0](2) = 0.0;
-     qw[0] = 0.5;
-  }
+{
+    qpoints.resize(1);
+    qw.resize(1);
+    qpoints[0](0) = 1.0/3.0;
+    qpoints[0](1) = 1.0/3.0;
+    qpoints[0](2) = 0.0;
+    qw[0] = 0.5;
+}
 
+/**
+ * This function computes the shape functions at quadrature point.
+ * @param[in] _xi   quadrature point
+ * @param[out] psi   shape functions
+ *
+ * @return None
+ */
 void TRI3Shape(Point _xi, std::vector<double> & psi)
 {
     double xi  = _xi(0);
@@ -51,6 +58,13 @@ void TRI3Shape(Point _xi, std::vector<double> & psi)
     psi[2] = eta;            // N3
 }
 
+/**
+ * This function computes the shape functions derivatives at quadrature point.
+ * @param[in] _xi   quadrature point
+ * @param[out] dpsi   shape functions derivatives
+ *
+ * @return None
+ */
 void TRI3DShape(Point _xi, double dpsi[][3])
 {
     dpsi[0][0] = -1.0;  // dN1/dxi 
@@ -64,6 +78,20 @@ void TRI3DShape(Point _xi, double dpsi[][3])
 
 #define X(i) (coords[i](0))
 #define Y(i) (coords[i](1))
+
+/**
+ * This function computes the shape functions and their derivatives at
+ * quadrature point.
+ * @param[in] q_point   quadrature point
+ * @param[in] qw        quadrature weight
+ * @param[in] coords    nodal coordinates
+ * @param[out] p_gauss  quadrature point in physical space
+ * @param[out] phi      shape functions
+ * @param[out] dphi     shape function derivatives
+ * @param[out] JxW      Jacobian times weight
+ *
+ * @return None
+ */
 void TRI3ComputeFunctions( RealVector q_point, double qw, std::vector<Point> coords, RealVector &p_gauss, 
                            std::vector<double>   &phi, 
                            std::vector<Gradient> &dphi ,

@@ -5,31 +5,31 @@
 //
 //
 
+
+/**
+ *  This function computes the quadrature points and weights for a
+ *  linear edge.
+ *
+ *  @param[out] nqp  number of quadrature points
+ *  @param[out] qp  quadrature points
+ *  @param[out] qw  quadrature weights
+ *
+ *  @return None
+ */
 void QGaussEdge2(int *nqp, double qp[][2], double *qw)
 {
-  //
-  //  QGaussEdge2(nqp, qp, qw)
-  //
-  //  Purpose:
-  //  -------
-  //  This function computes the quadrature points and weights for a
-  //  linear edge.
-  //
-  //  Parameters:
-  //  -----------
-  //  nqp    - number of quadrature points
-  //  qp     - quadrature points
-  //  qw     - quadrature weights
-  //
-  //  Return value:
-  //  -------------
-  //  None
-  //
   *nqp  = 1;
   qp[0][0] = 0.0;
   qw[0] = 2.0;
 }
 
+/**
+ * This function computes the shape functions at quadrature point.
+ * @param[in] _xi   quadrature point
+ * @param[out] psi   shape functions
+ *
+ * @return None
+ */
 void EDGE2Shape(double _xi[], double psi[])
 {
   double xi  = _xi[0];
@@ -37,6 +37,13 @@ void EDGE2Shape(double _xi[], double psi[])
   psi[1] = 0.5*(1.0+xi); // N2
 }
 
+/**
+ * This function computes the shape function derivatives at quadrature point.
+ * @param[in] _xi   quadrature point
+ * @param[out] dpsi   shape function derivatives
+ *
+ * @return None
+ */
 void EDGE2DShape(double _xi[], double dpsi[][2])
 {
   double xi  = _xi[0];

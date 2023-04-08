@@ -9,7 +9,7 @@
 /* #undef CATALYST_ENABLE */
 /* #undef USE_CATALYST */
 
-#define HDF5_ENABLE
+/* #undef HDF5_ENABLE */
 
 /* #undef DEBUG_ */
 
