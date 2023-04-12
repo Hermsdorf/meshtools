@@ -20,6 +20,7 @@ class NumericVector {
         T                dot_product(NumericVector<T> v);
         T                norm();
         void             unit();
+        void             scale(T s);
         //friend ostream& operator<<(ostream& os, const NumericVector<T>& v);
         ~NumericVector();
     private:
@@ -146,6 +147,14 @@ T NumericVector<T>::dot_product(NumericVector<T> v)
         result += data[i]*v.data[i];
     }
     return result;
+}
+
+template<typename T>
+void NumericVector<T>::scale(T s)
+{
+    for (int i = 0; i < 3; i++) {
+        data[i] *= s;
+    }
 }
 
 

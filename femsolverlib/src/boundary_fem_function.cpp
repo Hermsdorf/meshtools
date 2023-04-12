@@ -84,7 +84,7 @@ void BoundaryFEMFunction::TRI3FaceFunction(Element& elem, QGaussData qp)
     
     double dpsi[2][3];
     double J[2][3]    = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-    double Jinv[2][2] = {{0.0, 0.0}, {0.0, 0.0}};
+    double Jinv[2][2] = {{0.0, 0.0}     , {0.0, 0.0}     };
     double x[3], y[3], z[3];
    
     _phi.resize(3);

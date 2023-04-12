@@ -1,10 +1,11 @@
-#ifndef AA1E2F72_C987_46B6_84C1_4766F456EAEB
-#define AA1E2F72_C987_46B6_84C1_4766F456EAEB
-
+#ifndef HDF5_HELPER_H
+#define HDF5_HELPER_H
 
 #include <errno.h>
 #include <fcntl.h>
 #include <string.h>
+
+#include "meshtools_config.h"
 
 #ifdef HDF5_ENABLE
 #include "hdf5.h" 
@@ -12,9 +13,6 @@
 #ifdef H5Z_ZFP_USE_PLUGIN
 #include "H5Zzfp_plugin.h"
 #endif
-
-
-
 
 namespace hdf5_helper{
 
@@ -43,4 +41,4 @@ void writeHDF5UshortDataSet(hid_t file, const char* datasetname, hsize_t dimsf, 
 }
 
 #endif /* HDF5_ENABLE */
-#endif /* AA1E2F72_C987_46B6_84C1_4766F456EAEB */
+#endif /* HDF5_HELPER_H */

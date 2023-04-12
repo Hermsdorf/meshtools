@@ -1,6 +1,7 @@
-#ifdef HDF5_ENABLE
+
 #include "hdf5_helper.h"
 
+#ifdef HDF5_ENABLE
 namespace hdf5_helper 
 {
 

@@ -4,7 +4,6 @@
 #include <unordered_map>
 #include "mesh.h" 
 #include "numeric_vector.h"
-#include "tet4_functions.cpp"
 
 using namespace std;
 
@@ -543,12 +542,14 @@ void Mesh::process_face_to_element()
     exit(1);
 }
 
+
 void Mesh::process_normal_vectors()
 {
     int n_face_elements = this->get_n_face_elements();
-    std::vector<double> coords = this->getCoords();
+    std::vector<double> coords = this->getCoord();
     int dim = this->getDim();
 
+    //TODO: colocar normal vectors como atributo da classe
     std::vector<RealVector> normal_vectors(n_face_elements);
 
     if (dim == 3)
@@ -568,16 +569,15 @@ void Mesh::process_normal_vectors()
 
             normal_vector = vec_a.cross_product(vec_b);
             
-            std::vector<Point> elem_coords;
+            Point centroid;
             for (int j = 0; j < surf_element_nnodes; j++) {
-                Point p;
-                p(0) = coords[surf_element_conn[j]*3 + 0];
-                p(1) = coords[surf_element_conn[j]*3 + 1];
-                p(2) = coords[surf_element_conn[j]*3 + 2];
-                elem_coords.push_back(p);
+                
+                centroid(0) += coords[surf_element_conn[j]*3 + 0];
+                centroid(1) += coords[surf_element_conn[j]*3 + 1];
+                centroid(2) += coords[surf_element_conn[j]*3 + 2];
             }
 
-            Point centroid = TET4Centroid(elem_coords);
+            centroid.scale(1.0/surf_element_nnodes);
 
             if (normal_vector.dot_product(centroid) > 0)
             {
@@ -600,6 +600,14 @@ void Mesh::process_normal_vectors()
             vec_a(1) = coords[surf_element_conn[1]*3 + 1] - coords[surf_element_conn[0]*3 + 1];
             vec_a(2) = coords[surf_element_conn[1]*3 + 2] - coords[surf_element_conn[0]*3 + 2];
             
-            // Rodar 90 graus, mas em qual direção? Não necessariamente a malha vai estar no plano XY
+            // Rotacionalr vec_a em 90 graus:
+            normal_vector(0) = -vec_a(1);
+            normal_vector(1) = vec_a(0);
+            normal_vector(2) = 0;
+
+            // verificando se o vetor normal está apontando para o centroide do elemento
+
+        }
+
     }
 }

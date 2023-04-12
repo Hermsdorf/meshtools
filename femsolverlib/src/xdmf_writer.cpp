@@ -1,4 +1,3 @@
-#ifdef HDF5_ENABLE
 
 #include "meshtools.h"
 #include "xdmf_writer.h"
@@ -8,8 +7,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-
 
 #include <cstdlib>
 #include <cstdio>
@@ -161,8 +158,9 @@ int XDMFWriter::write(ImplicitSystem * system, double time)
      for(int nv=0; nv < system->get_equation_manager().get_n_dofs(); ++nv)
     {
         
-        this->get_variable_solution(es,ns,nv,solution);
-        std::string v = es.get_system(ns).variable_name(nv);
+        this->get_variable_solution(system,nv,solution);
+        std::string v = system->get_variable_name(nv);
+        
 
         sprintf(filename,"%s/%s.%s.%d.%03d.%05d.bin",stepdir,this->basename.c_str(),v.c_str(),
                                                       n_processors,processor_id, this->n_timestep);
@@ -313,4 +311,3 @@ void XDMFWriter::get_variable_solution(ImplicitSystem* system, int ivar, std::ve
     
 }
 
-#endif //XDMFWRITER_H
