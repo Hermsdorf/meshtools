@@ -3,6 +3,8 @@
 #include <set>
 #include <unordered_map>
 #include "mesh.h" 
+#include "numeric_vector.h"
+#include "tet4_functions.cpp"
 
 using namespace std;
 
@@ -541,5 +543,63 @@ void Mesh::process_face_to_element()
     exit(1);
 }
 
+void Mesh::process_normal_vectors()
+{
+    int n_face_elements = this->get_n_face_elements();
+    std::vector<double> coords = this->getCoords();
+    int dim = this->getDim();
 
+    std::vector<RealVector> normal_vectors(n_face_elements);
 
+    if (dim == 3)
+    {
+        for (int i = 0; i < n_face_elements; i++) {
+            unsigned short surf_element_nnodes = this->getSurfaceElementConnSize(i);
+            unsigned int* surf_element_conn = this->getSurfaceElementConn(i);
+
+            RealVector vec_a, vec_b, normal_vector;
+            vec_a(0) = coords[surf_element_conn[1]*3 + 0] - coords[surf_element_conn[0]*3 + 0];
+            vec_a(1) = coords[surf_element_conn[1]*3 + 1] - coords[surf_element_conn[0]*3 + 1];
+            vec_a(2) = coords[surf_element_conn[1]*3 + 2] - coords[surf_element_conn[0]*3 + 2];
+
+            vec_b(0) = coords[surf_element_conn[2]*3 + 0] - coords[surf_element_conn[1]*3 + 0];
+            vec_b(1) = coords[surf_element_conn[2]*3 + 1] - coords[surf_element_conn[1]*3 + 1];
+            vec_b(2) = coords[surf_element_conn[2]*3 + 2] - coords[surf_element_conn[1]*3 + 2];
+
+            normal_vector = vec_a.cross_product(vec_b);
+            
+            std::vector<Point> elem_coords;
+            for (int j = 0; j < surf_element_nnodes; j++) {
+                Point p;
+                p(0) = coords[surf_element_conn[j]*3 + 0];
+                p(1) = coords[surf_element_conn[j]*3 + 1];
+                p(2) = coords[surf_element_conn[j]*3 + 2];
+                elem_coords.push_back(p);
+            }
+
+            Point centroid = TET4Centroid(elem_coords);
+
+            if (normal_vector.dot_product(centroid) > 0)
+            {
+                normal_vector(0) = -normal_vector(0);
+                normal_vector(1) = -normal_vector(1);
+                normal_vector(2) = -normal_vector(2);
+            }
+
+            normal_vectors.push_back(normal_vector);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < n_face_elements; i++) {
+            unsigned short surf_element_nnodes = this->getSurfaceElementConnSize(i);
+            unsigned int* surf_element_conn = this->getSurfaceElementConn(i);
+
+            RealVector vec_a, normal_vector;
+            vec_a(0) = coords[surf_element_conn[1]*3 + 0] - coords[surf_element_conn[0]*3 + 0];
+            vec_a(1) = coords[surf_element_conn[1]*3 + 1] - coords[surf_element_conn[0]*3 + 1];
+            vec_a(2) = coords[surf_element_conn[1]*3 + 2] - coords[surf_element_conn[0]*3 + 2];
+            
+            // Rodar 90 graus, mas em qual direção? Não necessariamente a malha vai estar no plano XY
+    }
+}

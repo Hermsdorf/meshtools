@@ -380,7 +380,7 @@ class Mesh {
          * @param type Vector do tipo unsigned short com as novas informações de tipos dos elementos da malha.
         */
 
-       void setTypePosition(unsigned short value, unsigned int position);
+        void setTypePosition(unsigned short value, unsigned int position);
         /**
          * * OBJETIVO:
          *     Alterar o vector type com o valor e a posição passados por argumento.
@@ -471,11 +471,11 @@ class Mesh {
          * @param filename Variável do tipo const char* com o nome do arquivo de entrada extensão msh.
         */
 
-       std::vector<unsigned int>& getNodeIndexes()
-       {
+        std::vector<unsigned int>& getNodeIndexes()
+        {
             return this->node_index;
-       }
-       
+        }
+        
         void MeshReordering(reorder_t reorder);
         /**
          * * OBJETIVO:
@@ -502,19 +502,19 @@ class Mesh {
          *     Testar se a coloração calculada no algoritmo está correta.
         */
 
-       void WriteVTK(const char* filename, MeshIODataAppended* info = nullptr);
+        void WriteVTK(const char* filename, MeshIODataAppended* info = nullptr);
 
-       void WriteMTS(const char* filename);
-
-
-       void extract_boundary_nodes(std::vector<int>& tag);
+        void WriteMTS(const char* filename);
 
 
-       void get_element_coordinates(int element_id, std::vector<Point> &coordinates);
+        void extract_boundary_nodes(std::vector<int>& tag);
 
-       void get_element_connectivity(int element_id, std::vector<unsigned int> &connectivity);
 
-       void getElement(unsigned int element_id, Element& elem);
+        void get_element_coordinates(int element_id, std::vector<Point> &coordinates);
+
+        void get_element_connectivity(int element_id, std::vector<unsigned int> &connectivity);
+
+        void getElement(unsigned int element_id, Element& elem);
 
         inline int getElementTag(int iel) { return physical_tag[iel+n_face_elements]; };
 
@@ -542,6 +542,7 @@ class Mesh {
         int              getGmshElemNNodes(int type);
         int              getGmshElemTypeDim(int type);
         void             process_face_to_element();
+        void             process_normal_vectors();
     
 
 

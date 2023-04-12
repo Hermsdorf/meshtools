@@ -17,6 +17,7 @@ class NumericVector {
         NumericVector<T> operator-(NumericVector<T> v);
         NumericVector<T> operator-=(NumericVector<T> v);
         NumericVector<T> cross_product(NumericVector<T> v);
+        T                dot_product(NumericVector<T> v);
         T                norm();
         void             unit();
         //friend ostream& operator<<(ostream& os, const NumericVector<T>& v);
@@ -137,6 +138,15 @@ NumericVector<T> NumericVector<T>::cross_product(NumericVector<T> v)
     return result;
 }
 
+template <typename T>
+T NumericVector<T>::dot_product(NumericVector<T> v)
+{
+    T result = 0;
+    for (int i = 0; i < 3; i++) {
+        result += data[i]*v.data[i];
+    }
+    return result;
+}
 
 
 typedef NumericVector<double>    RealVector;
