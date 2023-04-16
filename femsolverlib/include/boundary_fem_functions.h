@@ -8,14 +8,15 @@
 #include "numeric_vector.h"
 #include "tensor.h" 
 #include "qgauss.h"
+#include "element.h"
 
 
 class BoundaryFEMFunction
 {
     public:
         BoundaryFEMFunction();
-        void ComputeFunction(Element& elem, QGaussData qp);
-
+        void ComputeFunction(SurfaceElement& elem, QGaussData qp);
+        
         std::vector<double>  &  get_phi() { return _phi; } ;
         std::vector<Gradient>&  get_dphi(){ return _dphi; } ;
         Point                &  get_xyz() { return _xyz; } ;
@@ -27,12 +28,11 @@ class BoundaryFEMFunction
         std::vector<Gradient>  _dphi;
         Point                  _xyz ;
         double                 _JxW ;
-        Point                _normal;
-
+        RealVector             _normal;
     
-        void EDGEFaceFunction(Element& elem, QGaussData qp);
-        void TRI3FaceFunction(Element& elem, QGaussData qp);
-        void QUAD4FaceFunction(Element& elem, QGaussData qp);
+        void EDGEFaceFunction(SurfaceElement& elem, QGaussData qp);
+        void TRI3FaceFunction(SurfaceElement& elem, QGaussData qp);
+        void QUAD4FaceFunction(SurfaceElement& elem, QGaussData qp);
         
 };
 

@@ -54,26 +54,6 @@ typedef enum {METIS_ND=0, RCM, FF} reorder_t;
 typedef enum {COLOR_DEFAULT=0, COLOR_DEFAULT_BLOCK} color_mode_t;
 typedef enum {BINARY=0, ASCII} write_t;
 
-class Mesh;
-class Element
-{
-    friend class Mesh;
-    public:
-        Element(){};
-        std::vector<unsigned int> & connectivity() {return _conn; };
-        Point        &              node(int i) {return _coords[i]; } ;
-        unsigned short&            type() {return _type; } ;
-        unsigned int&              region()  {return _tag; } ;
-        unsigned int               n_nodes() {return _conn.size(); };
-    private:
-        std::vector<unsigned int> _conn;
-        std::vector<Point>        _coords;
-        unsigned short            _type;
-        unsigned int              _tag;
-        
-};
-
-
 class Mesh {
     public:
         Mesh();

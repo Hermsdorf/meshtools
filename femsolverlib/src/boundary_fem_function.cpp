@@ -1,6 +1,5 @@
 
-#include  "boundary_fem_functions.h"
-
+#include "boundary_fem_functions.h"
 
 unsigned int cyc3[5]={0, 1, 2, 0, 1 };
 
@@ -9,8 +8,10 @@ BoundaryFEMFunction::BoundaryFEMFunction()
 
 }
 
-void BoundaryFEMFunction::ComputeFunction(Element& elem, QGaussData qp)
-{
+void BoundaryFEMFunction::ComputeFunction(SurfaceElement& elem, QGaussData qp)
+{   
+    this->_normal = elem.calculate_normal()
+
     switch (elem.type())
     {
     case EDGE2:
@@ -27,9 +28,8 @@ void BoundaryFEMFunction::ComputeFunction(Element& elem, QGaussData qp)
     }
 }
 
-void BoundaryFEMFunction::EDGEFaceFunction(Element& elem, QGaussData qp)
+void BoundaryFEMFunction::EDGEFaceFunction(SurfaceElement& elem, QGaussData qp)
 {
-    
     _phi.resize(2);
     _dphi.resize(2);
     double x[2], y[2];
@@ -79,7 +79,7 @@ void BoundaryFEMFunction::EDGEFaceFunction(Element& elem, QGaussData qp)
 
 }
 
-void BoundaryFEMFunction::TRI3FaceFunction(Element& elem, QGaussData qp)
+void BoundaryFEMFunction::TRI3FaceFunction(SurfaceElement& elem, QGaussData qp)
 {
     
     double dpsi[2][3];
@@ -157,7 +157,7 @@ void BoundaryFEMFunction::TRI3FaceFunction(Element& elem, QGaussData qp)
 
 }
 
-void BoundaryFEMFunction::QUAD4FaceFunction(Element& elem, QGaussData qp)
+void BoundaryFEMFunction::QUAD4FaceFunction(SurfaceElement& elem, QGaussData qp)
 {
     /*
     double dpsi[2][4];
