@@ -38,9 +38,9 @@ inline T& NumericVector<T>::operator()(int i) {
 }
 
 template <typename T>
-ostream& operator<<(ostream& os, const NumericVector<T>& v) {
+ostream& operator<<(ostream& os, NumericVector<T>& v) {
     for (int i = 0; i < 3; i++) {
-        os << v.data[i] << " ";
+        os << v(i) << " ";
     }
     return os;
 }

@@ -367,7 +367,6 @@ void Mesh::MeshGmshReader(const char* filename)
     in.close();
 
     this->process_face_to_element();
-    this->process_normal_vectors();
 }
 
 bool BinaryBigEndian(void) 

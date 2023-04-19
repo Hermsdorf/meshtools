@@ -322,12 +322,51 @@ void Mesh::get_element_connectivity(int element_id, std::vector<unsigned int> &c
         connectivity[ino] = conn[ino];
 }
 
-void Mesh::getElement(unsigned int elemen_it, Element& elem)
+void Mesh::get_surface_element_coordinates(int element_id, std::vector<Point> &coordinates)
 {
-    get_element_connectivity(elemen_it,elem._conn);
-    get_element_coordinates(elemen_it,elem._coords);
-    elem._type= this->getElementType(elemen_it);
-    elem._tag = this->getElementTag(elemen_it);
+    int nnoel                = this->getSurfaceElementConnSize(element_id);
+    const unsigned int* conn = this->getSurfaceElementConn(element_id);
+
+    coordinates.resize(nnoel);
+
+    for(int ino = 0; ino < nnoel; ++ino)
+    {
+        coordinates[ino](0) = this->coord[conn[ino]*3+0];
+        coordinates[ino](1) = this->coord[conn[ino]*3+1];
+        coordinates[ino](2) = this->coord[conn[ino]*3+2];
+    }
+}
+
+void Mesh::get_surface_element_connectivity(int element_id, std::vector<unsigned int> &connectivity)
+{
+    int nnoel                = this->getSurfaceElementConnSize(element_id);
+    const unsigned int* conn = this->getSurfaceElementConn(element_id);
+
+    connectivity.resize(nnoel);
+
+    for(int ino = 0; ino < nnoel; ++ino)
+        connectivity[ino] = conn[ino];
+}
+
+
+void Mesh::getElement(unsigned int element_id, Element& elem)
+{
+    get_element_connectivity(element_id,elem._conn);
+    get_element_coordinates(element_id,elem._coords);
+    elem._type= this->getElementType(element_id);
+    elem._tag = this->getElementTag(element_id);
+}
+
+void Mesh::getSurfaceElement(unsigned int surface_element_id, SurfaceElement& surface_elem)
+{
+    get_surface_element_connectivity(surface_element_id,surface_elem._conn);
+    get_surface_element_coordinates(surface_element_id,surface_elem._coords);
+    surface_elem._type= this->getSurfaceElementType(surface_element_id);
+    surface_elem._tag = this->getSurfaceElementTag(surface_element_id);
+    
+    Element internal_element;
+    this->getElement(this->face_to_element[surface_element_id], internal_element);
+    surface_elem.set_internal_element(internal_element);
 }
 
 unsigned int Mesh::getElementConnectivitySize()

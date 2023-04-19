@@ -10,7 +10,7 @@ BoundaryFEMFunction::BoundaryFEMFunction()
 
 void BoundaryFEMFunction::ComputeFunction(SurfaceElement& elem, QGaussData qp)
 {   
-    this->_normal = elem.calculate_normal()
+    this->_normal = elem.calculate_normal();
 
     switch (elem.type())
     {

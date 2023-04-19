@@ -2,6 +2,7 @@
 #define ELEMENT_H__
 
 #include "mesh.h"
+#include "numeric_vector.h"
 
 class Element
 {

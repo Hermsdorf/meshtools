@@ -1,4 +1,3 @@
-
 #ifndef MESH_H__
 #define MESH_H__
 
@@ -7,6 +6,7 @@
 #include <vector>
 #include <string>
 #include "meshtools.h"
+#include "element.h"
 #include "numeric_vector.h"
 
 using namespace std;
@@ -28,6 +28,9 @@ typedef struct
 
 typedef MeshIODataInfo PointData;
 typedef MeshIODataInfo CellData;
+
+class Element;
+class SurfaceElement;
 
 class MeshIODataAppended{
     
@@ -494,7 +497,13 @@ class Mesh {
 
         void get_element_connectivity(int element_id, std::vector<unsigned int> &connectivity);
 
+        void get_surface_element_coordinates(int element_id, std::vector<Point> &coordinates);
+
+        void get_surface_element_connectivity(int element_id, std::vector<unsigned int> &connectivity);
+
         void getElement(unsigned int element_id, Element& elem);
+
+        void getSurfaceElement(unsigned int element_id, SurfaceElement& elem);
 
         inline int getElementTag(int iel) { return physical_tag[iel+n_face_elements]; };
 
@@ -522,9 +531,7 @@ class Mesh {
         int              getGmshElemNNodes(int type);
         int              getGmshElemTypeDim(int type);
         void             process_face_to_element();
-        void             process_normal_vectors();
     
-
 
     protected:
         unsigned int                n_face_elements;            // Numero de elementos de superficie.
