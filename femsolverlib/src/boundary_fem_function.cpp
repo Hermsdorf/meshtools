@@ -6,6 +6,7 @@ unsigned int cyc3[5]={0, 1, 2, 0, 1 };
 BoundaryFEMFunction::BoundaryFEMFunction()
 {
 
+
 }
 
 void BoundaryFEMFunction::ComputeFunction(SurfaceElement& elem, QGaussData qp)
@@ -32,9 +33,11 @@ void BoundaryFEMFunction::EDGEFaceFunction(SurfaceElement& elem, QGaussData qp)
 {
     _phi.resize(2);
     _dphi.resize(2);
-    double x[2], y[2];
-    double dpsi[1][2];
-    double J[1][2]    = {{0.0, 0.0}};
+
+
+    std::vector<RealVector> dpsi(2);
+    RealVector dxyzdxi;
+
 
     double xi = qp.first(0);
 
@@ -43,53 +46,47 @@ void BoundaryFEMFunction::EDGEFaceFunction(SurfaceElement& elem, QGaussData qp)
     _phi[1] = 0.5*(1+xi); // N2
 
     // EDGE2 shape functions derivatives
-    dpsi[0][0] = -0.5;  //dN1/dxi
-    dpsi[0][1] =  0.5;  //dN2/dxi
+    dpsi[0](0) = -0.5;  //dN1/dxi
+    dpsi[1](0) =  0.5;  //dN2/dxi
 
     // compute x, dxdxi at the quadrature points
 
+    _xyz.zero();
+    dxyzdxi.zero();
     for(int i=0; i<elem.n_nodes(); i++)
     {
-        x[i] = elem.node(i)(0);
-        y[i] = elem.node(i)(1);
-        _xyz(0) += x[i]*_phi[i];
-        _xyz(1) += y[i]*_phi[i];
-
-        J[0][0] += x[i]*dpsi[0][i]; //dxidx
-        J[0][1] += y[i]*dpsi[0][i]; //dxidy
+        _xyz.add_scaled(phi[i], elem.node(i));
+        dxyzdxi.add_scaled(dpsi[i](0), elem.node(i));
     }
 
     // compute the determinant of the Jacobian
-    double jac = sqrt(J[0][0]*J[0][0] + J[0][1]*J[0][1]);
+    double jac = dxyzdxi.norm();
 
     // compute the inverse of the Jacobian
     double invjac = 1.0/jac;
 
-    // for(int i=0; i<_dphi.size(); i++)
-    // {
-    //     _dphi[i](0) = Jinv[0][0]*dpsi[0][i] + Jinv[0][1]*dpsi[1][i]; // dphi_i/dx
-    //     _dphi[i](1) = Jinv[1][0]*dpsi[0][i] + Jinv[1][1]*dpsi[1][i]; // dphi_i/dy
-    // }
-
     _JxW = qp.second*jac;
 
-    this->_normal(0) = -J[0][1];
-    this->_normal(1) =  J[0][0];
+    this->_normal(0) = -dxyzdxi(1);
+    this->_normal(1) =  dxyzdxi(0);
     this->_normal.unit();
+
+    this->_tangents.resize(1);
+    this->_tangents[0] = dxyzdxi.unit();
 
 }
 
 void BoundaryFEMFunction::TRI3FaceFunction(SurfaceElement& elem, QGaussData qp)
 {
     
-    double dpsi[2][3];
-    double J[2][3]    = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-    double Jinv[2][2] = {{0.0, 0.0}     , {0.0, 0.0}     };
-    double x[3], y[3], z[3];
-   
+    std::vector<RealVector> dpsi(3);
+
     _phi.resize(3);
     _dphi.resize(3);
-    /*
+
+    RealVector dxyzdxi;
+    RealVector dxyzdeta;
+
     double xi  = qp.first(0);
     double eta = qp.first(1);
 
@@ -99,40 +96,30 @@ void BoundaryFEMFunction::TRI3FaceFunction(SurfaceElement& elem, QGaussData qp)
     _phi[2] = eta;            // N3
 
     // shape function derivative 
-    dpsi[0][0] = -1.0;  // dN1/dxi 
-    dpsi[0][1] =  1.0;  // dN2/dxi 
-    dpsi[0][2] =  0.0;  // dN3/dxi 
-    dpsi[1][0] = -1.0;  // dN1/deta
-    dpsi[1][1] =  0.0;  // dN2/deta
-    dpsi[1][2] =  1.0;  // dN3/deta
+    dpsi[0](0) = -1.0; // dN1/dxi
+    dpsi[0](1) = -1.0; // dN1/deta
+    dpsi[1](0) =  1.0; // dN2/dxi
+    dpsi[1](1) =  0.0; // dN2/deta
+    dpsi[2](0) =  0.0; // dN3/dxi
+    dpsi[2](1) =  1.0; // dN3/deta
 
+
+    _xyz.zero();
+    dxyzdxi.zero();
+    dxyzdeta.zero();
     for(int i=0; i<elem.n_nodes(); i++)
     {
-        x[i] = elem.node(i)(0);
-        y[i] = elem.node(i)(1);
-        z[i] = elem.node(i)(2);
-        _xyz(0) += x[i]*_phi[i];
-        _xyz(1) += y[i]*_phi[i];
-        _xyz(2) += z[i]*_phi[i];
-
-        J[0][0] +=  x[i]*dpsi[0][i]; //dxidx
-        J[0][1] +=  y[i]*dpsi[0][i]; //dxidy
-        J[0][2] +=  z[i]*dpsi[0][i]; //dxidz
-        J[1][0] +=  x[i]*dpsi[1][i]; //detadx
-        J[1][1] +=  y[i]*dpsi[1][i]; //detady
-        J[1][2] +=  z[i]*dpsi[1][i]; //detadz
-
+        _xyz.add_scaled(phi[i], elem.node(i));
+        dxyzdxi.add_scaled(dpsi[i](0), elem.node(i));
+        dxyzdeta.add_scaled(dpsi[i](1), elem.node(i));
     }
 
-    double detJ = 0.0;
+    const double g11 = dxyzdxi(0)*dxyzdxi(0)  + dxyzdxi(1)*dxyzdxi(1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              + dxyzdxi(2)*dxyzdxi(2);
+    const double g12 = dxyzdxi(0)*dxyzdeta(0) + dxyzdxi(1)*dxyzdeta(1)   + dxyzdxi(2)*dxyzdeta(2);
+    const double g21 = g12;
+    const double g22 = dxyzdeta(0)*dxyzdeta(0) + dxyzdeta(1)*dxyzdeta(1) + dxyzdeta(2)*dxyzdeta(2);
 
-    for (int i=0; i < 3; i++)
-    {
-        double tmp = (J[0][cyc3[i+2]]*J[1][cyc3[i+1]]-J[1][cyc3[i+2]]*J[0][cyc3[i+1]]);
-        detJ+=tmp*tmp;
-    }
-              
-    detJ=sqrt(detJ)
+    const double detJ = std::sqrt(g11*g22 - g12*g21);
 
     if(detJ < 0.0)
     {
@@ -140,31 +127,22 @@ void BoundaryFEMFunction::TRI3FaceFunction(SurfaceElement& elem, QGaussData qp)
         exit(1);
     }
 
-    double invdetJ = 1.0/detJ;
-    Jinv[0][0] =  J[1][1]*invdetJ;
-    Jinv[0][1] = -J[0][1]*invdetJ;
-    Jinv[1][0] = -J[1][0]*invdetJ;
-    Jinv[1][1] =  J[0][0]*invdetJ;
-
-    for(int i=0; i<_dphi.size(); i++)
-    {
-        _dphi[i](0) = Jinv[0][0]*dpsi[0][i] + Jinv[0][1]*dpsi[1][i]; // dphi_i/dx
-        _dphi[i](1) = Jinv[1][0]*dpsi[0][i] + Jinv[1][1]*dpsi[1][i]; // dphi_i/dy
-    }
-
     _JxW = qp.second*detJ;
-    */
+
+    const Point n = dxyzdxi.cross(dxyzdeta);
+    this->_normal = n.unit();
+    this->_tangents.resize(2);
+    this->_tangents[0] = dxyzdxi.unit();
+    this->_tangents[1] = n.cross(dxyzdxi).unit();
 
 }
 
 void BoundaryFEMFunction::QUAD4FaceFunction(SurfaceElement& elem, QGaussData qp)
 {
-    /*
-    double dpsi[2][4];
-    double J[2][2]    = {{0.0, 0.0}, {0.0, 0.0}};
-    double Jinv[2][2] = {{0.0, 0.0}, {0.0, 0.0}};
-    double x[3], y[3];
-    
+    std::vector<RealVector> dpsi(4);
+    RealVector dxyzdxi;
+    RealVector dxyzdeta;
+
     _phi.resize(4);
     _dphi.resize(4);
 
@@ -178,57 +156,45 @@ void BoundaryFEMFunction::QUAD4FaceFunction(SurfaceElement& elem, QGaussData qp)
     _phi[3] = 0.25*(1.0-xi)*(1.0+eta); // N4
 
     // shape function derivative 
-    dpsi[0][0] = -0.25*(1.0-eta);  // dN1/dxi
-    dpsi[0][1] =  0.25*(1.0-eta);  // dN2/dxi
-    dpsi[0][2] =  0.25*(1.0+eta);  // dN3/dxi
-    dpsi[0][3] = -0.25*(1.0+eta);  // dN4/dxi
+    dpsi[0](0) = -0.25*(1.0-eta);  // dN1/dxi
+    dpsi[1](0) =  0.25*(1.0-eta);  // dN2/dxi
+    dpsi[2](0) =  0.25*(1.0+eta);  // dN3/dxi
+    dpsi[3](0) = -0.25*(1.0+eta);  // dN4/dxi
 
-    dpsi[1][0] = -0.25*(1.0-xi);  // dN1/deta
-    dpsi[1][1] = -0.25*(1.0+xi);  // dN2/deta
-    dpsi[1][2] =  0.25*(1.0+xi);  // dN3/deta
-    dpsi[1][3] =  0.25*(1.0-xi);  // dN4/deta
+    dpsi[0](1) = -0.25*(1.0-xi);  // dN1/deta
+    dpsi[1](1) = -0.25*(1.0+xi);  // dN2/deta
+    dpsi[2](1) =  0.25*(1.0+xi);  // dN3/deta
+    dpsi[3](1) =  0.25*(1.0-xi);  // dN4/deta
 
+    _xyz.zero();
+    dxyzdxi.zero();
+    dxyzdeta.zero();
     for(int i=0; i<elem.n_nodes(); i++)
     {
-        x[i] = elem.node(i)(0);
-        y[i] = elem.node(i)(1);
-        _xyz(0) += x[i]*_phi[i];
-        _xyz(1) += y[i]*_phi[i];
-
-        J[0][0] +=  x[i]*dpsi[0][i]; //dxidx
-        J[0][1] +=  y[i]*dpsi[0][i]; //dxidy
-        J[1][0] +=  x[i]*dpsi[1][i]; //detadx
-        J[1][1] +=  y[i]*dpsi[1][i]; //detady
-
+        _xyz.add_scaled(phi[i], elem.node(i));
+        dxyzdxi.add_scaled(dpsi[i](0), elem.node(i));
+        dxyzdeta.add_scaled(dpsi[i](1), elem.node(i));
     }
 
-    double detJ = J[0][0]*J[1][1] - J[0][1]*J[1][0];
+    const double g11 = dxyzdxi(0)*dxyzdxi(0) + dxyzdxi(1)*dxyzdxi(1) + dxyzdxi(2)*dxyzdxi(2);
+    const double g12 = dxyzdxi(0)*dxyzdeta(0) + dxyzdxi(1)*dxyzdeta(1) + dxyzdxi(2)*dxyzdeta(2);
+    const double g21 = g12;
+    const double g22 = dxyzdeta(0)*dxyzdeta(0) + dxyzdeta(1)*dxyzdeta(1) + dxyzdeta(2)*dxyzdeta(2);
+
+    const double detJ = std::sqrt(g11*g22 - g12*g21);
+
     if(detJ < 0.0)
     {
         std::cout << "Error: detJ < 0.0  -- det = " << detJ << std::endl;
         exit(1);
     }
 
-    double invdetJ = 1.0/detJ;
-    Jinv[0][0] =  J[1][1]*invdetJ;
-    Jinv[0][1] = -J[0][1]*invdetJ;
-    Jinv[1][0] = -J[1][0]*invdetJ;
-    Jinv[1][1] =  J[0][0]*invdetJ;
-
-    for(int i=0; i<_dphi.size(); i++)
-    {
-        _dphi[i](0) = Jinv[0][0]*dpsi[0][i] + Jinv[0][1]*dpsi[1][i]; // dphi_i/dx
-        _dphi[i](1) = Jinv[1][0]*dpsi[0][i] + Jinv[1][1]*dpsi[1][i]; // dphi_i/dy
-    }
-
     _JxW = qp.second*detJ;
 
-    _g(0) = J[0][0] + J[1][0];
-    _g(1) = J[0][1] + J[1][1];
-
-    _G(0,0)          = J[0][0]*J[0][0] + J[1][0]*J[1][0];
-    _G(0,1) = _G(1,0) = J[0][0]*J[0][1] + J[1][0]*J[1][1];
-    _G(1,1)          = J[0][1]*J[0][1] + J[1][1]*J[1][1];
-    */
+    const Point n = dxyzdxi.cross(dxyzdeta);
+    this->_normal = n.unit();
+    this->_tangents.resize(2);
+    this->_tangents[0] = dxyzdxi.unit();
+    this->_tangents[1] = n.cross(dxyzdxi).unit();
    
 }

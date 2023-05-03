@@ -15,8 +15,8 @@ void   QGauss::reset(Element& elem)
         this->npoints = 1;
         _gauss_p.resize(1);
         _gauss_w.resize(1);
-        _gauss_p[0](0) = 0.5;
-        _gauss_w[0]    = 1.0;
+        _gauss_p[0](0) = 0.5; // 0
+        _gauss_w[0]    = 1.0; // 2?
         break;
     case TRI3:
         this->npoints = 1;

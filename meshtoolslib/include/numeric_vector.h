@@ -21,6 +21,9 @@ class NumericVector {
         T                norm();
         void             unit();
         void             scale(T s);
+        void             zero();
+        void             add_scaled(const T s, const NumericVector<T> &v)
+        void             add_scaled_vector(const NumericVector<T> &s, const NumericVector<T> &v);
         //friend ostream& operator<<(ostream& os, const NumericVector<T>& v);
         ~NumericVector();
     private:
@@ -44,6 +47,8 @@ ostream& operator<<(ostream& os, NumericVector<T>& v) {
     }
     return os;
 }
+
+
 
 
 template <typename T>
@@ -154,6 +159,30 @@ void NumericVector<T>::scale(T s)
 {
     for (int i = 0; i < 3; i++) {
         data[i] *= s;
+    }
+}
+
+template<typename T>
+void NumericVector<T>::zero()
+{
+    for (int i = 0; i < 3; i++) {
+        data[i] = 0;
+    }
+}
+
+template<typename T>
+void NumericVector<T>::add_scaled(const T s, const NumericVector<T> &v)
+{
+    for (int i = 0; i < 3; i++) {
+        data[i] += s*v.data[i];
+    }
+}
+
+template<typename T>
+void NumericVector<T>::add_scaled_vector(const NumericVector<T> &s, const NumericVector<T> &v)
+{
+    for (int i = 0; i < 3; i++) {
+        data[i] += s.data[i]*v.data[i];
     }
 }
 

@@ -250,6 +250,7 @@ void assemble_poisson(ImplicitSystem* system)
                 // avaliando a função fonte
                 double fxy = body_force(qpoint(0), qpoint(1));
                 Fe[i] += JxW * fxy * phi[i];
+
                 for (int j = 0; j < global_indices.size(); j++)
                     Ke(i, j) += JxW * (dphi[i] * dphi[j]);
             }

@@ -29,6 +29,7 @@ class BoundaryFEMFunction
         Point                  _xyz ;
         double                 _JxW ;
         RealVector             _normal;
+        std::vector<RealVector>  _tangents;
     
         void EDGEFaceFunction(SurfaceElement& elem, QGaussData qp);
         void TRI3FaceFunction(SurfaceElement& elem, QGaussData qp);
