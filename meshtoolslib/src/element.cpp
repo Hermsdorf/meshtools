@@ -4,11 +4,13 @@ Point Element::calculate_centroid()
 {
     Point centroid;
     unsigned int n_nodes = this->n_nodes();
+    float tmp = 1.0/n_nodes;
 
-    for (int i = 0; i < n_nodes;  i++)
-        centroid += this->node(i);
-
-    centroid.scale(1.0/n_nodes);
+    for (int i = 0; i < n_nodes;  i++) {
+        centroid(0) += this->node(i)(0)*tmp;
+        centroid(1) += this->node(i)(1)*tmp;
+        centroid(2) += this->node(i)(2)*tmp;
+    }
 
     return centroid;
 }
@@ -25,7 +27,6 @@ void Get2DElementNormal(SurfaceElement& elem, RealVector& normal_vector)
 
     Element& internal_elem  = elem.get_internal_element();
     Point internal_centroid = internal_elem.calculate_centroid();
-
     vec_c = internal_centroid - elem.node(0);
     if (normal_vector.dot_product(vec_c) > 0)
     {
@@ -49,7 +50,7 @@ void Get1DElementNormal(SurfaceElement& elem, RealVector& normal_vector)
     Element& internal_elem  = elem.get_internal_element();
     Point internal_centroid = internal_elem.calculate_centroid();
     vec_c = internal_centroid - elem.node(0);
-
+    //std::cout << "vec_c: " << vec_c << std::endl;
     if (normal_vector.dot_product(vec_c) > 0)
         normal_vector.scale(-1);
 
