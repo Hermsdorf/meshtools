@@ -22,7 +22,7 @@ class NumericVector {
         void             unit();
         void             scale(T s);
         void             zero();
-        void             add_scaled(const T s, const NumericVector<T> &v)
+        void             add_scaled(const T s, const NumericVector<T> &v);
         void             add_scaled_vector(const NumericVector<T> &s, const NumericVector<T> &v);
         //friend ostream& operator<<(ostream& os, const NumericVector<T>& v);
         ~NumericVector();

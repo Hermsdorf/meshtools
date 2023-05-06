@@ -34,10 +34,8 @@ void BoundaryFEMFunction::EDGEFaceFunction(SurfaceElement& elem, QGaussData qp)
     _phi.resize(2);
     _dphi.resize(2);
 
-
     std::vector<RealVector> dpsi(2);
     RealVector dxyzdxi;
-
 
     double xi = qp.first(0);
 
@@ -55,7 +53,7 @@ void BoundaryFEMFunction::EDGEFaceFunction(SurfaceElement& elem, QGaussData qp)
     dxyzdxi.zero();
     for(int i=0; i<elem.n_nodes(); i++)
     {
-        _xyz.add_scaled(phi[i], elem.node(i));
+        _xyz.add_scaled(_phi[i], elem.node(i));
         dxyzdxi.add_scaled(dpsi[i](0), elem.node(i));
     }
 
@@ -72,7 +70,9 @@ void BoundaryFEMFunction::EDGEFaceFunction(SurfaceElement& elem, QGaussData qp)
     this->_normal.unit();
 
     this->_tangents.resize(1);
-    this->_tangents[0] = dxyzdxi.unit();
+
+    dxyzdxi.unit();
+    this->_tangents[0] = dxyzdxi;
 
 }
 
@@ -109,12 +109,12 @@ void BoundaryFEMFunction::TRI3FaceFunction(SurfaceElement& elem, QGaussData qp)
     dxyzdeta.zero();
     for(int i=0; i<elem.n_nodes(); i++)
     {
-        _xyz.add_scaled(phi[i], elem.node(i));
+        _xyz.add_scaled(_phi[i], elem.node(i));
         dxyzdxi.add_scaled(dpsi[i](0), elem.node(i));
         dxyzdeta.add_scaled(dpsi[i](1), elem.node(i));
     }
 
-    const double g11 = dxyzdxi(0)*dxyzdxi(0)  + dxyzdxi(1)*dxyzdxi(1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              + dxyzdxi(2)*dxyzdxi(2);
+    const double g11 = dxyzdxi(0)*dxyzdxi(0)  + dxyzdxi(1)*dxyzdxi(1);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    + dxyzdxi(2)*dxyzdxi(2);
     const double g12 = dxyzdxi(0)*dxyzdeta(0) + dxyzdxi(1)*dxyzdeta(1)   + dxyzdxi(2)*dxyzdeta(2);
     const double g21 = g12;
     const double g22 = dxyzdeta(0)*dxyzdeta(0) + dxyzdeta(1)*dxyzdeta(1) + dxyzdeta(2)*dxyzdeta(2);
@@ -129,11 +129,17 @@ void BoundaryFEMFunction::TRI3FaceFunction(SurfaceElement& elem, QGaussData qp)
 
     _JxW = qp.second*detJ;
 
-    const Point n = dxyzdxi.cross(dxyzdeta);
-    this->_normal = n.unit();
+    Point n = dxyzdxi.cross_product(dxyzdeta);
+    n.unit();
+
+    this->_normal = n;
     this->_tangents.resize(2);
-    this->_tangents[0] = dxyzdxi.unit();
-    this->_tangents[1] = n.cross(dxyzdxi).unit();
+    dxyzdxi.unit();
+    this->_tangents[0] = dxyzdxi;
+
+    RealVector tangent_y = n.cross_product(dxyzdxi);
+    tangent_y.unit();
+    this->_tangents[1] = tangent_y;
 
 }
 
@@ -171,7 +177,7 @@ void BoundaryFEMFunction::QUAD4FaceFunction(SurfaceElement& elem, QGaussData qp)
     dxyzdeta.zero();
     for(int i=0; i<elem.n_nodes(); i++)
     {
-        _xyz.add_scaled(phi[i], elem.node(i));
+        _xyz.add_scaled(_phi[i], elem.node(i));
         dxyzdxi.add_scaled(dpsi[i](0), elem.node(i));
         dxyzdeta.add_scaled(dpsi[i](1), elem.node(i));
     }
@@ -191,10 +197,16 @@ void BoundaryFEMFunction::QUAD4FaceFunction(SurfaceElement& elem, QGaussData qp)
 
     _JxW = qp.second*detJ;
 
-    const Point n = dxyzdxi.cross(dxyzdeta);
-    this->_normal = n.unit();
+    Point n = dxyzdxi.cross_product(dxyzdeta);
+    n.unit();
+
+    this->_normal = n;
     this->_tangents.resize(2);
-    this->_tangents[0] = dxyzdxi.unit();
-    this->_tangents[1] = n.cross(dxyzdxi).unit();
+    dxyzdxi.unit();
+    this->_tangents[0] = dxyzdxi;
+
+    RealVector tangent_y = n.cross_product(dxyzdxi);
+    tangent_y.unit();
+    this->_tangents[1] = tangent_y;
    
 }
