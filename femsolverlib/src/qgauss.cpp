@@ -7,7 +7,7 @@ QGauss::QGauss():order(1),npoints(1)
     
 }
 
-void   QGauss::reset(Element& elem)
+void QGauss::reset(Element& elem)
 {
     switch (elem.type())
     {

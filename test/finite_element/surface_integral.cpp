@@ -18,7 +18,8 @@ int surface_integral(int argc, char *argv[], std::string mesh_path, std::string 
     processor_id = MeshTools::processor_id();
     n_processors = MeshTools::n_processors();
 
-    double integral_value = 0.0;
+    double local_integral = 0.0;
+    double global_integral = 0.0;
 
     if (processor_id == 0)
     {
@@ -45,34 +46,52 @@ int surface_integral(int argc, char *argv[], std::string mesh_path, std::string 
     Point                 & qpoint = bfem.get_xyz();
 
     bool flag = true;
+    unsigned short elem_type;
+    
     // loop sobre os elementos da malha
     for (int iel = 0; iel < pmesh->get_n_face_elements() ; iel++)
     {
-        SurfaceElement elem;
-        pmesh->getSurfaceElement(iel,elem);
-        if(elem.region() == 6)
-        {     
-            int nnoel = elem.n_nodes();
+        SurfaceElement surface_elem;
+        pmesh->getSurfaceElement(iel, surface_elem);
+        if(surface_elem.region() == 6)
+        {
+            elem_type = surface_elem.type();
+            int nnoel = surface_elem.n_nodes();
 
             // Obtem pontos de integração para elemento elem
-            qrule.reset(elem);
+            qrule.reset(surface_elem);
 
             // loop sobre os pontos de integração
             for (int q = 0; q < qrule.n_points(); q++)
             {
                 // calculando a função de forma e suas derivadas para o ponto de integração q
-                bfem.ComputeFunction(elem,qrule.get(q));
+                bfem.ComputeFunction(surface_elem, qrule.get(q));
 
-                integral_value += (JxW * 1 * phi[iel]);
+                for(int n = 0 ; n < 2 ; n++)
+                {
+                    local_integral += (JxW * 1 * phi[n]);
+                    std::cout << "JxW " << JxW << std::endl;
+                    std::cout << "phi " << phi[q] << std::endl;
+                }
             }
         }
     }
 
-    std::cout << "Integral value " << integral_value << std::endl;
-    std::cout << "Expected value " << 2*M_PI*0.25 << std::endl;
-
+    MPI_Reduce(&local_integral, &global_integral, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    
     if (MeshTools::processor_id() == 0)
+    {   
+        double expected_value;
+        // if EDGE2 elements, it means it is a 2D problem
+        if(elem_type == 1)
+            expected_value = 2*M_PI*0.25;
+        else
+            expected_value = 4*M_PI*0.25*0.25;
+        std::cout << "Elem type " << elem_type << std::endl;
+        std::cout << "Integral value " << global_integral << std::endl;
+        std::cout << "Expected value " << expected_value << std::endl;
         delete mesh;
+    }
     delete pmesh;
     delete parts;
 
