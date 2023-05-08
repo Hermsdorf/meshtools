@@ -83,6 +83,8 @@ void MeshPartition::ApplyPartitioner(Mesh *mesh, int nparts)
 
     if (nparts <= 1)
     {
+        for (int i = 0; i < nfe; i++)
+            this->face_part[i] = 0;
         std::cout << "Successfully partitioned\n";
     }
     else
