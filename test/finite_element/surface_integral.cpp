@@ -67,7 +67,7 @@ int surface_integral(int argc, char *argv[], std::string mesh_path, std::string 
                 // calculando a função de forma e suas derivadas para o ponto de integração q
                 bfem.ComputeFunction(surface_elem, qrule.get(q));
 
-                for(int n = 0 ; n < 2 ; n++)
+                for(int n = 0 ; n < surface_elem.n_nodes() ; n++)
                 {
                     local_integral += (JxW * 1 * phi[n]);
                     std::cout << "JxW " << JxW << std::endl;

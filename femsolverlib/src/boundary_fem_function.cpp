@@ -109,13 +109,13 @@ void BoundaryFEMFunction::TRI3FaceFunction(SurfaceElement& elem, QGaussData qp)
     dxyzdeta.zero();
     for(int i=0; i<elem.n_nodes(); i++)
     {
-        _xyz.add_scaled(_phi[i], elem.node(i));
-        dxyzdxi.add_scaled(dpsi[i](0), elem.node(i));
+        _xyz.add_scaled(_phi[i]       , elem.node(i));
+        dxyzdxi.add_scaled(dpsi[i](0) , elem.node(i));
         dxyzdeta.add_scaled(dpsi[i](1), elem.node(i));
     }
 
-    const double g11 = dxyzdxi(0)*dxyzdxi(0)  + dxyzdxi(1)*dxyzdxi(1);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    + dxyzdxi(2)*dxyzdxi(2);
-    const double g12 = dxyzdxi(0)*dxyzdeta(0) + dxyzdxi(1)*dxyzdeta(1)   + dxyzdxi(2)*dxyzdeta(2);
+    const double g11 = dxyzdxi(0)*dxyzdxi(0)  + dxyzdxi(1)*dxyzdxi(1) + dxyzdxi(2)*dxyzdxi(2);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    + dxyzdxi(2)*dxyzdxi(2);
+    const double g12 = dxyzdxi(0)*dxyzdeta(0) + dxyzdxi(1)*dxyzdeta(1) + dxyzdxi(2)*dxyzdeta(2);
     const double g21 = g12;
     const double g22 = dxyzdeta(0)*dxyzdeta(0) + dxyzdeta(1)*dxyzdeta(1) + dxyzdeta(2)*dxyzdeta(2);
 
