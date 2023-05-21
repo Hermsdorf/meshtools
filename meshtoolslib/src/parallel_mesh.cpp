@@ -649,11 +649,8 @@ void ParallelMesh::update()
     }
 
     if(MeshTools::n_processors() == 1)
-    {
-         this->start_node_index = 0;
-         process_face_to_element();
          return;
-    }
+
     // Sends from predecessor process the value of `n_nodes_local` to `n_nodes_offset` variable`
     MPI_Scan(&n_local_nodes,&n_nodes_offset,1,MPI_UNSIGNED,MPI_SUM,MPI_COMM_WORLD);
     n_nodes_offset -= this->n_local_nodes;

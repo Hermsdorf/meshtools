@@ -68,12 +68,14 @@ int surface_integral(int argc, char *argv[], std::string mesh_path, std::string 
                 bfem.ComputeFunction(surface_elem, qrule.get(q));
 
                 for(int n = 0 ; n < surface_elem.n_nodes() ; n++)
-                {
                     local_integral += (JxW * 1 * phi[n]);
-                    std::cout << "JxW " << JxW << std::endl;
-                    std::cout << "phi " << phi[q] << std::endl;
-                }
             }
+
+            RealVector bfem_normal = bfem.get_normal();
+            RealVector elem_normal = surface_elem.calculate_normal();
+
+            std::cout << "[" << iel+1 << "] BFEM Normal vector: " << bfem_normal(0)  << " " << bfem_normal(1) << " " << bfem_normal(2) << std::endl;
+            std::cout << "[" << iel+1 << "] Element Normal vector: " << elem_normal << std::endl << std::endl;
         }
     }
 

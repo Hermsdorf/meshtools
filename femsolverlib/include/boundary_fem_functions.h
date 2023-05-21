@@ -21,6 +21,7 @@ class BoundaryFEMFunction
         std::vector<Gradient>&  get_dphi(){ return _dphi; } ;
         Point                &  get_xyz() { return _xyz; } ;
         double               &  get_JxW() { return _JxW; } ;
+        RealVector           &  get_normal() { return _normal; } ;
             
 
     private:

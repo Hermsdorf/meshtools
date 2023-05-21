@@ -1646,6 +1646,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
         pmesh->setType(mesh->getType());
         pmesh->set_physical_map(mesh->getPhysicalMap());
         pmesh->set_physical_tag(mesh->getPhysicalTag());
+        pmesh->setFaceToElement(mesh->getFaceToElement());
 
         auto& s_node_index = mesh->getNodeIndexes();
         auto& p_node_index = pmesh->getNodeIndexes();
@@ -1668,8 +1669,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
         pmesh->set_recvfrom_info(empty_vector_message);
 
         pmesh->set_start_node_index(0);
-
-    }
+    }   
 
     pmesh->update();
     return pmesh;
