@@ -54,6 +54,15 @@ void init_transport(TransientImplicitSystem* system)
 
 }
 
+
+double cau_stab(double phi, Gradient dphi, double f, RealVector velocity, double sigma, double k)
+{
+    // Compute the residuo
+    double res = velocity*dphi + sigma*phi - f;
+
+    
+}
+
 void assemble_transport(TransientImplicitSystem* system)
 {
 
@@ -67,6 +76,7 @@ void assemble_transport(TransientImplicitSystem* system)
     int n_elements = pmesh.get_n_elements();
 
     double *old_solution = system->get_old_solution_array();
+    double *solution     = system->get_local_solution_array();
 
     QGauss qrule;
     FEMFunction fem;
@@ -116,6 +126,10 @@ void assemble_transport(TransientImplicitSystem* system)
             double u_old  = 0.0;
             Gradient grad_u_old;
 
+        
+            double    u = 0.0;
+            Gradient  grad_u;
+
             velocity(0)   = 0.0;  //function_g(t)*sin(2 * M_PI * xyz(1)) * sin(M_PI * xyz(0)) * sin(M_PI * xyz(0)); 
             velocity(1)   = 0.0; //-function_g(t)*sin(2 * M_PI * xyz(0)) * sin(M_PI * xyz(1)) * sin(M_PI * xyz(1));
            
@@ -132,11 +146,19 @@ void assemble_transport(TransientImplicitSystem* system)
                 u_old         +=  old_solution[local_indices[i]]*phi[i];
                 grad_u_old(0) +=  old_solution[local_indices[i]]*dphi[i](0);
                 grad_u_old(1) +=  old_solution[local_indices[i]]*dphi[i](1);
+
+                u             +=  solution[local_indices[i]]*phi[i];
+                grad_u(0)     +=  solution[local_indices[i]]*dphi[i](0);
+                grad_u(1)     +=  solution[local_indices[i]]*dphi[i](1);
+    
             }
 
             // SUPG stabilization parameters
             const double tmp = (velocity) * (G.mult(velocity)) + (k * k) * (G.contract(G)) + dt_stab*4.0/(dt*dt);
             const double tau = 1.0/sqrt(tmp);
+
+            // CAU stabilization parameters
+            const double ctau = 0.0;
 
             const double adt1 = (1.0-theta)*dt;
             const double adt  = theta*dt;
@@ -156,6 +178,8 @@ void assemble_transport(TransientImplicitSystem* system)
                                          -adt1 * (sigma*u_old)*(velocity * dphi[i])
                                      );
 
+            
+
                 
 
                 for (int j = 0; j < local_indices.size(); j++)
@@ -173,6 +197,9 @@ void assemble_transport(TransientImplicitSystem* system)
                                      adt * (velocity * dphi[j])*(velocity * dphi[i]) +
                                      adt * (sigma * phi[j] )*(velocity * dphi[i])
                             );
+
+                    // CAU contribution
+                    Ke(i,j) += JxW * ctau * (dphi[i] * dphi[j] );
 
                 }
             }
