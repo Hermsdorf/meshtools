@@ -1,46 +1,30 @@
-#ifndef NONLINEAR_IMPLICIT_SYSTEM_H__
-#define NONLINEAR_IMPLICIT_SYSTEM_H__
+#ifndef NONLINEAR_IMPLICIT_SYSTEM_H
+#define NONLINEAR_IMPLICIT_SYSTEM_H
 
-// TODO:
-// 1. Implementar NonLinearImplicitSystem::solve_nonlinear_system()
-// 2. Implementar NonLinearImplicitSystem::set_nonlinear_tolerance()
-// 3. Implementar NonLinearImplicitSystem::set_max_nonlinear_iterations()
+#include "implicit_system.h"
+
 class NonLinearImplicitSystem : public ImplicitSystem
 {
     public:
         NonLinearImplicitSystem(ParallelMesh &mesh, std::string name);
-        void   attach_assemble(void assemble_system(NonLinearImplicitSystem*)); 
+
+        void   attach_assemble(void _assemble(NonLinearImplicitSystem*));
         void   solve();
-        void   set_nonlinear_tolerance(double tol);
+        void   set_nonlinear_tolerance(double tolerance) { _tolerance = tolerance; };
+        void   set_nonlinear_max_iter(unsigned int max_iter) { _max_nonlinear_iterarions = max_iter; };
+        
         ~NonLinearImplicitSystem();
-
+    
     protected:
-        
-        void   solve_nonlinear_system();
-        /*
-           copiar solução atual para _prev_solution
-           k = 0;
-           while(k < _max_nonlinear_iterations)
-           {
-                assemble_system(this);
-                solve();
-                if (norma(_solution - _prev_solution) < tol)
-                    break;
-                
-                copiar _solution para _prev_solution
-           }
-        
-        */
-
-        Vec          _prev_solution;
-        double       _nonlinear_tolerance;
-        unsigned int _max_nonlinear_iterations;
+        void solve_nonlinear_system();
 
     private:
-        void (* _assemble_system)(NonLinearImplicitSystem*  _system);
-       
+        Vec          _previous_solution;
+        double       _tolerance;
+        unsigned int _max_nonlinear_iterarions;
+        
+        void (* _assemble_function)(NonLinearImplicitSystem*  _system);
 
 };
 
-
-#endif /* NONLINEAR_IMPLICIT_SYSTEM_H__ */
+#endif // NONLINEAR_IMPLICIT_SYSTEM_H

@@ -55,12 +55,30 @@ void init_transport(TransientImplicitSystem* system)
 }
 
 
-double cau_stab(double phi, Gradient dphi, double f, RealVector velocity, double sigma, double k)
+double cau_stab(double phi, Gradient dphi, double f,
+                RealVector velocity, double sigma, double k,
+                double tau, double h)
 {
     // Compute the residuo
-    double res = velocity*dphi + sigma*phi - f;
+    double res = velocity*dphi - sigma*phi - f; // Re (segundo termo?)
 
-    
+    double velocity_norm = velocity.norm();
+    double v;
+    if(velocity_norm == 0.0)
+        v = velocity;
+    else
+        v = velocity - res*dphi/(velocity_norm*velocity_norm);
+    double b = ;
+    double h_c = 2*(velocity - v).norm()/b;
+    double peclet = (h*(velocity - v).norm())/(2*std::abs(k));
+    double tau_c = std::max(0, 1 - (1/peclet));
+
+    double res_vel_dphi = std::abs(res)/(velocity.norm()*dphi.norm());
+    double tauc_hc_tau_h = (tau_c*h_c)/(tau*h);
+    if(res_vel_dphi >= tauc_hc_tau_h)
+        return 0.0;
+    else
+        return (tau*h/2)*(tauc_hc_tau_h - res_vel_dphi)*(res.norm()/dphi.norm()); 
 }
 
 void assemble_transport(TransientImplicitSystem* system)
@@ -106,7 +124,7 @@ void assemble_transport(TransientImplicitSystem* system)
         // Obtem pontos de integração para elemento
         qrule.reset(elem);
 
-
+        double source_term  = 0.0;
         double k            = 1E-5;
         double sigma        = 0.0;
         double theta        = 0.5;
@@ -158,7 +176,7 @@ void assemble_transport(TransientImplicitSystem* system)
             const double tau = 1.0/sqrt(tmp);
 
             // CAU stabilization parameters
-            const double ctau = 0.0;
+            const double ctau = cau_stab(phi, dphi, source_term, velocity, sigma, k);
 
             const double adt1 = (1.0-theta)*dt;
             const double adt  = theta*dt;

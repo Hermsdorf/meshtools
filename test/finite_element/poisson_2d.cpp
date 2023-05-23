@@ -219,7 +219,6 @@ void assemble_poisson(ImplicitSystem* system)
     // loop sobre os elementos da malha
     for (int iel = 0; iel < pmesh.get_n_elements(); iel++)
     {
-
         Element elem;
         pmesh.getElement(iel,elem);
         
@@ -229,9 +228,6 @@ void assemble_poisson(ImplicitSystem* system)
         std::vector<double>     Fe(nnoel);         // vetor de força do elemento
         std::vector<int>        global_indices;
 
-        
-      
-        
         equation_manager.global_indices(dof, elem.connectivity(), global_indices);
 
         // Obtem pontos de integração para elemento elem
@@ -242,7 +238,7 @@ void assemble_poisson(ImplicitSystem* system)
         {
 
             // calculando a função de forma e suas derivadas para o ponto de integração q
-             fem.ComputeFunction(elem,qrule.get(q));
+            fem.ComputeFunction(elem,qrule.get(q));
 
             // calculando a matriz de rigidez e o vetor de forca local
             for (int i = 0; i < global_indices.size(); i++)

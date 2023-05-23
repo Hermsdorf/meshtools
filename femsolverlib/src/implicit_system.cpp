@@ -144,7 +144,7 @@ void ImplicitSystem::solve()
 
 void ImplicitSystem::solve_linear_system()
 {
-    MatAssemblyBegin(_A,MAT_FINAL_ASSEMBLY);
+    MatAssemblyBegin(_A, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(_A, MAT_FINAL_ASSEMBLY);
 
     VecAssemblyBegin(this->_rhs);
@@ -165,7 +165,6 @@ void ImplicitSystem::solve_linear_system()
     // Realiza o scatter de solução global para local
     VecScatterBegin(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
     VecScatterEnd(this->_scatter  , this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
-
 }
 
 
@@ -277,6 +276,12 @@ void ImplicitSystem::print_rhs()
     VecView(this->_rhs, PETSC_VIEWER_STDOUT_WORLD);
 }
 
+/**
+ * Applies dirichlet boundary conditions to the system
+ * The rows corresponding to the dirichlet boundary conditions are zeroed
+ * and the diagonal is set to 1.0. The rhs is also modified accordingly
+ * with the dirichlet boundary condition value.
+*/
 void ImplicitSystem::apply_dirichlet_boundary_conditions()
 {
 

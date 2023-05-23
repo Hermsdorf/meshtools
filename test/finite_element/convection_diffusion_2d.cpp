@@ -139,8 +139,9 @@ int run_convection_diffusion_reaction(int argc, char *argv[])
     int dof = implicit_system->add_variable("u");
 
     // Adiciona uma condição de contorno ao sistema
-    // Aplica a função g = 0 para a variável u no contorno identificado com 1.
+    // Aplica a função g(x, y) = 0 para a variável u no contorno identificado com 1.
     DirichletBoundary bc1(1, dof, "0.0", "x,y");
+    // Aplica a função g(x, y) = 1 para a variável u no contorno identificado com 2.
     DirichletBoundary bc2(2, dof, "1.0", "x,y");
     implicit_system->add_dirichlet_boundary(bc1);
     implicit_system->add_dirichlet_boundary(bc2);

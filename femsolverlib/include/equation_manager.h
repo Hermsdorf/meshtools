@@ -5,8 +5,6 @@
 #include "dirichlet_boundary.h"
 #include "parallel_mesh.h"
 
-
-
 class EquationManager
 {
 public:
