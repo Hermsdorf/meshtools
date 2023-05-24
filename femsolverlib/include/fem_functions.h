@@ -31,7 +31,7 @@ class FEMFunction
         RealVector           &  get_g() { return _g; } ;
         RealTensor           &  get_G() { return _G; } ;
         RealVector           &  get_dxi() { return _dxi; } ;
-        RealVector           &  get_deta() { return _de; } ;
+        RealVector           &  get_deta() { return _deta; } ;
         RealVector           &  get_dzeta() { return _dzeta; } ;
             
 
@@ -46,7 +46,7 @@ class FEMFunction
         RealTensor             _G;
         RealVector             _g;
         RealVector             _dxi;
-        RealVector             _de;
+        RealVector             _deta;
         RealVector             _dzeta;
 
         //

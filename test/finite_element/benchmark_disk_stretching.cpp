@@ -56,30 +56,48 @@ void init_transport(TransientImplicitSystem* system)
 
 
 double cau_stab(double phi, Gradient dphi, double f,
-                RealVector velocity, double sigma, double k,
-                double tau, double h)
+                RealVector velocity, double sigma, double K,
+                RealVector dxi, RealVector deta, RealVector dzeta)
 {
     // Compute the residuo
-    double res = velocity*dphi - sigma*phi - f; // Re (segundo termo?)
+    double res = velocity*dphi - sigma*phi - f;
 
     double velocity_norm = velocity.norm();
-    double v;
-    if(velocity_norm == 0.0)
+    double dphi_norm = dphi.norm();
+    
+    RealVector v;
+    if(dphi_norm == 0.0)
         v = velocity;
     else
-        v = velocity - res*dphi/(velocity_norm*velocity_norm);
-    // TODO:
-    double b = 1;
-    double h_c = 2*(velocity - v).norm()/b;
-    double peclet = (h*(velocity - v).norm())/(2*std::abs(k));
-    double tau_c = std::max(0, 1 - (1/peclet));
+        v = velocity - res*dphi/(dphi_norm*dphi_norm);
+
+    RealVector be = velocity(0)*(dxi(0) + deta(0) + dzeta(0)) +
+                    velocity(1)*(dxi(1) + deta(1) + dzeta(1)) +
+                    velocity(2)*(dxi(2) + deta(2) + dzeta(2));
+    
+    double he = 2*velocity_norm/be.norm();
+    double Pe = he*velocity_norm/(2*K);
+    double tau_e = std::max(0, 1 - (1/Pe));
+
+    double velocity_x_diff = velocity(0) - v(0);
+    double velocity_y_diff = velocity(1) - v(1);
+    double velocity_z_diff = velocity(2) - v(2);
+
+    RealVector be_c = velocity_x_diff*(dxi(0) + deta(0) + dzeta(0)) +
+                      velocity_y_diff*(dxi(1) + deta(1) + dzeta(1)) +
+                      velocity_z_diff*(dxi(2) + deta(2) + dzeta(2));
+
+    double he_c = 2*(velocity - v).norm()/be_c.norm();
+    double Pe_c = (he_c*(velocity - v).norm())/(2*std::abs(K));
+    double tau_c = std::max(0, 1 - (1/Pe_c));
 
     double res_vel_dphi = std::abs(res)/(velocity.norm()*dphi.norm());
-    double tauc_hc_tau_h = (tau_c*h_c)/(tau*h);
+    double tauc_hc_tau_h = (tau_c*he_c)/(tau_e*he);
+    
     if(res_vel_dphi >= tauc_hc_tau_h)
         return 0.0;
     else
-        return (tau*h/2)*(tauc_hc_tau_h - res_vel_dphi)*(res.norm()/dphi.norm()); 
+        return (tau_e*he/2)*(tauc_hc_tau_h - res_vel_dphi)*(res.norm()/dphi.norm()); 
 }
 
 void assemble_transport(TransientImplicitSystem* system)
@@ -112,14 +130,15 @@ void assemble_transport(TransientImplicitSystem* system)
         std::vector<int>        local_indices;
         DenseMatrix<double>     Ke(nnoel, nnoel);  // matriz de rigidez do elemento
         std::vector<double>     Fe(nnoel);         // vetor de força do elemento
-        std::vector<double>   & phi = fem.get_phi();
-        std::vector<Gradient> & dphi= fem.get_dphi();
-        double                & JxW = fem.get_JxW();
-        RealVector            & g   = fem.get_g();
-        RealTensor            & G   = fem.get_G();
-        RealVector            & dxi = fem.get_dxi();
-
-        Point                 & xyz = fem.get_xyz();
+        std::vector<double>   & phi   = fem.get_phi();
+        std::vector<Gradient> & dphi  = fem.get_dphi();
+        double                & JxW   = fem.get_JxW();
+        RealVector            & g     = fem.get_g();
+        RealTensor            & G     = fem.get_G();
+        RealVector            & dxi   = fem.get_dxi();
+        RealVector            & deta  = fem.get_deta();
+        RealVector            & dzeta = fem.get_dzeta();
+        Point                 & xyz   = fem.get_xyz();
         
         equation_manager.global_indices(dof, elem.connectivity(), global_indices);
         equation_manager.local_indices(dof,  elem.connectivity(), local_indices);
@@ -179,7 +198,7 @@ void assemble_transport(TransientImplicitSystem* system)
             const double tau = 1.0/sqrt(tmp);
 
             // CAU stabilization parameters
-            const double ctau = cau_stab(phi, dphi, source_term, velocity, sigma, k);
+            const double ctau = cau_stab(phi, dphi, source_term, velocity, sigma, k, dxi, deta, dzeta);
 
             const double adt1 = (1.0-theta)*dt;
             const double adt  = theta*dt;
