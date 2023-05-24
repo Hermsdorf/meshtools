@@ -10,6 +10,7 @@ class NonLinearImplicitSystem : public ImplicitSystem
 
         void   attach_assemble(void _assemble(NonLinearImplicitSystem*));
         void   solve();
+        void   init();
         void   set_nonlinear_tolerance(double tolerance) { _tolerance = tolerance; };
         void   set_nonlinear_max_iter(unsigned int max_iter) { _max_nonlinear_iterarions = max_iter; };
         

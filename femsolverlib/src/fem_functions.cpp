@@ -8,26 +8,26 @@
 #include "fem_functions.h"
 
 
-void TRI3DefaultQGauss(std::vector<RealVector> &points, std::vector<double> &qw);
+// void TRI3DefaultQGauss(std::vector<RealVector> &points, std::vector<double> &qw);
 
-void TRI3ComputeFunctions( RealVector q_point, double qw, std::vector<Point> coords, RealVector &p_gauss, 
-                           std::vector<double>   &phi, 
-                           std::vector<Gradient> &dphi ,
-                           double &JxW);
+// void TRI3ComputeFunctions( RealVector q_point, double qw, std::vector<Point> coords, RealVector &p_gauss, 
+//                            std::vector<double>   &phi, 
+//                            std::vector<Gradient> &dphi ,
+//                            double &JxW);
 
-void TRI3Stab(RealVector q_point, std::vector<Point> coords, RealVector &g,  RealTensor &G);
+// void TRI3Stab(RealVector q_point, std::vector<Point> coords, RealVector &g,  RealTensor &G);
 
-void QUAD4DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw);
+// void QUAD4DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw);
 
-void QUAD4ComputeFunctions(RealVector qp, double qw, std::vector<Point> coords, RealVector &point, 
-                           std::vector<double> &phi, std::vector<Gradient> &dphi, double &JxW);
+// void QUAD4ComputeFunctions(RealVector qp, double qw, std::vector<Point> coords, RealVector &point, 
+//                            std::vector<double> &phi, std::vector<Gradient> &dphi, double &JxW);
 
-void QUAD4Stab(RealVector q_point, std::vector<Point> coords, RealVector &g,  RealTensor &G);
+// void QUAD4Stab(RealVector q_point, std::vector<Point> coords, RealVector &g,  RealTensor &G);
 
-void TET4DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw);
+// void TET4DefaultQGauss(std::vector<Point> &qpoints, std::vector<double> &qw);
 
-void TET4ComputeFunctions(RealVector qp, double qw, std::vector<Point> coords, RealVector &point, 
-                           std::vector<double> &phi, std::vector<Gradient> &dphi, double &JxW);
+// void TET4ComputeFunctions(RealVector qp, double qw, std::vector<Point> coords, RealVector &point, 
+//                            std::vector<double> &phi, std::vector<Gradient> &dphi, double &JxW);
  
 
 void FEMGetQGauss(MeshElementType elem_type, std::vector<RealVector> &points, std::vector<double> &qw)
@@ -72,22 +72,22 @@ void FEMComputeFunctions(MeshElementType elem_type, RealVector qp, double qw, st
 }
 
 
-void FEMStab(MeshElementType elem_type, RealVector qp, std::vector<Point> &coords, RealVector &g,  RealTensor &G)
-{
-    switch (elem_type)
-    {
-    case TRI3:
-        TRI3Stab(qp, coords,g,G);
-        break;
-    case QUAD4:
-        QUAD4Stab(qp,coords,g,G);
-        break;
-    default:
-         std::cout <<" Elemento: " << elem_type << std::endl;
-         throw std::runtime_error("Element type not supported");
-        break;
-    }
-}
+// void FEMStab(MeshElementType elem_type, RealVector qp, std::vector<Point> &coords, RealVector &g,  RealTensor &G)
+// {
+//     switch (elem_type)
+//     {
+//     case TRI3:
+//         TRI3Stab(qp, coords,g,G);
+//         break;
+//     case QUAD4:
+//         QUAD4Stab(qp,coords,g,G);
+//         break;
+//     default:
+//          std::cout <<" Elemento: " << elem_type << std::endl;
+//          throw std::runtime_error("Element type not supported");
+//         break;
+//     }
+// }
 
 
 FEMFunction::FEMFunction()
@@ -199,6 +199,31 @@ void FEMFunction::TET4Function(Element& elem, QGaussData qp)
     }
 
     _JxW = qp.second*detJ;
+
+    // Calculo g e G;
+     g(0) = J[0][0] + J[1][0] + J[2][0];
+    _g(1) = J[0][1] + J[1][1] + J[2][1];
+    _g(2) = J[0][2] + J[1][2] + J[2][2];
+
+    _G(0,0)           = J[0][0]*J[0][0] + J[1][0]*J[1][0] + J[2][0]*J[2][0]; 
+    _G(0,1) = _G(1,0) = J[0][0]*J[0][1] + J[1][0]*J[1][1] ;
+    _G(0,2) = _G(2,0) = J[0][0]*J[0][2] + J[1][0]*J[1][2] ;
+    _G(1,1)           = J[0][1]*J[0][1] + J[1][1]*J[1][1] + J[2][1]*J[2][1];
+    _G(1,2) = _G(2,1) = J[0][1]*J[0][2] + J[1][1]*J[1][2] ;
+    _G(2,2)           = J[0][2]*J[0][2] + J[1][2]*J[1][2] + J[2][2]*J[2][2];
+
+
+    _dxi(0) = J[0][0];
+    _dxi(1) = J[0][1];
+    _dxi(2) = J[0][2];
+    _de(0)  = J[1][0];
+    _de(1)  = J[1][1];
+    _de(2)  = J[1][2];
+    _dz(0)  = J[2][0];
+    _dz(1)  = J[2][1];
+    _dz(2)  = J[2][2];
+
+
 }
 
 void FEMFunction::TRI3Function(Element& elem, QGaussData qp)
@@ -268,6 +293,12 @@ void FEMFunction::TRI3Function(Element& elem, QGaussData qp)
     _G(0,0)          = J[0][0]*J[0][0] + J[1][0]*J[1][0];
     _G(0,1) = _G(1,0) = J[0][0]*J[0][1] + J[1][0]*J[1][1];
     _G(1,1)          = J[0][1]*J[0][1] + J[1][1]*J[1][1];
+
+    _dxi(0) = J[0][0];
+    _dxi(1) = J[0][1];
+    _de(0)  = J[1][0];
+    _de(1)  = J[1][1];
+
    
 }
 
@@ -342,6 +373,11 @@ void FEMFunction::QUAD4Function(Element& elem, QGaussData qp)
     _G(0,0)          = J[0][0]*J[0][0] + J[1][0]*J[1][0];
     _G(0,1) = _G(1,0) = J[0][0]*J[0][1] + J[1][0]*J[1][1];
     _G(1,1)          = J[0][1]*J[0][1] + J[1][1]*J[1][1];
+
+    _dxi(0) = J[0][0];
+    _dxi(1) = J[0][1];
+    _de(0)  = J[1][0];
+    _de(1)  = J[1][1];
    
 }
 

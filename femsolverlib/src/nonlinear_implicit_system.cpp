@@ -4,18 +4,21 @@
 NonLinearImplicitSystem::NonLinearImplicitSystem(ParallelMesh &mesh, std::string name): ImplicitSystem(mesh, name)
 {
     _tolerance = 1e-6;
-    _max_nonlinear_iterarions = 1e6;
+    _max_nonlinear_iterarions = 20;
 }
+
+void NonLinearImplicitSystem::init()
+{
+    ImplicitSystem::init();
+    VecDuplicate(this->_solution, &this->_previous_solution);
+}
+
+
 
 NonLinearImplicitSystem::~NonLinearImplicitSystem()
 {
-    KSPDestroy(&this->_ksp);
-    VecDestroy(&this->_solution);
     VecDestroy(&this->_previous_solution);
-    VecDestroy(&this->_rhs);
-    MatDestroy(&this->_A);
-    VecDestroy(&this->_solution_local);
-    VecScatterDestroy(&this->_scatter);
+    ImplicitSystem::~ImplicitSystem();
 }
 
 void NonLinearImplicitSystem::attach_assemble(void _assemble(NonLinearImplicitSystem*) )
@@ -28,29 +31,28 @@ void NonLinearImplicitSystem::solve_nonlinear_system()
     unsigned int iter = 0;
     while(iter < _max_nonlinear_iterarions)
     {
-        _assemble_function(this);
+        VecCopy(this->_solution, this->_previous_solution);
 
-        MatAssemblyBegin(_A, MAT_FINAL_ASSEMBLY);
-        MatAssemblyEnd(_A, MAT_FINAL_ASSEMBLY);
+        
+        this->_assemble_function(this);
+        this->solve_linear_system();
 
-        VecAssemblyBegin(this->_rhs);
-        VecAssemblyEnd(this->_rhs);
+        double _solution_norm;
+        VecAXPY(this->_previous_solution,-1.0, this->_solution);
+        VecNorm(this->_previous_solution, NORM_2, &_solution_norm);
 
-        this->apply_dirichlet_boundary_conditions();
-
-        KSPSetUp(this->_ksp);
-        KSPSolve(this->_ksp, this->_rhs, this->_solution);
-
-        if(_solution - _previous_solution <= _tolerance)
+        if(_solution_norm < _tolerance)
             break;
         
-        _previous_solution = _solution;
+       
         iter++;
+
+        MatZeroEntries(this->_A);
+        VecZeroEntries(this->_rhs);
     }
 }
 
 void NonLinearImplicitSystem::solve()
 {
-    _assemble_function(this);
     solve_nonlinear_system();
 }

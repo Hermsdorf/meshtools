@@ -68,7 +68,8 @@ double cau_stab(double phi, Gradient dphi, double f,
         v = velocity;
     else
         v = velocity - res*dphi/(velocity_norm*velocity_norm);
-    double b = ;
+    // TODO:
+    double b = 1;
     double h_c = 2*(velocity - v).norm()/b;
     double peclet = (h*(velocity - v).norm())/(2*std::abs(k));
     double tau_c = std::max(0, 1 - (1/peclet));
@@ -116,6 +117,8 @@ void assemble_transport(TransientImplicitSystem* system)
         double                & JxW = fem.get_JxW();
         RealVector            & g   = fem.get_g();
         RealTensor            & G   = fem.get_G();
+        RealVector            & dxi = fem.get_dxi();
+
         Point                 & xyz = fem.get_xyz();
         
         equation_manager.global_indices(dof, elem.connectivity(), global_indices);

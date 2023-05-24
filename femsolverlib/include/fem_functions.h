@@ -30,6 +30,9 @@ class FEMFunction
         double               &  get_JxW() { return _JxW; } ;
         RealVector           &  get_g() { return _g; } ;
         RealTensor           &  get_G() { return _G; } ;
+        RealVector           &  get_dxi() { return _dxi; } ;
+        RealVector           &  get_deta() { return _de; } ;
+        RealVector           &  get_dzeta() { return _dzeta; } ;
             
 
     private:
@@ -42,11 +45,13 @@ class FEMFunction
         // cache values
         RealTensor             _G;
         RealVector             _g;
+        RealVector             _dxi;
+        RealVector             _de;
+        RealVector             _dzeta;
 
         //
         void TRI3Function(Element& elem, QGaussData qp);
         void QUAD4Function(Element& elem, QGaussData qp);
-        void EDGEFaceFunction(Element& elem, QGaussData qp);
         void TET4Function(Element& elem, QGaussData qp);
         
 };

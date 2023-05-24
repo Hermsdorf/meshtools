@@ -139,7 +139,7 @@ void TRI3ComputeFunctions( RealVector q_point, double qw, std::vector<Point> coo
 }
 
 
-void TRI3Stab(RealVector q_point, std::vector<Point> coords, RealVector &g,  RealTensor &G)
+void TRI3Stab(RealVector q_point, std::vector<Point> coords, RealVector &g,  RealTensor &G /*, RealVector &dxi, RealVector &de*/)
 {
     double dpsi[2][3];
     double dxidx = 0.0, dxidy=0.0;
@@ -152,11 +152,16 @@ void TRI3Stab(RealVector q_point, std::vector<Point> coords, RealVector &g,  Rea
         x[i] = X(i);
         y[i] = Y(i);
 
-        dxidx  +=  x[i]*dpsi[0][i];  // dxi/dx
+        dxidx  +=  x[i]*dpsi[0][i];  // dxi/dx 
         dxidy  +=  y[i]*dpsi[0][i];  // dxi/dy
         detadx +=  x[i]*dpsi[1][i];  // deta/dx
         detady +=  y[i]*dpsi[1][i];  // deta/dy
     }
+    // dx(0) = dxidx;
+    // dx(1) = dxidy;
+    // de(0) = detadx;
+    // de(1) = detady;
+
 
     g(0) = dxidx + detadx;
     g(1) = dxidy + detady;
