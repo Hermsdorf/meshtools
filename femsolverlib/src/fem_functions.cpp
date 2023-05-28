@@ -8,27 +8,6 @@
 
 FEMFunction::FEMFunction() { }
 
-void FEMComputeFunctions(MeshElementType elem_type, RealVector qp, double qw, std::vector<Point> coords, RealVector &point, 
-                           std::vector<double> &phi, std::vector<Gradient> &dphi, double &JxW)
-{
-    switch (elem_type)
-    {
-    case TRI3:
-        TRI3ComputeFunctions(qp, qw,coords, point, phi,dphi,JxW);
-        break;
-    case QUAD4:
-        QUAD4ComputeFunctions(qp, qw,coords, point, phi,dphi,JxW);
-        break;
-    case TET4:
-        TET4ComputeFunctions(qp, qw,coords, point, phi,dphi,JxW);
-        break;
-    default:
-         std::cout <<" Elemento: " << elem_type << std::endl;
-         throw std::runtime_error("Element type not supported");
-        break;
-    }
-}
-
 void FEMFunction::ComputeFunction(Element& elem, QGaussData qp)
 {
     switch (elem.type())
@@ -135,7 +114,7 @@ void FEMFunction::TET4Function(Element& elem, QGaussData qp)
     _JxW = qp.second*detJ;
 
     // Calculo g e G;
-     g(0) = J[0][0] + J[1][0] + J[2][0];
+    _g(0) = J[0][0] + J[1][0] + J[2][0];
     _g(1) = J[0][1] + J[1][1] + J[2][1];
     _g(2) = J[0][2] + J[1][2] + J[2][2];
 

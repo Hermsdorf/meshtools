@@ -24,35 +24,32 @@ void assemble_convection_diffusion_reaction(ImplicitSystem* system)
     int dof  = 0;
 
     int n_elements = pmesh.get_n_elements();
-    bool flag = true;
+
+    QGauss qrule;
+    FEMFunction fem;
 
     // loop sobre os elementos da malha por cores
     for (int iel = 0; iel < n_elements; iel++)
     {
-        std::vector<Point> coords_iel;
-        std::vector<unsigned int> conn_iel;
+        Element elem;
+        pmesh.getElement(iel,elem);
 
-        pmesh.get_element_connectivity(iel, conn_iel);
-        pmesh.get_element_coordinates(iel, coords_iel);
-        int nnoel = conn_iel.size();
+        int nnoel = elem.n_nodes();
 
         std::vector<int>        global_indices;
         std::vector<Point>      qp;                // coordenadas do ponto de integração
         std::vector<double>     qw;                // peso do ponto de integração
         DenseMatrix<double>     Ke(nnoel, nnoel);  // matriz de rigidez do elemento
         std::vector<double>     Fe(nnoel);         // vetor de força do elemento
-        std::vector<double>    phi(nnoel);
-        std::vector<Gradient> dphi(nnoel);
+        std::vector<double>   & phi   = fem.get_phi();
+        std::vector<Gradient> & dphi  = fem.get_dphi();
+        double                & JxW   = fem.get_JxW();
+        RealTensor            & G     = fem.get_G();
 
-        MeshElementType etype = (MeshElementType)pmesh.getElementType(iel);
+        equation_manager.global_indices(dof, elem.connectivity(), global_indices);
 
-        Point qpoint; // coordenadas do ponto de integracao
-        double JxW = 0.0;
-
-        equation_manager.global_indices(dof, conn_iel, global_indices);
-
-        // calculando a função de forma e suas derivadas para elemento QUAD4 ou TRI3
-        FEMGetQGauss(etype, qp, qw);
+         // Obtem pontos de integração para elemento elem
+        qrule.reset(elem);
 
         Gradient velocity;
         velocity(0)  = sqrt(3.0) / 2.0;
@@ -60,15 +57,12 @@ void assemble_convection_diffusion_reaction(ImplicitSystem* system)
         double kd    = 1.0E-4;
         double sigma = 0.0;
 
-        RealVector g;
-        RealTensor G;
 
         // loop sobre os pontos de integração
         for (int q = 0; q < qp.size(); q++)
         {
             // calculando a função de forma e suas derivadas para o ponto de integração q
-            FEMComputeFunctions(etype, qp[q], qw[q], coords_iel, qpoint, phi, dphi, JxW);
-            FEMStab(etype, qp[q], coords_iel, g, G);
+            fem.ComputeFunction(elem, qrule.get(q));
 
             // SUPG stabilization parameters
             double tau = (velocity) * (G.mult(velocity)) + (kd * kd) * (G.contract(G)); // + dt_stab*4.0/(dt*dt);
