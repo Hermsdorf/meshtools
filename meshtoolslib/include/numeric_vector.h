@@ -18,6 +18,8 @@ class NumericVector {
         void             operator-=(NumericVector<T> v);
         NumericVector<T> operator*(T v);
         void             operator*=(T v);
+        NumericVector<T> operator/(T v);
+        void             operator/=(T v);
         NumericVector<T> cross_product(NumericVector<T> v);
         T                dot_product(NumericVector<T> v);
         T                norm();
@@ -80,13 +82,12 @@ void NumericVector<T>::operator*=(T v) {
     }
 }
 
-
 template <typename T>
 NumericVector<T> NumericVector<T>::operator+(NumericVector<T> v) 
 {
     NumericVector<T> result;
     for (int i = 0; i < 3; i++) {
-        result.data[i] += data[i] + v.data[i];
+        result.data[i] = data[i] + v.data[i];
     }
     return result;
 }
@@ -114,6 +115,24 @@ void NumericVector<T>::operator-=(NumericVector<T> v)
 {
     for (int i = 0; i < 3; i++) {
         data[i] -= v.data[i];
+    }
+}
+
+template <typename T>
+NumericVector<T> NumericVector<T>::operator/(T v)
+{
+    NumericVector<T> result;
+    for (int i = 0; i < 3; i++) {
+        result.data[i] = data[i]/v;
+    }
+    return result;
+}
+
+template <typename T>
+void NumericVector<T>::operator/=(T v)
+{
+    for (int i = 0; i < 3; i++) {
+        data[i] /= v;
     }
 }
 
