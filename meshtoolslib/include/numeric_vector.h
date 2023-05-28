@@ -10,12 +10,14 @@ class NumericVector {
     public:
         NumericVector();
         T&               operator()(int i);
+
         T                operator*(NumericVector<T> v);
-        T                operator*=(NumericVector<T> v);
         NumericVector<T> operator+(NumericVector<T> v);
-        NumericVector<T> operator+=(NumericVector<T> v);
+        void             operator+=(NumericVector<T> v);
         NumericVector<T> operator-(NumericVector<T> v);
-        NumericVector<T> operator-=(NumericVector<T> v);
+        void             operator-=(NumericVector<T> v);
+        NumericVector<T> operator*(T v);
+        void             operator*=(T v);
         NumericVector<T> cross_product(NumericVector<T> v);
         T                dot_product(NumericVector<T> v);
         T                norm();
@@ -36,6 +38,11 @@ NumericVector<T>::NumericVector() {
 }
 
 template <typename T>
+NumericVector<T>::~NumericVector() {
+
+}
+
+template <typename T>
 inline T& NumericVector<T>::operator()(int i) {
     return data[i];
 }
@@ -48,15 +55,6 @@ ostream& operator<<(ostream& os, NumericVector<T>& v) {
     return os;
 }
 
-
-
-
-template <typename T>
-NumericVector<T>::~NumericVector() {
-
-}
-
-
 template <typename T>
 T NumericVector<T>::operator*(NumericVector<T> v) {
     T result = 0;
@@ -67,13 +65,21 @@ T NumericVector<T>::operator*(NumericVector<T> v) {
 }
 
 template <typename T>
-T NumericVector<T>::operator*=(NumericVector<T> v) {
-    T result = 0;
+NumericVector<T> NumericVector<T>::operator*(T v) {
+    NumericVector result;
     for (int i = 0; i < 3; i++) {
-        result += data[i] * v.data[i];
+        result(i) = v*data[i];
     }
     return result;
 }
+
+template <typename T>
+void NumericVector<T>::operator*=(T v) {
+    for (int i = 0; i < 3; i++) {
+        data[i] = v*data[i];
+    }
+}
+
 
 template <typename T>
 NumericVector<T> NumericVector<T>::operator+(NumericVector<T> v) 
@@ -86,13 +92,11 @@ NumericVector<T> NumericVector<T>::operator+(NumericVector<T> v)
 }
 
 template <typename T>
-NumericVector<T> NumericVector<T>::operator+=(NumericVector<T> v)
+void NumericVector<T>::operator+=(NumericVector<T> v)
 {
-    NumericVector<T> result;
     for (int i = 0; i < 3; i++) {
-        result.data[i] += data[i] + v.data[i];
+        data[i] += v.data[i];
     }
-    return result;
 }
 
 template <typename T>
@@ -106,13 +110,11 @@ NumericVector<T> NumericVector<T>::operator-(NumericVector<T> v)
 }
 
 template <typename T>
-NumericVector<T> NumericVector<T>::operator-=(NumericVector<T> v) 
+void NumericVector<T>::operator-=(NumericVector<T> v) 
 {
-    NumericVector<T> result;
     for (int i = 0; i < 3; i++) {
-        result.data[i] += data[i] - v.data[i];
+        data[i] -= v.data[i];
     }
-    return result;
 }
 
 template <typename T>
