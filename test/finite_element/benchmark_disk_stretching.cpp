@@ -55,12 +55,16 @@ void init_transport(TransientImplicitSystem* system)
 }
 
 
-double cau_stab(double phi, Gradient dphi, double f,
+double cau_stab(std::vector<double> phi, std::vector<Gradient> dphi, double f,
                 RealVector velocity, double sigma, double K,
                 RealVector dxi, RealVector deta, RealVector dzeta)
 {
     // Compute the residuo
-    double res = velocity*dphi - sigma*phi - f;
+    double sigmaxphi = 0.0;
+    for (int i = 0; i < phi.size(); i++)
+        sigmaxphi += sigma*phi[i];
+
+    double res = velocity*dphi - sigmaxphi - f;
 
     double velocity_norm = velocity.norm();
     double dphi_norm = dphi.norm();
@@ -69,27 +73,29 @@ double cau_stab(double phi, Gradient dphi, double f,
     if(dphi_norm == 0.0)
         v = velocity;
     else
-        v = velocity - res*dphi/(dphi_norm*dphi_norm);
+        v = velocity - (dphi*res)/(dphi_norm*dphi_norm);
 
-    RealVector be = velocity(0)*(dxi(0) + deta(0) + dzeta(0)) +
-                    velocity(1)*(dxi(1) + deta(1) + dzeta(1)) +
-                    velocity(2)*(dxi(2) + deta(2) + dzeta(2));
+    RealVector be;
+    be(0) = velocity(0)*(dxi(0) + deta(0) + dzeta(0));
+    be(1) = velocity(1)*(dxi(1) + deta(1) + dzeta(1));
+    be(2) = velocity(2)*(dxi(2) + deta(2) + dzeta(2));
     
     double he = 2*velocity_norm/be.norm();
     double Pe = he*velocity_norm/(2*K);
-    double tau_e = std::max(0, 1 - (1/Pe));
+    double tau_e = std::max(0.0, 1.0 - (1.0/Pe));
 
     double velocity_x_diff = velocity(0) - v(0);
     double velocity_y_diff = velocity(1) - v(1);
     double velocity_z_diff = velocity(2) - v(2);
 
-    RealVector be_c = velocity_x_diff*(dxi(0) + deta(0) + dzeta(0)) +
-                      velocity_y_diff*(dxi(1) + deta(1) + dzeta(1)) +
-                      velocity_z_diff*(dxi(2) + deta(2) + dzeta(2));
+    RealVector be_c;
+    be_c(0) = velocity_x_diff*(dxi(0) + deta(0) + dzeta(0));
+    be_c(1) = velocity_y_diff*(dxi(1) + deta(1) + dzeta(1));
+    be_c(2) = velocity_z_diff*(dxi(2) + deta(2) + dzeta(2));
 
     double he_c = 2*(velocity - v).norm()/be_c.norm();
     double Pe_c = (he_c*(velocity - v).norm())/(2*std::abs(K));
-    double tau_c = std::max(0, 1 - (1/Pe_c));
+    double tau_c = std::max(0.0, 1.0 - (1.0/Pe_c));
 
     double res_vel_dphi = std::abs(res)/(velocity.norm()*dphi.norm());
     double tauc_hc_tau_h = (tau_c*he_c)/(tau_e*he);
@@ -97,7 +103,7 @@ double cau_stab(double phi, Gradient dphi, double f,
     if(res_vel_dphi >= tauc_hc_tau_h)
         return 0.0;
     else
-        return (tau_e*he/2)*(tauc_hc_tau_h - res_vel_dphi)*(res.norm()/dphi.norm()); 
+        return (tau_e*he/2)*(tauc_hc_tau_h - res_vel_dphi)*(std::abs(res)/dphi.norm()); 
 }
 
 void assemble_transport(TransientImplicitSystem* system)
