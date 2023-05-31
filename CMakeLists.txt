@@ -9,7 +9,7 @@ enable_testing()
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 
 #set(CMAKE_CXX_COMPILER g++)
-set(CMAKE_CXX_FLAGS "-g -fopenmp -O3")
+# set(CMAKE_CXX_FLAGS "-g -fopenmp -O3")
 
 option(MESHTOOLS_BUILD_APP  "Build meshtools application" ON)
 option(MPI_ENABLE       "Enable MPI" ON)

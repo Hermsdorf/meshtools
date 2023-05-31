@@ -55,38 +55,42 @@ void init_transport(TransientImplicitSystem* system)
 }
 
 
-double cau_stab(std::vector<double> phi, std::vector<Gradient> dphi, RealVector f,
-                RealVector velocity, double sigma, double K,
+double cau_stab(double u, double u_old, Gradient grad_u, double f,
+                RealVector velocity, double sigma, double K, double dt,
                 RealVector dxi, RealVector deta, RealVector dzeta)
 {
+
     // Compute the residuo
-    RealVector sigmaxphi;
-    for (int i = 0; i < phi.size(); i++)
-        sigmaxphi(i) = sigma*phi[i];
+    // double sigmaxphi = sigma*u;
+    // for (int i = 0; i < phi.size(); i++)
+    //     sigmaxphi= sigma*u[i]*phi[i];
 
-    RealVector velocityxdphi;
-    for (int i = 0; i < dphi.size(); i++){
-        velocityxdphi(i) += velocity(0)*dphi[i](0); // vx*dphi_i_x
-        velocityxdphi(i) += velocity(1)*dphi[i](1); // vy*dphi_i_y
-        velocityxdphi(i) += velocity(2)*dphi[i](2); // vz*dphi_i_z
-    }
+    // RealVector velocityxdphi;
+    // for (int i = 0; i < dphi.size(); i++){
+    //     velocityxdphi(i) += velocity(0)*dphi[i](0); // vx*dphi_i_x
+    //     velocityxdphi(i) += velocity(1)*dphi[i](1); // vy*dphi_i_y
+    //     velocityxdphi(i) += velocity(2)*dphi[i](2); // vz*dphi_i_z
+    // }
 
-    RealVector res = velocityxdphi - sigmaxphi - f;
+    double res = velocity*grad_u - sigma*u - f;
 
     double velocity_norm = velocity.norm();
-    double dphi_norm = dphi.norm();
+    double dphi_norm     = std::max(1.0E-10, grad_u.norm());
     
     RealVector v;
+
+    
     if(dphi_norm == 0.0)
         v = velocity;
     else
-        v = velocity - (dphi*res)/(dphi_norm*dphi_norm);
+        v = velocity - (grad_u*res)/(dphi_norm*dphi_norm);
 
     RealVector be;
     for(int i = 0 ; i < 3 ; i++)
         be(i) = velocity(i)*(dxi(i) + deta(i) + dzeta(i));
     
-    double he = 2*velocity_norm/be.norm();
+    double be_norm = be.norm();
+    double he = 2.0*velocity_norm/be_norm;
     double Pe = he*velocity_norm/(2*K);
     double tau_e = std::max(0.0, 1.0 - (1.0/Pe));
 
@@ -97,17 +101,46 @@ double cau_stab(std::vector<double> phi, std::vector<Gradient> dphi, RealVector 
         be_c(i) = velocity_diff*(dxi(i) + deta(i) + dzeta(i));
     }
 
-    double he_c = 2*(velocity - v).norm()/be_c.norm();
-    double Pe_c = (he_c*(velocity - v).norm())/(2*std::abs(K));
+    double be_c_norm = be_c.norm();
+    RealVector diff_v = velocity - v;
+    double     diff_v_norm = diff_v.norm();
+
+    be_c_norm = std::max(1.0E-10,be_c_norm);
+    double he_c = 2*diff_v_norm/be_c_norm;
+    double Pe_c = (he_c*diff_v_norm)/(2.0*std::abs(K));
     double tau_c = std::max(0.0, 1.0 - (1.0/Pe_c));
 
-    double res_vel_dphi = res.norm()/(velocity.norm()*dphi.norm());
+    double res_vel_dphi = std::abs(res)/(velocity_norm*dphi_norm);
     double tauc_hc_tau_h = (tau_c*he_c)/(tau_e*he);
     
     if(res_vel_dphi >= tauc_hc_tau_h)
         return 0.0;
     else
-        return (tau_e*he/2)*(tauc_hc_tau_h - res_vel_dphi)*(res.norm()/dphi.norm()); 
+        return (tau_e*he*0.5)*(tauc_hc_tau_h - res_vel_dphi)*(std::abs(res)/dphi_norm);
+
+/*
+    double  res_mass = (u - u_old) / dt;
+    double  res_adv  = (velocity * grad_u);
+    double residuo   = res_mass + res_adv - sigma*u - f;
+    double gcnorm = grad_u.norm();
+    gcnorm = std::max(1.0E-10, gcnorm);
+    double ogcnorm = 1.0 / gcnorm;
+    double aux3 = res_adv / (ogcnorm * ogcnorm);
+    RealVector b(grad_u(0) * aux3, grad_u(1) * aux3);
+    double bnorm = b.norm();
+    bnorm = std::max(bnorm, 1.0E-10);
+    double bdb = k * bnorm*bnorm;
+    bdb = std::max(bdb, 1.0E-10);
+    double Pe_p = h_caract * (bnorm * bnorm * bnorm) / bdb;
+            Real alpha_c = std::min(0.25 * Pe_p, 0.70);
+            Real delta_sco = 0.5 * h_caract * alpha_c * residuo * ogcnorm * fopc;
+
+*/
+}
+
+double f(Point p, double t)
+{
+    return 0.0;
 }
 
 void assemble_transport(TransientImplicitSystem* system)
@@ -156,7 +189,7 @@ void assemble_transport(TransientImplicitSystem* system)
         // Obtem pontos de integração para elemento
         qrule.reset(elem);
 
-        RealVector source_term;
+        double           source_term;
         double k            = 1E-5;
         double sigma        = 0.0;
         double theta        = 0.5;
@@ -203,12 +236,15 @@ void assemble_transport(TransientImplicitSystem* system)
     
             }
 
+            source_term = 0.0; f(xyz,0.0);
+
+
             // SUPG stabilization parameters
             const double tmp = (velocity) * (G.mult(velocity)) + (k * k) * (G.contract(G)) + dt_stab*4.0/(dt*dt);
             const double tau = 1.0/sqrt(tmp);
 
             // CAU stabilization parameters
-            const double ctau = cau_stab(phi, dphi, source_term, velocity, sigma, k, dxi, deta, dzeta);
+            const double ctau = cau_stab(u, u_old, grad_u, source_term, velocity, sigma, k, dt, dxi, deta, dzeta);
 
             const double adt1 = (1.0-theta)*dt;
             const double adt  = theta*dt;
@@ -249,7 +285,7 @@ void assemble_transport(TransientImplicitSystem* system)
                             );
 
                     // CAU contribution
-                    Ke(i,j) += JxW * ctau * (dphi[i] * dphi[j] );
+                    Ke(i,j) += JxW * ctau * adt * (dphi[i] * dphi[j] );
 
                 }
             }
@@ -280,7 +316,7 @@ int disk_stretching(int argc, char *argv[])
     {
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha.
-        mesh = new Mesh(argv[1]);
+        mesh = new Mesh("/home/camata/git/meshtools/test/finite_element/msh/benchmark_coin_tri3.msh");
 
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha
@@ -302,7 +338,7 @@ int disk_stretching(int argc, char *argv[])
     system->attach_assemble(assemble_transport);
 
     system->init();
-    system->set_final_time(8.0);
+    system->set_final_time(1.0);
     system->set_deltat(0.0025);
     unsigned int write_interval = 20;
 

@@ -139,7 +139,7 @@ void NumericVector<T>::operator/=(T v)
 template <typename T>
 T NumericVector<T>::norm()
 {
-    T result;
+    T result = 0;
     for (int i = 0; i < 3; i++) {
         result += data[i]*data[i];
     }
