@@ -6,8 +6,7 @@ src/mesh_reorder.o
 src/mesh_part.o
 src/*.o
 src/*~
-.vscode/settings.json
-.vscode/c_cpp_properties.json
+.vscode/
 build
 build/*
 setup_guilherme.sh

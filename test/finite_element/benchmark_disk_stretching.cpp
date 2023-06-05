@@ -59,19 +59,6 @@ double cau_stab(double u, double u_old, Gradient grad_u, double f,
                 RealVector velocity, double sigma, double K, double dt,
                 RealVector dxi, RealVector deta, RealVector dzeta)
 {
-
-    // Compute the residuo
-    // double sigmaxphi = sigma*u;
-    // for (int i = 0; i < phi.size(); i++)
-    //     sigmaxphi= sigma*u[i]*phi[i];
-
-    // RealVector velocityxdphi;
-    // for (int i = 0; i < dphi.size(); i++){
-    //     velocityxdphi(i) += velocity(0)*dphi[i](0); // vx*dphi_i_x
-    //     velocityxdphi(i) += velocity(1)*dphi[i](1); // vy*dphi_i_y
-    //     velocityxdphi(i) += velocity(2)*dphi[i](2); // vz*dphi_i_z
-    // }
-
     double res = velocity*grad_u - sigma*u - f;
 
     double velocity_norm = velocity.norm();
@@ -316,7 +303,7 @@ int disk_stretching(int argc, char *argv[])
     {
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha.
-        mesh = new Mesh("/home/camata/git/meshtools/test/finite_element/msh/benchmark_coin_tri3.msh");
+        mesh = new Mesh(argv[1]);
 
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha

@@ -3,8 +3,14 @@
 #include "meshtools.h"
 #include "transient_implicit_system.h"
 
+/**
+ * Constructor
+ * 
+ * @param mesh: parallel mesh object
+ * @param name: name of the system
+*/
 TransientImplicitSystem::TransientImplicitSystem(ParallelMesh &mesh, std::string name):
-    ImplicitSystem(mesh, name)
+    NonLinearImplicitSystem(mesh, name)
     {
         _t  = 0.0;
         _dt = 0.0;
@@ -12,10 +18,15 @@ TransientImplicitSystem::TransientImplicitSystem(ParallelMesh &mesh, std::string
         _init_function = nullptr;
     }
 
+/**
+ * Initializes the system filling the solution vector with zeros
+ * and duplicating to create the old and older solution vectors.
+ * Furthermore, it applies the initial conditions and initializes
+ * the time and timestep variables.
+*/
 void TransientImplicitSystem::init()
 {
-    
-    ImplicitSystem::init();
+    NonLinearImplicitSystem::init();
     VecDuplicate(_solution_local, &_old_solution_local);
     VecDuplicate(_solution_local, &_older_solution_local);
 
@@ -24,6 +35,11 @@ void TransientImplicitSystem::init()
     timestep = 0;
 }
 
+/**
+ * Returns the solution vector at t-dt (older solution)
+ * 
+ * @return: double* solution array with the older solution
+*/
 double* TransientImplicitSystem::get_old_solution_array()
 {
     double* solution_array;
@@ -31,6 +47,11 @@ double* TransientImplicitSystem::get_old_solution_array()
     return solution_array;
 }
 
+/**
+ * Returns the solution vector at t-2*dt (older solution)
+ * 
+ * @return: double* solution array with the older solution
+*/
 double* TransientImplicitSystem::get_older_solution_array()
 {
     double* solution_array;
@@ -38,16 +59,35 @@ double* TransientImplicitSystem::get_older_solution_array()
     return solution_array;
 }
 
+/**
+ * Restores the solution array
+ * 
+ * @param solution_array: double* solution array
+*/
 void TransientImplicitSystem::restore_old_solution_array(double** solution_array)
 {
     VecRestoreArray(this->_old_solution_local, solution_array);
 }
 
+/**
+ * Restores the solution array
+ * 
+ * @param solution_array: double* solution array
+*/
 void TransientImplicitSystem::restore_older_solution_array(double** solution_array)
 {
     VecRestoreArray(this->_older_solution_local, solution_array);
 }
 
+/**
+ * Solves the time step. For do this it solves a nonlinear system
+ * substituting the incognit values by the previous solution values.
+ * When the difference between the previous solution and the current
+ * solution is less than the tolerance, the method stops.
+ * 
+ * For a linear system, the method breaks in the second iteration with
+ * the solution.
+*/
 void TransientImplicitSystem::solve_time_step()
 {
     _t += _dt;
@@ -56,11 +96,9 @@ void TransientImplicitSystem::solve_time_step()
     VecCopy(_old_solution_local, _older_solution_local);
     VecCopy(_solution_local, _old_solution_local);
     
- 
-    this->_assemble_function(this);
-
     // getting solution at t+dt
-    ImplicitSystem::solve_linear_system();
+    this->_assemble_function(this);
+    TransientImplicitSystem::solve_nonlinear_system();
 
     MatZeroEntries(this->_A);
     VecZeroEntries(this->_rhs);
@@ -69,17 +107,64 @@ void TransientImplicitSystem::solve_time_step()
     update_deltat();
 }
 
+void TransientImplicitSystem::solve_nonlinear_system()
+{
+    unsigned int iter = 0;
+    unsigned int max_iter = get_nonlinear_max_iter();
+
+    double tolerance = get_nonlinear_tolerance();
+
+    Vec previous_solution = get_previous_solution();
+    while(iter < max_iter)
+    {
+        VecCopy(this->_solution, previous_solution);
+
+        // Calls the method to assemble the system
+        this->_assemble_function(this);
+        this->solve_linear_system();
+
+        double _solution_norm;
+        VecAXPY(previous_solution,-1.0, this->_solution);
+        VecNorm(previous_solution, NORM_2, &_solution_norm);
+
+        if(_solution_norm < tolerance)
+            break;
+
+        iter++;
+
+        MatZeroEntries(this->_A);
+        VecZeroEntries(this->_rhs);
+    }
+
+    printf("   Nonlinear system solved in %d iterations\n", iter);
+}
+
 void TransientImplicitSystem::update_deltat()
 {
     //TODO: Implement timestep control based on CFL condition
 }
 
+
+/**
+ * Adds an initial condition to the system by pushing back
+ * the initial condition to the vector of initial conditions.
+ * 
+ * @param ic: InitialCondition object
+*/
 void TransientImplicitSystem::add_initial_condition(InitialCondition ic)
 {
     _initial_conditions.push_back(ic);
 }
 
 
+/**
+ * Applies the initial conditions to the solution vector.
+ * 
+ * If a init function is defined it is called guessing the
+ * user already applied the initial conditions there. Otherwise
+ * the initial conditions are applied by looping over the mesh
+ * elements and nodes.
+*/
 void TransientImplicitSystem::apply_initial_conditions()
 {
 
@@ -127,17 +212,33 @@ void TransientImplicitSystem::apply_initial_conditions()
     this->restore_local_solution_array(&solution);
 }
 
-
+/**
+ * Attaches the assemble function implemented by the user
+ * to the system that will be called
+ * 
+ * @param _assemble: function pointer to the assemble function
+*/
 void TransientImplicitSystem::attach_assemble(void _assemble(TransientImplicitSystem*))
 {
     _assemble_function = _assemble;
 }
 
- void TransientImplicitSystem::attach_init_function(void _init(TransientImplicitSystem*))
- {
-    _init_function = _init;
- }
+/**
+ * Attaches the init function implemented by the user
+ * to the system that will be called
+ * 
+ * @param _init: function pointer to the init function
+*/
+void TransientImplicitSystem::attach_init_function(void _init(TransientImplicitSystem*))
+{
+   _init_function = _init;
+}
 
+/**
+ * Write the solution to a file
+ * 
+ * @param filename: string with the filename
+*/
 void TransientImplicitSystem::write_result(string filename)
 {
     auto n_nodes = _mesh.get_n_nodes();

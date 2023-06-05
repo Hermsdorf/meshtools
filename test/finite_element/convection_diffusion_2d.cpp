@@ -96,10 +96,10 @@ int run_convection_diffusion_reaction(int argc, char *argv[])
     PetscErrorCode ierr;
     MeshPartition *parts = new MeshPartition();
 
-    if(argc < 2)
-    {
-        return 0;
-    }
+    // if(argc < 2)
+    // {
+    //     return 0;
+    // }
 
     Mesh *mesh;          // serial mesh
     ParallelMesh *pmesh; // parallel mesh
@@ -113,7 +113,7 @@ int run_convection_diffusion_reaction(int argc, char *argv[])
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha.
     
-        mesh = new Mesh(argv[1]);
+        mesh = new Mesh("/home/gfarache/git/meshtools/test/finite_element/msh/convection_difussion_2d/conv2dtri3.msh");
 
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha

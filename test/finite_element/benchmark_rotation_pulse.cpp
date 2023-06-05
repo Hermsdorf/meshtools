@@ -1,5 +1,3 @@
-#include "petsc.h"
-
 #include "meshtools.h"
 #include "mesh.h"
 #include "mesh_part.h"

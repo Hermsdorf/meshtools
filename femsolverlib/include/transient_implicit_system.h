@@ -2,6 +2,7 @@
 #define TRANSIENT_IMPLICIT_SYSTEM_H__
 
 #include "implicit_system.h"
+#include "nonlinear_implicit_system.h"
 #include "fparser.hh"
 
 class InitialCondition {
@@ -32,7 +33,7 @@ class InitialCondition {
 };
 
 
-class TransientImplicitSystem: public ImplicitSystem
+class TransientImplicitSystem: public NonLinearImplicitSystem
 {
     public:
         TransientImplicitSystem(ParallelMesh &mesh, std::string name);
@@ -45,6 +46,7 @@ class TransientImplicitSystem: public ImplicitSystem
         double  get_final_time() { return _final_time; }
         void    add_initial_condition(InitialCondition ic);
         void    solve_time_step();
+        void    solve_nonlinear_system();
         void    update_deltat();
         void    write_result(string filename);
         void    init();
