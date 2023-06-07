@@ -25,9 +25,7 @@ double cau_stab(double u, double u_old, Gradient grad_u, double f,
     double dphi_norm     = std::max(1.0E-10, grad_u.norm());
     
     RealVector v;
-
-    
-    if(dphi_norm == 0.0)
+    if(dphi_norm == 1.0E-10)
         v = velocity;
     else
         v = velocity - (grad_u*res)/(dphi_norm*dphi_norm);
@@ -39,7 +37,7 @@ double cau_stab(double u, double u_old, Gradient grad_u, double f,
     double be_norm = be.norm();
     double he = 2.0*velocity_norm/be_norm;
     double Pe = he*velocity_norm/(2*K);
-    double tau_e = std::max(0.0, 1.0 - (1.0/Pe));
+    double tau_e = std::max(1.0E-10, 1.0 - (1.0/Pe));
 
 
     RealVector be_c;

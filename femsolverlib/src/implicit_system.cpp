@@ -214,8 +214,8 @@ void ImplicitSystem::solve_linear_system()
     double rnorm;
     KSPGetIterationNumber(this->_ksp,&its);
     KSPGetResidualNorm(this->_ksp, &rnorm);
-    PetscPrintf(MeshTools::Comm(), "Number of iterations = %d\n", its);
-    PetscPrintf(MeshTools::Comm(), "Final norm of residual: %g\n", rnorm);
+    PetscPrintf(MeshTools::Comm(), "   Linear number of iterations = %d\n", its);
+    PetscPrintf(MeshTools::Comm(), "   Linear final norm of residual: %g\n", rnorm);
 
     // Realiza o scatter de solução global para local
     VecScatterBegin(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
