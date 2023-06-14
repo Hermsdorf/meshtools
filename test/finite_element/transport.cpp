@@ -63,24 +63,25 @@ double cau_stab(double u, double u_old, Gradient grad_u, double f,
     else
         return (tau_e*he*0.5)*(tauc_hc_tau_h - res_vel_dphi)*(std::abs(res)/dphi_norm);
 
-/*
-    double  res_mass = (u - u_old) / dt;
-    double  res_adv  = (velocity * grad_u);
-    double residuo   = res_mass + res_adv - sigma*u - f;
-    double gcnorm = grad_u.norm();
-    gcnorm = std::max(1.0E-10, gcnorm);
-    double ogcnorm = 1.0 / gcnorm;
-    double aux3 = res_adv / (ogcnorm * ogcnorm);
-    RealVector b(grad_u(0) * aux3, grad_u(1) * aux3);
-    double bnorm = b.norm();
-    bnorm = std::max(bnorm, 1.0E-10);
-    double bdb = k * bnorm*bnorm;
-    bdb = std::max(bdb, 1.0E-10);
-    double Pe_p = h_caract * (bnorm * bnorm * bnorm) / bdb;
-            Real alpha_c = std::min(0.25 * Pe_p, 0.70);
-            Real delta_sco = 0.5 * h_caract * alpha_c * residuo * ogcnorm * fopc;
 
-*/
+    // double res_mass = (u - u_old) / dt;
+    // double res_adv  = (velocity * grad_u);
+    // double residuo   = res_mass + res_adv - sigma*u - f;
+    // double gcnorm = grad_u.norm();
+    // gcnorm = std::max(1.0E-10, gcnorm);
+    // double ogcnorm = 1.0 / gcnorm;
+    // double aux3 = res_adv / (ogcnorm * ogcnorm);
+    // RealVector b(grad_u(0) * aux3, grad_u(1) * aux3);
+    // double bnorm = b.norm();
+    // bnorm = std::max(bnorm, 1.0E-10);
+    // double bdb = K * bnorm*bnorm;
+    // bdb = std::max(bdb, 1.0E-10);
+    // double h_caract = 1.0;
+    // double Pe_p = 0.5 * h_caract * (bnorm * bnorm * bnorm) / bdb;
+    // double alpha_c = std::min(0.25 * Pe_p, 1.0);
+    // double delta_sco = 0.5 * h_caract * alpha_c * residuo * ogcnorm; //* fopc;
+
+    // return delta_sco;
 }
 
 double exact_solution (const double x,
@@ -215,8 +216,8 @@ void assemble_transport(TransientImplicitSystem* system)
                 }
             }
 
-            const double  adt1 = (1.0-theta)*dt;
-            const double adt   = theta*dt;
+            const double adt1 = (1.0-theta)*dt;
+            const double adt  = theta*dt;
             // CAU stabilization parameters
             const double ctau = cau_stab(u, u_old, grad_u, source_term, velocity, sigma, k, dt, dxi, deta, dzeta);
 

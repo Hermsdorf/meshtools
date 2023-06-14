@@ -9,6 +9,8 @@ class NumericVector {
 
     public:
         NumericVector();
+        NumericVector(T data_0, T data_1);
+        NumericVector(T data_0, T data_1, T data_2);
         T&               operator()(int i);
 
         T                operator*(NumericVector<T> v);
@@ -37,6 +39,20 @@ class NumericVector {
 template <typename T>
 NumericVector<T>::NumericVector() {
     data[0] = data[1] = data[2] = 0;
+}
+
+template <typename T>
+NumericVector<T>::NumericVector(T data_0, T data_1) {
+    data[0] = data_0;
+    data[1] = data_1;
+    data[2] = 0;
+}
+
+template <typename T>
+NumericVector<T>::NumericVector(T data_0, T data_1, T data_2) {
+    data[0] = data_0;
+    data[1] = data_1;
+    data[2] = data_2;
 }
 
 template <typename T>
