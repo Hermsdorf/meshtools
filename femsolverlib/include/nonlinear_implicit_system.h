@@ -22,9 +22,10 @@ class NonLinearImplicitSystem : public ImplicitSystem
     
     protected:
         void solve_nonlinear_system();
+        Vec          _previous_solution;
 
     private:
-        Vec          _previous_solution;
+
         double       _tolerance;
         unsigned int _max_nonlinear_iterarions;
         

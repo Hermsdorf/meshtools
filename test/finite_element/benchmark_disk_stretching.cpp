@@ -119,8 +119,8 @@ double cau_stab(double u, double u_old, Gradient grad_u, double f,
     double bdb = k * bnorm*bnorm;
     bdb = std::max(bdb, 1.0E-10);
     double Pe_p = h_caract * (bnorm * bnorm * bnorm) / bdb;
-            Real alpha_c = std::min(0.25 * Pe_p, 0.70);
-            Real delta_sco = 0.5 * h_caract * alpha_c * residuo * ogcnorm * fopc;
+    Real alpha_c = std::min(0.25 * Pe_p, 0.70);
+    Real delta_sco = 0.5 * h_caract * alpha_c * residuo * ogcnorm * fopc;
 
 */
 }
@@ -272,7 +272,7 @@ void assemble_transport(TransientImplicitSystem* system)
                             );
 
                     // CAU contribution
-                    Ke(i,j) += JxW * ctau * adt * (dphi[i] * dphi[j] );
+                    // Ke(i,j) += JxW * ctau * adt * (dphi[i] * dphi[j] );
 
                 }
             }

@@ -9,7 +9,7 @@
 */
 NonLinearImplicitSystem::NonLinearImplicitSystem(ParallelMesh &mesh, std::string name): ImplicitSystem(mesh, name)
 {
-    _tolerance = 1e-6;
+    _tolerance = 1e-4;
     _max_nonlinear_iterarions = 20;
 }
 
