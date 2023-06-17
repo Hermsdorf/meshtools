@@ -27,6 +27,10 @@ void assemble_convection_diffusion_reaction(ImplicitSystem* system)
 
     QGauss qrule;
     FEMFunction fem;
+    std::vector<double>   & phi   = fem.get_phi();
+    std::vector<Gradient> & dphi  = fem.get_dphi();
+    double                & JxW   = fem.get_JxW();
+    RealTensor            & G     = fem.get_G();
 
     // loop sobre os elementos da malha por cores
     for (int iel = 0; iel < n_elements; iel++)
@@ -37,14 +41,8 @@ void assemble_convection_diffusion_reaction(ImplicitSystem* system)
         int nnoel = elem.n_nodes();
 
         std::vector<int>        global_indices;
-        std::vector<Point>      qp;                // coordenadas do ponto de integração
-        std::vector<double>     qw;                // peso do ponto de integração
         DenseMatrix<double>     Ke(nnoel, nnoel);  // matriz de rigidez do elemento
         std::vector<double>     Fe(nnoel);         // vetor de força do elemento
-        std::vector<double>   & phi   = fem.get_phi();
-        std::vector<Gradient> & dphi  = fem.get_dphi();
-        double                & JxW   = fem.get_JxW();
-        RealTensor            & G     = fem.get_G();
 
         equation_manager.global_indices(dof, elem.connectivity(), global_indices);
 
@@ -54,12 +52,12 @@ void assemble_convection_diffusion_reaction(ImplicitSystem* system)
         Gradient velocity;
         velocity(0)  = sqrt(3.0) / 2.0;
         velocity(1)  = 1.0 / 2.0 ;
-        double kd    = 1.0E-4;
+        double kd    = 1E-7;
         double sigma = 0.0;
 
 
         // loop sobre os pontos de integração
-        for (int q = 0; q < qp.size(); q++)
+        for (int q = 0; q < qrule.n_points() ; q++)
         {
             // calculando a função de forma e suas derivadas para o ponto de integração q
             fem.ComputeFunction(elem, qrule.get(q));
