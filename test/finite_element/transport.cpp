@@ -109,14 +109,13 @@ void assemble_transport(TransientImplicitSystem* system)
         double dt           = system->get_deltat();
         double dt_stab      = 0.1;
         double source_term  = 0.0;
-        double h_carach     = elem.calculate_h(JxW);
-
 
         // loop sobre os pontos de integração
         for (int q = 0; q < qrule.n_points(); q++)
         {
             // Calcula funções para elemento
             fem.ComputeFunction(elem,qrule.get(q));
+            double h_carach    = elem.calculate_h(JxW);
         
             // SUPG stabilization parameters
             const double tmp = (velocity) * (G.mult(velocity)) + (k * k) * (G.contract(G)) + dt_stab*4.0/(dt*dt);

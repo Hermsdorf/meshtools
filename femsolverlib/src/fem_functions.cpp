@@ -78,16 +78,17 @@ void FEMFunction::ComputeFunction(Element& elem, QGaussData qp)
 {
     switch (elem.type())
     {
-    case TRI3:
+        case TRI3:
             TRI3Function(elem,qp);
-        break;
-    case QUAD4:
+            break;
+        case QUAD4:
             QUAD4Function(elem,qp);
-        break;
-    case TET4:
+            break;
+        case TET4:
             TET4Function(elem, qp);
-    default:
-        break;
+            break;
+        default:
+            break;
     }
 }
 

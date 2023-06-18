@@ -59,13 +59,13 @@ void assemble_convection_diffusion_reaction(ImplicitSystem* system)
         double kd          = 1E-3;
         double sigma       = 0.0;
         double source_term = 0.0;
-        double h_carach    = elem.calculate_h(JxW);
 
         // loop sobre os pontos de integração
         for (int q = 0; q < qrule.n_points() ; q++)
         {
             // calculando a função de forma e suas derivadas para o ponto de integração q
             fem.ComputeFunction(elem, qrule.get(q));
+            double h_carach    = elem.calculate_h(JxW);
 
             // SUPG stabilization parameters
             double tau = (velocity) * (G.mult(velocity)) + (kd * kd) * (G.contract(G)); // + dt_stab*4.0/(dt*dt);
