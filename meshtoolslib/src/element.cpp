@@ -15,6 +15,24 @@ Point Element::calculate_centroid()
     return centroid;
 }
 
+double Element::calculate_h(double JxW)
+{
+    switch (this->type())
+    {
+    case TRI3:
+        return std::sqrt(2.0*JxW);
+    case QUAD4:
+        std::cout << "QUAD4 h characteristic not implemented yet" << std::endl;
+        return 0.0;
+    case TET4:  
+        std:cout << "TET4 h characteristic not implemented yet" << std::endl;
+        return 0.0;
+    default:
+        return 0.0;
+        break;
+    }
+}
+
 void Get2DElementNormal(SurfaceElement& elem, RealVector& normal_vector)
 {
     RealVector vec_a, vec_b, vec_c;

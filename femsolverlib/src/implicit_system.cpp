@@ -214,8 +214,8 @@ void ImplicitSystem::solve_linear_system()
     double rnorm;
     KSPGetIterationNumber(this->_ksp,&its);
     KSPGetResidualNorm(this->_ksp, &rnorm);
-    PetscPrintf(MeshTools::Comm(), "   Linear number of iterations = %d\n", its);
-    PetscPrintf(MeshTools::Comm(), "   Linear final norm of residual: %g\n", rnorm);
+    PetscPrintf(MeshTools::Comm(), "Linear number of iterations = %d\n", its);
+    PetscPrintf(MeshTools::Comm(), "Linear final norm of residual: %g\n", rnorm);
 
     // Realiza o scatter de solução global para local
     VecScatterBegin(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
@@ -421,8 +421,6 @@ void ImplicitSystem::apply_dirichlet_boundary_conditions()
         std::vector<PetscScalar> values(nodes.size());
         std::vector<PetscInt> idx(nodes.size());
 
-        if(MeshTools::processor_id() == 0)   std::cout << "Applying dirichlet boundary condition " << ibc << " in " << nodes.size() <<" nodes"<<std::endl;
-        
         int dof = bc.get_dof_id();
         for(unsigned int inode = 0; inode < nodes.size(); inode++)
         {

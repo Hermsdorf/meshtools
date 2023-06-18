@@ -46,7 +46,6 @@ class TransientImplicitSystem: public NonLinearImplicitSystem
         double  get_final_time() { return _final_time; }
         void    add_initial_condition(InitialCondition ic);
         void    solve_time_step();
-        void    solve_nonlinear_system();
         void    update_deltat();
         void    write_result(string filename);
         void    init();
@@ -54,8 +53,9 @@ class TransientImplicitSystem: public NonLinearImplicitSystem
         double* get_older_solution_array();
         void    restore_old_solution_array(double** solution_array);
         void    restore_older_solution_array(double** solution_array);
-        void    attach_assemble(void _assemble_function(TransientImplicitSystem*));
-        void    attach_init_function(void _init(TransientImplicitSystem*));
+        void    attach_assemble(void _assemble_function(TransientImplicitSystem *));
+        void    attach_init_function(void _init(TransientImplicitSystem *));
+        void    solve_nonlinear_system();
 
     private:
         double       _dt;             // timestep size

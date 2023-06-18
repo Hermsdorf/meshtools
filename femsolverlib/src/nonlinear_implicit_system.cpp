@@ -10,7 +10,7 @@
 NonLinearImplicitSystem::NonLinearImplicitSystem(ParallelMesh &mesh, std::string name): ImplicitSystem(mesh, name)
 {
     _tolerance = 1e-4;
-    _max_nonlinear_iterarions = 20;
+    _max_nonlinear_iterations = 20;
 }
 
 /**
@@ -53,7 +53,9 @@ void NonLinearImplicitSystem::attach_assemble(void _assemble(NonLinearImplicitSy
 void NonLinearImplicitSystem::solve_nonlinear_system()
 {
     unsigned int iter = 0;
-    while(iter < _max_nonlinear_iterarions)
+    double _solution_norm;
+
+    while(iter < _max_nonlinear_iterations)
     {
         VecCopy(this->_solution, this->_previous_solution);
 
@@ -61,8 +63,12 @@ void NonLinearImplicitSystem::solve_nonlinear_system()
         this->_assemble_function(this);
         this->solve_linear_system();
 
-        double _solution_norm;
+        // Scales the _solution vector by -1.0 and
+        // adds the previous solution to it 
         VecAXPY(this->_previous_solution,-1.0, this->_solution);
+
+        // Takes the euclidian norm of previous_solution
+        // vector and stores it in _solution_norm
         VecNorm(this->_previous_solution, NORM_2, &_solution_norm);
 
         if(_solution_norm < _tolerance)
@@ -73,6 +79,9 @@ void NonLinearImplicitSystem::solve_nonlinear_system()
         MatZeroEntries(this->_A);
         VecZeroEntries(this->_rhs);
     }
+
+    PetscPrintf(MeshTools::Comm(), "Nonlinear number of iterations = %d\n", iter);
+    PetscPrintf(MeshTools::Comm(), "Nonlinear final norm of residual: %f\n", _solution_norm);
 }
 
 void NonLinearImplicitSystem::solve()

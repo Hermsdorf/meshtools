@@ -23,6 +23,8 @@ void assemble_convection_diffusion_reaction(ImplicitSystem* system)
     auto equation_manager = system->get_equation_manager();
     int dof  = 0;
 
+    double *solution     = system->get_local_solution_array();
+
     int n_elements = pmesh.get_n_elements();
 
     QGauss qrule;
@@ -41,20 +43,23 @@ void assemble_convection_diffusion_reaction(ImplicitSystem* system)
         int nnoel = elem.n_nodes();
 
         std::vector<int>        global_indices;
+        std::vector<int>        local_indices;
         DenseMatrix<double>     Ke(nnoel, nnoel);  // matriz de rigidez do elemento
         std::vector<double>     Fe(nnoel);         // vetor de força do elemento
 
         equation_manager.global_indices(dof, elem.connectivity(), global_indices);
+        equation_manager.local_indices(dof,  elem.connectivity(), local_indices);
 
-         // Obtem pontos de integração para elemento elem
+        // Obtem pontos de integração para elemento elem
         qrule.reset(elem);
 
         Gradient velocity;
-        velocity(0)  = sqrt(3.0) / 2.0;
-        velocity(1)  = 1.0 / 2.0 ;
-        double kd    = 1E-7;
-        double sigma = 0.0;
-
+        velocity(0)        = sqrt(3.0) / 2.0;
+        velocity(1)        = 1.0 / 2.0 ;
+        double kd          = 1E-3;
+        double sigma       = 0.0;
+        double source_term = 0.0;
+        double h_carach    = elem.calculate_h(JxW);
 
         // loop sobre os pontos de integração
         for (int q = 0; q < qrule.n_points() ; q++)
@@ -64,6 +69,23 @@ void assemble_convection_diffusion_reaction(ImplicitSystem* system)
 
             // SUPG stabilization parameters
             double tau = (velocity) * (G.mult(velocity)) + (kd * kd) * (G.contract(G)); // + dt_stab*4.0/(dt*dt);
+
+            double    u = 0.0;
+            Gradient  grad_u;
+
+            for (int i = 0; i < local_indices.size(); i++)
+            {
+                u             +=  solution[local_indices[i]]*phi[i];
+                grad_u(0)     +=  solution[local_indices[i]]*dphi[i](0);
+                grad_u(1)     +=  solution[local_indices[i]]*dphi[i](1);
+
+                if(ndim == 3){
+                    grad_u(2)      += solution[local_indices[i]]*dphi[i](2);
+                }
+            }
+
+            // CAU stabilization parameters
+            const double ctau = fem.CAUStab(u, 0.0, grad_u, source_term, velocity, sigma, kd, 0.0, h_carach)*0.2;
 
             // calculando a matriz de rigidez e o vetor de forca local
             for (int i = 0; i < nnoel; i++)
@@ -79,6 +101,9 @@ void assemble_convection_diffusion_reaction(ImplicitSystem* system)
                     // SUPG Formulation
                     Ke(i, j) += JxW * tau * (velocity * dphi[i]) * (velocity * dphi[j] +      // Termo SUPG convecção
                                               sigma*phi[j]);                                  // Termo SUPG reação
+
+                    // CAU contribution
+                    Ke(i,j) += JxW * ctau * (dphi[i] * dphi[j]);
                 }
             }
         }

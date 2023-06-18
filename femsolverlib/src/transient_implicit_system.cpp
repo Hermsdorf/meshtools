@@ -97,7 +97,7 @@ void TransientImplicitSystem::solve_time_step()
     VecCopy(_solution_local, _old_solution_local);
     
     // getting solution at t+dt
-    TransientImplicitSystem::solve_nonlinear_system();
+    this->solve_nonlinear_system();
 
     MatZeroEntries(this->_A);
     VecZeroEntries(this->_rhs);
@@ -106,15 +106,21 @@ void TransientImplicitSystem::solve_time_step()
     update_deltat();
 }
 
+/**
+ * Solves the nonlinear system. For do this it solves a linear system
+ * substituting the incognit values by the previous solution values.
+ * When the difference between the previous solution and the current
+ * solution is less than the tolerance, the method stops.
+*/
 void TransientImplicitSystem::solve_nonlinear_system()
 {
     unsigned int iter = 0;
     double _solution_norm;
-    unsigned int max_iter = get_nonlinear_max_iter();
 
-    double tolerance = get_nonlinear_tolerance();
+    unsigned int _max_nonlinear_iterations = get_nonlinear_max_iter();
+    float _tolerance = get_nonlinear_tolerance();
 
-    while(iter < max_iter)
+    while(iter < _max_nonlinear_iterations)
     {
         VecCopy(this->_solution, this->_previous_solution);
 
@@ -124,16 +130,13 @@ void TransientImplicitSystem::solve_nonlinear_system()
 
         // Scales the _solution vector by -1.0 and
         // adds the previous solution to it 
-        VecAXPY(_previous_solution, -1.0, this->_solution);
+        VecAXPY(this->_previous_solution,-1.0, this->_solution);
 
         // Takes the euclidian norm of previous_solution
         // vector and stores it in _solution_norm
-        VecNorm(_previous_solution, NORM_2, &_solution_norm);
+        VecNorm(this->_previous_solution, NORM_2, &_solution_norm);
 
-        PetscPrintf(MeshTools::Comm(), "Nonlinear iteration = %d\n", iter);
-        PetscPrintf(MeshTools::Comm(), "Nonlinear final norm of residual: %f\n", _solution_norm);
-
-        if(_solution_norm < tolerance)
+        if(_solution_norm < _tolerance)
             break;
 
         iter++;
@@ -142,8 +145,8 @@ void TransientImplicitSystem::solve_nonlinear_system()
         VecZeroEntries(this->_rhs);
     }
 
-    // PetscPrintf(MeshTools::Comm(), "Nonlinear number of iterations = %d\n", iter);
-    // PetscPrintf(MeshTools::Comm(), "Nonlinear final norm of residual: %f\n", _solution_norm);
+    PetscPrintf(MeshTools::Comm(), "Nonlinear number of iterations = %d\n", iter);
+    PetscPrintf(MeshTools::Comm(), "Nonlinear final norm of residual: %f\n", _solution_norm);
 }
 
 void TransientImplicitSystem::update_deltat()
