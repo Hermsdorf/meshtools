@@ -85,7 +85,7 @@ void assemble_convection_diffusion_reaction(ImplicitSystem* system)
             }
 
             // CAU stabilization parameters
-            const double ctau = fem.CAUStab(u, 0.0, grad_u, source_term, velocity, sigma, kd, 0.0, h_carach)*0.2;
+            const double ctau = fem.CAUStab(u, u, grad_u, source_term, velocity, sigma, kd, 0.0, h_carach)*0.2;
 
             // calculando a matriz de rigidez e o vetor de forca local
             for (int i = 0; i < nnoel; i++)

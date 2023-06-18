@@ -56,8 +56,9 @@ double FEMFunction::CAUStab(double u, double u_old, Gradient grad_u, double f,
     //     return (tau_e*he*0.5)*(tauc_hc_tau_h - res_vel_dphi)*(std::abs(res)/dphi_norm);
 
 
+    double res_mass = (u - u_old)/dt;
     double res_adv  = (velocity * grad_u);
-    double residuo   = res_adv - sigma*u - f;
+    double residuo  = res_mass + res_adv - sigma*u - f;
     double gcnorm = grad_u.norm();
     gcnorm = std::max(1.0E-10, gcnorm);
     double ogcnorm = 1.0 / gcnorm;
@@ -70,8 +71,9 @@ double FEMFunction::CAUStab(double u, double u_old, Gradient grad_u, double f,
     double Pe_p = 0.5 * h_caract * (bnorm * bnorm * bnorm) / bdb;
     double alpha_c = std::min(0.25 * Pe_p, 1.0);
     
+    double cau = 0.5 * h_caract * alpha_c * residuo * ogcnorm; 
     
-    return 0.5 * h_caract * alpha_c * residuo * ogcnorm;
+    return cau;
 }
 
 void FEMFunction::ComputeFunction(Element& elem, QGaussData qp)

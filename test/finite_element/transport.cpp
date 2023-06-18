@@ -147,7 +147,7 @@ void assemble_transport(TransientImplicitSystem* system)
             const double adt1 = (1.0-theta)*dt;
             const double adt  = theta*dt;
             // CAU stabilization parameters
-            const double ctau = fem.CAUStab(u, u_old, grad_u, source_term, velocity, sigma, k, dt, h_carach)*0.2;
+            const double ctau = fem.CAUStab(u, u_old, grad_u, source_term, velocity, sigma, k, dt, h_carach)*0.1;
 
             // calculando a matriz de rigidez e o vetor de forca local
             for (int i = 0; i < local_indices.size(); i++)
@@ -180,11 +180,11 @@ void assemble_transport(TransientImplicitSystem* system)
                     Ke(i, j) += JxW * tau * (
                                     phi[j]*(velocity * dphi[i]) +
                                      adt * (velocity * dphi[j])*(velocity * dphi[i]) +
-                                     adt * (sigma * phi[j] )*(velocity * dphi[i])
+                                     adt * (sigma *  phi[j] )*(velocity * dphi[i])
                             );
 
                     // CAU contribution
-                    // Ke(i,j) += JxW * ctau * adt * (dphi[i] * dphi[j]);
+                    Ke(i,j) += JxW * ctau * adt * (dphi[i] * dphi[j]);
 
                 }
             }
@@ -254,7 +254,7 @@ int transport(int argc, char *argv[])
     {
         system->solve_time_step();
 
-        if(system->get_time_step()%write_interval == 0 )
+        if(system->get_time_step()%write_interval == 0)
         {
             sprintf(filename,"solution");
             system->write_result(filename);
@@ -265,7 +265,7 @@ int transport(int argc, char *argv[])
     sprintf(filename,"solution");
     system->write_result(filename);
     //xdmf.write(system,system->get_time());
-
+    
     delete system;
 
     if (MeshTools::processor_id() == 0)
