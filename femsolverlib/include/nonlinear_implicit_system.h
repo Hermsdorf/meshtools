@@ -15,14 +15,14 @@ class NonLinearImplicitSystem : public ImplicitSystem
         void   set_nonlinear_max_iter(unsigned int max_iter) { _max_nonlinear_iterations = max_iter; };
         double get_nonlinear_tolerance() { return _tolerance; };
         unsigned int get_nonlinear_max_iter() { return _max_nonlinear_iterations; };
-        Vec&    get_previous_solution() { return _previous_solution; };
-        void    set_previous_solution(Vec& previous_solution) { _previous_solution = previous_solution; };
+        Vec&    get_previous_nonlinear_solution() { return _previous_nonlinear_solution; };
+        void    set_previous_nonlinear_solution(Vec& previous_solution) { _previous_nonlinear_solution = _previous_nonlinear_solution; };
         
         ~NonLinearImplicitSystem();
     
     protected:
         void solve_nonlinear_system();
-        Vec          _previous_solution;
+        Vec          _previous_nonlinear_solution;
 
     private:
 

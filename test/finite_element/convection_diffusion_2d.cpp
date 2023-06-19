@@ -5,7 +5,7 @@
 #include "mesh.h"
 #include "mesh_part.h"
 #include "parallel_mesh.h"
-#include "implicit_system.h"
+#include "nonlinear_implicit_system.h"
 #include "dirichlet_boundary.h"
 #include "fem_functions.h"
 #include "dense_matrix.h"
@@ -14,7 +14,7 @@
 
 static char help[] = "Convecção-difusão-reaçao\n\n";
 
-void assemble_convection_diffusion_reaction(ImplicitSystem* system)
+void assemble_convection_diffusion_reaction(NonLinearImplicitSystem* system)
 {
     auto pmesh = system->get_mesh();
     int  ndim  =  pmesh.getDim();
@@ -56,7 +56,7 @@ void assemble_convection_diffusion_reaction(ImplicitSystem* system)
         Gradient velocity;
         velocity(0)        = sqrt(3.0) / 2.0;
         velocity(1)        = 1.0 / 2.0 ;
-        double kd          = 1E-3;
+        double kd          = 0.2E-3;
         double sigma       = 0.0;
         double source_term = 0.0;
 
@@ -85,7 +85,7 @@ void assemble_convection_diffusion_reaction(ImplicitSystem* system)
             }
 
             // CAU stabilization parameters
-            const double ctau = fem.CAUStab(u, u, grad_u, source_term, velocity, sigma, kd, 0.0, h_carach)*0.2;
+            const double ctau = fem.CAUStab(u, u, grad_u, source_term, velocity, sigma, kd, 1, h_carach);
 
             // calculando a matriz de rigidez e o vetor de forca local
             for (int i = 0; i < nnoel; i++)
@@ -150,29 +150,29 @@ int run_convection_diffusion_reaction(int argc, char *argv[])
 
 
     // Cria o sistema de equações implicito
-    ImplicitSystem *implicit_system = new ImplicitSystem(*pmesh, "convection-diffusion");
+    NonLinearImplicitSystem *nonlinear_implicit_system = new NonLinearImplicitSystem(*pmesh, "convection-diffusion");
 
     // Adiciona uma variável ao sistema
-    int dof = implicit_system->add_variable("u");
+    int dof = nonlinear_implicit_system->add_variable("u");
 
     // Adiciona uma condição de contorno ao sistema
     // Aplica a função g(x, y) = 0 para a variável u no contorno identificado com 1.
     DirichletBoundary bc1(1, dof, "0.0", "x,y");
     // Aplica a função g(x, y) = 1 para a variável u no contorno identificado com 2.
     DirichletBoundary bc2(2, dof, "1.0", "x,y");
-    implicit_system->add_dirichlet_boundary(bc1);
-    implicit_system->add_dirichlet_boundary(bc2);
-    implicit_system->attach_assemble(assemble_convection_diffusion_reaction);
+    nonlinear_implicit_system->add_dirichlet_boundary(bc1);
+    nonlinear_implicit_system->add_dirichlet_boundary(bc2);
+    nonlinear_implicit_system->attach_assemble(assemble_convection_diffusion_reaction);
 
     // Inicializar o sistema 
-    implicit_system->init();
+    nonlinear_implicit_system->init();
 
     // Resolve o sistema de equações
-    implicit_system->solve();
+    nonlinear_implicit_system->solve();
 
-    implicit_system->write_result("solution");
+    nonlinear_implicit_system->write_result("solution");
 
-    delete implicit_system;
+    delete nonlinear_implicit_system;
 
     if (MeshTools::processor_id() == 0)
         delete mesh;

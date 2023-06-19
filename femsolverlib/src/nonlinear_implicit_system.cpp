@@ -18,8 +18,7 @@ NonLinearImplicitSystem::NonLinearImplicitSystem(ParallelMesh &mesh, std::string
 */
 NonLinearImplicitSystem::~NonLinearImplicitSystem()
 {
-    VecDestroy(&this->_previous_solution);
-    ImplicitSystem::~ImplicitSystem();
+    VecDestroy(&this->_previous_nonlinear_solution);
 }
 
 /**
@@ -28,7 +27,7 @@ NonLinearImplicitSystem::~NonLinearImplicitSystem()
 void NonLinearImplicitSystem::init()
 {
     ImplicitSystem::init();
-    VecDuplicate(this->_solution, &this->_previous_solution);
+    VecDuplicate(this->_solution, &this->_previous_nonlinear_solution);
 }
 
 
@@ -57,7 +56,7 @@ void NonLinearImplicitSystem::solve_nonlinear_system()
 
     while(iter < _max_nonlinear_iterations)
     {
-        VecCopy(this->_solution, this->_previous_solution);
+        VecCopy(this->_solution, this->_previous_nonlinear_solution);
 
         // Calls the method to assemble the system
         this->_assemble_function(this);
@@ -65,16 +64,16 @@ void NonLinearImplicitSystem::solve_nonlinear_system()
 
         // Scales the _solution vector by -1.0 and
         // adds the previous solution to it 
-        VecAXPY(this->_previous_solution,-1.0, this->_solution);
+        VecAXPY(this->_previous_nonlinear_solution,-1.0, this->_solution);
 
         // Takes the euclidian norm of previous_solution
         // vector and stores it in _solution_norm
-        VecNorm(this->_previous_solution, NORM_2, &_solution_norm);
+        VecNorm(this->_previous_nonlinear_solution, NORM_2, &_solution_norm);
+
+        iter++;
 
         if(_solution_norm < _tolerance)
             break;
-
-        iter++;
 
         MatZeroEntries(this->_A);
         VecZeroEntries(this->_rhs);
