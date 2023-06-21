@@ -56,7 +56,7 @@ void assemble_convection_diffusion_reaction(NonLinearImplicitSystem* system)
         Gradient velocity;
         velocity(0)        = sqrt(3.0) / 2.0;
         velocity(1)        = 1.0 / 2.0 ;
-        double kd          = 0.2E-3;
+        double kd          = 0.135E-3;
         double sigma       = 0.0;
         double source_term = 0.0;
 
@@ -85,7 +85,7 @@ void assemble_convection_diffusion_reaction(NonLinearImplicitSystem* system)
             }
 
             // CAU stabilization parameters
-            const double ctau = fem.CAUStab(u, u, grad_u, source_term, velocity, sigma, kd, 1, h_carach);
+            const double ctau = fem.CAUStab(u, u, grad_u, source_term, velocity, sigma, kd, 1, h_carach)*0.1;
 
             // calculando a matriz de rigidez e o vetor de forca local
             for (int i = 0; i < nnoel; i++)
@@ -103,7 +103,7 @@ void assemble_convection_diffusion_reaction(NonLinearImplicitSystem* system)
                                               sigma*phi[j]);                                  // Termo SUPG reação
 
                     // CAU contribution
-                    Ke(i,j) += JxW * ctau * (dphi[i] * dphi[j]);
+                    // Ke(i,j) += JxW * ctau * (dphi[i] * dphi[j]);
                 }
             }
         }
