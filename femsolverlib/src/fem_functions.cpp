@@ -101,6 +101,9 @@ void FEMFunction::TET4Function(Element& elem, QGaussData qp)
     double Jinv[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
     double x[4], y[4], z[4];
 
+    _xyz(0) = 0.0;
+    _xyz(1) = 0.0;
+    _xyz(2) = 0.0;   
     _phi.resize(4);
     _dphi.resize(4);
 
@@ -212,7 +215,10 @@ void FEMFunction::TRI3Function(Element& elem, QGaussData qp)
     double J[2][2]    = {{0.0, 0.0}, {0.0, 0.0}};
     double Jinv[2][2] = {{0.0, 0.0}, {0.0, 0.0}};
     double x[3], y[3];
-   
+
+    _xyz(0) = 0.0;
+    _xyz(1) = 0.0;
+    _xyz(2) = 0.0;   
     _phi.resize(3);
     _dphi.resize(3);
 
@@ -286,7 +292,10 @@ void FEMFunction::QUAD4Function(Element& elem, QGaussData qp)
     double J[2][2]    = {{0.0, 0.0}, {0.0, 0.0}};
     double Jinv[2][2] = {{0.0, 0.0}, {0.0, 0.0}};
     double x[4], y[4];
-    
+
+    _xyz(0) = 0.0;
+    _xyz(1) = 0.0;
+    _xyz(2) = 0.0;   
     _phi.resize(4);
     _dphi.resize(4);
 
