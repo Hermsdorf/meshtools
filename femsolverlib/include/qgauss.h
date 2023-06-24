@@ -3,6 +3,7 @@
 #include <map>
 #include "mesh.h"
 
+// Respectively: gauss point, gauss weight
 typedef std::pair<Point,double> QGaussData;
 
 class QGauss

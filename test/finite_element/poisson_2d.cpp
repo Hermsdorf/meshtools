@@ -6,12 +6,10 @@
 #include "mesh_part.h"
 #include "parallel_mesh.h"
 #include "implicit_system.h"
-#include "transient_implicit_system.h"
 #include "dirichlet_boundary.h"
 #include "fem_functions.h"
 #include "dense_matrix.h"
 #include "numeric_vector.h"
-#include "tensor.h"
 #include "xdmf_writer.h"
 
 
@@ -215,7 +213,6 @@ void assemble_poisson(ImplicitSystem* system)
     double                & JxW    = fem.get_JxW();
     Point                 & qpoint = fem.get_xyz();
 
-    bool flag = true;
     // loop sobre os elementos da malha
     for (int iel = 0; iel < pmesh.get_n_elements(); iel++)
     {
@@ -224,11 +221,13 @@ void assemble_poisson(ImplicitSystem* system)
         
         int nnoel = elem.n_nodes();
 
-        DenseMatrix<double>     Ke(nnoel, nnoel);  // matriz de rigidez do elemento
-        std::vector<double>     Fe(nnoel);         // vetor de força do elemento
         std::vector<int>        global_indices;
+        std::vector<int>        local_indices;
+        DenseMatrix<double>     Ke(nnoel, nnoel);  // matriz de rigidez do elemento
+        std::vector<double>     Fe(nnoel);          // vetor de força do elemento
 
         equation_manager.global_indices(dof, elem.connectivity(), global_indices);
+        equation_manager.local_indices(dof,  elem.connectivity(), local_indices);
 
         // Obtem pontos de integração para elemento elem
         qrule.reset(elem);
@@ -236,18 +235,17 @@ void assemble_poisson(ImplicitSystem* system)
         // loop sobre os pontos de integração
         for (int q = 0; q < qrule.n_points(); q++)
         {
-
             // calculando a função de forma e suas derivadas para o ponto de integração q
             fem.ComputeFunction(elem,qrule.get(q));
 
             // calculando a matriz de rigidez e o vetor de forca local
-            for (int i = 0; i < global_indices.size(); i++)
+            for (int i = 0; i < local_indices.size(); i++)
             {
                 // avaliando a função fonte
                 double fxy = body_force(qpoint(0), qpoint(1));
                 Fe[i] += JxW * fxy * phi[i];
 
-                for (int j = 0; j < global_indices.size(); j++)
+                for (int j = 0; j < local_indices.size(); j++)
                     Ke(i, j) += JxW * (dphi[i] * dphi[j]);
             }
         }
@@ -312,9 +310,7 @@ int poisson(int argc, char *argv[], std::string mesh_path, std::string mesh_file
     // Resolve o sistema de equações
     implicit_system->solve();
 
-    XDMFWriter xdmf("poisson");
-    xdmf.set_dir_path("output_poisson");
-    xdmf.write(implicit_system);
+    implicit_system->write_result("POISSON_2D");
 
     double l2_error = compute_L2_error(*implicit_system, 0);
     double h1_error = compute_H1_error(*implicit_system, 0);
