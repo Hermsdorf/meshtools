@@ -12,6 +12,8 @@
 #include "numeric_vector.h"
 #include "tensor.h"
 
+#include "test_config.h"
+
 static char help[] = "Convecção-difusão-reaçao\n\n";
 
 void assemble_convection_diffusion_reaction(NonLinearImplicitSystem* system)
@@ -56,7 +58,7 @@ void assemble_convection_diffusion_reaction(NonLinearImplicitSystem* system)
         Gradient velocity;
         velocity(0)        = sqrt(3.0) / 2.0;
         velocity(1)        = 1.0 / 2.0 ;
-        double kd          = 0.135E-3;
+        double kd          = 0.135E-8;
         double sigma       = 0.0;
         double source_term = 0.0;
 
@@ -69,6 +71,7 @@ void assemble_convection_diffusion_reaction(NonLinearImplicitSystem* system)
 
             // SUPG stabilization parameters
             double tau = (velocity) * (G.mult(velocity)) + (kd * kd) * (G.contract(G)); // + dt_stab*4.0/(dt*dt);
+            tau        = 1.0/sqrt(tau);
 
             double    u = 0.0;
             Gradient  grad_u;
@@ -103,7 +106,7 @@ void assemble_convection_diffusion_reaction(NonLinearImplicitSystem* system)
                                               sigma*phi[j]);                                  // Termo SUPG reação
 
                     // CAU contribution
-                    // Ke(i,j) += JxW * ctau * (dphi[i] * dphi[j]);
+                    Ke(i,j) += JxW * ctau * (dphi[i] * dphi[j]);
                 }
             }
         }
@@ -136,7 +139,7 @@ int run_convection_diffusion_reaction(int argc, char *argv[])
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha.
     
-        mesh = new Mesh("/home/gfarache/git/meshtools/test/finite_element/msh/convection_difussion_2d/conv2dtri3.msh");
+        mesh = new Mesh(TEST_MESH_DIR+"/convection_difussion_2d/conv2dtri3.msh");
 
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha

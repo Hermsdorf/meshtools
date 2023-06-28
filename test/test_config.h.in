@@ -1,0 +1,1 @@
+#cmakedefine TEST_MESH_DIR "@TEST_MESH_DIR@"

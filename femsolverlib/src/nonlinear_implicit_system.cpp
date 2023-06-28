@@ -72,6 +72,9 @@ void NonLinearImplicitSystem::solve_nonlinear_system()
 
         iter++;
 
+        PetscPrintf(MeshTools::Comm(), "Nonlinear number of iterations = %d\n", iter);
+        PetscPrintf(MeshTools::Comm(), "Nonlinear final norm of residual: %f\n", _solution_norm);
+
         if(_solution_norm < _tolerance)
             break;
 
@@ -79,8 +82,7 @@ void NonLinearImplicitSystem::solve_nonlinear_system()
         VecZeroEntries(this->_rhs);
     }
 
-    PetscPrintf(MeshTools::Comm(), "Nonlinear number of iterations = %d\n", iter);
-    PetscPrintf(MeshTools::Comm(), "Nonlinear final norm of residual: %f\n", _solution_norm);
+
 }
 
 void NonLinearImplicitSystem::solve()
