@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "petsc.h"
 
 #include "meshtools.h"
@@ -12,7 +14,8 @@
 #include "numeric_vector.h"
 #include "tensor.h"
 #include "xdmf_writer.h"
-#include <math.h>
+
+#include "test_config.h"
 
 static char help[] = "Benchmark with Disk Stretching experiment\n\n";
 
@@ -303,7 +306,9 @@ int disk_stretching(int argc, char *argv[])
     {
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha.
-        mesh = new Mesh(argv[1]);
+        string test_mesh_dir = TEST_MESH_DIR;
+        test_mesh_dir.append("benchmark_rotation_coin/benchmark_coin_tri3_131knodes.msh");
+        mesh = new Mesh(test_mesh_dir);
 
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha
@@ -331,7 +336,7 @@ int disk_stretching(int argc, char *argv[])
 
 
     char filename[100];
-    sprintf(filename,"solution");
+    sprintf(filename,"disk_stretching");
     system->write_result(filename);
 
     // Time integratiom

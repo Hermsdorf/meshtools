@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "meshtools.h"
 #include "mesh.h"
 #include "mesh_part.h"
@@ -10,7 +12,8 @@
 #include "numeric_vector.h"
 #include "tensor.h"
 #include "xdmf_writer.h"
-#include <math.h>
+
+#include "test_config.h"
 
 static char help[] = "Benchmark with Transient Rotation Pulse experiment\n\n";
 
@@ -180,7 +183,9 @@ int rotation_pulse(int argc, char *argv[])
     {
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha.
-        mesh = new Mesh(argv[1]);
+        string test_mesh_dir = TEST_MESH_DIR;
+        test_mesh_dir.append("benchmark_rotation_pulse/benchmark_rotpulse_tri3.msh");
+        mesh = new Mesh(test_mesh_dir);
 
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha
@@ -208,7 +213,7 @@ int rotation_pulse(int argc, char *argv[])
 
 
     char filename[100];
-    sprintf(filename,"solution");
+    sprintf(filename,"rotation_pulse");
     system->write_result(filename);
 
     // Time integratiom

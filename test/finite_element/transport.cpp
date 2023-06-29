@@ -13,6 +13,8 @@
 #include "tensor.h"
 #include "xdmf_writer.h"
 
+#include "test_config.h"
+
 static char help[] = "Convecção-difusão-reaçao transiente\n\n";
 
 double exact_solution (const double x,
@@ -214,7 +216,9 @@ int transport(int argc, char *argv[])
     {
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha.
-        mesh = new Mesh("/home/gfarache/git/meshtools/test/finite_element/msh/transport/test1.msh");
+        string test_mesh_dir = TEST_MESH_DIR;
+        test_mesh_dir.append("transport/transport.msh");
+        mesh = new Mesh(test_mesh_dir);
 
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha
@@ -240,9 +244,8 @@ int transport(int argc, char *argv[])
     system->set_deltat(0.05);
     unsigned int write_interval = 2;
 
-
     char filename[100];
-    sprintf(filename,"solution");
+    sprintf(filename,"transport");
     system->write_result(filename);
 
     // XDMFWriter xdmf("transport");

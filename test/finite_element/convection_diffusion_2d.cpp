@@ -138,8 +138,10 @@ int run_convection_diffusion_reaction(int argc, char *argv[])
     {
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha.
-    
-        mesh = new Mesh(TEST_MESH_DIR+"/convection_difussion_2d/conv2dtri3.msh");
+
+        string test_mesh_dir = TEST_MESH_DIR;
+        test_mesh_dir.append("convection_difussion_2d/conv2dtri3.msh");
+        mesh = new Mesh(test_mesh_dir);
 
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha
@@ -173,7 +175,7 @@ int run_convection_diffusion_reaction(int argc, char *argv[])
     // Resolve o sistema de equações
     nonlinear_implicit_system->solve();
 
-    nonlinear_implicit_system->write_result("solution");
+    nonlinear_implicit_system->write_result("convection_diffusion");
 
     delete nonlinear_implicit_system;
 

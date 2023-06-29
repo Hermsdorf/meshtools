@@ -5,8 +5,10 @@
 #include "boundary_fem_functions.h"
 #include "numeric_vector.h"
 
+#include "test_config.h"
 
-int surface_integral(int argc, char *argv[], std::string mesh_path, std::string mesh_file)
+
+int surface_integral(int argc, char *argv[])
 {
     MeshPartition *parts = new MeshPartition();
 
@@ -25,7 +27,9 @@ int surface_integral(int argc, char *argv[], std::string mesh_path, std::string 
     {
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha.
-        mesh = new Mesh(mesh_path + mesh_file);
+        string test_mesh_dir = TEST_MESH_DIR;
+        test_mesh_dir.append("surface_integral/0_25_radius_sphere_tri3_refine1.msh");
+        mesh = new Mesh(test_mesh_dir);
 
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha
@@ -104,8 +108,9 @@ int surface_integral(int argc, char *argv[], std::string mesh_path, std::string 
 
 int main(int argc, char *argv[])
 {
-    std::string meshfile = std::string(argv[1]);
-    surface_integral(argc, argv, "", meshfile);
+    MeshTools::Init(argc, argv);
+    surface_integral(argc, argv);
+    MeshTools::Finalize();
 
     return 0;
 }

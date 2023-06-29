@@ -12,6 +12,8 @@
 #include "numeric_vector.h"
 #include "xdmf_writer.h"
 
+#include "test_config.h"
+
 
 static char help[] = "2D Poisson Problem\n\n";
 
@@ -261,7 +263,7 @@ void assemble_poisson(ImplicitSystem* system)
  *   p = std::log(std::fabs(erro[i - 1] / erro[i])) / std::log(2.0));
  */
 
-int poisson(int argc, char *argv[], std::string mesh_path, std::string mesh_file, double& error_vec_l2, double& error_vec_h1)
+int poisson(int argc, char *argv[], double& error_vec_l2, double& error_vec_h1)
 {
     PetscErrorCode ierr;
     MeshPartition *parts = new MeshPartition();
@@ -270,7 +272,6 @@ int poisson(int argc, char *argv[], std::string mesh_path, std::string mesh_file
     ParallelMesh *pmesh; // parallel mesh
     int processor_id, n_processors;
 
-    MeshTools::Init(argc, argv);
     processor_id = MeshTools::processor_id();
     n_processors = MeshTools::n_processors();
 
@@ -278,7 +279,9 @@ int poisson(int argc, char *argv[], std::string mesh_path, std::string mesh_file
     {
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha.
-        mesh = new Mesh(mesh_path + mesh_file);
+        string test_mesh_dir = TEST_MESH_DIR;
+        test_mesh_dir.append("poisson_2d/poisson.msh");
+        mesh = new Mesh(test_mesh_dir);
 
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha
@@ -310,7 +313,7 @@ int poisson(int argc, char *argv[], std::string mesh_path, std::string mesh_file
     // Resolve o sistema de equações
     implicit_system->solve();
 
-    implicit_system->write_result("POISSON_2D");
+    implicit_system->write_result("poisson_2d");
 
     double l2_error = compute_L2_error(*implicit_system, 0);
     double h1_error = compute_H1_error(*implicit_system, 0);
@@ -331,72 +334,9 @@ int poisson(int argc, char *argv[], std::string mesh_path, std::string mesh_file
 
 int main(int argc, char *argv[])
 {
-
-#ifdef TEST
-    std::string mesh_path = "../msh/";
-    std::vector<std::string> quad_mesh_files = {"quadrangles/quad_8x8.msh", "quadrangles/quad_16x16.msh", "quadrangles/quad_32x32.msh",
-                                                "quadrangles/quad_64x64.msh", "quadrangles/quad_128x128.msh", "quadrangles/quad_256x256.msh",
-                                                "quadrangles/quad_512x512.msh"};
-
-    std::vector<std::string> tri_mesh_files = {"triangles/tri_8x8.msh", "triangles/tri_16x16.msh",
-                                               "triangles/tri_32x32.msh", "triangles/tri_64x64.msh", "triangles/tri_128x128.msh",
-                                               "triangles/tri_256x256.msh", "triangles/tri_512x512.msh"};
-
-    std::vector<double> error_quad_L2(quad_mesh_files.size());
-    std::vector<double> error_quad_H1(quad_mesh_files.size());
-    std::vector<double> error_tri_L2(tri_mesh_files.size());
-    std::vector<double> error_tri_H1(tri_mesh_files.size());
-
-    for (int i = 0; i < quad_mesh_files.size(); i++)
-    {
-        std::string mesh_file = mesh_path + quad_mesh_files[i];
-        std::cout << "Mesh file: " << quad_mesh_files[i] << std::endl;
-        poisson(argc, argv, mesh_path, quad_mesh_files[i], error_quad_L2[i], error_quad_H1[i]);
-    }
-
-    for (int i = 0; i < tri_mesh_files.size(); i++)
-    {
-        std::string mesh_file = mesh_path + tri_mesh_files[i];
-        std::cout << "Mesh file: " << tri_mesh_files[i] << std::endl;
-        poisson(argc, argv, mesh_path, tri_mesh_files[i], error_tri_L2[i], error_tri_H1[i]);
-    }
-
-    if (MeshTools::processor_id() == 0)
-    {
-        std::cout << "\nQuad mesh error l2: ";
-        for (int i = 0; i < quad_mesh_files.size(); i++)
-            std::cout << error_quad_L2[i] << "  ";
-
-        std::cout << "\nTri mesh error L2: ";
-        for (int i = 0; i < tri_mesh_files.size(); i++)
-            std::cout << error_tri_L2[i] << "  ";
-
-        std::cout << "\n\nQuad mesh error H1: ";
-        for (int i = 0; i < quad_mesh_files.size(); i++)
-            std::cout << error_quad_H1[i] << "  ";
-
-        std::cout << "\nTri mesh error H1: ";
-        for (int i = 0; i < tri_mesh_files.size(); i++)
-            std::cout << error_tri_H1[i] << "  ";
-
-        std::cout << std::endl;
-        std::cout << "\nQuad mesh error L2 divided: ";
-        for (int i = 1; i < quad_mesh_files.size(); i++)
-            std::cout << error_quad_L2[i-1]/error_quad_L2[i] << "  ";
-        std::cout << "\nTri mesh error L2 divided: ";
-        for (int i = 1; i < tri_mesh_files.size(); i++)
-            std::cout << error_tri_L2[i-1]/error_tri_L2[i] << "  ";
-        std::cout << std::endl;
-    }   
-#else
-
-    double error_L2;
-    double error_H1;
-    std::string meshfile = std::string(argv[1]);
-    poisson(argc, argv,"", meshfile, error_L2, error_H1);
-
-#endif
-
+    MeshTools::Init(argc, argv);
+    double error_L2, error_H1;
+    poisson(argc, argv, error_L2, error_H1);
     MeshTools::Finalize();
 
     return 0;
