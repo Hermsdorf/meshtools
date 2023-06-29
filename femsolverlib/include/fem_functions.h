@@ -13,8 +13,6 @@ class FEMFunction
     public:
         FEMFunction();
         void ComputeFunction(Element& elem, QGaussData qp);
-        double CAUStab(double u, double u_old, Gradient grad_u, double f,
-                RealVector velocity, double sigma, double K, double dt, double h_caract);
 
         std::vector<double>  &  get_phi() { return _phi; } ;
         std::vector<Gradient>&  get_dphi(){ return _dphi; } ;

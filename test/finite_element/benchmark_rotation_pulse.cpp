@@ -12,6 +12,7 @@
 #include "numeric_vector.h"
 #include "tensor.h"
 #include "xdmf_writer.h"
+#include "fem_stabilizations.h"
 
 #include "test_config.h"
 
@@ -103,8 +104,7 @@ void assemble_transport(TransientImplicitSystem* system)
             fem.ComputeFunction(elem,qrule.get(q));
 
             // SUPG stabilization parameters
-            const double tmp = (velocity) * (G.mult(velocity)) + (k * k) * (G.contract(G)) + dt_stab*4.0/(dt*dt);
-            const double tau = 1.0/sqrt(tmp);
+            const double tau = TAUStab(velocity, G, k, dt_stab, dt);
 
             double u_old  = 0.0;
             Gradient grad_u_old;

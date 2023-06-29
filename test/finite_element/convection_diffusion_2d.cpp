@@ -11,6 +11,7 @@
 #include "dense_matrix.h"
 #include "numeric_vector.h"
 #include "tensor.h"
+#include "fem_stabilizations.h"
 
 #include "test_config.h"
 
@@ -70,8 +71,7 @@ void assemble_convection_diffusion_reaction(NonLinearImplicitSystem* system)
             double h_carach    = elem.calculate_h(JxW);
 
             // SUPG stabilization parameters
-            double tau = (velocity) * (G.mult(velocity)) + (kd * kd) * (G.contract(G)); // + dt_stab*4.0/(dt*dt);
-            tau        = 1.0/sqrt(tau);
+            double tau = TAUStab(velocity, G, kd);
 
             double    u = 0.0;
             Gradient  grad_u;
@@ -88,7 +88,7 @@ void assemble_convection_diffusion_reaction(NonLinearImplicitSystem* system)
             }
 
             // CAU stabilization parameters
-            const double ctau = fem.CAUStab(u, u, grad_u, source_term, velocity, sigma, kd, 1, h_carach)*0.1;
+            const double ctau = CAUStab(u, u, grad_u, source_term, velocity, sigma, kd, 1, h_carach)*0.1;
 
             // calculando a matriz de rigidez e o vetor de forca local
             for (int i = 0; i < nnoel; i++)

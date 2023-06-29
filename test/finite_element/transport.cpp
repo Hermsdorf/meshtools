@@ -12,6 +12,7 @@
 #include "numeric_vector.h"
 #include "tensor.h"
 #include "xdmf_writer.h"
+#include "fem_stabilizations.h"
 
 #include "test_config.h"
 
@@ -117,12 +118,11 @@ void assemble_transport(TransientImplicitSystem* system)
         {
             // Calcula funções para elemento
             fem.ComputeFunction(elem,qrule.get(q));
-            double h_carach    = elem.calculate_h(JxW);
+            double h_carach = elem.calculate_h(JxW);
         
             // SUPG stabilization parameters
-            const double tmp = (velocity) * (G.mult(velocity)) + (k * k) * (G.contract(G)) + dt_stab*4.0/(dt*dt);
-            const double tau = 1.0/sqrt(tmp);
-
+            double tau = TAUStab(velocity, G, k, dt_stab, dt);
+            
             double u_old  = 0.0;
             Gradient grad_u_old;
 
@@ -149,7 +149,7 @@ void assemble_transport(TransientImplicitSystem* system)
             const double adt1 = (1.0-theta)*dt;
             const double adt  = theta*dt;
             // CAU stabilization parameters
-            const double ctau = fem.CAUStab(u, u_old, grad_u, source_term, velocity, sigma, k, dt, h_carach)*0.1;
+            const double ctau = CAUStab(u, u_old, grad_u, source_term, velocity, sigma, k, dt, h_carach)*0.1;
 
             // calculando a matriz de rigidez e o vetor de forca local
             for (int i = 0; i < local_indices.size(); i++)

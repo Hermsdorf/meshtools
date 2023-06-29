@@ -14,6 +14,7 @@
 #include "numeric_vector.h"
 #include "tensor.h"
 #include "xdmf_writer.h"
+#include "fem_stabilizations.h"
 
 #include "test_config.h"
 
@@ -122,8 +123,7 @@ void assemble_transport(TransientImplicitSystem* system)
             }
 
             // SUPG stabilization parameters
-            const double tmp = (velocity) * (G.mult(velocity)) + (k * k) * (G.contract(G)) + dt_stab*4.0/(dt*dt);
-            const double tau = 1.0/sqrt(tmp);
+            const double tau = TAUStab(velocity, G, k, dt_stab, dt);
 
             const double adt1 = (1.0-theta)*dt;
             const double adt  = theta*dt;
