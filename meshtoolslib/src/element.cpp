@@ -24,10 +24,10 @@ double Element::calculate_h(double JxW)
             h = std::sqrt(2.0*JxW);
             break;
         case QUAD4:
-            std::cout << "QUAD4 h characteristic not implemented yet" << std::endl;
+            std::cout << "[element.cpp] QUAD4 h characteristic not implemented yet" << std::endl;
             break;
         case TET4:
-            std:cout << "TET4 h characteristic not implemented yet" << std::endl;
+            std:cout << "[element.cpp]  TET4 h characteristic not implemented yet" << std::endl;
             break;
         default:
             break;

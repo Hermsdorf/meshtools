@@ -5,6 +5,7 @@ add_executable(transport transport.cpp)
 add_executable(benchmark_rotation_pulse benchmark_rotation_pulse.cpp)
 add_executable(benchmark_rotation_coin benchmark_rotation_coin.cpp)
 add_executable(benchmark_disk_stretching benchmark_disk_stretching.cpp)
+add_executable(benchmark_sphere_stretching benchmark_sphere_stretching.cpp)
 add_executable(normal_vectors normal_vectors.cpp)
 add_executable(surface_integral surface_integral.cpp)
 
@@ -14,6 +15,7 @@ include_directories(conv2d    ${MESHTOOLS_INCLUDE_DIR})
 include_directories(transport ${MESHTOOLS_INCLUDE_DIR})
 include_directories(benchmark_rotation_pulse ${MESHTOOLS_INCLUDE_DIR})
 include_directories(benchmark_disk_stretching ${MESHTOOLS_INCLUDE_DIR})
+include_directories(benchmark_sphere_stretching ${MESHTOOLS_INCLUDE_DIR})
 include_directories(normal_vectors ${MESHTOOLS_INCLUDE_DIR})
 include_directories(surface_integral ${MESHTOOLS_INCLUDE_DIR})
 
@@ -87,6 +89,14 @@ ${MESHTOOLS_LIBS}
 )
 
 target_link_libraries(surface_integral
+PRIVATE
+meshtoolslib
+femsolverlib
+fparser
+${MESHTOOLS_LIBS}
+)
+
+target_link_libraries(benchmark_sphere_stretching
 PRIVATE
 meshtoolslib
 femsolverlib

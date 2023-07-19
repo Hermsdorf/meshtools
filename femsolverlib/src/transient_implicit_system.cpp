@@ -128,8 +128,8 @@ void TransientImplicitSystem::solve_nonlinear_system()
         this->_assemble_function(this);
         this->solve_linear_system();
 
-        // Scales the _solution vector by -1.0 and
-        // adds the previous solution to it 
+        // Scales the solution vector by -1.0 and
+        // adds the previous solution vector
         VecAXPY(this->_previous_nonlinear_solution,-1.0, this->_solution);
 
         // Takes the euclidian norm of previous_solution
