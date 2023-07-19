@@ -32,8 +32,8 @@ double initial_condition (const double x,
                           const double t)
 { 
     
-    double dist = (x - 0.35)*(x - 0.35) + (y - 0.35)*(y - 0.35) + (z - 0.35)*(z - 0.35);
-    if(dist < 0.387298) 
+    double dist = sqrt((x - 0.35)*(x - 0.35) + (y - 0.35)*(y - 0.35) + (z - 0.35)*(z - 0.35));
+    if(fabs(dist-0.15) < 5e-5)
         return 1.0;
     return 0.0;
 }
@@ -241,7 +241,7 @@ int sphere_stretching(int argc, char *argv[])
         // irá ler a malha.
         string test_mesh_dir = TEST_MESH_DIR;
         test_mesh_dir.append("benchmark_sphere_stretching/sphere.msh");
-        mesh = new Mesh(test_mesh_dir);
+        mesh = new Mesh("sphere.msh");
 
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha
@@ -265,8 +265,8 @@ int sphere_stretching(int argc, char *argv[])
 
     system->init();
     system->set_final_time(3.0);
-    system->set_deltat(0.01);
-    unsigned int write_interval = 5;
+    system->set_deltat(0.001);
+    unsigned int write_interval = 25;
 
 
     char filename[100];
