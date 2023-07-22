@@ -8,6 +8,7 @@ add_executable(benchmark_disk_stretching benchmark_disk_stretching.cpp)
 add_executable(benchmark_sphere_stretching benchmark_sphere_stretching.cpp)
 add_executable(normal_vectors normal_vectors.cpp)
 add_executable(surface_integral surface_integral.cpp)
+add_executable(poisson3d poisson_3d.cpp)
 
 
 include_directories(poisson   ${MESHTOOLS_INCLUDE_DIR})
@@ -18,6 +19,7 @@ include_directories(benchmark_disk_stretching ${MESHTOOLS_INCLUDE_DIR})
 include_directories(benchmark_sphere_stretching ${MESHTOOLS_INCLUDE_DIR})
 include_directories(normal_vectors ${MESHTOOLS_INCLUDE_DIR})
 include_directories(surface_integral ${MESHTOOLS_INCLUDE_DIR})
+include_directories(poisson3d ${MESHTOOLS_INCLUDE_DIR})
 
 # if(MPI_FOUND)
 # include_directories(poisson ${MPI_C_INCLUDE_PATH})
@@ -104,4 +106,11 @@ fparser
 ${MESHTOOLS_LIBS}
 )
 
+target_link_libraries(poisson3d
+PRIVATE
+meshtoolslib
+femsolverlib
+fparser
+${MESHTOOLS_LIBS}
+)
 

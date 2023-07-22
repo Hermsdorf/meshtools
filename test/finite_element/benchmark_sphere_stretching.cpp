@@ -241,7 +241,7 @@ int sphere_stretching(int argc, char *argv[])
         // irá ler a malha.
         string test_mesh_dir = TEST_MESH_DIR;
         test_mesh_dir.append("benchmark_sphere_stretching/sphere.msh");
-        mesh = new Mesh("sphere.msh");
+        mesh = new Mesh(test_mesh_dir);
 
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha
@@ -258,7 +258,7 @@ int sphere_stretching(int argc, char *argv[])
     TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_sphere_stretching");
     system->set_nonlinear_max_iter(1); // Not using CAU stabilization
     system->add_variable("u");
-    DirichletBoundary  bc(1,0,"0.0","x,y,z");
+    DirichletBoundary bc(1,0,"0.0","x,y,z");
     system->add_dirichlet_boundary(bc);
     system->attach_init_function(init_transport);
     system->attach_assemble(assemble_transport);
