@@ -15,6 +15,37 @@ Point Element::calculate_centroid()
     return centroid;
 }
 
+double _calculate_h_tet4(Element elem)
+{   
+    // Vectors A, B and D are respectively the
+    // vectors from node 0 to nodes 1, 2 and 3.
+    RealVector A(
+        elem.node(1)(0) - elem.node(0)(0),
+        elem.node(1)(1) - elem.node(0)(1),
+        elem.node(1)(2) - elem.node(0)(2)
+    );
+    
+    RealVector B(
+        elem.node(2)(0) - elem.node(0)(0),
+        elem.node(2)(1) - elem.node(0)(1),
+        elem.node(2)(2) - elem.node(0)(2)
+    );
+
+    RealVector D(
+        elem.node(3)(0) - elem.node(0)(0),
+        elem.node(3)(1) - elem.node(0)(1),
+        elem.node(3)(2) - elem.node(0)(2)
+    );
+
+    RealVector AxB = A.cross_product(B);
+    double AxBD = AxB.dot_product(D);
+    double volume = AxBD*0.166666667; // AxBD/6
+    double sphere_radius = std::cbrt(0.75*volume*0.318309886); // 0.318309886 = 1/pi
+    double h = 2*sphere_radius;
+
+    return h;
+}
+
 double Element::calculate_h(double JxW)
 {
     double h = 0.0;
@@ -27,9 +58,10 @@ double Element::calculate_h(double JxW)
             std::cout << "[element.cpp] QUAD4 h characteristic not implemented yet" << std::endl;
             break;
         case TET4:
-            std:cout << "[element.cpp]  TET4 h characteristic not implemented yet" << std::endl;
+            h = _calculate_h_tet4(*this);
             break;
         default:
+            std::cout << "[element.cpp] h characteristic for element type " << this->type() << " not implemented yet" << std::endl;
             break;
     }
 

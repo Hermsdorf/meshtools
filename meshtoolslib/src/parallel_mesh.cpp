@@ -599,11 +599,8 @@ void ParallelMesh::build_communication_map()
                 this->sendto_info.push_back(info);
         }
     }
-    //MPI_Barrier(MeshTools::Comm());
-    //cout << "Processor " << MeshTools::processor_id() << ": " << this->sendto_info.size() << " sendto_info\n";
-    //cout << "Processor " << MeshTools::processor_id() << ": " << this->recvfrom_info.size() << " recvfrom_info\n";
     if(MeshTools::processor_id() == 0)
-        std::cout << "fininshing communication map\n";
+        std::cout << "Communication map finished\n";
 }
 
 void ParallelMesh::update()

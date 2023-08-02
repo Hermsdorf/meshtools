@@ -1,4 +1,5 @@
 #include <math.h>
+#include <omp.h>
 
 #include "petsc.h"
 
@@ -24,6 +25,71 @@ double function_g(const double t)
 {
     const int T = 3;
     return cos(M_PI * t/T);
+}
+
+/*
+    Here we use CFL condition to calculate the time step
+    for the simulation. The CFL condition is given by:
+    cfl = u*dt/dx
+    where u is the velocity, dt is the time step and dx
+    is the characteristic length (h) of the element. The
+    characteristic length of the element is calculated
+    as the diameter of the sphere that circumscribes
+    the element. The velocity is calculated as the
+    maximum velocity of the analytical solution.
+
+    So dt is given by getting the minimum value of the
+    relation h/u for all elements of the mesh.
+*/
+double calculate_stable_dt(ParallelMesh* pmesh, double cfl, double tf)
+{
+    unsigned int nelem = pmesh->get_n_elements();
+    QGauss qrule;
+    FEMFunction fem;
+    double min_relation = PETSC_MAX_REAL;
+
+    double v = 0.0;
+    int time_iterations = tf/0.01;
+    for(unsigned int iel = 0; iel < nelem; iel++)
+    {
+        Element elem;
+        pmesh->getElement(iel, elem);
+
+        qrule.reset(elem);
+        // As TET4 has only one integration point, it is used
+        // this integration point to calculate the characteristic
+        // length of the element
+        fem.ComputeFunction(elem,qrule.get(0));
+        double h = elem.calculate_h(fem.get_JxW());
+
+        std::vector<unsigned int> conn = elem.connectivity();
+        int connsize = conn.size();
+        for(int conn_i = 0; conn_i < connsize; conn_i++)
+        {
+            Point node = elem.node(conn_i);
+            double x = node(0);
+            double y = node(1);
+            double z = node(2);
+            double vel_x_gt = 2*sin(M_PI*x)*sin(M_PI*x)*sin(2*M_PI*y)*sin(2*M_PI*z);
+            double vel_y_gt = -sin(2*M_PI*x)*sin(M_PI*y)*sin(M_PI*y)*sin(2*M_PI*z);
+            double vel_z_gt = -sin(2*M_PI*x)*sin(2*M_PI*y)*sin(M_PI*z)*sin(M_PI*z);
+ 
+            for(int t_iter = 0; t_iter < time_iterations; t_iter++)
+            {
+                double t = t_iter*0.01;
+                double gt = function_g(t);
+                double vel_x = vel_x_gt*gt;
+                double vel_y = vel_y_gt*gt;
+                double vel_z = vel_z_gt*gt;
+
+                v = sqrt(vel_x*vel_x + vel_y*vel_y + vel_z*vel_z);
+            }
+
+            min_relation = std::min(min_relation, h/v);            
+        }
+    }
+    double dt = cfl*min_relation;
+    return dt;
 }
 
 double initial_condition (const double x,
@@ -125,8 +191,7 @@ void assemble_transport(TransientImplicitSystem* system)
         {
             // Calcula funções para elemento
             fem.ComputeFunction(elem,qrule.get(q));
-            // double h_carach = elem.calculate_h(JxW);
-
+            double h_carach = elem.calculate_h(JxW);
 
             RealVector velocity;
             double u_old  = 0.0;
@@ -171,7 +236,7 @@ void assemble_transport(TransientImplicitSystem* system)
             const double tau = TAUStab(velocity, G, k, dt_stab, dt);
 
             // CAU stabilization parameters
-            // const double ctau = CAUStab(u, u_old, grad_u, source_term, velocity, sigma, k, dt, h_carach);
+            const double ctau = CAUStab(u, u_old, grad_u, source_term, velocity, sigma, k, dt, h_carach);
 
             const double adt1 = (1.0-theta)*dt;
             const double adt  = theta*dt;
@@ -208,7 +273,7 @@ void assemble_transport(TransientImplicitSystem* system)
                             );
 
                     // CAU contribution
-                    // Ke(i,j) += JxW * ctau * adt * (dphi[i] * dphi[j]);
+                    Ke(i,j) += JxW * ctau * adt * (dphi[i] * dphi[j]);
 
                 }
             }
@@ -256,7 +321,6 @@ int sphere_stretching(int argc, char *argv[])
 
     // Cria o sistema de equações implicito
     TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_sphere_stretching");
-    system->set_nonlinear_max_iter(1); // Not using CAU stabilization
     system->add_variable("u");
     DirichletBoundary bc(1,0,"0.0","x,y,z");
     system->add_dirichlet_boundary(bc);
@@ -264,8 +328,17 @@ int sphere_stretching(int argc, char *argv[])
     system->attach_assemble(assemble_transport);
 
     system->init();
-    system->set_final_time(3.0);
-    system->set_deltat(0.001);
+
+    double tf = 3.0;
+    double local_dt = calculate_stable_dt(pmesh, 1, tf);
+    double dt;
+    MPI_Allreduce(&local_dt, &dt, 1, MPI_DOUBLE, MPI_MIN, PETSC_COMM_WORLD);
+
+    if (processor_id == 0)
+        printf("Respecting CFL condition, dt = %f\n", dt);
+
+    system->set_final_time(tf);
+    system->set_deltat(dt);
     unsigned int write_interval = 25;
 
 
