@@ -474,8 +474,8 @@ int Mesh::getGmshElemTypeDim(int type)
 // Hash function to fill face_to_element array
 // Referencia: cantor pairing function
 // http://stackoverflow.com/questions/919612/mapping-two-integers-to-one-in-a-unique-and-deterministic-way
-unsigned long cantor_pairing(unsigned int a, unsigned int b) {
-    unsigned long hash = (a + b + 1) * (a + b) / 2 + b; 
+unsigned long long cantor_pairing(unsigned long long a, unsigned long long b) {
+    unsigned long long hash = (a + b + 1) * (a + b) / 2 + b; 
     return hash;
 }
 
@@ -487,7 +487,7 @@ void Mesh::process_face_to_element()
 
     std::vector<int> face_to_element(n_face_elements, -1); // -1 means no element yet
 
-    unordered_map<unsigned long, int> face_elements_hash;
+    unordered_map<unsigned long long, unsigned int> face_elements_hash;
 
     // Calculating hash to each surface element
     for (int i = 0; i < n_face_elements; i++) {
@@ -501,7 +501,7 @@ void Mesh::process_face_to_element()
 
         std::sort(conn_tmp.begin(), conn_tmp.end());
 
-        unsigned long element_hash = conn_tmp[0];
+        unsigned long long element_hash = conn_tmp[0];
         for (unsigned short conn_i = 1 ; conn_i < surf_element_nnodes ; conn_i++){
             element_hash = cantor_pairing(element_hash, conn_tmp[conn_i]);
         }
@@ -515,6 +515,13 @@ void Mesh::process_face_to_element()
         }
         std::cout << std::endl;
 #endif
+    }
+
+    if (face_elements_hash.size() != n_face_elements)
+    {
+        std::cout << "Face to element relation wasn't calculated correctly, ";
+        std::cout << "there are equal hashs to different elements, exiting..." << std::endl;
+        exit(1);
     }
 
 
