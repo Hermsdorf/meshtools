@@ -38,18 +38,18 @@ double function_g(const double t)
     the element. The velocity is calculated as the
     maximum velocity of the analytical solution.
 
-    So dt is given by getting the minimum value of the
-    relation h/u for all elements of the mesh.
+    So dt for a given time step is calculated with the minimum
+    h characteristic and the maximum velocity for all elements.
 */
-double calculate_stable_dt(ParallelMesh* pmesh, double cfl, double tf)
+double calculate_stable_dt(ParallelMesh* pmesh, double cfl, double t)
 {
     unsigned int nelem = pmesh->get_n_elements();
     QGauss qrule;
     FEMFunction fem;
-    double min_relation = PETSC_MAX_REAL;
+    double min_h = PETSC_MAX_REAL;
+    double max_velocity = 0.0;
 
-    double v = 0.0;
-    int time_iterations = tf/0.01;
+    double velocity = 0.0;
     for(unsigned int iel = 0; iel < nelem; iel++)
     {
         Element elem;
@@ -74,21 +74,19 @@ double calculate_stable_dt(ParallelMesh* pmesh, double cfl, double tf)
             double vel_y_gt = -sin(2*M_PI*x)*sin(M_PI*y)*sin(M_PI*y)*sin(2*M_PI*z);
             double vel_z_gt = -sin(2*M_PI*x)*sin(2*M_PI*y)*sin(M_PI*z)*sin(M_PI*z);
  
-            for(int t_iter = 0; t_iter < time_iterations; t_iter++)
-            {
-                double t = t_iter*0.01;
-                double gt = function_g(t);
-                double vel_x = vel_x_gt*gt;
-                double vel_y = vel_y_gt*gt;
-                double vel_z = vel_z_gt*gt;
+            double gt = function_g(t);
+            double vel_x = vel_x_gt*gt;
+            double vel_y = vel_y_gt*gt;
+            double vel_z = vel_z_gt*gt;
 
-                v = sqrt(vel_x*vel_x + vel_y*vel_y + vel_z*vel_z);
-            }
+            velocity = sqrt(vel_x*vel_x + vel_y*vel_y + vel_z*vel_z);
 
-            min_relation = std::min(min_relation, h/v);            
+            min_h = std::min(min_h, h);
+            max_velocity = std::max(max_velocity, velocity);            
         }
     }
-    double dt = cfl*min_relation;
+
+    double dt = cfl*min_h/max_velocity;
     return dt;
 }
 
@@ -133,7 +131,6 @@ double f(Point p, double t)
 
 void assemble_transport(TransientImplicitSystem* system)
 {
-
     auto pmesh = system->get_mesh();
     int  ndim  =  pmesh.getDim();
 
@@ -196,7 +193,6 @@ void assemble_transport(TransientImplicitSystem* system)
             RealVector velocity;
             double u_old  = 0.0;
             Gradient grad_u_old;
-
         
             double    u = 0.0;
             Gradient  grad_u;
@@ -230,7 +226,6 @@ void assemble_transport(TransientImplicitSystem* system)
             }
 
             source_term = f(xyz,t);
-
 
             // SUPG stabilization parameters
             const double tau = TAUStab(velocity, G, k, dt_stab, dt);
@@ -330,8 +325,8 @@ int sphere_stretching(int argc, char *argv[])
     system->init();
 
     double tf = 3.0;
-    double local_dt = calculate_stable_dt(pmesh, 1, tf);
     double dt;
+    double local_dt = calculate_stable_dt(pmesh, 1, 0.0);
     MPI_Allreduce(&local_dt, &dt, 1, MPI_DOUBLE, MPI_MIN, PETSC_COMM_WORLD);
 
     if (processor_id == 0)
@@ -353,6 +348,16 @@ int sphere_stretching(int argc, char *argv[])
 
         if(system->get_time_step()%write_interval == 0 )
             system->write_result(filename);
+        
+        // Dynamic time step
+        local_dt = calculate_stable_dt(pmesh, 1, system->get_time());
+        MPI_Allreduce(&local_dt, &dt, 1, MPI_DOUBLE, MPI_MIN, PETSC_COMM_WORLD);
+        if(dt < 0.0001)
+            dt = 0.0001;
+        if(dt > 0.1)
+            dt = 0.1;
+
+        system->set_deltat(dt);
     }
 
     system->write_result(filename);
