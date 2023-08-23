@@ -16,7 +16,13 @@ option(MPI_ENABLE       "Enable MPI" ON)
 option(OpenMP_ENABLE    "Enable OpenMP" ON)
 option(CATALYST_ENABLE  "Enable Paraview Catalyst" OFF)
 option(DEBUG_ENABLE  "Enable Paraview Catalyst" OFF)
+option(TAU_PROFILER_ENABLE  "Enable TAU Profiler" OFF)
 
+if(TAU_PROFILER_ENABLE)
+  set(TAU_DIR /opt/app/tau/x86_64)
+  set(CMAKE_CXX_COMPILER /opt/app/tau/x86_64/bin/tau_cxx.sh)
+  set(CMAKE_C_COMPILER /opt/app/tau/x86_64/bin/tau_cc.sh)
+endif()
 
 
 if(DEBUG_ENABLE)

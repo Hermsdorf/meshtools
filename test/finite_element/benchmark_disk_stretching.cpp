@@ -20,6 +20,8 @@
 
 static char help[] = "Benchmark with Disk Stretching experiment\n\n";
 
+#define PROFILING
+
 double function_g(const double t)
 {
     const int T = 8;
@@ -164,7 +166,7 @@ void assemble_transport(TransientImplicitSystem* system)
             const double tau = TAUStab(velocity, G, k, dt_stab, dt);
 
             // CAU stabilization parameters
-            const double ctau = CAUStab(u, u_old, grad_u, source_term, velocity, sigma, k, dt, h_carach);
+            // const double ctau = CAUStab(u, u_old, grad_u, source_term, velocity, sigma, k, dt, h_carach);
 
             const double adt1 = (1.0-theta)*dt;
             const double adt  = theta*dt;
@@ -260,8 +262,10 @@ int disk_stretching(int argc, char *argv[])
     system->attach_assemble(assemble_transport);
 
     system->init();
-    system->set_final_time(1.0);
+    system->set_final_time(0.1);
     system->set_deltat(0.0025);
+    system->set_nonlinear_max_iter(1);
+    
     unsigned int write_interval = 20;
 
 
@@ -270,18 +274,26 @@ int disk_stretching(int argc, char *argv[])
     system->write_result(filename);
 
     // Time integratiom
+#ifdef PROFILING
+   PetscLogStage  stagenum0;
+   PetscLogStageRegister("Time Integration", &stagenum0); 
+   PetscLogStagePush(stagenum0);   
+#endif
     while(system->get_time() < system->get_final_time())
     {
         system->solve_time_step();
 
         if(system->get_time_step()%write_interval == 0 )
         {
-            sprintf(filename,"solution");
+            //sprintf(filename,"solution");
             system->write_result(filename);
         }
     }
+#ifdef PROFILING
+   PetscLogStagePop();   
+#endif
 
-    sprintf(filename,"solution");
+    //sprintf(filename,"solution");
     system->write_result(filename);
 
     delete system;

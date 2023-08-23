@@ -229,12 +229,12 @@ int stretching_disk(int argc, char *argv[])
 
         if(system->get_time_step()%write_interval == 0 )
         {
-            sprintf(filename,"solution");
+            //sprintf(filename,"solution");
             system->write_result(filename);
         }
     }
 
-    sprintf(filename,"solution");
+    //sprintf(filename,"solution");
     system->write_result(filename);
 
     delete system;
