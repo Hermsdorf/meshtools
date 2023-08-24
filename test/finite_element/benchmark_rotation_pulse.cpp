@@ -223,12 +223,9 @@ int rotation_pulse(int argc, char *argv[])
 
         if(system->get_time_step()%write_interval == 0 )
         {
-            //sprintf(filename,"rotation_pulse");
             system->write_result(filename);
         }
     }
-
-    //sprintf(filename,"rotation_pulse");
     system->write_result(filename);
 
     delete system;
