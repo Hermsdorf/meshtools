@@ -174,7 +174,7 @@ void assemble_transport(TransientImplicitSystem* system)
 }
 
 
-int stretching_disk(int argc, char *argv[])
+int rotation_coin(int argc, char *argv[])
 {
     PetscErrorCode ierr;
     MeshPartition *parts = new MeshPartition();
@@ -205,7 +205,7 @@ int stretching_disk(int argc, char *argv[])
     pmesh = parts->DistributedMesh(mesh);
 
     // Cria o sistema de equações implicito
-    TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_stretching_disk");
+    TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_rotation_coin");
     system->add_variable("u");
     DirichletBoundary  bc(1,0,"0.0","x,y,z");
     system->add_dirichlet_boundary(bc);
@@ -229,12 +229,9 @@ int stretching_disk(int argc, char *argv[])
 
         if(system->get_time_step()%write_interval == 0 )
         {
-            //sprintf(filename,"solution");
             system->write_result(filename);
         }
     }
-
-    //sprintf(filename,"solution");
     system->write_result(filename);
 
     delete system;
@@ -250,6 +247,6 @@ int stretching_disk(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     MeshTools::Init(argc,argv);
-    stretching_disk(argc, argv);
+    rotation_coin(argc, argv);
     MeshTools::Finalize();
 }

@@ -259,13 +259,10 @@ int transport(int argc, char *argv[])
 
         if(system->get_time_step()%write_interval == 0)
         {
-            sprintf(filename,"solution");
             system->write_result(filename);
             //xdmf.write(system,system->get_time());
         }
     }
-
-    sprintf(filename,"solution");
     system->write_result(filename);
     //xdmf.write(system,system->get_time());
     
