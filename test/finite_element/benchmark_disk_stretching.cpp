@@ -239,7 +239,7 @@ int disk_stretching(int argc, char *argv[])
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha.
         string test_mesh_dir = TEST_MESH_DIR;
-        test_mesh_dir.append("benchmark_rotation_coin/benchmark_coin_tri3_131knodes.msh");
+        test_mesh_dir.append("benchmark_rotation_coin/benchmark_coin_tri3.msh");
         mesh = new Mesh(test_mesh_dir);
 
         // Se houver mais um processo, o processo mestre irá
