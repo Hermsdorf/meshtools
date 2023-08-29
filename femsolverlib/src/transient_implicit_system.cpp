@@ -98,6 +98,7 @@ void TransientImplicitSystem::solve_time_step()
     
     // getting solution at t+dt
     this->solve_nonlinear_system();
+    //this->solve_linear_system();
 
     MatZeroEntries(this->_A);
     VecZeroEntries(this->_rhs);
@@ -145,8 +146,10 @@ void TransientImplicitSystem::solve_nonlinear_system()
         VecZeroEntries(this->_rhs);
     }
 
-    PetscPrintf(MeshTools::Comm(), "Nonlinear number of iterations = %d\n", iter);
-    PetscPrintf(MeshTools::Comm(), "Nonlinear final norm of residual: %f\n", _solution_norm);
+    while(_max_nonlinear_iterations > 1){
+        PetscPrintf(MeshTools::Comm(), "Nonlinear number of iterations = %d\n", iter);
+        PetscPrintf(MeshTools::Comm(), "Nonlinear final norm of residual: %f\n", _solution_norm);
+    }
 }
 
 void TransientImplicitSystem::update_deltat()

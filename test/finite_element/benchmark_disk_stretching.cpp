@@ -22,10 +22,25 @@ static char help[] = "Benchmark with Disk Stretching experiment\n\n";
 
 #define PROFILING
 
+#define T 8.0
 double function_g(const double t)
 {
-    const int T = 8;
-    return cos(2.0 * M_PI * t/T);
+    return cos(M_PI * t/T);
+}
+
+
+double velocity_x(const double x,
+                  const double y,
+                  const double t)
+{
+    return function_g(t)*sin(2 * M_PI * y) * sin(M_PI * x) * sin(M_PI *x);
+}
+
+double velocity_y(const double x,
+                  const double y,
+                  const double t)
+{
+    return -function_g(t)*sin(2 * M_PI * x) * sin(M_PI * y) * sin(M_PI *y);
 }
 
 double initial_condition (const double x,
@@ -34,7 +49,7 @@ double initial_condition (const double x,
 { 
     
     double dist = (x - 0.5)*(x - 0.5) + (y - 0.75)*(y - 0.75);
-    if(dist-0.01 < 0.0001) 
+    if(dist-0.015 < 1.0E-3) 
         return 1.0;
     return 0.0;
 }
@@ -136,18 +151,18 @@ void assemble_transport(TransientImplicitSystem* system)
             double    u = 0.0;
             Gradient  grad_u;
 
-            velocity(0)   = 0.0;  //function_g(t)*sin(2 * M_PI * xyz(1)) * sin(M_PI * xyz(0)) * sin(M_PI * xyz(0)); 
-            velocity(1)   = 0.0; //-function_g(t)*sin(2 * M_PI * xyz(0)) * sin(M_PI * xyz(1)) * sin(M_PI * xyz(1));
+            velocity(0)   = velocity_x(xyz(0), xyz(1),t);  //function_g(t)*sin(2 * M_PI * xyz(1)) * sin(M_PI * xyz(0)) * sin(M_PI * xyz(0)); 
+            velocity(1)   = velocity_y(xyz(0), xyz(1),t);  //-function_g(t)*sin(2 * M_PI * xyz(0)) * sin(M_PI * xyz(1)) * sin(M_PI * xyz(1));
            
             for (int i = 0; i < local_indices.size(); i++)
             {
                 double x      = elem.node(i)(0);
                 double y      = elem.node(i)(1);
-                double velx_x = gt*sin(2 * M_PI * y) * sin(M_PI * x) * sin(M_PI *x);
-                double velx_y = -gt*sin(2 * M_PI * x) * sin(M_PI * y) * sin(M_PI *y);
+                //double velx_x = gt*sin(2 * M_PI * y) * sin(M_PI * x) * sin(M_PI *x);
+                //double velx_y = -gt*sin(2 * M_PI * x) * sin(M_PI * y) * sin(M_PI *y);
 
-                velocity(0) += velx_x * phi[i];
-                velocity(1) += velx_y * phi[i];
+                //velocity(0) += velx_x * phi[i];
+                //velocity(1) += velx_y * phi[i];
                 
                 u_old         +=  old_solution[local_indices[i]]*phi[i];
                 grad_u_old(0) +=  old_solution[local_indices[i]]*dphi[i](0);
@@ -239,7 +254,7 @@ int disk_stretching(int argc, char *argv[])
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha.
         string test_mesh_dir = TEST_MESH_DIR;
-        test_mesh_dir.append("benchmark_rotation_coin/benchmark_coin_tri3.msh");
+        test_mesh_dir.append("benchmark_disc_stretching/disk.msh");
         mesh = new Mesh(test_mesh_dir);
 
         // Se houver mais um processo, o processo mestre irá
@@ -257,12 +272,14 @@ int disk_stretching(int argc, char *argv[])
     TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_disk_stretching");
     system->add_variable("u");
     DirichletBoundary  bc(1,0,"0.0","x,y,z");
+    InitialCondition   ic(3,0,"1.0","x,y,z");
+    system->add_initial_condition(ic);
     system->add_dirichlet_boundary(bc);
-    system->attach_init_function(init_transport);
+    //system->attach_init_function(init_transport);
     system->attach_assemble(assemble_transport);
 
     system->init();
-    system->set_final_time(0.1);
+    system->set_final_time(T);
     system->set_deltat(0.0025);
     system->set_nonlinear_max_iter(1);
     

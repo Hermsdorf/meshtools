@@ -213,9 +213,9 @@ int rotation_coin(int argc, char *argv[])
     system->attach_assemble(assemble_transport);
 
     system->init();
-    system->set_final_time(5.0);
-    system->set_deltat(0.04);
-    unsigned int write_interval = 10;
+    system->set_final_time(8.0);
+    system->set_deltat(0.005);
+    unsigned int write_interval = 20;
 
 
     char filename[100];
