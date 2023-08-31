@@ -39,6 +39,10 @@ class ImplicitSystem
         
         void   solve();
 
+        void set_linear_tolerance(double tol);
+
+        double get_linear_final_residual();
+
         ~ImplicitSystem();
     protected:
         
@@ -53,6 +57,7 @@ class ImplicitSystem
         EquationManager          _equations;
         ParallelMesh&            _mesh;
         VecScatter               _scatter;
+        double                   _linear_tolerance;
         void   solve_linear_system();
         void   write_hdf5(unsigned int nfile);
         

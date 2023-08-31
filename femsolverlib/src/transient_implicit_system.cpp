@@ -98,7 +98,6 @@ void TransientImplicitSystem::solve_time_step()
     
     // getting solution at t+dt
     this->solve_nonlinear_system();
-    //this->solve_linear_system();
 
     MatZeroEntries(this->_A);
     VecZeroEntries(this->_rhs);
@@ -119,7 +118,12 @@ void TransientImplicitSystem::solve_nonlinear_system()
     double _solution_norm;
 
     unsigned int _max_nonlinear_iterations = get_nonlinear_max_iter();
-    float _tolerance = get_nonlinear_tolerance();
+    float _tolerance                       = get_nonlinear_tolerance();
+
+    double initial_tol = _linear_tolerance;
+    double final_linear_residual;
+
+    KSPSetTolerances(this->_ksp, initial_tol, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
 
     while(iter < _max_nonlinear_iterations)
     {
@@ -129,6 +133,15 @@ void TransientImplicitSystem::solve_nonlinear_system()
         this->_assemble_function(this);
         this->solve_linear_system();
 
+        KSPGetResidualNorm(this->_ksp, &final_linear_residual);
+        if((iter == 0) && final_linear_residual >= _tolerance)
+        {
+            initial_tol*=1.0E-3;
+            PetscPrintf(MeshTools::Comm(), "   Initial Linear solution rejected!\n   Pick an even lower linear solver tolerance\n   and try again\n");
+            set_linear_tolerance(initial_tol);
+            this->solve_linear_system();
+        }
+
         // Scales the solution vector by -1.0 and
         // adds the previous solution vector
         VecAXPY(this->_previous_nonlinear_solution,-1.0, this->_solution);
@@ -137,6 +150,7 @@ void TransientImplicitSystem::solve_nonlinear_system()
         // vector and stores it in _solution_norm
         VecNorm(this->_previous_nonlinear_solution, NORM_2, &_solution_norm);
 
+
         if(_solution_norm < _tolerance)
             break;
 
@@ -144,11 +158,25 @@ void TransientImplicitSystem::solve_nonlinear_system()
 
         MatZeroEntries(this->_A);
         VecZeroEntries(this->_rhs);
+
+        // For the inexact Newton
+        // method, the linear solver tolerance needs to decrease as we get closer to
+        // the solution to ensure quadratic convergence.  The new linear solver tolerance
+        // is chosen (heuristically) as the square of the previous linear system residual norm.
+        // Real flr2 = final_linear_residual*final_linear_residual;
+
+        double flr2 = final_linear_residual*final_linear_residual;
+        double new_linear_solver_tolerance = std::min(std::max(flr2,10E-16), initial_tol);
+
+        KSPSetTolerances(this->_ksp, new_linear_solver_tolerance, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
     }
 
-    while(_max_nonlinear_iterations > 1){
-        PetscPrintf(MeshTools::Comm(), "Nonlinear number of iterations = %d\n", iter);
-        PetscPrintf(MeshTools::Comm(), "Nonlinear final norm of residual: %f\n", _solution_norm);
+    MatZeroEntries(this->_A);
+    VecZeroEntries(this->_rhs);
+
+    if(_max_nonlinear_iterations > 1){
+        PetscPrintf(MeshTools::Comm(), "Nonlinear number of iterations = %d\n", iter+1);
+        PetscPrintf(MeshTools::Comm(), "Nonlinear final norm of residual: %8.8e\n", _solution_norm);
     }
 }
 

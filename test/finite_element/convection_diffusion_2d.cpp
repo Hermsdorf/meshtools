@@ -68,7 +68,7 @@ void assemble_convection_diffusion_reaction(NonLinearImplicitSystem* system)
         {
             // calculando a função de forma e suas derivadas para o ponto de integração q
             fem.ComputeFunction(elem, qrule.get(q));
-            double h_carach    = elem.calculate_h(JxW);
+            double h_carach    = elem.calculate_h();
 
             // SUPG stabilization parameters
             double tau = TAUStab(velocity, G, kd);

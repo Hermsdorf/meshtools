@@ -140,7 +140,9 @@ void assemble_transport(TransientImplicitSystem* system)
         {
             // Calcula funções para elemento
             fem.ComputeFunction(elem,qrule.get(q));
-            double h_carach = elem.calculate_h(JxW);
+            double h_carach = elem.calculate_h();
+
+            assert(h_carach >= 0.0);
 
 
             RealVector velocity;
@@ -156,14 +158,6 @@ void assemble_transport(TransientImplicitSystem* system)
            
             for (int i = 0; i < local_indices.size(); i++)
             {
-                double x      = elem.node(i)(0);
-                double y      = elem.node(i)(1);
-                //double velx_x = gt*sin(2 * M_PI * y) * sin(M_PI * x) * sin(M_PI *x);
-                //double velx_y = -gt*sin(2 * M_PI * x) * sin(M_PI * y) * sin(M_PI *y);
-
-                //velocity(0) += velx_x * phi[i];
-                //velocity(1) += velx_y * phi[i];
-                
                 u_old         +=  old_solution[local_indices[i]]*phi[i];
                 grad_u_old(0) +=  old_solution[local_indices[i]]*dphi[i](0);
                 grad_u_old(1) +=  old_solution[local_indices[i]]*dphi[i](1);
@@ -182,6 +176,28 @@ void assemble_transport(TransientImplicitSystem* system)
 
             // CAU stabilization parameters
             // const double ctau = CAUStab(u, u_old, grad_u, source_term, velocity, sigma, k, dt, h_carach);
+            
+            // YZB Stabilization 
+            // Reference:
+            // Bazilevs, Y., Calo, V.M., Tezduyar, T.E. and Hughes, T.J.R. (2007), 
+            // YZβ discontinuity capturing for advection-dominated processes with 
+            // application to arterial drug delivery. Int. J. Numer. Meth. Fluids, 54: 593-608. 
+            // https://doi.org/10.1002/fld.1484
+            double beta    = 1.0;
+            double phi_ref = 1.0;
+            double fopc    = 0.1;
+            double inv_phi_ref = 1.0 / phi_ref;
+
+            double dudt        = (u - u_old) / dt;
+            double adv         = (velocity * grad_u);
+            double reac        = sigma*u;
+
+            double residuo = dudt + adv - reac - source_term;
+            double A       = abs(residuo) / phi_ref;
+            double tmp1    = pow(grad_u(0)*inv_phi_ref,2.0) + pow(grad_u(1)*inv_phi_ref,2.0);
+            double B       = tmp1 > 0.0 ? pow(tmp1, (beta / 2.0 - 1.0)): 0.0;
+            double C = pow(h_carach / 2.0, beta);
+            const double ctau = A*B*C*fopc;
 
             const double adt1 = (1.0-theta)*dt;
             const double adt  = theta*dt;
@@ -221,8 +237,8 @@ void assemble_transport(TransientImplicitSystem* system)
                                      adt * (sigma * phi[j] )*(velocity * dphi[i])
                             );
 
-                    // CAU contribution
-                    // Ke(i,j) += JxW * ctau * adt * (dphi[i] * dphi[j] );
+                    // YZB contribution
+                    Ke(i,j) += JxW * ctau * adt * (dphi[i] * dphi[j] );
 
                 }
             }
@@ -254,7 +270,7 @@ int disk_stretching(int argc, char *argv[])
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha.
         string test_mesh_dir = TEST_MESH_DIR;
-        test_mesh_dir.append("benchmark_disc_stretching/disk.msh");
+        test_mesh_dir.append("benchmark_disc_stretching/disk_quad4.msh");
         mesh = new Mesh(test_mesh_dir);
 
         // Se houver mais um processo, o processo mestre irá
@@ -281,8 +297,11 @@ int disk_stretching(int argc, char *argv[])
     system->init();
     system->set_final_time(T);
     system->set_deltat(0.0025);
-    system->set_nonlinear_max_iter(1);
-    
+    system->set_nonlinear_max_iter(7);
+    system->set_nonlinear_tolerance(1.0E-4);
+    system->set_linear_tolerance(1.0E-3);
+
+
     unsigned int write_interval = 20;
 
 

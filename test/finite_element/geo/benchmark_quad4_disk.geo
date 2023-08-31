@@ -46,3 +46,7 @@ Physical Curve("BOUND", 1) = {4, 3, 2, 1};
 Physical Surface("DOMAIN", 2) = {1};
 //+
 Physical Surface("DISK", 3) = {2};
+//+
+Transfinite Curve {6, 5} = 150 Using Progression 1;
+//+
+Transfinite Curve {4, 2, 1, 3} = 200 Using Progression 1;

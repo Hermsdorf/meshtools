@@ -149,7 +149,6 @@ void ImplicitSystem::init()
     KSPCreate(MeshTools::Comm(), &this->_ksp);
     KSPSetOperators(this->_ksp, this->_A, this->_A);
     KSPSetType(this->_ksp, KSPGMRES);
-    KSPSetTolerances(this->_ksp, 1e-12, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
     KSPSetFromOptions(this->_ksp);
 }
 
@@ -198,7 +197,7 @@ void ImplicitSystem::solve()
  * solution vector.
 */
 void ImplicitSystem::solve_linear_system()
-{
+{ 
     MatAssemblyBegin(_A, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(_A, MAT_FINAL_ASSEMBLY);
 
@@ -220,6 +219,24 @@ void ImplicitSystem::solve_linear_system()
     // Realiza o scatter de solução global para local
     VecScatterBegin(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
     VecScatterEnd(this->_scatter  , this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
+}
+
+/**
+ * @brief Set the linear tolerance
+ * 
+ * @param tol 
+ */
+void ImplicitSystem::set_linear_tolerance(double tol)
+{
+    this->_linear_tolerance = tol;
+    //KSPSetTolerances(this->_ksp, tol, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
+}
+
+double ImplicitSystem::get_linear_final_residual()
+{
+    double rnorm;
+    KSPGetResidualNorm(this->_ksp, &rnorm);
+    return rnorm;
 }
 
 /**

@@ -15,7 +15,7 @@ class Element
         unsigned int&               region()  {return _tag; } ;
         unsigned int                n_nodes() {return _conn.size(); };
         Point                       calculate_centroid();
-        double                      calculate_h(double JxW);
+        double                      calculate_h();
     private:
         std::vector<unsigned int> _conn;
         std::vector<Point>        _coords;

@@ -90,7 +90,7 @@ void assemble_transport(TransientImplicitSystem* system)
         qrule.reset(elem);
 
         Gradient velocity;
-        double k            = 0.0;
+        double k            = 1.0E-08;
         double sigma        = 0.0;
         double theta        = 0.5;
         double dt           = system->get_deltat();
@@ -184,7 +184,7 @@ int rotation_pulse(int argc, char *argv[])
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha.
         string test_mesh_dir = TEST_MESH_DIR;
-        test_mesh_dir.append("benchmark_rotation_pulse/benchmark_rotpulse_tri3.msh");
+        test_mesh_dir.append("benchmark_rotation_pulse/benchmark_rotpulse_tri3_256.msh");
         mesh = new Mesh(test_mesh_dir);
 
         // Se houver mais um processo, o processo mestre irá
@@ -208,8 +208,9 @@ int rotation_pulse(int argc, char *argv[])
 
     system->init();
     system->set_final_time(2*M_PI);
-    system->set_deltat(0.04);
-    unsigned int write_interval = 10;
+    system->set_deltat(0.0025);
+    system->set_nonlinear_max_iter(1);
+    unsigned int write_interval = 20;
 
 
     char filename[100];

@@ -60,7 +60,7 @@ double calculate_stable_dt(ParallelMesh* pmesh, double cfl, double t)
         // this integration point to calculate the characteristic
         // length of the element
         fem.ComputeFunction(elem,qrule.get(0));
-        double h = elem.calculate_h(fem.get_JxW());
+        double h = elem.calculate_h();
 
         std::vector<unsigned int> conn = elem.connectivity();
         int connsize = conn.size();
@@ -188,7 +188,7 @@ void assemble_transport(TransientImplicitSystem* system)
         {
             // Calcula funções para elemento
             fem.ComputeFunction(elem,qrule.get(q));
-            double h_carach = elem.calculate_h(JxW);
+            double h_carach = elem.calculate_h();
 
             RealVector velocity;
             double u_old  = 0.0;

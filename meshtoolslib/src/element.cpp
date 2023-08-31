@@ -15,7 +15,7 @@ Point Element::calculate_centroid()
     return centroid;
 }
 
-double _calculate_h_tet4(Element elem)
+double _calculate_h_tet4(Element &elem)
 {   
     // Vectors A, B and D are respectively the
     // vectors from node 0 to nodes 1, 2 and 3.
@@ -46,16 +46,58 @@ double _calculate_h_tet4(Element elem)
     return h;
 }
 
-double Element::calculate_h(double JxW)
+double _calculate_h_quad4(Element &elem)
+{
+    // Characteristic length for QUAD4 elements
+    // is the length of the diagonal of the element
+    RealVector A(
+        elem.node(2)(0) - elem.node(0)(0),
+        elem.node(2)(1) - elem.node(0)(1),
+        elem.node(2)(2) - elem.node(0)(2)
+    );
+
+    return A.norm();
+}
+
+double _calculate_h_tri3(Element &elem)
+{
+    // Characteristic length for TRI3 elements
+    // is the length of the longest edge of the element
+    RealVector A(
+        elem.node(1)(0) - elem.node(0)(0),
+        elem.node(1)(1) - elem.node(0)(1),
+        elem.node(1)(2) - elem.node(0)(2)
+    );
+
+    RealVector B(
+        elem.node(2)(0) - elem.node(0)(0),
+        elem.node(2)(1) - elem.node(0)(1),
+        elem.node(2)(2) - elem.node(0)(2)
+    ); 
+
+    RealVector C(
+        elem.node(2)(0) - elem.node(1)(0),
+        elem.node(2)(1) - elem.node(1)(1),
+        elem.node(2)(2) - elem.node(1)(2)
+    );  
+
+    double   h = A.norm();
+    h = std::max(h, B.norm());
+    h = std::max(h, C.norm());
+    return h;
+
+}
+
+double Element::calculate_h()
 {
     double h = 0.0;
     switch (this->type())
     {
         case TRI3:
-            h = std::sqrt(2.0*JxW);
+            h = _calculate_h_tri3(*this);
             break;
         case QUAD4:
-            std::cout << "[element.cpp] QUAD4 h characteristic not implemented yet" << std::endl;
+            h = _calculate_h_quad4(*this);
             break;
         case TET4:
             h = _calculate_h_tet4(*this);
@@ -64,6 +106,8 @@ double Element::calculate_h(double JxW)
             std::cout << "[element.cpp] h characteristic for element type " << this->type() << " not implemented yet" << std::endl;
             break;
     }
+
+    assert(h > 0.0);
 
     return h;
 }
