@@ -146,7 +146,7 @@ void TransientImplicitSystem::solve_nonlinear_system()
         VecZeroEntries(this->_rhs);
     }
 
-    while(_max_nonlinear_iterations > 1){
+    if(_max_nonlinear_iterations > 1){
         PetscPrintf(MeshTools::Comm(), "Nonlinear number of iterations = %d\n", iter);
         PetscPrintf(MeshTools::Comm(), "Nonlinear final norm of residual: %f\n", _solution_norm);
     }
