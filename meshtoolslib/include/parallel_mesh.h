@@ -21,7 +21,7 @@ class ParallelMesh : public Mesh{
         void readParallelMeshBin(const char* filename);
 
         void writePVTK(const char* fname, MeshIODataAppended* info = nullptr);
-        void WritePMesh(const char *fname);
+        void WritePMeshMTS(const char *fname);
         
         unsigned int                get_n_global_nodes(); 
         void                        set_n_global_nodes(unsigned int n_global_nodes);
@@ -58,6 +58,7 @@ class ParallelMesh : public Mesh{
         void getGhostNodesIds(std::vector<unsigned int>& local_ghosts_nodes, std::vector<unsigned int>& global_ghosts_nodes);
         void update();
         void build_communication_map();
+
     private:
         
         bool internal_mesh;

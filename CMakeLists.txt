@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.20.0)
 cmake_policy(SET CMP0057 NEW)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -6,18 +6,23 @@ project(meshtools)
 include(CTest)
 enable_testing()
 
-
-
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 
 #set(CMAKE_CXX_COMPILER g++)
-set(CMAKE_CXX_FLAGS "-g -fopenmp -O3")
+# set(CMAKE_CXX_FLAGS "-g -fopenmp -O3")
 
 option(MESHTOOLS_BUILD_APP  "Build meshtools application" ON)
 option(MPI_ENABLE       "Enable MPI" ON)
 option(OpenMP_ENABLE    "Enable OpenMP" ON)
 option(CATALYST_ENABLE  "Enable Paraview Catalyst" OFF)
 option(DEBUG_ENABLE  "Enable Paraview Catalyst" OFF)
+option(TAU_PROFILER_ENABLE  "Enable TAU Profiler" OFF)
+
+if(TAU_PROFILER_ENABLE)
+  set(TAU_DIR /opt/app/tau/x86_64)
+  set(CMAKE_CXX_COMPILER /opt/app/tau/x86_64/bin/tau_cxx.sh)
+  set(CMAKE_C_COMPILER /opt/app/tau/x86_64/bin/tau_cc.sh)
+endif()
 
 
 if(DEBUG_ENABLE)
@@ -25,16 +30,16 @@ if(DEBUG_ENABLE)
 endif()
 
 find_package(METIS REQUIRED)
-
+find_package(HDF5)
 
 include(FindPkgConfig)
-
 
 if(MPI_ENABLE)
   find_package(MPI)
   if(MPI_FOUND)
      include_directories(${MPI_C_INCLUDE_PATH})
-     set(USE_MPI 1)
+     set(MPI_LIBS MPI::MPI_C MPI::MPI_CXX)
+     set(MPI_ENABLE 1)
   endif()
 endif()
 
@@ -53,7 +58,17 @@ endif()
 
 if(PETSc_FOUND)
 include_directories(${PETSc_INCLUDE_DIRS})
+set(PETSC_LIBS ${PETSc_LINK_LIBRARIES})
 endif()
+
+if(HDF5_FOUND)
+include_directories(${HDF5_INCLUDE_DIR})
+set(HDF5_LIBS ${HDF5_C_LIBRARIES})
+#SET(HDF5_ENABLE 1)
+endif()
+
+SET(MESHTOOLS_INCLUDE_DIR ${PETSc_INCLUDE_DIRS} ${HDF5_INCLUDE_DIR} ${MPI_C_INCLUDE_PATH} ${METIS_INCLUDE_DIR})
+SET(MESHTOOLS_LIBS ${PETSc_LINK_LIBRARIES} ${MPI_LIBS} ${HDF5_LIBS} ${METIS_LIBRARIES})
 
 include_directories(${METIS_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/meshtoolslib/include)
@@ -66,11 +81,12 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/contrib/fparser)
 # Compilar as bibliotecas locais
 add_subdirectory(meshtoolslib)
 add_subdirectory(femsolverlib)
+# add_subdirectory(app)
+add_subdirectory(test)
 
 if(MESHTOOLS_BUILD_APP)
  
-add_subdirectory(app)
-add_subdirectory(test)
+
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

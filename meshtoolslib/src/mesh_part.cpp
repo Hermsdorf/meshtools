@@ -62,7 +62,6 @@ void MeshPartition::ApplyPartitioner(Mesh *mesh, int nparts)
     if(MeshTools::processor_id() != 0 )
         return;
 
-    //this->_use_bnd_elements = use_bnd_elem;
     int nelem  = (int)mesh->get_n_elements();
     int nfe    = (int)mesh->get_n_face_elements();
     int nnodes = (int)mesh->get_n_nodes();
@@ -76,7 +75,7 @@ void MeshPartition::ApplyPartitioner(Mesh *mesh, int nparts)
     this->face_part    = new int[nfe];
 
     for (int i = 0; i < nfe; i++)
-        this->face_part[i] = 0;
+        this->face_part[i] = -1;
     for (int i = 0; i < nelem; i++)
         this->elem_part[i] = 0;
     for (int i = 0; i < nnodes; i++)
@@ -84,6 +83,8 @@ void MeshPartition::ApplyPartitioner(Mesh *mesh, int nparts)
 
     if (nparts <= 1)
     {
+        for (int i = 0; i < nfe; i++)
+            this->face_part[i] = 0;
         std::cout << "Successfully partitioned\n";
     }
     else
@@ -100,14 +101,6 @@ void MeshPartition::ApplyPartitioner(Mesh *mesh, int nparts)
             eptr[i+1] = eptr[i] + mesh->getElementConnSize(i);
         }
 
-        /*
-        idx_t *vwgt = new idx_t[nelem+1];
-
-        for (int i =0; i < nelem; i++)
-        {
-            vwgt[i] = mesh->getElementConnSize(i);
-        }
-        */
         idx_t *vwgt    = 0;
         idx_t *vsize   = 0;
         real_t *tpwgts = 0;
@@ -158,40 +151,28 @@ void MeshPartition::ApplyPartitioner(Mesh *mesh, int nparts)
                 }
             }
         }
+        
+        std::vector<int> face_to_element = mesh->getFaceToElement();
 
-        std::vector<int> mapnode(nnodes);
-        // searching for elements present in partition `p` and mapping it on mapnode vector
-        for(int p = 0; p < this->n_partitions; ++p)
+        // partitioning face elements
+        for(int iel = 0; iel < nfe; iel++)
         {
-            for(int iel = 0; iel < nelem; iel++)
-            {
-                if(this->elem_part[iel] == p) {
-                     int connsz            = mesh->getElementConnSize(iel);
-                     unsigned int *connptr = mesh->getElementConn(iel);
-                     for(int ino = 0; ino < connsz; ino++)
-                     {
-                         mapnode[connptr[ino]] = p;
-                     }
-
-                }
-               
-            }
-            // partitioning face elements
-            for(int iel = 0; iel < nfe; iel++)
-            {
-                int conn_in_partition_p = 0;
-                unsigned int connsz   = mesh->getSurfaceElementConnSize(iel);
-                unsigned int *connptr = mesh->getSurfaceElementConn(iel);
-                for(int ino =0; ino < connsz; ino++)
-                {
-                    if(mapnode[connptr[ino]] == p) conn_in_partition_p++;
-                }
-
-                // if all conectivities in surface element `iel` is a part of partition p, it will be considered of partition p
-                if(conn_in_partition_p == connsz) this->face_part[iel] = p;
-            }
+            unsigned int internal_element = face_to_element[iel];
+            this->face_part[iel] = this->elem_part[internal_element];
         }
     }
+
+    for(int p = 0; p < this->n_partitions; ++p)
+    {
+        int nfe_local = 0;
+        for(int iel = 0; iel < nfe; iel++)
+        {
+            if(this->face_part[iel]==p) nfe_local++;
+        }
+
+        std::cout << "Partition " << p << " has " << nfe_local << " face elements\n";  
+    }
+
     this->applied = true;
 }
 
@@ -982,6 +963,7 @@ void MeshPartition::WritePartitionBin(Mesh *mesh)
 
 void MeshPartition::GetNodePartition(Mesh* mesh, std::map<unsigned int, std::set<unsigned int> > &node_partition)
 {
+    
     for (int iel = 0; iel < mesh->get_n_elements(); ++iel)
     {
             unsigned int *conn    = mesh->getElementConn(iel);
@@ -989,7 +971,6 @@ void MeshPartition::GetNodePartition(Mesh* mesh, std::map<unsigned int, std::set
             for(int ino = 0; ino < connsize; ino++)
                 node_partition[conn[ino]].insert(this->elem_part[iel]);
     }
-//#define _DEBUG
 #ifdef _DEBUG
     for(auto it = node_partition.begin(); it != node_partition.end(); ++it){
         std::cout << it->first << " shared with ";
@@ -1000,7 +981,9 @@ void MeshPartition::GetNodePartition(Mesh* mesh, std::map<unsigned int, std::set
 #endif
 }
 
-void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
+void MeshPartition::GetAndSendLocalData(
+    Mesh *mesh, 
+    int sendto,
     int *array_sizes,
     std::map<unsigned int, std::set<unsigned int> > &node_partition,
     std::vector<double>         & coord,
@@ -1012,10 +995,13 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
     std::vector<unsigned int>   & neighbors,
     std::vector<unsigned int>   & neighbors_offset,
     std::vector<unsigned int>   & neighbors_nodes,
+    std::vector<int>            & face_to_element,
     bool                        enable_send
 )
 {
-  
+    
+    // Getting values from mesh, which is going 
+    // to be splitted among processors
     unsigned int nelem             = mesh->get_n_elements();
     unsigned int nface_elem        = mesh->get_n_face_elements();
     unsigned int nnodes            = mesh->get_n_nodes();
@@ -1023,14 +1009,18 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
     auto&    tag_orig              = mesh->getPhysicalTag();
     auto&    node_index_orig       = mesh->getNodeIndexes();
     auto&    map                   = mesh->getPhysicalMap();
+    auto&    face_to_element_orig  = mesh->getFaceToElement();
     
 
-    MPI_Request requests[10];
-    MPI_Status  status[10];
+    MPI_Request requests[11];
+    MPI_Status  status[11];
 
     std::map<unsigned int, unsigned int>           g2l;
+    std::map<unsigned int, unsigned int>           g2l_elem;
     std:: vector<unsigned int>                     l2g;
-
+    
+    // Cleaning vectors which will be filled and
+    // set to the parallel mesh
     coord.clear();
     conn.clear();
     offset.clear();
@@ -1040,15 +1030,17 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
     neighbors.clear();
     neighbors_offset.clear();
     neighbors_nodes.clear();
+    face_to_element.clear();
 
-    unsigned int iel              = 0;
+    // Getting the number of internal and face 
+    // elements, number of nodes and the size of
+    // local conn vector 
     unsigned int nelem_face_local = 0;
     unsigned int nelem_local      = 0;
-    int connSizeTotal             = 0;
     int nnode_local               = 0;
+    int connSizeTotal             = 0;
 
-
-    for (iel = 0; iel < nelem; ++iel)
+    for (unsigned int iel = 0; iel < nelem; ++iel)
     {
         if (this->elem_part[iel] == sendto) // if the element that is being processed 
                                             // is going to be sent to process `sendto`
@@ -1074,7 +1066,7 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
         }
     }
 
-    for (iel = 0; iel < nface_elem; ++iel)
+    for (unsigned int iel = 0; iel < nface_elem; ++iel)
     {
         if (this->face_part[iel] == sendto) // if the element that is being processed 
                                             // is going to be sent to process `sendto`
@@ -1106,7 +1098,7 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
     std::vector< std::set <unsigned int> > nodes_per_processors(this->n_partitions);
     for( ; map_it !=  node_partition.end(); map_it++)
     {
-        int node_id          = map_it->first;
+        int node_id = map_it->first;
        
         if(map_it->second.count(sendto)>0)
         {
@@ -1127,11 +1119,11 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
     {
         if (np != sendto && nodes_per_processors[np].size() != 0)   
         {
-                neighbors.push_back(np);
-                neighbors_offset.push_back(ofs + nodes_per_processors[np].size());
-                ofs      += nodes_per_processors[np].size();
-                for(auto it_list = nodes_per_processors[np].begin(); it_list != nodes_per_processors[np].end(); it_list++)
-                    neighbors_nodes.push_back(g2l[*it_list]);
+            neighbors.push_back(np);
+            neighbors_offset.push_back(ofs + nodes_per_processors[np].size());
+            ofs      += nodes_per_processors[np].size();
+            for(auto it_list = nodes_per_processors[np].begin(); it_list != nodes_per_processors[np].end(); it_list++)
+                neighbors_nodes.push_back(g2l[*it_list]);
         }
     }
 
@@ -1145,7 +1137,6 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
     array_sizes[7] = neighbors.size();
     array_sizes[8] = neighbors_offset.size();
     array_sizes[9] = neighbors_nodes.size();
-    //array_sizes[10] = map.size();
 
     if(enable_send)
         MPI_Isend(array_sizes, 11, MPI_INT, sendto, 0, MPI_COMM_WORLD, &requests[0]);
@@ -1180,13 +1171,14 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
     offset.resize(nelem_face_local + nelem_local + 1);
     type.resize(nelem_face_local + nelem_local);
     tag.resize(nelem_face_local + nelem_local);
+    face_to_element.resize(nelem_face_local);
 
     offset[0]       = 0;
     int nc          = 0;
     int iel_local   = 0;
 
-    // Fills conn and offset vectors with surface elements
-    for (iel = 0; iel < nface_elem; ++iel)
+    // Fills conn, offset vectors with surface elements
+    for (unsigned int iel = 0; iel < nface_elem; ++iel)
     {
         if (this->face_part[iel] == sendto) // if the element that is being processed 
                                             // is going to be sent to process `sendto`
@@ -1205,7 +1197,7 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
 
     if(enable_send)
         MPI_Waitall(2, &requests[0], &status[0]);
-
+    
     // Fills conn and offset vectors with internal elements
     for (int iel = 0; iel < nelem; ++iel)
     {
@@ -1219,6 +1211,20 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
                    conn[nc++] = g2l[conn_ptr[i]];
             type[iel_local] = mesh->getElementType(iel);
             tag[iel_local]  = tag_orig[iel+nface_elem];
+            g2l_elem[iel]   = iel_local-nelem_face_local;
+            iel_local++;
+        }
+    }
+
+    iel_local = 0;
+    // Fills face_to_element vector
+    for (unsigned int iel = 0; iel < nface_elem; ++iel)
+    {
+        if (this->face_part[iel] == sendto) // if the element that is being processed 
+                                            // is going to be sent to process `sendto`
+        {
+            int global_elem_id = face_to_element_orig[iel];
+            face_to_element[iel_local] = g2l_elem[global_elem_id];
             iel_local++;
         }
     }
@@ -1232,10 +1238,9 @@ void MeshPartition::GetAndSendLocalData(Mesh *mesh, int sendto,
         MPI_Isend(&neighbors_offset[0] , neighbors_offset.size() , MPI_UNSIGNED      , sendto, 0, MPI_COMM_WORLD, &requests[4]);
         MPI_Isend(&neighbors_nodes[0]  , neighbors_nodes.size()  , MPI_UNSIGNED      , sendto, 0, MPI_COMM_WORLD, &requests[5]);
         MPI_Isend(&tag[0]              , tag.size()              , MPI_UNSIGNED      , sendto, 0, MPI_COMM_WORLD, &requests[6]);
-        MPI_Waitall(7,&requests[0],&status[0]);
+        MPI_Isend(&face_to_element[0]  , face_to_element.size()  , MPI_UNSIGNED      , sendto, 0, MPI_COMM_WORLD, &requests[7]);
+        MPI_Waitall(8,&requests[0],&status[0]);
     }
-
-
 }
 
 
@@ -1278,6 +1283,7 @@ ParallelMesh* MeshPartition::RecvLocalDataFromMaster()
     auto & _neighbors           = pmesh->getNeighborsProcessors();
     auto & _shared_nodes_offset = pmesh->getSharedNodesOffset();
     auto & _shared_nodes        = pmesh->getSharedNodes();
+    auto & _face_to_element     = pmesh->getFaceToElement();
 
     int n_total_elements = n_elements_local+n_faces_local;
 
@@ -1290,6 +1296,7 @@ ParallelMesh* MeshPartition::RecvLocalDataFromMaster()
     _neighbors.resize(n_neigbors);
     _shared_nodes_offset.resize(neigh_ofs);
     _shared_nodes.resize(neigh_nodes);
+    _face_to_element.resize(n_faces_local);
 
     MPI_Recv(&_coords[0], _coords.size(), MPI_DOUBLE  , 0, 0, MPI_COMM_WORLD, &status);
     MPI_Recv(&_l2g[0]   , _l2g.size()   , MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD, &status);
@@ -1299,10 +1306,10 @@ ParallelMesh* MeshPartition::RecvLocalDataFromMaster()
     MPI_Recv(&_neighbors[0]   , _neighbors.size()    , MPI_UNSIGNED      , 0, 0, MPI_COMM_WORLD, &status);
     MPI_Recv(&_shared_nodes_offset[0] , _shared_nodes_offset.size() , MPI_UNSIGNED      , 0, 0, MPI_COMM_WORLD, &status);
     MPI_Recv(&_shared_nodes[0]  , _shared_nodes.size()     , MPI_UNSIGNED      , 0, 0, MPI_COMM_WORLD, &status);
-    MPI_Recv(&_tag[0]  , _tag.size()     , MPI_UNSIGNED      , 0, 0, MPI_COMM_WORLD, &status);
-
+    MPI_Recv(&_tag[0]  , _tag.size()     , MPI_INT      , 0, 0, MPI_COMM_WORLD, &status);
+    MPI_Recv(&_face_to_element[0]  , _face_to_element.size()     , MPI_UNSIGNED      , 0, 0, MPI_COMM_WORLD, &status);
+    
     return pmesh;
-
 }
 
 
@@ -1319,13 +1326,13 @@ void MeshPartition::WriteDistributedMesh(Mesh* mesh, int processor, int n_proces
     std::vector<unsigned int>    node_index;
     std::vector<unsigned int>    neighbors_offset;
     std::vector<unsigned int>    neighbors_nodes;
+    std::vector<int>    face_to_element;
     std::map<unsigned int, std::set<unsigned int> > node_partition;
     
     this->GetNodePartition(mesh,node_partition);
     for(int p = 0; p < n_processors; p++)
     {
-
-        this->GetAndSendLocalData(mesh,p,array_sizes,node_partition,coords,node_index,conn,offset,type,tag,neighbors,neighbors_offset,neighbors_nodes,false);
+        this->GetAndSendLocalData(mesh,p,array_sizes,node_partition,coords,node_index,conn,offset,type,tag,neighbors,neighbors_offset,neighbors_nodes,face_to_element,false);
         this->WritePartionData(basename,p,array_sizes,coords,node_index,conn,offset,type,tag,neighbors,neighbors_offset,neighbors_nodes);
     }
 }
@@ -1453,23 +1460,20 @@ void MeshPartition::WritePartionData(
 
 ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
 {
-
     int processor_id = MeshTools::processor_id();
-    int n_procesors  = MeshTools::n_processors(); 
+    int n_processors  = MeshTools::n_processors(); 
         
-    ParallelMesh *pmesh ; 
+    ParallelMesh *pmesh; 
     if(!this->applied)
-        this->ApplyPartitioner(mesh,n_procesors);
+        this->ApplyPartitioner(mesh,n_processors);
 
-    if(n_procesors > 0)
+    if(n_processors > 1)
     {
-        int array_sizes[12];
+        int array_sizes[13];
 
         // process 0 is responsible to generate local arrays and send it to each processor
         if (processor_id == 0)
         {
- 
-
             std::vector<double>          coords;
             std::vector<unsigned int>    node;
             std::vector<unsigned int>    conn;
@@ -1480,6 +1484,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
             std::vector<unsigned int>    neighbors;
             std::vector<unsigned int>    neighbors_offset;
             std::vector<unsigned int>    neighbors_nodes;
+            std::vector<int>             face_to_element;
 
             // A map indicanting each process that the node i is present
             //
@@ -1491,7 +1496,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
             //       P2   |    P3   |   P3
             //            |         |
             //
-            // This node has node_partition[1] = {P0, P1, P2, P3} and node_partition is node_partition[2] = {P1, P3}
+            // These nodes has node_partition[1] = {P0, P1, P2, P3} and node_partition[2] = {P1, P3}
             std::map<unsigned int, std::set<unsigned int> > node_partition;
         
             auto & map      = mesh->getPhysicalMap();
@@ -1504,7 +1509,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
             for (int p = 1; p < this->n_partitions; p++)
             {
                 //std::cout << "Sending data to processor " << p << endl;
-                this->GetAndSendLocalData(mesh,p,array_sizes,node_partition,coords,node_index,conn,offset,type,tag,neighbors,neighbors_offset,neighbors_nodes,true);
+                this->GetAndSendLocalData(mesh,p,array_sizes,node_partition,coords,node_index,conn,offset,type,tag,neighbors,neighbors_offset,neighbors_nodes,face_to_element,true);
             }
 
             // Processing and filling local arrays and variables to process 0
@@ -1519,8 +1524,9 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
             auto & _neighbors           = pmesh->getNeighborsProcessors();
             auto & _shared_nodes_offset = pmesh->getSharedNodesOffset();
             auto & _shared_nodes        = pmesh->getSharedNodes();
+            auto & _face_to_element     = pmesh->getFaceToElement();
 
-            this->GetAndSendLocalData(mesh,0,array_sizes,node_partition,_coords,_node_index,_conn,_offset,_type,_tag,_neighbors,_shared_nodes_offset,_shared_nodes,false);
+            this->GetAndSendLocalData(mesh,0,array_sizes,node_partition,_coords,_node_index,_conn,_offset,_type,_tag,_neighbors,_shared_nodes_offset,_shared_nodes, _face_to_element, false);
             
             int n_faces_global    = array_sizes[0];
             int n_faces_local     = array_sizes[1];
@@ -1611,7 +1617,6 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
         }
 
         pmesh->build_communication_map();
-        
     }
     else
     {
@@ -1641,6 +1646,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
         pmesh->setType(mesh->getType());
         pmesh->set_physical_map(mesh->getPhysicalMap());
         pmesh->set_physical_tag(mesh->getPhysicalTag());
+        pmesh->setFaceToElement(mesh->getFaceToElement());
 
         auto& s_node_index = mesh->getNodeIndexes();
         auto& p_node_index = pmesh->getNodeIndexes();
@@ -1663,9 +1669,8 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
         pmesh->set_recvfrom_info(empty_vector_message);
 
         pmesh->set_start_node_index(0);
+    }   
 
-    }
-    //
     pmesh->update();
     return pmesh;
 }

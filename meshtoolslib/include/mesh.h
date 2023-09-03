@@ -1,4 +1,3 @@
-
 #ifndef MESH_H__
 #define MESH_H__
 
@@ -6,7 +5,8 @@
 #include <map>
 #include <vector>
 #include <string>
-
+#include "meshtools.h"
+#include "element.h"
 #include "numeric_vector.h"
 
 using namespace std;
@@ -29,24 +29,32 @@ typedef struct
 typedef MeshIODataInfo PointData;
 typedef MeshIODataInfo CellData;
 
+class Element;
+class SurfaceElement;
+
 class MeshIODataAppended{
     
     public:
         MeshIODataAppended();
         void addPointDataInfo(const char* name, MeshDataType type, void *data_ptr);
         void addCellDataInfo(const char* name, MeshDataType type, void *data_ptr);
-        std::vector<PointData>& GetPointDataInfo() { return list_point_data; };
-        std::vector<CellData>& GetCellDataInfo() { return list_cell_data;};
+        void addTimeDataInfo(double time, int time_step);
+        std::vector<PointData>& getPointDataInfo() { return list_point_data; };
+        std::vector<CellData>& getCellDataInfo() { return list_cell_data;};
+        double& getTime() { return time; };
+        int& getTimeStep() { return time_step; };
     private:
         std::vector<PointData> list_point_data;
         std::vector<CellData>  list_cell_data;
+        double time;
+        int time_step;
 };
 
 
 typedef std::pair<int, std::string> physical_data_t;
 
 typedef enum {METIS_ND=0, RCM, FF} reorder_t;
-typedef enum {COLOR_DEFAULT=0, COLOR_DEFAULT_BLOCK, COLOR_ROKOS, COLOR_ROKOS_BLOCK} color_mode_t;
+typedef enum {COLOR_DEFAULT=0, COLOR_DEFAULT_BLOCK} color_mode_t;
 typedef enum {BINARY=0, ASCII} write_t;
 
 class Mesh {
@@ -109,7 +117,7 @@ class Mesh {
         */
 
         
-        unsigned int get_n_internal_colors();
+        unsigned int get_n_colors();
         /**
          * * OBJETIVO:
          *     Obter o número total de cores dos elementos internas da malha.
@@ -163,7 +171,7 @@ class Mesh {
          *     Referência a um vector do tipo int.
         */
 
-        int* get_mesh_coloring_internal();
+        std::vector<unsigned int>& getColoring();
         /**
          * * OBJETIVO:
          *     Obter a a array mesh_coloring_internal que armazena as cores dos elementos internos da malha.
@@ -355,7 +363,7 @@ class Mesh {
          * @param type Vector do tipo unsigned short com as novas informações de tipos dos elementos da malha.
         */
 
-       void setTypePosition(unsigned short value, unsigned int position);
+        void setTypePosition(unsigned short value, unsigned int position);
         /**
          * * OBJETIVO:
          *     Alterar o vector type com o valor e a posição passados por argumento.
@@ -374,16 +382,7 @@ class Mesh {
          * @param phyisical_tag Vector do tipo int com as novas informações de phyisical tag da malha.
         */
 
-        void set_mesh_coloring_internal(int* mesh_coloring_internal);
-        /**
-         * * OBJETIVO:
-         *     Alterar o array de cores da malha.
-         * 
-         * * PARAMETROS:
-         * @param mesh_coloring_internal Array do tipo int* com a nova informação de coloração dos elementos internos da malha.
-        */
-
-        void set_n_internal_colors(unsigned int n_internal_colors);
+        void set_n_colors(unsigned int n_colors);
         /**
          * * OBJETIVO:
          *     Alterar o número total de cores nos elementos internos da malha.
@@ -455,41 +454,11 @@ class Mesh {
          * @param filename Variável do tipo const char* com o nome do arquivo de entrada extensão msh.
         */
 
-        void MeshVTKWriter(int timeStep=0, int *npart=NULL, int* epart=NULL, int* color=NULL, double* velocity=NULL, float* pressure=NULL);
-        /**
-         * * OBJETIVO:
-         *     Escrita da malha completa, com elementos internos e de superfície, no formato VTK.
-         * 
-         * * PARAMETROS:
-         * @param timeStep Variável para criar uma sequência de arquivos a serem abertos no ParaView.
-         *                 (Para gerar somente um arquivo da malha, inserir 0 no valor do timeStep)
-         * @param npart Array do tipo inteiro com as informações nodais de partição.
-         * @param epart Array do tipo inteiro com as informações elementares de partição.
-         * @param color Array do tipo inteiro com as informações de coloração dos elementos internos.
-         * @param velocity Array do tipo double com informações das velocidades da malha.
-         * @param pressure Array do tipo float com informações das pressões da malha.
-        */
-        //void MeshVTKWriterInternal(int timeStep=0, int *nparts=NULL, int *epart=NULL, int* color=NULL, double* velocity=NULL, float* pressure=NULL);
-        /**
-         * * OBJETIVO:
-         *     Escrita da malha somente com elementos internos no formato VTK.
-         * 
-         * * PARAMETROS:
-         * @param timeStep Variável para criar uma sequência de arquivos a serem abertos no ParaView.
-         *                 (Para gerar somente um arquivo da malha, inserir 0 no valor do timeStep)
-         * @param npart Array do tipo inteiro com as informações nodais de partição.
-         * @param epart Array do tipo inteiro com as informações elementares de partição.
-         * @param color Array do tipo inteiro com as informações de coloração dos elementos internos.
-         * @param velocity Array do tipo double com informações das velocidades da malha.
-         * @param pressure Array do tipo float com informações das pressões da malha.
-        */
-
-
-       std::vector<unsigned int>& getNodeIndexes()
-       {
+        std::vector<unsigned int>& getNodeIndexes()
+        {
             return this->node_index;
-       }
-       
+        }
+        
         void MeshReordering(reorder_t reorder);
         /**
          * * OBJETIVO:
@@ -509,26 +478,60 @@ class Mesh {
          *     First-Fit Coloring.
         */
 
+        // TODO: removing this function
         void MeshColoring_test();
         /**
          * * OBJETIVO:
          *     Testar se a coloração calculada no algoritmo está correta.
         */
-       // TODO: remover
-       //void MeshVTKWriting(write_t writing);
 
-       void WriteVTK(const char* filename, MeshIODataAppended* info = nullptr);
+        void WriteVTK(const char* filename, MeshIODataAppended* info = nullptr);
 
-       void Write(const char* filename);
+        void WriteMTS(const char* filename);
 
 
-       void extract_boundary_nodes(std::vector<int>& tag);
+        void extract_boundary_nodes(std::vector<int>& tag);
 
 
-       void get_element_coordinates(int element_id, std::vector<Point> &coordinates);
+        void get_element_coordinates(int element_id, std::vector<Point> &coordinates);
 
-       void get_element_connectivity(int element_id, std::vector<unsigned int> &connectivity);
+        void get_element_connectivity(int element_id, std::vector<unsigned int> &connectivity);
 
+        void get_surface_element_coordinates(int element_id, std::vector<Point> &coordinates);
+
+        void get_surface_element_connectivity(int element_id, std::vector<unsigned int> &connectivity);
+
+        void getElement(unsigned int element_id, Element& elem);
+
+        void getSurfaceElement(unsigned int element_id, SurfaceElement& elem);
+
+        inline int getElementTag(int iel) { return physical_tag[iel+n_face_elements]; };
+
+        int getSurfaceElementTag(int iel) { return physical_tag[iel]; };
+
+        unsigned int get_mesh_element_type(){ return element_type; }
+
+        unsigned int get_boundary_mesh_element_type() {return boundary_element_type; }
+
+        unsigned int getElementConnectivitySize();
+
+        unsigned int getBoundaryElementConnectivitySize();
+
+        unsigned int *getElementConnectivityData();
+
+        unsigned int *getBoundaryElementsConnectivityData() ;
+
+        double       *getCoordinatesData(); 
+
+        std::vector<int>& getFaceToElement() { return face_to_element; };
+        void             setFaceToElement(std::vector<int> face_to_element) { this->face_to_element = face_to_element; };
+        int              getVTKElemContourNNodes(int vtk_type);
+        int              getVTKElemContourNFaces(int vtk_type);
+        //void*            getVTKElemConnSequence(int vtk_type);
+        int              getGmshElemNNodes(int type);
+        int              getGmshElemTypeDim(int type);
+        void             process_face_to_element();
+    
 
     protected:
         unsigned int                n_face_elements;            // Numero de elementos de superficie.
@@ -541,18 +544,17 @@ class Mesh {
         std::vector<int>            physical_tag;               // Array indicando o physical tag de cada elemento.
         std::vector<int>            boundary_nodes;
         std::vector<unsigned int>   node_index;                 // Array indicando o índice de cada nó.
+        unsigned short              element_type;
+        unsigned short              boundary_element_type;
+        std::vector<int>            face_to_element;             // Array indicando  qual elemento interno pertence o elemento de superfície.
 
         std::map<int, physical_data_t>  physical_map;
         unsigned int dim;                                       // Dimensão da malha.
         
         // TODO: remover 
         std::string filename;                    // Nome do arquvios de entrada de tipo msh
-#ifdef HAVE_HDF5
-        void write_hdf5(const char* filename, MeshIOData* append)
-#endif
-        // TODO: Criar uma classe para Coloração
-        int* mesh_coloring_internal;             // Array indicando as cores dos elementos.
-        unsigned int n_internal_colors;          // Número total de cores dos elementos internos da malha.
+        std::vector<unsigned int> coloring;
+        unsigned int              n_colors;       // Número total de cores dos elementos internos da malha.
 };
 
 #endif // MESH_H

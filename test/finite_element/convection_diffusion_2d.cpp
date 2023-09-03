@@ -5,147 +5,192 @@
 #include "mesh.h"
 #include "mesh_part.h"
 #include "parallel_mesh.h"
-#include "implicit_system.h"
+#include "nonlinear_implicit_system.h"
 #include "dirichlet_boundary.h"
 #include "fem_functions.h"
 #include "dense_matrix.h"
 #include "numeric_vector.h"
+#include "tensor.h"
+#include "fem_stabilizations.h"
 
-static char help[] = "2D Poisson Problem\n\n";
+#include "test_config.h"
 
+static char help[] = "Convecção-difusão-reaçao\n\n";
 
-int convection_diffusion(int argc, char* argv[])
+void assemble_convection_diffusion_reaction(NonLinearImplicitSystem* system)
+{
+    auto pmesh = system->get_mesh();
+    int  ndim  =  pmesh.getDim();
+
+    // Gerencia as numerações das equações do sistema
+    auto equation_manager = system->get_equation_manager();
+    int dof  = 0;
+
+    double *solution     = system->get_local_solution_array();
+
+    int n_elements = pmesh.get_n_elements();
+
+    QGauss qrule;
+    FEMFunction fem;
+    std::vector<double>   & phi   = fem.get_phi();
+    std::vector<Gradient> & dphi  = fem.get_dphi();
+    double                & JxW   = fem.get_JxW();
+    RealTensor            & G     = fem.get_G();
+
+    // loop sobre os elementos da malha por cores
+    for (int iel = 0; iel < n_elements; iel++)
+    {
+        Element elem;
+        pmesh.getElement(iel,elem);
+
+        int nnoel = elem.n_nodes();
+
+        std::vector<int>        global_indices;
+        std::vector<int>        local_indices;
+        DenseMatrix<double>     Ke(nnoel, nnoel);  // matriz de rigidez do elemento
+        std::vector<double>     Fe(nnoel);         // vetor de força do elemento
+
+        equation_manager.global_indices(dof, elem.connectivity(), global_indices);
+        equation_manager.local_indices(dof,  elem.connectivity(), local_indices);
+
+        // Obtem pontos de integração para elemento elem
+        qrule.reset(elem);
+
+        Gradient velocity;
+        velocity(0)        = sqrt(3.0) / 2.0;
+        velocity(1)        = 1.0 / 2.0 ;
+        double kd          = 0.135E-8;
+        double sigma       = 0.0;
+        double source_term = 0.0;
+
+        // loop sobre os pontos de integração
+        for (int q = 0; q < qrule.n_points() ; q++)
+        {
+            // calculando a função de forma e suas derivadas para o ponto de integração q
+            fem.ComputeFunction(elem, qrule.get(q));
+            double h_carach    = elem.calculate_h(JxW);
+
+            // SUPG stabilization parameters
+            double tau = TAUStab(velocity, G, kd);
+
+            double    u = 0.0;
+            Gradient  grad_u;
+
+            for (int i = 0; i < local_indices.size(); i++)
+            {
+                u             +=  solution[local_indices[i]]*phi[i];
+                grad_u(0)     +=  solution[local_indices[i]]*dphi[i](0);
+                grad_u(1)     +=  solution[local_indices[i]]*dphi[i](1);
+
+                if(ndim == 3){
+                    grad_u(2)      += solution[local_indices[i]]*dphi[i](2);
+                }
+            }
+
+            // CAU stabilization parameters
+            const double ctau = CAUStab(u, u, grad_u, source_term, velocity, sigma, kd, 1, h_carach)*0.1;
+
+            // calculando a matriz de rigidez e o vetor de forca local
+            for (int i = 0; i < nnoel; i++)
+            {
+                for (int j = 0; j < nnoel; j++)
+                {
+                    // Galerkin Formulation
+                    Ke(i, j) += JxW * (phi[i] * (velocity * dphi[j]) + // Na (a. grad Nb) - Termo convectivo
+                                       kd * (dphi[i] * dphi[j])      + // GradNa Grad Nb - Termo difusivo
+                                       sigma*phi[i]*phi[j]             // \sigma* w  u  -  Termo reação
+                                       );
+
+                    // SUPG Formulation
+                    Ke(i, j) += JxW * tau * (velocity * dphi[i]) * (velocity * dphi[j] +      // Termo SUPG convecção
+                                              sigma*phi[j]);                                  // Termo SUPG reação
+
+                    // CAU contribution
+                    Ke(i,j) += JxW * ctau * (dphi[i] * dphi[j]);
+                }
+            }
+        }
+        // Inserindo a matriz de rigidez e o vetor de forca no sistema
+        system->add_matrix_entry(global_indices, global_indices, Ke.get_data());
+        system->add_rhs_entry(global_indices, Fe.data());
+    }
+
+}
+
+int run_convection_diffusion_reaction(int argc, char *argv[])
 {
     PetscErrorCode ierr;
     MeshPartition *parts = new MeshPartition();
-   
-    Mesh          *mesh;  // serial mesh
-    ParallelMesh  *pmesh; // parallel mesh
+
+    // if(argc < 2)
+    // {
+    //     return 0;
+    // }
+
+    Mesh *mesh;          // serial mesh
+    ParallelMesh *pmesh; // parallel mesh
     int processor_id, n_processors;
 
-    MeshTools::Init(argc,argv);
     processor_id = MeshTools::processor_id();
     n_processors = MeshTools::n_processors();
 
-    if(processor_id == 0)
+    if (processor_id == 0)
     {
         // Rodando serial ou em paralelo o processo mestre
-        // irá ler a malha. 
-        mesh = new Mesh(argv[1]);
-        
+        // irá ler a malha.
+
+        string test_mesh_dir = TEST_MESH_DIR;
+        test_mesh_dir.append("convection_difussion_2d/conv2dtri3.msh");
+        mesh = new Mesh(test_mesh_dir);
+
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha
-        if(n_processors > 1) {
+        if (n_processors > 1)
+        {
             parts->ApplyPartitioner(mesh, n_processors);
         }
     }
 
     pmesh = parts->DistributedMesh(mesh);
 
-    //pmesh->writePVTK("mesh");
 
     // Cria o sistema de equações implicito
-    ImplicitSystem* implicit_system = new ImplicitSystem(*pmesh, "convection-diffusion");    
+    NonLinearImplicitSystem *nonlinear_implicit_system = new NonLinearImplicitSystem(*pmesh, "convection-diffusion");
 
     // Adiciona uma variável ao sistema
-    int dof = implicit_system->add_variable("u");
+    int dof = nonlinear_implicit_system->add_variable("u");
 
     // Adiciona uma condição de contorno ao sistema
-    // Aplica a função g = 0 para a variável u no contorno identificado com 1.
-    DirichletBoundary bc1(1,dof,"0.0","x,y");
-    DirichletBoundary bc2(2,dof,"1.0","x,y");
-    implicit_system->add_dirichlet_boundary(bc1);
-    implicit_system->add_dirichlet_boundary(bc2);
+    // Aplica a função g(x, y) = 0 para a variável u no contorno identificado com 1.
+    DirichletBoundary bc1(1, dof, "0.0", "x,y");
+    // Aplica a função g(x, y) = 1 para a variável u no contorno identificado com 2.
+    DirichletBoundary bc2(2, dof, "1.0", "x,y");
+    nonlinear_implicit_system->add_dirichlet_boundary(bc1);
+    nonlinear_implicit_system->add_dirichlet_boundary(bc2);
+    nonlinear_implicit_system->attach_assemble(assemble_convection_diffusion_reaction);
 
-    
-    // Inicializar o sistema
-    // Necessário para calcular alocar o sistema
-    implicit_system->init();
-
-    int ndim                    = pmesh->getDim();
-
-    // Gerencia as numerações das equações do sistema
-    EquationManager& equation_manager = implicit_system->get_equation_manager();
-
-    bool flag = true;
-    // loop sobre os elementos da malha
-    for(int iel =0; iel < pmesh->get_n_elements(); iel++)
-    {
-
-        std::vector<Point>            coords_iel;
-        std::vector<unsigned int>     conn_iel;
-        //const unsigned int *connectivity = pmesh->getElementConn(iel);
-        pmesh->get_element_connectivity(iel, conn_iel);
-        pmesh->get_element_coordinates(iel, coords_iel);
-        int nnoel = conn_iel.size();
-
-
-        std::vector<int> global_indices;
-        std::vector<Point>    qp;  // coordenadas do ponto de integração
-        std::vector<double>   qw;   // peso do ponto de integração
-        DenseMatrix<double>   Ke(nnoel,nnoel); // matriz de rigidez do elemento
-        std::vector<double>   Fe(nnoel);       // vetor de força do elemento
-        std::vector<double>   phi(nnoel);
-        std::vector<Gradient> dphi(nnoel);
-
-        MeshElementType etype = (MeshElementType) pmesh->getElementType(iel);
-
-
-        Point qpoint;    // coordenadas do ponto de integracao
-        double JxW      = 0.0;
-
-        equation_manager.global_indices(dof, conn_iel, global_indices);
-
-        // calculando a função de forma e suas derivadas para elemento QUAD4 ou TRI3
-        FEMGetQGauss(etype,qp,qw);
-
-        Gradient velocity;
-        velocity(0) = sqrt(2.0)/2.0;
-        velocity(1) = velocity(0);
-        double kd   = 1.0E-3;
-
-
-        // loop sobre os pontos de integração
-        for(int q = 0; q < qp.size(); q++)
-        {
-
-             // calculando a função de forma e suas derivadas para o ponto de integração q
-            FEMComputeFunctions(etype, qp[q],qw[q],coords_iel,qpoint,phi,dphi,JxW);
-           
-            // calculando a matriz de rigidez e o vetor de forca local
-            for(int i = 0; i < nnoel; i++)
-            {
-    
-                for(int j = 0; j < nnoel; j++)
-                    Ke(i,j) += JxW*(phi[i]*( velocity*dphi[j]) +       // w (a. grad u) - Termo convectivo
-                                            kd*(dphi[i]*dphi[j])  );   // Grad w Grad u - Termo difusivo 
-            }
-        }
-
-        // Inserindo a matriz de rigidez e o vetor de forca no sistema
-        implicit_system->add_matrix_entry(global_indices,global_indices, Ke.get_data() );
-        implicit_system->add_rhs_entry(global_indices,Fe.data());
-        
-    }
+    // Inicializar o sistema 
+    nonlinear_implicit_system->init();
 
     // Resolve o sistema de equações
-    implicit_system->solve();
+    nonlinear_implicit_system->solve();
 
-    implicit_system->write_vtk("solution");
+    nonlinear_implicit_system->write_result("convection_diffusion");
 
-    delete implicit_system;
+    delete nonlinear_implicit_system;
 
-    if(MeshTools::processor_id() == 0)  delete mesh;
+    if (MeshTools::processor_id() == 0)
+        delete mesh;
     delete pmesh;
     delete parts;
 
-    MeshTools::Finalize();
+    
     return 0;
 }
 
 int main(int argc, char *argv[])
 {
-
-    return convection_diffusion(argc, argv);
+    MeshTools::Init(argc, argv);
+    run_convection_diffusion_reaction(argc, argv);
+    MeshTools::Finalize();
 }
-

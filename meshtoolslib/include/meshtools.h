@@ -1,9 +1,11 @@
 #ifndef MESHTOOLS_H
 #define MESHTOOLS_H
 
+
+#include "GetPot.hpp"
 #include "meshtools_config.h"
 
-#if USE_MPI
+#ifdef MPI_ENABLE
 #include "mpi.h"
 #endif
 
@@ -15,8 +17,12 @@
 #include <omp.h>
 #endif
 
+#ifdef HDF5_ENABLE
+#include <hdf5.h>
+#endif
+
 #ifdef USE_CATALYST
-    #include "FEAdaptor.h"
+#include "FEAdaptor.h"
 #endif
 
 namespace MeshTools 
@@ -24,6 +30,7 @@ namespace MeshTools
 
     void Init(int argc, char* argv[]);    
     void Finalize();
+    void Printf(const char format[],...);
 
     int& processor_id();
     int& n_processors();

@@ -19,7 +19,6 @@ static void usage(const char *arg0)
     cerr << "  -c [color algorithm] : where [color algotihm] is the coloring algorithm. The options are: " << endl;
     cerr <<"      greedy  : greedy serial version (default)" << endl;
     cerr <<"      blocked : blocked serial version" << endl;
-    cerr <<"      rokos   : openmp greedy version " << endl;
     cerr << "  -b <block size> : where <block size> is block size used in the the blocked version coloring algorithm." << endl;
     cerr << "  -r <reordering algorithm> : where [reordering algotihm] is the nodal renumering algorithm. The options are: " << endl;
     cerr <<"      rcm       : apply rcm (default) " << endl;
@@ -105,8 +104,6 @@ int main(int argc, char* argv[])
                     color_alg = COLOR_DEFAULT;
                 if(strcmp(color_alg_name,"blocked")==0)
                     color_alg = COLOR_DEFAULT_BLOCK;
-                 if(strcmp(color_alg_name,"rokos")==0)
-                     color_alg = COLOR_ROKOS;
                 break;
             case 'b':
                 block_size_str = optarg;
@@ -168,17 +165,13 @@ int main(int argc, char* argv[])
         str.resize(str.length()-4);
 
         //Escreve partição na arquivo 
-        pmesh->WritePMesh(str.c_str());
+        pmesh->WritePMeshMTS(str.c_str());
     }
     else
     {
         // Em caso de execução em serial, aplica a coloração 
         // em toda a malha
         mesh->MeshColoring(color_alg, block_size);
-
-        // Escreve a malha em arquivo.
-        //if(flg_write)
-        //    mesh->MeshVTKWriting(writing);
 
     }
 

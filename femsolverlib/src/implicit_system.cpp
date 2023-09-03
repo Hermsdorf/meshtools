@@ -5,12 +5,24 @@ using namespace std;
 #include "implicit_system.h"
 #include "meshtools.h"
 
+/**
+ * Constructor
+ * 
+ * @param mesh: parallel mesh object
+ * @param name: name of the system
+*/
 ImplicitSystem::ImplicitSystem(ParallelMesh &mesh, std::string name):
-    _mesh(mesh), _system_name(name), _n_dof(0), _equations(mesh)
+    _mesh(mesh), _system_name(name), _n_dof(0), _equations(mesh), _assemble_function(nullptr)
     {
 
     }   
 
+/**
+ * Add a variable to the system
+ * 
+ * @param name: name of the variable
+ * @return the number of variables in the system
+*/
 int ImplicitSystem::add_variable(std::string name)
 {
     if(std::find(this->_variables_names.begin(), this->_variables_names.end(), name) == this->_variables_names.end())
@@ -21,12 +33,50 @@ int ImplicitSystem::add_variable(std::string name)
     return this->_variables_names.size() - 1;
 }
 
+
+/**
+ * Get the name of a variable
+ * 
+ * @param idx: index of the variable
+ * @return the name of the variable
+*/
+std::string ImplicitSystem::get_variable_name(int idx)
+{
+    assert(idx < this->_variables_names.size());
+    return this->_variables_names[idx];
+}
+
+/**
+ * Get the index of a variable
+ * 
+ * @param name: name of the variable
+ * @return the index of the variable. 
+ * If the variable is not found, it returns -1
+*/
+int ImplicitSystem::get_variable_id(std::string name)
+{
+    for(int i = 0; i < this->_variables_names.size();i++)
+        if( this->_variables_names[i]==name)
+            return i;
+    return -1;
+}
+
+/**
+ * Add a Dirichlet boundary condition to the system
+ * 
+ * @param boundary: Dirichlet boundary condition
+*/
 void ImplicitSystem::add_dirichlet_boundary(DirichletBoundary &boundary)
 {
     this->_equations.add_dirichlet_boundary(boundary);
 }
 
 
+/**
+ * Initializes the system setting the number of degrees of freedom,
+ * alocating the matrix, the vector and the solver with its tolerance,
+ * and type of solver, which is GMRES.
+*/
 void ImplicitSystem::init()
 {
     this->_equations.set_n_dofs(this->_variables_names.size());
@@ -92,6 +142,9 @@ void ImplicitSystem::init()
     ISDestroy(&is_local);
     ISDestroy(&is_global);
 
+    VecSet(this->_solution, 0.0);
+    VecSet(this->_solution_local, 0.0);
+
     // Create the KSP solver
     KSPCreate(MeshTools::Comm(), &this->_ksp);
     KSPSetOperators(this->_ksp, this->_A, this->_A);
@@ -100,6 +153,10 @@ void ImplicitSystem::init()
     KSPSetFromOptions(this->_ksp);
 }
 
+/**
+ * Update the matrix and the right-hand-side vector
+ * in all processors that are executing the code
+*/
 void ImplicitSystem::close()
 {
     MatAssemblyBegin(_A,MAT_FINAL_ASSEMBLY);
@@ -108,6 +165,9 @@ void ImplicitSystem::close()
     VecAssemblyEnd(this->_rhs);
 }
 
+/**
+ * Destructor of the class.
+*/
 ImplicitSystem::~ImplicitSystem()
 {
     KSPDestroy(&this->_ksp);
@@ -118,11 +178,30 @@ ImplicitSystem::~ImplicitSystem()
     VecScatterDestroy(&this->_scatter);
 }
 
+/**
+ * Solves the linear system using the KSP solver.
+ * It assembles the system using the assemble function
+ * passed as parameter to the constructor and implemented
+ * by the user and then solves the linear system with PETSc.
+*/
 void ImplicitSystem::solve()
 {
+    this->_assemble_function(this);
+    solve_linear_system();
+}
 
-    MatAssemblyBegin(_A,MAT_FINAL_ASSEMBLY);
+/**
+ * Solves the linear system using the KSP solver.
+ * It assemble the matrix and the right-hand-side vector
+ * and then solves the linear system with PETSc. By the end
+ * of the function, the solution is scattered from global to local
+ * solution vector.
+*/
+void ImplicitSystem::solve_linear_system()
+{
+    MatAssemblyBegin(_A, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(_A, MAT_FINAL_ASSEMBLY);
+
     VecAssemblyBegin(this->_rhs);
     VecAssemblyEnd(this->_rhs);
 
@@ -135,16 +214,22 @@ void ImplicitSystem::solve()
     double rnorm;
     KSPGetIterationNumber(this->_ksp,&its);
     KSPGetResidualNorm(this->_ksp, &rnorm);
-    PetscPrintf(MeshTools::Comm(), "Number of iterations = %d\n", its);
-    PetscPrintf(MeshTools::Comm(), "Final norm of residual: %g\n", rnorm);
+    PetscPrintf(MeshTools::Comm(), "Linear number of iterations = %d\n", its);
+    PetscPrintf(MeshTools::Comm(), "Linear final norm of residual: %g\n", rnorm);
 
     // Realiza o scatter de solução global para local
     VecScatterBegin(this->_scatter, this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
     VecScatterEnd(this->_scatter  , this->_solution, this->_solution_local, INSERT_VALUES, SCATTER_FORWARD);
-
 }
 
-
+/**
+ * By a exact solution, it computes the error of the solution
+ * in the L2 norm.
+ * 
+ * @param idof: Degree of freedom to compute the error
+ * @param func_exac: Exact solution
+ * @return The error in the L2 norm
+*/
 double ImplicitSystem::compute_error_from_exact_solution( int idof, double(*func_exac)(double x,double y, double z, double t) )
 {
     auto coords  = this->_mesh.getCoord();
@@ -173,41 +258,87 @@ double ImplicitSystem::compute_error_from_exact_solution( int idof, double(*func
     return _error;
 }
         
-
+/**
+ * It adds values in the matrix by std::vectors of row and column indices
+ * 
+ * @param row_indices: std::vector of row indices
+ * @param col_indices: std::vector of column indices
+ * @param values: double* of values to be added in the matrix
+*/
 void ImplicitSystem::add_matrix_entry(std::vector<int>& row_indices, 
                                       std::vector<int>& col_indices, double* values)
 {
     MatSetValues(this->_A,row_indices.size(),row_indices.data(), col_indices.size(), col_indices.data(),values,ADD_VALUES);
 }
 
+/**
+ * It adds values in the matrix by arrays of row and column indices
+ * 
+ * @param nrows: number of rows
+ * @param row_indices: int* with the indices of the rows
+ * @param ncols: number of columns
+ * @param col_indices: int* with the indices of the columns
+ * @param values: double* of values to be added in the matrix
+*/
 void ImplicitSystem::add_matrix_entry(int nrows, int *row_indices, 
                               int ncols, int* col_indices, double* values)
 {
     MatSetValues(this->_A,nrows,row_indices, ncols, col_indices,values,ADD_VALUES);
 }
 
-
+/**
+ * It sets values in the matrix by std::vectors of row and column indices
+ * 
+ * @param row_indices: std::vector of row indices
+ * @param col_indices: std::vector of column indices
+ * @param values: double* of values to be set in the matrix
+*/
 void ImplicitSystem::set_matrix_entry(std::vector<int>& row_indices, 
                                       std::vector<int>& col_indices, double* values)
 {
     MatSetValues(this->_A,row_indices.size(),row_indices.data(), col_indices.size(), col_indices.data(),values,INSERT_VALUES);
 }   
 
+/**
+ * It adds to the right-hand-side vector by std::vectors of row indices
+ * 
+ * @param row_indices: std::vector of row indices
+ * @param values: double* of values to be added in the right-hand-side vector
+*/
 void ImplicitSystem::add_rhs_entry(std::vector<int>& row_indices, double* values)
 {
     VecSetValues(this->_rhs, row_indices.size(), row_indices.data(), values, ADD_VALUES);
 }
 
+
+/**
+ * It adds to the right-hand-side vector by arrays of row indices
+ * 
+ * @param nrows: number of rows
+ * @param row_indices: int* with the indices of the rows
+ * @param values: double* of values to be added in the right-hand-side vector
+*/
 void ImplicitSystem::add_rhs_entry(int nrows, int* row_indices, double* values)
 {
     VecSetValues(this->_rhs, nrows, row_indices, values, ADD_VALUES);
 }
 
+/**
+ * It sets values in the right-hand-side vector by std::vectors of row indices
+ * 
+ * @param row_indices: std::vector of row indices
+ * @param values: double* of values to be set in the right-hand-side vector
+*/
 void ImplicitSystem::set_rhs_entry(std::vector<int>& row_indices, double* values)
 {
     VecSetValues(this->_rhs, row_indices.size(), row_indices.data(), values, INSERT_VALUES);
 }
 
+/**
+ * It get the local solution array
+ * 
+ * @return double* with the local solution array
+*/
 double* ImplicitSystem::get_local_solution_array()
 {
     double* solution_array;
@@ -216,16 +347,30 @@ double* ImplicitSystem::get_local_solution_array()
     return solution_array;
 }
 
+/**
+ * It restores the local solution array
+ * 
+ * @param solution_array: double* with the local solution array
+*/
 void ImplicitSystem::restore_local_solution_array(double** solution_array)
 {
     VecRestoreArray(this->_solution_local, solution_array);
 }
 
+/**
+ * Returns the equation manager
+ * 
+ * @return EquationManager& with the equation manager
+*/
 EquationManager& ImplicitSystem::get_equation_manager()
 {
     return this->_equations;
 }
 
+/**
+ * Prints the matrix with the number of nonzero elements,
+ * the number of nonzero elements per processor and the memory used
+*/
 void ImplicitSystem::print_matrix()
 {
     MatInfo info;
@@ -246,6 +391,9 @@ void ImplicitSystem::print_matrix()
     
 }
 
+/**
+ * Prints the right-hand-side vector
+*/
 void ImplicitSystem::print_rhs()
 {
     VecAssemblyBegin(this->_rhs);
@@ -253,6 +401,12 @@ void ImplicitSystem::print_rhs()
     VecView(this->_rhs, PETSC_VIEWER_STDOUT_WORLD);
 }
 
+/**
+ * Applies dirichlet boundary conditions to the system
+ * The rows corresponding to the dirichlet boundary conditions are zeroed
+ * and the diagonal is set to 1.0. The rhs is also modified accordingly
+ * with the dirichlet boundary condition value.
+*/
 void ImplicitSystem::apply_dirichlet_boundary_conditions()
 {
 
@@ -267,8 +421,6 @@ void ImplicitSystem::apply_dirichlet_boundary_conditions()
         std::vector<PetscScalar> values(nodes.size());
         std::vector<PetscInt> idx(nodes.size());
 
-        if(MeshTools::processor_id() == 0)   std::cout << "Applying dirichlet boundary condition " << ibc << " in " << nodes.size() <<" nodes"<<std::endl;
-        
         int dof = bc.get_dof_id();
         for(unsigned int inode = 0; inode < nodes.size(); inode++)
         {
@@ -288,7 +440,12 @@ void ImplicitSystem::apply_dirichlet_boundary_conditions()
     this->close();
 }
 
-void ImplicitSystem::write_vtk(string filename)
+/**
+ * Write the solution in a file
+ * 
+ * @param filename: string with the filename
+*/
+void ImplicitSystem::write_result(string filename)
 {
     auto n_nodes = _mesh.get_n_nodes();
     
@@ -309,8 +466,24 @@ void ImplicitSystem::write_vtk(string filename)
     restore_local_solution_array(&solution_ptr);
 }
 
-
-ParallelMesh& ImplicitSystem::get_mesh()
+/**
+ * Returns the mesh associated to the system
+ * 
+ * @return ParallelMesh& with the mesh
+*/
+const ParallelMesh& ImplicitSystem::get_mesh()
 {
     return this->_mesh;
+}
+
+/**
+ * Store the assemble function declared by the user
+ * in the system.
+ * 
+ * @param _assemble: function pointer to the assemble function
+ * to be stored in the system
+*/
+void ImplicitSystem::attach_assemble(void _assemble(ImplicitSystem* _system))
+{
+    this->_assemble_function = _assemble;
 }

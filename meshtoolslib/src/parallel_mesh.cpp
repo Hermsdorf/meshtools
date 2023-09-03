@@ -12,7 +12,6 @@ ParallelMesh::ParallelMesh()
     this->n_elements                 = 0;
     this->n_nodes                    = 0;
     this->internal_mesh              = false;
-    this->mesh_coloring_internal     = nullptr;
     this->processor_id               = MeshTools::processor_id();
     this->n_processors               = MeshTools::n_processors();
     this->n_global_elements          = 0;
@@ -21,32 +20,22 @@ ParallelMesh::ParallelMesh()
     shared_nodes_offset.push_back(0);
 }
 
-
-
-ParallelMesh::~ParallelMesh()
-{
-    //local_to_global.clear();
-}
-
+ParallelMesh::~ParallelMesh() { }
 
 void ParallelMesh::setNeighborProcessors(std::vector<unsigned int> neighbors_processors)
 {
     this->neighbor_processors = neighbor_processors;
 }
+
 void ParallelMesh::setSharedNodesOffset(std::vector<unsigned int> shared_nodes_offset)
 {
     this->shared_nodes_offset = shared_nodes_offset;
 }
+
 void ParallelMesh::setSharedNodes(std::vector<unsigned int> shared_nodes)
 {
     this->shared_nodes = shared_nodes;
 }
-/*
-void ParallelMesh::setLocal2Global(std::vector<unsigned int> local2global)
-{
-    this->local_to_global = local2global;
-}
-*/
 
 void ParallelMesh::set_n_local_nodes(unsigned int n_local_nodes)
 {
@@ -387,16 +376,19 @@ void ParallelMesh::readParallelMeshHDF5(const char* filename)
 #endif
 
 void ParallelMesh::writePVTK(const char* fname, MeshIODataAppended* info)
-{
-    if(MeshTools::processor_id == 0)
-        std::cout << "Writing VTK parallel mesh...\n";
-    
+{   
     this->WriteVTK(fname, info);
 
-    if(MeshTools::processor_id() != 0 ) return;
+    if(MeshTools::processor_id() != 0) return;
+
+    int timestep = info->getTimeStep();
 
     char filename[256];
-    sprintf(filename,"%s_%d.pvtu", fname, MeshTools::n_processors());
+
+    if (timestep != -1)
+        sprintf(filename,"%s_%d_%04d.pvtu", fname, MeshTools::n_processors(), timestep);
+    else
+        sprintf(filename,"%s_%d.pvtu", fname, MeshTools::n_processors());
 
     std::ofstream fout;
 
@@ -415,42 +407,50 @@ void ParallelMesh::writePVTK(const char* fname, MeshIODataAppended* info)
     fout << "   <PDataArray type=\"Int32\" Name=\"connectivity\" NumberOfComponents=\"1\"/>\n"; 
     fout << "   <PDataArray type=\"Int32\" Name=\"offsets\"      NumberOfComponents=\"1\"/>\n"; 
     fout << "   <PDataArray type=\"UInt16\" Name=\"types\"       NumberOfComponents=\"1\"/>\n"; 
-    fout << " </PCells>\n";
-    fout << "<PPointData>\n";
-    fout << "<PDataArray type=\"UInt32\" Name=\"node-id\"/>\n";
+    fout << "  </PCells>\n";
+    fout << "  <PPointData>\n";
+    fout << "   <PDataArray type=\"UInt32\" Name=\"node-id\"/>\n";
    
     if(info != nullptr)
     {
-        auto & point_data = info->GetPointDataInfo();
+        auto & point_data = info->getPointDataInfo();
             
         if(point_data.size()!= 0 )
         {
             for(int i = 0; i < point_data.size(); ++i)
-                fout << "\t\t\t<PDataArray type=\""<<MeshDataTypeSTR[point_data[i].type]<<"\" Name=\""<<point_data[i].name<<"\"/>\n";
+                fout << "   <PDataArray type=\""<<MeshDataTypeSTR[point_data[i].type]<<"\" Name=\""<<point_data[i].name<<"\"/>\n";
                 
         }
     }
-    fout << "</PPointData>\n";
+    fout << "  </PPointData>\n";
+    fout << "  <PCellData>\n";
+    fout << "   <PDataArray type=\"UInt32\" Name=\"tag-id\"/>\n";
     if(info != nullptr)
     {
-        auto & cell_data  = info->GetCellDataInfo();
+        auto & cell_data  = info->getCellDataInfo();
         if(cell_data.size()!= 0 )
         {
-            fout << "\t\t<PCellData>\n";
+            
             for(int i = 0; i < cell_data.size(); ++i)
-                fout << "\t\t\t<PDataArray type=\""<<MeshDataTypeSTR[cell_data[i].type]<<"\" Name=\""<<cell_data[i].name<<"\"/>\n";               
-            fout << "\t\t</PCellData>\n";
+                fout << "   <PDataArray type=\""<<MeshDataTypeSTR[cell_data[i].type]<<"\" Name=\""<<cell_data[i].name<<"\"/>\n";               
+           
         }
     }
+    fout << "  </PCellData>\n";
     
-
     for(int p = 0 ; p < MeshTools::n_processors() ; p++)
     {
         char  str_aux[256];
-        sprintf(str_aux,"%s_%d_%d.vtu", fname,  MeshTools::n_processors(),p);
-        fout << "    <Piece Source=\"" << str_aux << "\"/>\n";
+
+        if (timestep != -1)
+            sprintf(str_aux,"%s_%d_%d_%04d.vtu", fname,  MeshTools::n_processors(), p, timestep);
+        else
+            sprintf(str_aux,"%s_%d_%d.vtu", fname, MeshTools::n_processors(), p);
+            
+        fout << "  <Piece Source=\"" << str_aux << "\"/>\n";
 
     }
+
     fout << " </PUnstructuredGrid>\n";
     fout << "</VTKFile>\n";
 
@@ -599,11 +599,8 @@ void ParallelMesh::build_communication_map()
                 this->sendto_info.push_back(info);
         }
     }
-    //MPI_Barrier(MeshTools::Comm());
-    //cout << "Processor " << MeshTools::processor_id() << ": " << this->sendto_info.size() << " sendto_info\n";
-    //cout << "Processor " << MeshTools::processor_id() << ": " << this->recvfrom_info.size() << " recvfrom_info\n";
     if(MeshTools::processor_id() == 0)
-        std::cout << "fininshing communication map\n";
+        std::cout << "Communication map finished\n";
 }
 
 void ParallelMesh::update()
@@ -649,10 +646,8 @@ void ParallelMesh::update()
     }
 
     if(MeshTools::n_processors() == 1)
-    {
-         this->start_node_index = 0;
          return;
-    }
+
     // Sends from predecessor process the value of `n_nodes_local` to `n_nodes_offset` variable`
     MPI_Scan(&n_local_nodes,&n_nodes_offset,1,MPI_UNSIGNED,MPI_SUM,MPI_COMM_WORLD);
     n_nodes_offset -= this->n_local_nodes;
@@ -736,7 +731,7 @@ void ParallelMesh::update()
 }
 
 
-void ParallelMesh::WritePMesh(const char *fname)
+void ParallelMesh::WritePMeshMTS(const char *fname)
 {
     char filename[256];
     sprintf(filename,"%s_%04d_%04d.mts",fname,MeshTools::n_processors(),MeshTools::processor_id());

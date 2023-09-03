@@ -4,8 +4,8 @@ file(GLOB source_files_lib
 "src/*.cpp"
 )
 
-
 add_library(femsolverlib SHARED ${source_files_lib})
+include_directories(femsolverlib ${MESHTOOLS_INCLUDE_DIR})
 
 
 

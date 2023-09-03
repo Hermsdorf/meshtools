@@ -4,12 +4,18 @@
 #include <iostream>
 using namespace std;
 
+#include "numeric_vector.h"
+
 template <typename T>
 class DenseMatrix {
 
     public:
         DenseMatrix(int rows, int cols);
         T& operator()(int row, int col);
+        DenseMatrix<T> operator*(DenseMatrix<T> &B);
+        DenseMatrix<T> operator*(T scalar);
+        DenseMatrix<T> operator*=(T scalar);
+        DenseMatrix<T> transpose();
         void print();
         ~DenseMatrix();
         T* get_data();
@@ -69,6 +75,54 @@ T* DenseMatrix<T>::get_data() {
     return data;
 }
 
+template <typename T>
+DenseMatrix<T> DenseMatrix<T>::operator*(DenseMatrix<T> &B)
+{
+    DenseMatrix<T> C(nrows, B.ncols);
+    for (int i = 0; i < nrows; i++) {
+        for (int j = 0; j < B.ncols; j++) {
+            for (int k = 0; k < ncols; k++) {
+                C(i, j) += data[idx(i, k)] * B(k, j);
+            }
+        }
+    }
+    return C;
+}
+
+template <typename T>
+DenseMatrix<T> DenseMatrix<T>::operator*(T scalar)
+{
+    DenseMatrix<T> C(nrows, ncols);
+    for (int i = 0; i < nrows; i++) {
+        for (int j = 0; j < ncols; j++) {
+            C(i, j) = data[idx(i, j)] * scalar;
+        }
+    }
+    return C;
+}
+
+template <typename T>
+DenseMatrix<T> DenseMatrix<T>::operator*=(T scalar)
+{
+    for (int i = 0; i < nrows; i++) {
+        for (int j = 0; j < ncols; j++) {
+            data[idx(i, j)] *= scalar;
+        }
+    }
+    return *this;
+}
+
+template <typename T>
+DenseMatrix<T> DenseMatrix<T>::transpose()
+{
+    DenseMatrix<T> C(ncols, nrows);
+    for (int i = 0; i < nrows; i++) {
+        for (int j = 0; j < ncols; j++) {
+            C(j, i) = data[idx(i, j)];
+        }
+    }
+    return C;
+}
 
 typedef DenseMatrix<double> RealDenseMatrix;
 typedef DenseMatrix<int>     IntDenseMatrix;
