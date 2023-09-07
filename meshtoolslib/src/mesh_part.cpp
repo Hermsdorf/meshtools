@@ -1671,7 +1671,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
         pmesh->set_start_node_index(0);
     }   
 
-    pmesh->update();
+    pmesh->fill_node_index();
     return pmesh;
 }
 

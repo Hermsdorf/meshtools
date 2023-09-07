@@ -56,7 +56,7 @@ class ParallelMesh : public Mesh{
         void                             set_recvfrom_info(std::vector<MessageInformation> recvfrom_info);
         
         void getGhostNodesIds(std::vector<unsigned int>& local_ghosts_nodes, std::vector<unsigned int>& global_ghosts_nodes);
-        void update();
+        void fill_node_index();
         void build_communication_map();
 
     private:
@@ -69,7 +69,6 @@ class ParallelMesh : public Mesh{
         unsigned int n_local_nodes;
         unsigned int start_node_index; // is the equivalent of _first_global_equation_index of equation_manager ?
         
-        // std::vector<unsigned int> local_to_global;
         // Parallel Context attributes
         int processor_id;
         int n_processors;

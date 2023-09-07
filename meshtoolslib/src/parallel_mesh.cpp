@@ -603,7 +603,12 @@ void ParallelMesh::build_communication_map()
         std::cout << "Communication map finished\n";
 }
 
-void ParallelMesh::update()
+/*
+*  This function updates the local node_index variable, which is the local
+*  to global node numbering of the mesh. This function is called after the
+*  mesh is partitioned and the communication map is built.
+*/
+void ParallelMesh::fill_node_index()
 {
     // Indicates local node, what means that it is not shared with other process
     std::vector<unsigned short> mask_node(this->n_nodes);
@@ -613,11 +618,12 @@ void ParallelMesh::update()
    
     unsigned int n_nodes_offset;
 
-   // Mark nodes that are belong to my master (which are process with id greater than mine)
     std::vector<MessageInformation>& recvfrom = this->get_recvfrom_info();
 
     unsigned int max_buffer_size = 0;
     unsigned int n_nodes_shared   = 0;
+
+    // Mark nodes that belongs to my master (which are process with id greater than mine)
     for(int i = 0; i < recvfrom.size(); ++i)
     {
         unsigned int neighbor                   = recvfrom[i].processor_id;
@@ -635,7 +641,7 @@ void ParallelMesh::update()
     }
 
 
-    // Count local nodes, which arent from other process (my master)
+    // Count local nodes, in other words, the ones that arent from other process (my master)
     this->n_local_nodes = 0;
     for(int i=0; i < this->n_nodes; i++)
     {
@@ -649,6 +655,8 @@ void ParallelMesh::update()
          return;
 
     // Sends from predecessor process the value of `n_nodes_local` to `n_nodes_offset` variable`
+    // Accumulating n_local_nodes from all predecessor processes (processes with smaller rank)
+    // in n_nodes_offset
     MPI_Scan(&n_local_nodes,&n_nodes_offset,1,MPI_UNSIGNED,MPI_SUM,MPI_COMM_WORLD);
     n_nodes_offset -= this->n_local_nodes;
     
@@ -666,9 +674,11 @@ void ParallelMesh::update()
     std::vector<MessageInformation>& recvfrom_neighbors_map =  this->get_recvfrom_info();
 
     unsigned int recv_n_shared_nodes = 0;
+    // Number of shared nodes that will be received from my master
     for(int i = 0; i < recvfrom_neighbors_map.size(); ++i)
         recv_n_shared_nodes += recvfrom_neighbors_map[i].nodes.size();
 
+    // Number of shared nodes that I'm going to send to my slaves
     unsigned int sendto_n_shared_nodes = 0;
     for(int i = 0; i < sendto_neighbors_map.size(); ++i)
         sendto_n_shared_nodes += sendto_neighbors_map[i].nodes.size();
@@ -678,7 +688,8 @@ void ParallelMesh::update()
     std::vector<MPI_Request>  requests(sendto_neighbors_map.size()+recvfrom_neighbors_map.size());
     std::vector<MPI_Status>   status(sendto_neighbors_map.size()+recvfrom_neighbors_map.size());
     
-    // Exchange Data from
+    // Exchange Data from. From here to the end of this method 
+    // we fill the node_index positions of the shared nodes
     unsigned int r = 0;
     unsigned int offset = 0;
     int n_recvs = recvfrom_neighbors_map.size();
@@ -724,7 +735,7 @@ void ParallelMesh::update()
         {
             int node = neighbor_nodes[ino];
             unsigned int recv_value = recvBuffer[offset+ino];
-            node_index[node] = recv_value;
+            node_index[node] = recv_value; 
         } 
         offset += n_shared_nodes; 
     }

@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
         MeshIODataAppended info;
         auto &l2g = pmesh->getNodeIndexes();
         info.addPointDataInfo("Index", UInt32, (void *)&l2g[0]);
-        pmesh->update();
+        pmesh->fill_node_index();
         pmesh->writePVTK("parallel", &info);
         pmesh->WritePMeshMTS("mesh");
     }
