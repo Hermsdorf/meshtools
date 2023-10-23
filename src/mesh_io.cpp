@@ -509,13 +509,13 @@ void Mesh::WriteVTK(const char* fname, MeshIODataAppended* info )
                 for(int i= 0; i < point_data.size(); ++i)
                 {
                     nbytes = get_mesh_type_size(point_data[i].type)*this->n_nodes;
-                    fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-                    fwrite((void*)point_data[i].data,get_mesh_type_size(point_data[i].type),this->n_nodes,fout);
+                    fwrite(&nbytes, sizeof(unsigned long),1,fout);
+                    fwrite(point_data[i].data,nbytes,1,fout);
                 }
             }
         }
+     //  
         fwrite((void*)&this->physical_tag[n_face_elements],sizeof(unsigned int),this->n_elements,fout);
-
         if(info != nullptr)
         {
             auto& cell_data   = info->getCellDataInfo();
@@ -524,9 +524,21 @@ void Mesh::WriteVTK(const char* fname, MeshIODataAppended* info )
                 
                 for(int i= 0; i < cell_data.size(); ++i)
                 {
+                    // int max = 0;
+                    // int min = n_elements;
+
                     nbytes = get_mesh_type_size(cell_data[i].type)*this->n_elements;
-                    fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-                    fwrite((void*)cell_data[i].data,get_mesh_type_size(cell_data[i].type),this->n_elements,fout);
+                    fwrite(&nbytes, sizeof(unsigned long),1,fout);
+                    fwrite(cell_data[i].data,nbytes,1,fout);
+
+                    // if(cell_data[i].name == "partition_elem") 
+                    // {
+                    //     int  *data = (int*)cell_data[i].data;
+                    //     for(int j = 0; j < n_elements;j++)
+                    //     {
+                    //         std::cout << "data[" << j << "] = " << data[j] << std::endl;
+                    //     }
+                    // }
                 }
             }
         }
