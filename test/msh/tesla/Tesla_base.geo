@@ -17,3 +17,4 @@ Physical Surface("CAR_SURFACE") = {CarSurfaces()};
 //+
 Physical Volume("FLUID") = {2};
 
+Mesh.OptimizeMesh = NetGen
