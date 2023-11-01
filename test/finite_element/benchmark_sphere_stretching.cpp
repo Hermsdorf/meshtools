@@ -231,7 +231,29 @@ void assemble_transport(TransientImplicitSystem* system)
             const double tau = TAUStab(velocity, G, k, dt_stab, dt);
 
             // CAU stabilization parameters
-            const double ctau = CAUStab(u, u_old, grad_u, source_term, velocity, sigma, k, dt, h_carach);
+            //const double ctau = CAUStab(u, u_old, grad_u, source_term, velocity, sigma, k, dt, h_carach);
+
+            // YZB Stabilization 
+            // Reference:
+            // Bazilevs, Y., Calo, V.M., Tezduyar, T.E. and Hughes, T.J.R. (2007), 
+            // YZβ discontinuity capturing for advection-dominated processes with 
+            // application to arterial drug delivery. Int. J. Numer. Meth. Fluids, 54: 593-608. 
+            // https://doi.org/10.1002/fld.1484
+            double beta    = 1.0;
+            double phi_ref = 1.0;
+            double fopc    = 0.0;
+            double inv_phi_ref = 1.0 / phi_ref;
+
+            double dudt        = (u - u_old) / dt;
+            double adv         = (velocity * grad_u);
+            double reac        = sigma*u;
+
+            double residuo = dudt + adv - reac - source_term;
+            double A       = abs(residuo) / phi_ref;
+            double tmp1    = pow(grad_u(0)*inv_phi_ref,2.0) + pow(grad_u(1)*inv_phi_ref,2.0);
+            double B       = tmp1 > 0.0 ? pow(tmp1, (beta / 2.0 - 1.0)): 0.0;
+            double C = pow(h_carach / 2.0, beta);
+            const double ctau = A*B*C*fopc;
 
             const double adt1 = (1.0-theta)*dt;
             const double adt  = theta*dt;
@@ -241,14 +263,14 @@ void assemble_transport(TransientImplicitSystem* system)
                 // Galerkin 
                 Fe[i]   +=  JxW*(phi[i]*u_old - adt1*phi[i]*(velocity * grad_u_old) 
                                               - adt1*k*(dphi[i] * grad_u_old)  
-                                              - adt1*sigma*phi[i]*u_old
+                                              //- adt1*sigma*phi[i]*u_old
                                 );
 
                 //  SUPG contribution
                 Fe[i] += JxW * tau * (
                                          u_old * (velocity * dphi[i])+
                                          -adt1 * (grad_u_old * velocity)*(velocity * dphi[i])
-                                         -adt1 * (sigma*u_old)*(velocity * dphi[i])
+                                         //-adt1 * (sigma*u_old)*(velocity * dphi[i])
                                      );
 
                 for (int j = 0; j < local_indices.size(); j++)
@@ -257,14 +279,14 @@ void assemble_transport(TransientImplicitSystem* system)
                     Ke(i, j) += JxW * ( phi[i]*phi[j]                              // termo de massa
                                            + adt*(phi[i] * (velocity * dphi[j]))   // Na (vel. grad Nb) - Termo convectivo
                                            + adt*k*(dphi[i] * dphi[j])             // Grad Na Grad Nb - Termo difusivo
-                                           + adt*sigma*phi[i]*phi[j]              // \sigma* Na  Nb  - Termo reação      
+                                           //+ adt*sigma*phi[i]*phi[j]              // \sigma* Na  Nb  - Termo reação      
                                        );
 
                     // SUPG contribution
                     Ke(i, j) += JxW * tau * (
-                                    phi[j]*(velocity * dphi[i]) +
-                                     adt * (velocity * dphi[j])*(velocity * dphi[i]) +
-                                     adt * (sigma * phi[j] )*(velocity * dphi[i])
+                                    phi[j]*(velocity * dphi[i]) 
+                                       + adt * (velocity * dphi[j])*(velocity * dphi[i]) 
+                                    // + adt * (sigma * phi[j] )*(velocity * dphi[i])
                             );
 
                     // CAU contribution
@@ -300,7 +322,7 @@ int sphere_stretching(int argc, char *argv[])
         // Rodando serial ou em paralelo o processo mestre
         // irá ler a malha.
         string test_mesh_dir = TEST_MESH_DIR;
-        test_mesh_dir.append("benchmark_sphere_stretching/sphere.msh");
+        test_mesh_dir.append("benchmark_sphere_stretching/sphere_grossa.msh");
         mesh = new Mesh(test_mesh_dir);
 
         // Se houver mais um processo, o processo mestre irá
@@ -318,23 +340,30 @@ int sphere_stretching(int argc, char *argv[])
     TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_sphere_stretching");
     system->add_variable("u");
     DirichletBoundary bc(1,0,"0.0","x,y,z");
+    InitialCondition  ic(2,0,"1.0","x,y,z");
+    InitialCondition  ic2(4,0,"0.5","x,y,z");
+    system->add_initial_condition(ic);
+    system->add_initial_condition(ic2);
     system->add_dirichlet_boundary(bc);
-    system->attach_init_function(init_transport);
-    system->attach_assemble(assemble_transport);
 
+   
+    system->attach_assemble(assemble_transport);
     system->init();
 
     double tf = 3.0;
-    double dt;
-    double local_dt = calculate_stable_dt(pmesh, 1, 0.0);
-    MPI_Allreduce(&local_dt, &dt, 1, MPI_DOUBLE, MPI_MIN, PETSC_COMM_WORLD);
+    double dt = 0.01;
+    
 
     if (processor_id == 0)
         printf("Respecting CFL condition, dt = %f\n", dt);
 
     system->set_final_time(tf);
     system->set_deltat(dt);
-    unsigned int write_interval = 25;
+    unsigned int write_interval = 50;
+
+    system->set_nonlinear_max_iter(1);
+    system->set_nonlinear_tolerance(1.0E-4);
+    system->set_linear_tolerance(1.0E-8);
 
 
     char filename[100];
@@ -349,13 +378,13 @@ int sphere_stretching(int argc, char *argv[])
         if(system->get_time_step()%write_interval == 0 )
             system->write_result(filename);
         
-        // Dynamic time step
-        local_dt = calculate_stable_dt(pmesh, 1, system->get_time());
-        MPI_Allreduce(&local_dt, &dt, 1, MPI_DOUBLE, MPI_MIN, PETSC_COMM_WORLD);
-        if(dt < 0.0001)
-            dt = 0.0001;
-        if(dt > 0.1)
-            dt = 0.1;
+        // // Dynamic time step
+        // local_dt = calculate_stable_dt(pmesh, 1, system->get_time());
+        // MPI_Allreduce(&local_dt, &dt, 1, MPI_DOUBLE, MPI_MIN, PETSC_COMM_WORLD);
+        // if(dt < 0.0001)
+        //     dt = 0.0001;
+        // if(dt > 0.1)
+        //     dt = 0.1;
 
         system->set_deltat(dt);
     }
