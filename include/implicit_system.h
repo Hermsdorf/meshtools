@@ -67,4 +67,4 @@ class ImplicitSystem
 
 };
 
-#endif
+#endif /* IMPLICIT_SYSTEM_H */

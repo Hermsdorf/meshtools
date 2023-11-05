@@ -1,5 +1,5 @@
-#ifndef TRANSIENT_IMPLICIT_SYSTEM_H__
-#define TRANSIENT_IMPLICIT_SYSTEM_H__
+#ifndef TRANSIENT_IMPLICIT_SYSTEM_H
+#define TRANSIENT_IMPLICIT_SYSTEM_H
 
 #include "implicit_system.h"
 #include "nonlinear_implicit_system.h"
@@ -73,4 +73,4 @@ class TransientImplicitSystem: public NonLinearImplicitSystem
 
 };
 
-#endif /* TRANSIENT_IMPLICIT_SYSTEM_H__ */
+#endif /* TRANSIENT_IMPLICIT_SYSTEM_H */
