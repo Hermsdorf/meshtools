@@ -23,6 +23,14 @@ endif()
 find_package(METIS REQUIRED)
 find_package(HDF5)
 
+if(CATALYST_ENABLE)
+  find_package(catalyst 2.0 REQUIRED)
+  if(catalyst_FOUND)
+    message(STATUS "Catalyst was found!")
+    SET(CATALYST_ENABLE 1)
+  endif()
+endif()
+
 include(FindPkgConfig)
 
 if(MPI_ENABLE)
@@ -78,6 +86,7 @@ file(GLOB source_files_lib
     
 add_library(meshtoolslib SHARED ${source_files_lib})
 
+target_link_libraries(meshtoolslib fparser ${MESHTOOLS_DEP_LIBS} catalyst::catalyst)
 
 # add_subdirectory(app)
 add_subdirectory(test)

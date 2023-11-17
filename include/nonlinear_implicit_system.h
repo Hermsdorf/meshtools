@@ -33,4 +33,4 @@ class NonLinearImplicitSystem : public ImplicitSystem
 
 };
 
-#endif // NONLINEAR_IMPLICIT_SYSTEM_H
+#endif /* NONLINEAR_IMPLICIT_SYSTEM_H */

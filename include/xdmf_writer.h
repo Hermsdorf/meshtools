@@ -1,5 +1,5 @@
-#ifndef XDMF_WRITER_H__
-#define XDMF_WRITER_H__
+#ifndef XDMF_WRITER_H
+#define XDMF_WRITER_H
 
 #include "implicit_system.h"
 #include "transient_implicit_system.h"
@@ -12,8 +12,8 @@ class XDMFWriter
         void set_dir_path(std::string path);
         void set_file_id(int n_time_file) {n_timestep = n_time_file; } 
         int  get_file_id() { return n_timestep; }
-        int write(ImplicitSystem * system, double time);
-        int write(ImplicitSystem * system);
+        int  write(ImplicitSystem * system, double time);
+        int  write(ImplicitSystem * system);
         virtual ~XDMFWriter();
 
     private:
@@ -32,4 +32,4 @@ class XDMFWriter
 };
 
 
-#endif /* XDMF_WRITER_H__ */
+#endif /* XDMF_WRITER_H */
