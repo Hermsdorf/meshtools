@@ -16,7 +16,7 @@ option(CATALYST_ENABLE      "Enable Paraview Catalyst" OFF)
 option(DEBUG_ENABLE         "Enable Debug Mode" OFF)
 #option(TAU_PROFILER_ENABLE  "Enable TAU Profiler" OFF)
 
-#set(CMAKE_CXX_FLAGS "-O2 -funroll-loops")
+set(CMAKE_CXX_FLAGS "-fPIC")
 
 
 if(DEBUG_ENABLE)
