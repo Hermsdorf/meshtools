@@ -25,12 +25,14 @@
 #include "FEAdaptor.h"
 #endif
 
+class ParallelMesh;
 namespace MeshTools 
 {
 
     void Init(int argc, char* argv[]);    
     void Finalize();
     void Printf(const char format[],...);
+    ParallelMesh* ReadMesh(const std::string& filename);
 
     int& processor_id();
     int& n_processors();

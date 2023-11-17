@@ -1,7 +1,8 @@
 
 #include <cstdlib>
 #include "meshtools.h"
-
+#include "parallel_mesh.h"
+#include "mesh_part.h"
 namespace MeshTools
 {
     static int _processor_id;
@@ -62,6 +63,31 @@ int& n_processors()
 MPI_Comm Comm()
 {
     return _mpi_comm;
+}
+
+ParallelMesh* ReadMesh(const std::string& filename)
+{
+    Mesh* mesh = nullptr;
+    MeshPartition* parts = new MeshPartition();
+    if (_processor_id == 0)
+    {
+        // Rodando serial ou em paralelo o processo mestre
+        // irá ler a malha.
+        mesh = new Mesh(filename);
+
+        // Se houver mais um processo, o processo mestre irá
+        // particionar a malha
+        if (_n_processors > 1)
+        {
+            parts->ApplyPartitioner(mesh, _n_processors);
+        }
+    }
+
+    ParallelMesh* pmesh = parts->DistributedMesh(mesh);
+    if(mesh) delete mesh;
+    if(parts) delete parts;
+    return pmesh;
+
 }
 
 void Printf(const char format[],...)

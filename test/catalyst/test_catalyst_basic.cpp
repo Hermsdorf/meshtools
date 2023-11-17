@@ -17,12 +17,12 @@ int main(int argc, char* argv[])
     
     ParallelMesh* mesh = MeshTools::ReadMesh("catalyst_mesh.msh");
 
-    ImplicitSystem system(*mesh,"system");
-    system.add_variable("u");
+    TransientImplicitSystem *system  = new TransientImplicitSystem(*mesh,"system");
+    system->add_variable("u");
     InitialCondition   ic(3,0,"x*y*(x-1)*(y-1)","x,y,z");
-    system.add_initial_condition(ic);
-    system.init();
-    CatalystAdaptor::Execute(0, 0.0, system.get());
+    system->add_initial_condition(ic);
+    system->init();
+    CatalystAdaptor::Execute(0, 0.0,system);
     CatalystAdaptor::Finalize();
 
     if(mesh) delete mesh;
