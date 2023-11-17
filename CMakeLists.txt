@@ -13,8 +13,11 @@ option(MESHTOOLS_BUILD_APP  "Build meshtools application" ON)
 option(MPI_ENABLE           "Enable MPI" ON)
 option(OpenMP_ENABLE        "Enable OpenMP" ON)
 option(CATALYST_ENABLE      "Enable Paraview Catalyst" OFF)
-option(DEBUG_ENABLE         "Enable Paraview Catalyst" OFF)
+option(DEBUG_ENABLE         "Enable Debug Mode" OFF)
 #option(TAU_PROFILER_ENABLE  "Enable TAU Profiler" OFF)
+
+#set(CMAKE_CXX_FLAGS "-O2 -funroll-loops")
+
 
 if(DEBUG_ENABLE)
   set(DEBUG_ 1)
@@ -23,11 +26,17 @@ endif()
 find_package(METIS REQUIRED)
 find_package(HDF5)
 
+
 if(CATALYST_ENABLE)
-  find_package(catalyst 2.0 REQUIRED)
+find_package(catalyst 2.0 REQUIRED PATHS "$Catalist_DIR")
   if(catalyst_FOUND)
-    message(STATUS "Catalyst was found!")
-    SET(CATALYST_ENABLE 1)
+      message(STATUS "Catalyst was found!")
+      SET(CATALYST_ENABLE 1)
+      if(NOT DEFINED Paraview_Dir)
+        message(FATAL_ERROR "Paraview_Dir is not defined!")
+      endif()
+      set(PARAVIEW_IMPL_DIR "${Paraview_Dir}/lib/catalyst")
+      set(CATALYST_LIBS catalyst::catalyst)
   endif()
 endif()
 
@@ -67,7 +76,7 @@ if(HDF5_FOUND)
 endif()
 
 SET(MESHTOOLS_DEP_INCLUDE_DIR ${PETSc_INCLUDE_DIRS} ${HDF5_INCLUDE_DIR} ${MPI_C_INCLUDE_PATH} ${METIS_INCLUDE_DIR})
-SET(MESHTOOLS_DEP_LIBS ${PETSc_LINK_LIBRARIES} ${MPI_LIBS} ${HDF5_LIBS} ${METIS_LIBRARIES})
+SET(MESHTOOLS_DEP_LIBS ${PETSc_LINK_LIBRARIES} ${MPI_LIBS} ${HDF5_LIBS} ${METIS_LIBRARIES} ${CATALYST_LIBS})
 
 configure_file(${CMAKE_SOURCE_DIR}/config/meshtools_config.h.in ${CMAKE_SOURCE_DIR}/include/meshtools_config.h @ONLY)
 
@@ -86,7 +95,7 @@ file(GLOB source_files_lib
     
 add_library(meshtoolslib SHARED ${source_files_lib})
 
-target_link_libraries(meshtoolslib fparser ${MESHTOOLS_DEP_LIBS} catalyst::catalyst)
+target_link_libraries(meshtoolslib fparser ${MESHTOOLS_DEP_LIBS})
 
 # add_subdirectory(app)
 add_subdirectory(test)

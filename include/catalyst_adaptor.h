@@ -1,7 +1,11 @@
 #ifndef CATALYST_ADAPTOR_H
 #define CATALYST_ADAPTOR_H
 
+#include "meshtools_config.h"
+
+#ifdef CATALYST_ENABLE
 #include <catalyst.hpp>
+#endif
 
 #include "implicit_system.h"
 
@@ -28,19 +32,11 @@ static bool initialized = false;
  */
 void Initialize(int argc, char* argv[])
 {
-  if(argc < 0) return;
+  //if(argc < 1) return;
 
-  // Populate the catalyst_initialize argument based on the "initialize" protocol [1].
-  // [1] https://docs.paraview.org/en/latest/Catalyst/blueprints.html#protocol-initialize
-  conduit_cpp::Node node;
-
-  // Using the arguments given to the driver set the filename for the catalyst
-  // script and pass the rest of the arguments as arguments of the script
-  // itself. To retrieve these  arguments from the script  use the `get_args()`
-  // method of the paraview catalyst module [2]
-  // [2] https://kitware.github.io/paraview-docs/latest/python/paraview.catalyst.html
-
+#ifdef CATALYST_ENABLE
   
+  conduit_cpp::Node node;
 
   node["catalyst/scripts/script/filename"].set_string(argv[1]);
   for (int cc = 2; cc < argc; ++cc)
@@ -49,10 +45,6 @@ void Initialize(int argc, char* argv[])
     list_entry.set(argv[cc]);
   }
 
-  // For this example we hardcode the implementation name to "paraview" and
-  // define the "PARAVIEW_IMPL_DIR" during compilation time (see the
-  // accompanying CMakeLists.txt). We could however defined them via
-  // environmental variables  see [1].
   node["catalyst_load/implementation"] = "paraview";
   node["catalyst_load/search_paths/paraview"] = PARAVIEW_IMPL_DIR;
   catalyst_status err = catalyst_initialize(conduit_cpp::c_node(&node));
@@ -60,16 +52,19 @@ void Initialize(int argc, char* argv[])
   {
     std::cerr << "Failed to initialize Catalyst: " << err << std::endl;
   }
+
+#endif
+
   initialized = true;
 }
 
 void Execute(int cycle, double time, ImplicitSystem *system)
 {
-  // Populate the catalyst_execute argument based on the "execute" protocol [3].
-  // [3] https://docs.paraview.org/en/latest/Catalyst/blueprints.html#protocol-execute
-
+  
+#ifdef CATALYST_ENABLE
   conduit_cpp::Node exec_params;
 
+  double *solution = system->get_local_solution_array();
   // State: Information about the current iteration. All parameters are
   // optional for catalyst but downstream filters may need them to execute
   // correctly.
@@ -94,101 +89,72 @@ void Execute(int cycle, double time, ImplicitSystem *system)
   channel["type"].set("mesh");
 
   // now create the mesh.
-  auto conduit_mesh = channel["data"];
+  auto mesh = channel["data"];
 
-  auto mesh = system->get_mesh();
+  auto meshtools_mesh = system->get_mesh();
 
-  // populate the data node following the Mesh Blueprint [4]
-  // [4] https://llnl-conduit.readthedocs.io/en/latest/blueprint_mesh.html
+  double *coods_ptr   = meshtools_mesh.getCoordinatesData();
+  unsigned int nnodes = meshtools_mesh.get_n_nodes();
 
-  // start with coordsets (of course, the sequence is not important, just make
-  // it easier to think in this order).
-  conduit_mesh["coordsets/coords/type"].set("explicit");
-
-  // .set_external passes just the pointer  to the analysis pipeline allowing thus for zero-copy
-  // data conversion see https://llnl-conduit.readthedocs.io/en/latest/tutorial_cpp_ownership.html
-  conduit_mesh["coordsets/coords/values/x"].set_external(
-    mesh.getCoordinatesData(), mesh.get_n_nodes(), /*offset=*/0, /*stride=*/ 3 * sizeof(double));
-  conduit_mesh["coordsets/coords/values/y"].set_external(mesh.getCoordinatesData(), mesh.get_n_nodes(),
-    /*offset=*/sizeof(double), /*stride=*/ 3 * sizeof(double));
-  conduit_mesh["coordsets/coords/values/z"].set_external(mesh.getCoordinatesData(), mesh.get_n_nodes(),
-    /*offset=*/2 * sizeof(double), /*stride=*/3 * sizeof(double));
+  mesh["coordsets/coords/type"].set("explicit");
+  mesh["coordsets/coords/values/x"].set_external(coods_ptr, nnodes, 0               , 3 * sizeof(double));
+  mesh["coordsets/coords/values/y"].set_external(coods_ptr, nnodes,   sizeof(double), 3 * sizeof(double));
+  mesh["coordsets/coords/values/z"].set_external(coods_ptr, nnodes, 2*sizeof(double), 3 * sizeof(double));
 
   // Next, add topology
-  conduit_mesh["topologies/mesh/type"].set("unstructured");
-  conduit_mesh["topologies/mesh/coordset"].set("coords");
+  mesh["topologies/mesh/type"].set("unstructured");
+  mesh["topologies/mesh/coordset"].set("coords");
 
-  auto ElemType = mesh.get_mesh_element_type();
-  int     nnodes = 0;
-  switch(elemType)
+  auto ElemType = meshtools_mesh.get_mesh_element_type();
+  int     nnoel = 0;
+  switch(ElemType)
   {
     case QUAD4:
-      conduit_mesh["topologies/mesh/elements/shape"].set("quad");
-      nnodes = 4;
+      mesh["topologies/mesh/elements/shape"].set("quad");
+      nnoel = 4;
       break;
     case TRI3:
-        conduit_mesh["topologies/mesh/elements/shape"].set("tri");
-        nnodes = 3;
+        mesh["topologies/mesh/elements/shape"].set("tri");
+        nnoel = 3;
         break;
     case HEX8:
-        conduit_mesh["topologies/mesh/elements/shape"].set("hex");
-        nnodes = 8;
+        mesh["topologies/mesh/elements/shape"].set("hex");
+        nnoel = 8;
         break;
     case TET4:
-        conduit_mesh["topologies/mesh/elements/shape"].set("tet");
-        nnodes = 4;
+        mesh["topologies/mesh/elements/shape"].set("tet");
+        nnoel = 4;
         break;
   }
 
-  //conduit_mesh["topologies/mesh/elements/shape"].set("hex");
+  unsigned int *connectivity_ptr = meshtools_mesh.getElementConnectivityData();
+  unsigned int ncells            = meshtools_mesh.get_n_elements();
 
-  conduit_mesh["topologies/mesh/elements/connectivity"].set_external(
-    mesh.getElementConnectivityData(), mesh.get_n_elements(), /*offset=*/0, /*stride=*/ nnodes * sizeof(unsigned int));
+  mesh["topologies/mesh/elements/connectivity"].set_external(connectivity_ptr, 0, nnoel * ncells);
 
-  // Finally, add fields.
-
-  // First component of the path is the name of the field . The rest are described
-  // in https://llnl-conduit.readthedocs.io/en/latest/blueprint_mesh.html#fields
-  // under the Material-Independent Fields section.
   auto fields = mesh["fields"];
 
   int nvar = system->get_equation_manager().get_n_dofs();
+
   for(int nv = 0; nv < nvar; ++nv)
   { 
-    system->get_variable_name(nv);
     std::string var_name = system->get_variable_name(nv);
+    std::cout << var_name + "/association" << std::endl;
     fields[var_name + "/association"].set("vertex");
     fields[var_name + "/topology"].set("mesh");
     fields[var_name + "/volume_dependent"].set("false");
-
-    fields[var_name + "/values"].set_external(
-      system->get_local_solution_array(), mesh.get_n_nodes(), /*offset=*/nv*sizeof(double), /*stride=*/ nvar * sizeof(double));
+    fields[var_name + "/values"].set_external(solution, nnodes, nv*sizeof(double), nvar * sizeof(double));
   }
-
-#if 0 
-  fields["velocity/association"].set("vertex");
-  fields["velocity/topology"].set("mesh");
-  fields["velocity/volume_dependent"].set("false");
-
-  // velocity is stored in non-interlaced form (unlike points).
-  fields["velocity/values/x"].set_external(
-    attribs.GetVelocityArray(), grid.GetNumberOfPoints(), /*offset=*/0);
-  fields["velocity/values/y"].set_external(attribs.GetVelocityArray(), grid.GetNumberOfPoints(),
-    /*offset=*/grid.GetNumberOfPoints() * sizeof(double));
-  fields["velocity/values/z"].set_external(attribs.GetVelocityArray(), grid.GetNumberOfPoints(),
-    /*offset=*/grid.GetNumberOfPoints() * sizeof(double) * 2);
-
-  // pressure is cell-data.
-  fields["pressure/association"].set("element");
-  fields["pressure/topology"].set("mesh");
-  fields["pressure/volume_dependent"].set("false");
-  fields["pressure/values"].set_external(attribs.GetPressureArray(), grid.GetNumberOfCells());
-#endif 
+ 
   catalyst_status err = catalyst_execute(conduit_cpp::c_node(&exec_params));
   if (err != catalyst_status_ok)
   {
     std::cerr << "Failed to execute Catalyst: " << err << std::endl;
   }
+  system->restore_local_solution_array(&solution);
+
+#endif
+
 }
 
 // Although no arguments are passed for catalyst_finalize  it is required in
@@ -196,12 +162,15 @@ void Execute(int cycle, double time, ImplicitSystem *system)
 // allocated.
 void Finalize()
 {
+
+#ifdef CATALYST_ENABLE
   conduit_cpp::Node node;
   catalyst_status err = catalyst_finalize(conduit_cpp::c_node(&node));
   if (err != catalyst_status_ok)
   {
     std::cerr << "Failed to finalize Catalyst: " << err << std::endl;
   }
+#endif 
 }
 }
 
