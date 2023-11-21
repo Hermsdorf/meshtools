@@ -511,7 +511,11 @@ class Mesh {
 
         unsigned int get_mesh_element_type(){ return element_type; }
 
+        void set_mesh_element_type(unsigned int element_type) { this->element_type = element_type; }
+
         unsigned int get_boundary_mesh_element_type() {return boundary_element_type; }
+
+        void set_mesh_boundary_element_type(unsigned int boundary_element_type) { this->boundary_element_type = boundary_element_type; }
 
         unsigned int getElementConnectivitySize();
 

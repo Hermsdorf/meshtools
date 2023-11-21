@@ -32,7 +32,7 @@ class ImplicitSystem
         void    print_matrix();
         void    print_rhs();
 
-        const ParallelMesh& get_mesh();
+        ParallelMesh& get_mesh();
         EquationManager& get_equation_manager();
         
         void   attach_assemble(void _assemble(ImplicitSystem*) );

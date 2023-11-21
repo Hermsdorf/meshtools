@@ -22,7 +22,11 @@
 
 static char help[] = "Benchmark with Disk Stretching experiment\n\n";
 
+
+
 #define PROFILING
+
+
 
 #define T 8.0
 double function_g(const double t)

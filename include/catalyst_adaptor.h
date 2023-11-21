@@ -38,7 +38,12 @@ void Initialize(int argc, char* argv[])
   
   conduit_cpp::Node node;
 
-  node["catalyst/scripts/script/filename"].set_string(argv[1]);
+  if(argc < 2)
+  {
+    node["catalyst/scripts/script/filename"].set_string("catalyst_simple.py");
+  }
+  else
+    node["catalyst/scripts/script/filename"].set_string(argv[1]);
   for (int cc = 2; cc < argc; ++cc)
   {
     conduit_cpp::Node list_entry = node["catalyst/scripts/script/args"].append();
@@ -91,7 +96,7 @@ void Execute(int cycle, double time, ImplicitSystem *system)
   // now create the mesh.
   auto mesh = channel["data"];
 
-  auto meshtools_mesh = system->get_mesh();
+  ParallelMesh& meshtools_mesh = system->get_mesh();
 
   double *coods_ptr   = meshtools_mesh.getCoordinatesData();
   unsigned int nnodes = meshtools_mesh.get_n_nodes();
@@ -106,6 +111,7 @@ void Execute(int cycle, double time, ImplicitSystem *system)
   mesh["topologies/mesh/coordset"].set("coords");
 
   auto ElemType = meshtools_mesh.get_mesh_element_type();
+
   int     nnoel = 0;
   switch(ElemType)
   {
@@ -129,8 +135,11 @@ void Execute(int cycle, double time, ImplicitSystem *system)
 
   unsigned int *connectivity_ptr = meshtools_mesh.getElementConnectivityData();
   unsigned int ncells            = meshtools_mesh.get_n_elements();
-
-  mesh["topologies/mesh/elements/connectivity"].set_external(connectivity_ptr, 0, nnoel * ncells);
+  
+  mesh["topologies/mesh/elements/connectivity"].set_external(connectivity_ptr, ncells, 0, nnoel * sizeof(unsigned int));
+#if DEBUG_CATALYST
+  mesh.print();
+#endif
 
   auto fields = mesh["fields"];
 

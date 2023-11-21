@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
 
     TransientImplicitSystem *system  = new TransientImplicitSystem(*mesh,"system");
     system->add_variable("u");
-    InitialCondition   ic(3,0,"x*y*(x-1)*(y-1)","x,y,z");
+    InitialCondition   ic(2,0,"x*y*(x-1)*(y-1)","x,y,z");
     system->add_initial_condition(ic);
     system->init();
     CatalystAdaptor::Execute(0, 0.0,system);

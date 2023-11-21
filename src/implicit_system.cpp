@@ -400,9 +400,9 @@ void ImplicitSystem::print_matrix()
     }
 
     MatGetInfo(this->_A, MAT_LOCAL, &info);
-    PetscPrintf(PETSC_COMM_WORLD, "Matrix nonzeros: %d\n", info.nz_used);
-    PetscPrintf(PETSC_COMM_WORLD, "Matrix nonzeros/proc: %d\n", info.nz_allocated);
-    PetscPrintf(PETSC_COMM_WORLD, "Matrix memory: %d\n", info.memory);
+    PetscPrintf(PETSC_COMM_WORLD, "Matrix nonzeros: %f\n", info.nz_used);
+    PetscPrintf(PETSC_COMM_WORLD, "Matrix nonzeros/proc: %f\n", info.nz_allocated);
+    PetscPrintf(PETSC_COMM_WORLD, "Matrix memory: %f\n", info.memory);
 
     MatView(this->_A, PETSC_VIEWER_STDOUT_WORLD);
     
@@ -488,7 +488,7 @@ void ImplicitSystem::write_result(string filename)
  * 
  * @return ParallelMesh& with the mesh
 */
-const ParallelMesh& ImplicitSystem::get_mesh()
+ParallelMesh& ImplicitSystem::get_mesh()
 {
     return this->_mesh;
 }

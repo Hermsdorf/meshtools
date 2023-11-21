@@ -3,7 +3,7 @@
 #include "meshtools_config.h"
 
 #include <iostream>
-#ifdef USE_CATALYST
+#ifdef CATALYST_LEGACY_ENABLE
 #include <vtkCPDataDescription.h>
 #include <vtkCPInputDataDescription.h>
 #include <vtkCPProcessor.h>

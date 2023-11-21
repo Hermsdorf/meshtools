@@ -12,9 +12,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 option(MESHTOOLS_BUILD_APP  "Build meshtools application" ON)
 option(MPI_ENABLE           "Enable MPI" ON)
 option(OpenMP_ENABLE        "Enable OpenMP" ON)
-option(CATALYST_ENABLE      "Enable Paraview Catalyst" OFF)
+option(CATALYST_ENABLE      "Enable Paraview Catalyst" ON)
+if(CATALYST_ENABLE)
+ option(CATALYST_LEGACY_ENABLE "Enable Paraview Catalyst Legacy" OFF)
+endif()
 option(DEBUG_ENABLE         "Enable Debug Mode" OFF)
-#option(TAU_PROFILER_ENABLE  "Enable TAU Profiler" OFF)
 
 set(CMAKE_CXX_FLAGS "-fPIC")
 
@@ -26,17 +28,37 @@ endif()
 find_package(METIS REQUIRED)
 find_package(HDF5)
 
-
 if(CATALYST_ENABLE)
-find_package(catalyst 2.0 REQUIRED PATHS "$Catalist_DIR")
-  if(catalyst_FOUND)
-      message(STATUS "Catalyst was found!")
-      SET(CATALYST_ENABLE 1)
-      if(NOT DEFINED Paraview_Dir)
-        message(FATAL_ERROR "Paraview_Dir is not defined!")
-      endif()
-      set(PARAVIEW_IMPL_DIR "${Paraview_Dir}/lib/catalyst")
-      set(CATALYST_LIBS catalyst::catalyst)
+  if(CATALYST_LEGACY_ENABLE)
+    find_package(ParaView REQUIRED)
+    if (NOT TARGET ParaView::PythonCatalyst)
+      message(STATUS
+        "Skipping example: ${PROJECT_NAME} requires ParaView to be built "
+        "with Catalyst and Python support enabled. Please rebuild ParaView (or "
+        "point to a different build of ParaView) with PARAVIEW_USE_PYTHON set "
+        "to TRUE")
+      return ()
+    endif()
+
+    if (NOT PARAVIEW_USE_MPI)
+      message(STATUS
+        "Skipping example: ${PROJECT_NAME} requires ParaView to be built "
+        "with MPI support enabled. Please rebuild ParaView (or point to a "
+        "different build of ParaView) with PARAVIEW_USE_MPI set to TRUE")
+      return ()
+    endif ()
+    SET(CATALYST_LEGACY_ENABLE 1)
+  else()  
+    find_package(catalyst 2.0 REQUIRED PATHS "$catalist_DIR")
+    if(catalyst_FOUND)
+        message(STATUS "Catalyst was found!")
+        SET(CATALYST_ENABLE 1)
+        if(NOT DEFINED Paraview_Dir)
+          message(FATAL_ERROR "Paraview_Dir is not defined!")
+        endif()
+        set(PARAVIEW_IMPL_DIR "${Paraview_Dir}/lib/catalyst")
+        set(CATALYST_LIBS catalyst::catalyst)
+    endif()
   endif()
 endif()
 
@@ -86,7 +108,9 @@ include_directories(${CMAKE_SOURCE_DIR}/contrib/fparser)
 
 # Compilando bibliotecas de terceitos
 add_subdirectory(${CMAKE_SOURCE_DIR}/contrib/fparser)
-
+if(CATALYST_LEGACY_ENABLE)
+  add_subdirectory(${CMAKE_SOURCE_DIR}/contrib/catalyst)
+endif()
 file(GLOB source_files_lib
          "include/*.h"
          "include/*.hpp"

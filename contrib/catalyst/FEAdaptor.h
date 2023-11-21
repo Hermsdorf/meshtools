@@ -4,7 +4,7 @@
 #include "mesh.h"
 #include "meshtools_config.h"
 
-#ifdef USE_CATALYST
+#ifdef CATALYST_LEGACY_ENABLE
 
 #ifdef __cplusplus
 extern "C" {

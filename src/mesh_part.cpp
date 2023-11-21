@@ -1309,6 +1309,8 @@ ParallelMesh* MeshPartition::RecvLocalDataFromMaster()
     MPI_Recv(&_tag[0]  , _tag.size()     , MPI_INT      , 0, 0, MPI_COMM_WORLD, &status);
     MPI_Recv(&_face_to_element[0]  , _face_to_element.size()     , MPI_UNSIGNED      , 0, 0, MPI_COMM_WORLD, &status);
     
+    pmesh->set_mesh_element_type(_type[n_faces_local]);
+    pmesh->set_mesh_boundary_element_type(_type[0]);
     return pmesh;
 }
 
@@ -1616,6 +1618,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
             }
         }
 
+
         pmesh->build_communication_map();
     }
     else
@@ -1647,6 +1650,7 @@ ParallelMesh *MeshPartition::DistributedMesh(Mesh *mesh)
         pmesh->set_physical_map(mesh->getPhysicalMap());
         pmesh->set_physical_tag(mesh->getPhysicalTag());
         pmesh->setFaceToElement(mesh->getFaceToElement());
+        pmesh->set_mesh_element_type(mesh->get_mesh_element_type());
 
         auto& s_node_index = mesh->getNodeIndexes();
         auto& p_node_index = pmesh->getNodeIndexes();
