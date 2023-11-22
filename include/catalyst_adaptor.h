@@ -137,8 +137,8 @@ void Execute(int cycle, double time, ImplicitSystem *system)
   unsigned int *connectivity_ptr = meshtools_mesh.getElementConnectivityData();
   unsigned int ncells            = meshtools_mesh.get_n_elements();
 
-  cout <<"Processor " << MeshTools::processor_id() << " has " << ncells << " elements" << endl;
-  cout <<"Processor " << MeshTools::processor_id() << " has " << nnoel << " nodes" << endl;
+  // cout <<"Processor " << MeshTools::processor_id() << " has " << ncells << " elements" << endl;
+  // cout <<"Processor " << MeshTools::processor_id() << " has " << nnoel << " nodes" << endl;
 
   mesh["topologies/mesh/elements/connectivity"].set_external(connectivity_ptr, nnoel * ncells);
 //#define DEBUG_CATALYST

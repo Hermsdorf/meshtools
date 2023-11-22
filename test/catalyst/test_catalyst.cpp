@@ -309,7 +309,7 @@ int disk_stretching(int argc, char *argv[])
 
     double dt = 0.0025;
     system->init();
-    system->set_final_time(10*dt);
+    system->set_final_time(T);
     system->set_deltat(dt);
     system->set_nonlinear_max_iter(1);
     system->set_nonlinear_tolerance(1.0E-4);
