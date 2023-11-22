@@ -133,13 +133,29 @@ void Execute(int cycle, double time, ImplicitSystem *system)
         break;
   }
 
+  
   unsigned int *connectivity_ptr = meshtools_mesh.getElementConnectivityData();
   unsigned int ncells            = meshtools_mesh.get_n_elements();
-  
-  mesh["topologies/mesh/elements/connectivity"].set_external(connectivity_ptr, ncells, 0, nnoel * sizeof(unsigned int));
-#if DEBUG_CATALYST
-  mesh.print();
+
+  cout <<"Processor " << MeshTools::processor_id() << " has " << ncells << " elements" << endl;
+  cout <<"Processor " << MeshTools::processor_id() << " has " << nnoel << " nodes" << endl;
+
+  mesh["topologies/mesh/elements/connectivity"].set_external(connectivity_ptr, nnoel * ncells);
+//#define DEBUG_CATALYST
+#ifdef DEBUG_CATALYST
+    ofstream out("catalyst_mesh.txt");
+    for(int i = 0; i < ncells; i++)
+    {
+      for(int j = 0; j < nnoel; j++)
+        out << connectivity_ptr[i*nnoel + j] << " ";
+      out << endl;
+    }
+    out << mesh.to_yaml() << endl;
+    out.close();
+    // if(MeshTools::processor_id()==0)
+      // mesh.print();
 #endif
+
 
   auto fields = mesh["fields"];
 
@@ -148,7 +164,6 @@ void Execute(int cycle, double time, ImplicitSystem *system)
   for(int nv = 0; nv < nvar; ++nv)
   { 
     std::string var_name = system->get_variable_name(nv);
-    std::cout << var_name + "/association" << std::endl;
     fields[var_name + "/association"].set("vertex");
     fields[var_name + "/topology"].set("mesh");
     fields[var_name + "/volume_dependent"].set("false");

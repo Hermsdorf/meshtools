@@ -272,26 +272,31 @@ int disk_stretching(int argc, char *argv[])
     processor_id = MeshTools::processor_id();
     n_processors = MeshTools::n_processors();
 
-    if (processor_id == 0)
-    {
-        // Rodando serial ou em paralelo o processo mestre
-        // irá ler a malha.
-        string test_mesh_dir = TEST_MESH_DIR;
-        test_mesh_dir.append("benchmark_disc_stretching/disk_quad4.msh");
-        mesh = new Mesh(test_mesh_dir);
+#ifdef PROFILING
+   PetscLogStage  stagenum0;
+   PetscLogStage  stagenum1;
+   PetscLogStage  stagenum2;
+   PetscLogStage  stagenum3;
+   PetscLogStage  stagenum4;
 
-        // Se houver mais um processo, o processo mestre irá
-        // particionar a malha
-        if (n_processors > 1)
-        {
-            parts->ApplyPartitioner(mesh, n_processors);
-        }
-    }
-
-    pmesh = parts->DistributedMesh(mesh);
+   PetscLogStageRegister("Disk Stretching", &stagenum0);
+   PetscLogStageRegister("Reads Mesh", &stagenum1);
+   PetscLogStageRegister("Catalyst", &stagenum2);
+   PetscLogStageRegister("Time Integration", &stagenum3);
+   PetscLogStageRegister("VTK Writer", &stagenum4);
+   PetscLogStagePush(stagenum0);
+   PetscLogStagePush(stagenum1);
+   std::string mesh_file(std::string(TEST_MESH_DIR) + "benchmark_disc_stretching/disk_quad4.msh");
+   pmesh = MeshTools::ReadMesh(mesh_file);
+   PetscLogStagePop();
+   PetscLogStagePush(stagenum2);
+#endif
 
     CatalystAdaptor::Initialize(argc, argv);
 
+#ifdef PROFILING
+    PetscLogStagePop();
+#endif
     // Cria o sistema de equações implicito
     TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_disk_stretching");
     system->add_variable("u");
@@ -302,9 +307,10 @@ int disk_stretching(int argc, char *argv[])
     //system->attach_init_function(init_transport);
     system->attach_assemble(assemble_transport);
 
+    double dt = 0.0025;
     system->init();
-    system->set_final_time(0.0025);
-    system->set_deltat(0.0025);
+    system->set_final_time(10*dt);
+    system->set_deltat(dt);
     system->set_nonlinear_max_iter(1);
     system->set_nonlinear_tolerance(1.0E-4);
     system->set_linear_tolerance(1.0E-8);
@@ -320,18 +326,13 @@ int disk_stretching(int argc, char *argv[])
 
     // Time integratiom
 #ifdef PROFILING
-   PetscLogStage  stagenum0;
-   PetscLogStage  stagenum1;
-   PetscLogStageRegister("Time Integration", &stagenum0); 
-   PetscLogStageRegister("Catalyst::Execution", &stagenum1); 
-   //PetscLogStagePush(stagenum0);   
+    PetscLogStagePush(stagenum3);
+    PetscLogStagePush(stagenum1);
 #endif
 
 #ifdef PROFILING
-    PetscLogStagePush(stagenum1);
     CatalystAdaptor::Execute(system->get_time_step(), system->get_time(), static_cast<ImplicitSystem*>(system));
     PetscLogStagePop();
-    PetscLogStagePush(stagenum0);
 #endif
     while(system->get_time() < system->get_final_time())
     {
@@ -339,21 +340,29 @@ int disk_stretching(int argc, char *argv[])
 
         if(system->get_time_step()%write_interval == 0 )
         {
+
+#ifdef PROFILING
+            PetscLogStagePush(stagenum4);
+#endif
             system->write_result(filename);
+
+#ifdef PROFILING
+            PetscLogStagePop();
+#endif
         }
 
 
         if(system->get_time_step()%catalyst_interval == 0 )
         {
-#ifdef PROFILING
-    PetscLogStagePop();   
-    PetscLogStagePush(stagenum1);
+
+#ifdef PROFILING  
+            PetscLogStagePush(stagenum1);
 #endif
             CatalystAdaptor::Execute(system->get_time_step(), system->get_time(), static_cast<ImplicitSystem*>(system));
 #ifdef PROFILING
-    PetscLogStagePop();
-    PetscLogStagePush(stagenum0);
+            PetscLogStagePop();
 #endif
+
         }
 
 
@@ -364,12 +373,16 @@ int disk_stretching(int argc, char *argv[])
 
     system->write_result(filename);
 
+#ifdef PROFILING
+    PetscLogStagePush(stagenum1);
+#endif
     CatalystAdaptor::Finalize();
+#ifdef PROFILING
+    PetscLogStagePop();
+    PetscLogStagePop();
+#endif
 
     delete system;
-
-    if (MeshTools::processor_id() == 0)
-        delete mesh;
     delete pmesh;
     delete parts;
 

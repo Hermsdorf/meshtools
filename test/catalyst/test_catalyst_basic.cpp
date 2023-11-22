@@ -22,6 +22,7 @@ int main(int argc, char* argv[])
     InitialCondition   ic(2,0,"x*y*(x-1)*(y-1)","x,y,z");
     system->add_initial_condition(ic);
     system->init();
+    system->write_result("result");
     CatalystAdaptor::Execute(0, 0.0,system);
     CatalystAdaptor::Finalize();
 
