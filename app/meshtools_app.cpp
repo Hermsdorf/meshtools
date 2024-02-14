@@ -23,7 +23,6 @@ static void usage(const char *arg0)
     cerr << "  -r <reordering algorithm> : where [reordering algotihm] is the nodal renumering algorithm. The options are: " << endl;
     cerr <<"      rcm       : apply rcm (default) " << endl;
     cerr <<"      nd        : apply nested disection algorithm " << endl;
-    cerr <<"      natural   : first touch algorithm" << endl;
     cerr <<"      none      : keep gmsh ordering " << endl;    
     cerr <<"  -w <vtk write_mode> : where [vtk type] is the way to write the mesh in vtk file. The options are: " << endl;
     cerr <<"      ascii             : write ascii files  " << endl;
@@ -88,10 +87,6 @@ int main(int argc, char* argv[])
                 if(strcmp(rorder_alg_name,"nd")==0){
                     reordering = METIS_ND;
                     cout << "Metis Nested-Dissection reordering algorithm selected.\n";
-                }
-                if(strcmp(rorder_alg_name,"natural")==0){
-                    reordering = FF;
-                    cout << "First Touch reordering algorithm selected.\n";
                 }
                 if(strcmp(rorder_alg_name,"none")==0){
                     flg_reorder = false;

@@ -1,137 +1,44 @@
-# MeshTools - PT/BR
+# MeshTools
 
-Biblioteca que manipula uma malha de elementos finitos.
+Library that manipulates and solves a finite element mesh in parallel applying HPC techniques.
 
-MeshTools é uma biblioteca de leitura de malha de elementos finitos, pré-processamento de malha com aplicação de técnicas de computação de alto desempenho e escrita em VTK para visualização científica dos resultados.
+It is divided in two disjunct componentes: Mesh Manipulation and FEM Solver.
 
-MeshTools aplica técnicas como Reordenação Nodal, Coloração de elementos e Particionamento de domínio.
+The user can use these two modules and obtain it results indepedently. With Meshtools it is possible to improve a mesh to apply it in other FEM software. Also, the user can improve its mesh and solve it in MeshTools.
 
-## Requisitos
-- CMake >= 3.0.0
-- METIS >= 5.1.0
-- OpenMP
-- OpenMPI
+## Mesh Manipulation
+MeshTools is a finite element library that provides tools for apply high performance computing techniques in order to improve the mesh solutions. These techniques provides the possibility of solving the Finite Element Method (FEM) in parallel on shared-memory system and/or distributed-memory system. With MeshTools is also possible to improve the data locality which improves the solution performance.
 
-## Como usar
-1. Gerar uma pasta para build do projeto
-2. Executar o CMake para criação do makefile com link aos arquivos necessários
-3. Executar o comando `make`
-4. Executar o MeshTools
+With MeshTools, the user can apply the following techniques in his mesh
+  1. Nodal Reordering: in this technique, the mesh nodes are renumbered focusing in get elemental connectivities numerically closer. It improves the solution's performance of the FEM method by improving the data locality. It increases the cache hit, decreasing the necessity of search the data in the main memory.
+  2. Element Coloring: in order to decrease the system assembly time, it is possible to parallelize it in shared-memory with OpenMP. A safe parallelization is possible only if the data racing is avoided. The element coloring technique groups non-adjacent elements which are elements that does not share any nodes. These elements that belongs to the same group can be parallelized in the assembly step safely.
+  3. Domain Partitioning: through [METIS library](http://glaros.dtc.umn.edu/gkhome/metis/metis/overview), it decomposes the mesh among MPI processors. Each MPI process solves its local mesh.
 
-Para explicação dos parâmetros MeshTools executar: `./meshtools -h`
+MeshTools is also linked with [ParaView Catalyst](https://www.paraview.org/Wiki/ParaView/Catalyst/Overview) which provides the co-processing. With the co-processing is possible to generate visualizations for the mesh with no necessity of write raw data in VTK format. By writing in disk directly images, tables and etc. it decreases the disk requirements.
 
-### Malha a ser processada
-Para indicar a malha a ser processada é necessário utilizar o parâmetro `-m` e em seguida o caminho para a malha especificada.
-Exemplo:
-`-m /usr/msh/test.msh`
-
-### Reordenação Nodal
-O MeshTools disponibiliza 3 algoritmos para Reordenação Nodal, sendo eles:
-1. RCM (Reverse Cuthill-McKee) [default] - `rcm`
-2. Nested-Dissection - `nd`
-3. First Touch - `natural`
-
-Com o parâmetro `-r` indique o algoritmo de reordenação desejado, exemplo:
-`-r nd`
-
-### Coloração de elementos
-O MeshTools disponibiliza 3 algoritmos de Coloração da malha, sendo eles:
-1. Greedy Serial [default] - `greedy` 
-2. Blocked Serial - `blocked`
-3. OpenMP Greedy - `rokos`
-
-No caso da execução com a versão `Blocked` é possível inserir o tamanho do bloco desejado máximo de elementos por cor com o parâmetro `-b`, sendo padrão o valor 4096. Exemplo: `-b 2048`
-
-Com o parâmetro `-c` indique o algoritmo de coloração desejado, exemplo:
-`-c greedy`
-
-
-### Escrita da malha
-O MeshTools disponibiliza duas opções de escrita da malha VTK, em formato ASCII e binário:
-1. ASCII - `ascii`
-2. Binário - `binary`
-
-Com o parâmetro `-w` indique a forma de escrita desejada, exemplo:
-`-w binary`
-
-### Exemplos de execução
-```
-./meshtools -m ../msh/example.msh -r rcm -c greedy -w ascii 
-
-./meshtools -m ../msh/example.msh -r nd -c rokos -w binary
-
-./meshtools -m ../msh/example.msh -c blocked -b 1024 -w ascii
-
-./meshtools -m ../msh/example.msh -r natural -w binary
-```
-
-## Exemplo para criar executável
-Para executar o MeshTools: 
-1. Crie uma pasta build, execute `cd build`
-2. Dentro da pasta build execute o CMake, `cmake ../.`
-3. Execute `make`
-
-Assim, o executável do MeshTools foi gerado e está pronto para usar.
-
-## Ajuda MeshTools
-```
-Usage: ./meshtools <options>
-	 -h                   : show help
-	 -m <filename>        : where <filename> is the gmsh file name (gmsh ascii v.2.2)> 
-	 -c [color algorithm] : where [color algotihm] is the coloring algorithm. The options are: 
-		  greedy  : greedy serial version (default)
-		  blocked : blocked serial version
-		  rokos   : openmp greedy version 
-	 -b <block size> : where <block size> is block size used in the the blocked version coloring algorithm.
-	 -r <reordering algorithm> : where [reordering algotihm] is the nodal renumering algorithm. The options are: 
-		  rcm       : apply rcm (default) 
-		  nd        : apply nested disection algorithm 
-		  natural   : first touch algorithm
-		  none      : keep gmsh ordering 
-	  -w <vtk write_mode> : where [vtk type] is the way to write the mesh in vtk file. The options are: 
-		  ascii             : write ascii files  
-		  binary            : write binary files 
-
-```
-
-## Erro 1
-Caso após execução do comando `cmake` o processo não seja concluído e apareça: 
-```
-CMake Error at /usr/share/cmake-3.16/Modules/FindPackageHandleStandardArgs.cmake:146 (message):
-  Could NOT find METIS (missing: METIS_LIBRARIES METIS_INCLUDE_DIRS)
-Call Stack (most recent call first):
-  /usr/share/cmake-3.16/Modules/FindPackageHandleStandardArgs.cmake:393 (_FPHSA_FAILURE_MESSAGE)
-  cmake/modules/FindMETIS.cmake:168 (find_package_handle_standard_args)
-  CMakeLists.txt:15 (find_package)
-```
-  
-  É necessário indicar o diretório da biblioteca METIS com a flag -DMETIS_DIR.
-  Exemplo: `cmake ../. -DMETIS_DIR=/usr/lib/metis-5.1.0`
-
-
-# MeshTools - EN
-
-Library that manipulates a finite element mesh.
-
-MeshTools is a finite element mesh reading library, pre-processing with application of high performance computing techniques and VTK writing for scientific visualization of results.
-
-MeshTools applies techniques such as Nodal Reordering, Element Coloring and Domain Partitioning.
+## FEM Solver
+PETSc library is coupled in MeshTools in order to solve the linear system arising from the Finite Element Method. Thus, MeshTools wraps some PETSc structures such as Mat, Vec, KSP and etc. to be able to solve the FEM problem. At the moment, MeshTools supports only linear elements. For bidimensional elements, it supports three-nodes triangular elements (TRI3) and four-nodes quadrangular elements (QUAD4). For tridimensional elements, MeshTools supports four-nodes tetrahedral elements (TET4) and six-nodes hexahedral elements (HEX6). 
 
 ## Requirements
 - CMake >= 3.0.0
 - METIS >= 5.1.0
+- PETSc >= 3.10.0 
+- Paraview Catalyst
 - OpenMP
-- OpenMPI
+- MPI
 
 ## How to use
-1. Generate a project build folder
-2. Run CMake to create the makefile with link to the necessary files
-3. Run the `make` command
-4. Run MeshTools
+1. Generate a project build folder - `$ mkdir build`
+2. Change directory to the new `build` folder - `$ cd build`
+3. Run CMake to create the makefile with link to the necessary files - `$ cmake ../.`
+   1. If the necessary packages weren't installed by the OS package manager, or if any package wasn't found, it is necessary to indicate it path as parameter. Example: `$ cmake ../. -DMETIS_DIR=/path/to/metis`
+4. Run the `make` command
+5. Run MeshTools
 
 For explanation of MeshTools parameters run: `./meshtools -h`
 
-### Mesh to be processed
+### Mesh Manipulation
+MeshTools only supports GMSH meshes version 2.0
 To indicate the mesh to be processed it is necessary to use the `-m` parameter and then the path to the specified mesh.
 Example:
 `-m /usr/msh/test.msh`
@@ -140,7 +47,6 @@ Example:
 MeshTools provides 3 algorithms for Nodal Reordering, namely:
 1. RCM (Reverse Cuthill-McKee) [default] - `rcm`
 2. Nested-Dissection - `nd`
-3. First Touch - `natural`
 
 With the `-r` parameter indicate the desired reordering algorithm, for example:
 `-r na`
@@ -149,7 +55,6 @@ With the `-r` parameter indicate the desired reordering algorithm, for example:
 MeshTools provides 3 Mesh Coloring algorithms, namely:
 1. Greedy Serial [default] - `greedy`
 2. Blocked Serial - `blocked`
-3. OpenMP Greedy - `rokos`
 
 In the case of execution with the `Blocked` version, it is possible to enter the maximum desired block size of elements per color with the parameter `-b`, defaulting to 4096. Example: `-b 2048`
 
