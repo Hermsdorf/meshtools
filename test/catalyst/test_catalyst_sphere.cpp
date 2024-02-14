@@ -16,6 +16,7 @@
 #include "tensor.h"
 #include "xdmf_writer.h"
 #include "fem_stabilizations.h"
+#include "catalyst_adaptor.h"
 
 #include "test_config.h"
 
@@ -308,33 +309,28 @@ void assemble_transport(TransientImplicitSystem* system)
 int sphere_stretching(int argc, char *argv[])
 {
     PetscErrorCode ierr;
-    MeshPartition *parts = new MeshPartition();
 
-    Mesh *mesh;          // serial mesh
-    ParallelMesh *pmesh; // parallel mesh
     int processor_id, n_processors;
-
     processor_id = MeshTools::processor_id();
     n_processors = MeshTools::n_processors();
 
-    if (processor_id == 0)
-    {
-        // Rodando serial ou em paralelo o processo mestre
-        // irá ler a malha.
-        string test_mesh_dir = TEST_MESH_DIR;
-        test_mesh_dir.append("benchmark_sphere_stretching/sphere_grossa.msh");
-        mesh = new Mesh(test_mesh_dir);
+    PetscLogStage  stagenum1;
+   PetscLogStage  stagenum2;
+    PetscLogStage  stagenum3;
+    PetscLogStage  stagenum4;
+    PetscLogStageRegister("Reads Mesh", &stagenum1);
+    PetscLogStageRegister("Catalyst", &stagenum2);
+    PetscLogStageRegister("Time Integration", &stagenum3);
+    PetscLogStageRegister("VTK Writer", &stagenum4);
 
-        // Se houver mais um processo, o processo mestre irá
-        // particionar a malha
-        if (n_processors > 1)
-        {
-            parts->ApplyPartitioner(mesh, n_processors);
-        }
-    }
+    PetscLogStagePush(stagenum1);
+    CatalystAdaptor::Initialize(argc, argv);
+    PetscLogStagePop();
 
-    pmesh = parts->DistributedMesh(mesh);
-
+    PetscStagePush(stagenum2);
+    std::string mesh_file(std::string(TEST_MESH_DIR) + "benchmark_sphere_stretching/sphere_grossa.msh");
+    ParallelMesh *pmesh = MeshTools::ReadMesh(mesh_file);
+    PetscStagePop();
 
     // Cria o sistema de equações implicito
     TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_sphere_stretching");
@@ -353,13 +349,10 @@ int sphere_stretching(int argc, char *argv[])
     double tf = 3.0;
     double dt = 0.01;
     
-
-    if (processor_id == 0)
-        printf("Respecting CFL condition, dt = %f\n", dt);
-
     system->set_final_time(tf);
     system->set_deltat(dt);
     unsigned int write_interval = 50;
+    unsigned int catalyst_interval = 25;
 
     system->set_nonlinear_max_iter(1);
     system->set_nonlinear_tolerance(1.0E-4);
@@ -368,33 +361,37 @@ int sphere_stretching(int argc, char *argv[])
 
     char filename[100];
     sprintf(filename,"sphere_stretching");
+    PestcStagePush(stagenum4);
     system->write_result(filename);
+    PestcStagePop();
 
     // Time integratiom
+    PestcStagePush(stagenum3);
     while(system->get_time() < system->get_final_time())
     {
         system->solve_time_step();
 
-        if(system->get_time_step()%write_interval == 0 )
+        if(system->get_time_step()%write_interval == 0 ){
+            PetscStagePush(stagenum4);
             system->write_result(filename);
+            PetscStagePop();
+        }
+
+        if(system->get_time_step()%catalyst_interval == 0 ){
+            PestcStagePush(stagenum2);
+            CatalystAdaptor::CoProcess(system->get_time_step(), system->get_time(), static_cast<ImplicitSystem*>(system));
+            PestcStagePop();
+        }
         
-        // // Dynamic time step
-        // local_dt = calculate_stable_dt(pmesh, 1, system->get_time());
-        // MPI_Allreduce(&local_dt, &dt, 1, MPI_DOUBLE, MPI_MIN, PETSC_COMM_WORLD);
-        // if(dt < 0.0001)
-        //     dt = 0.0001;
-        // if(dt > 0.1)
-        //     dt = 0.1;
-
-        system->set_deltat(dt);
+        //system->set_deltat(dt);
     }
+    PestcStagePop();
 
+    PetscStagePush(stagenum4);
     system->write_result(filename);
+    PetscStagePop();
 
     delete system;
-
-    if (MeshTools::processor_id() == 0)
-        delete mesh;
     delete pmesh;
     delete parts;
 

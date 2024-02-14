@@ -1,5 +1,5 @@
+
 #include <math.h>
-#include <omp.h>
 
 #include "petsc.h"
 
@@ -16,88 +16,46 @@
 #include "tensor.h"
 #include "xdmf_writer.h"
 #include "fem_stabilizations.h"
+#include "catalyst_adaptor.h"
 
 #include "test_config.h"
 
-static char help[] = "Benchmark with Sphere Stretching experiment\n\nReference: DOI 10.1002/fld.2614";
+static char help[] = "Benchmark with Disk Stretching experiment\n\n";
 
+
+
+#define PROFILING
+
+
+
+#define T 8.0
 double function_g(const double t)
 {
-    const int T = 3;
     return cos(M_PI * t/T);
 }
 
-/*
-    Here we use CFL condition to calculate the time step
-    for the simulation. The CFL condition is given by:
-    cfl = u*dt/dx
-    where u is the velocity, dt is the time step and dx
-    is the characteristic length (h) of the element. The
-    characteristic length of the element is calculated
-    as the diameter of the sphere that circumscribes
-    the element. The velocity is calculated as the
-    maximum velocity of the analytical solution.
 
-    So dt for a given time step is calculated with the minimum
-    h characteristic and the maximum velocity for all elements.
-*/
-double calculate_stable_dt(ParallelMesh* pmesh, double cfl, double t)
+double velocity_x(const double x,
+                  const double y,
+                  const double t)
 {
-    unsigned int nelem = pmesh->get_n_elements();
-    QGauss qrule;
-    FEMFunction fem;
-    double min_h = PETSC_MAX_REAL;
-    double max_velocity = 0.0;
+    return function_g(t)*sin(2 * M_PI * y) * sin(M_PI * x) * sin(M_PI *x);
+}
 
-    double velocity = 0.0;
-    for(unsigned int iel = 0; iel < nelem; iel++)
-    {
-        Element elem;
-        pmesh->getElement(iel, elem);
-
-        qrule.reset(elem);
-        // As TET4 has only one integration point, it is used
-        // this integration point to calculate the characteristic
-        // length of the element
-        fem.ComputeFunction(elem,qrule.get(0));
-        double h = elem.calculate_h();
-
-        std::vector<unsigned int> conn = elem.connectivity();
-        int connsize = conn.size();
-        for(int conn_i = 0; conn_i < connsize; conn_i++)
-        {
-            Point node = elem.node(conn_i);
-            double x = node(0);
-            double y = node(1);
-            double z = node(2);
-            double vel_x_gt = 2*sin(M_PI*x)*sin(M_PI*x)*sin(2*M_PI*y)*sin(2*M_PI*z);
-            double vel_y_gt = -sin(2*M_PI*x)*sin(M_PI*y)*sin(M_PI*y)*sin(2*M_PI*z);
-            double vel_z_gt = -sin(2*M_PI*x)*sin(2*M_PI*y)*sin(M_PI*z)*sin(M_PI*z);
- 
-            double gt = function_g(t);
-            double vel_x = vel_x_gt*gt;
-            double vel_y = vel_y_gt*gt;
-            double vel_z = vel_z_gt*gt;
-
-            velocity = sqrt(vel_x*vel_x + vel_y*vel_y + vel_z*vel_z);
-
-            min_h = std::min(min_h, h);
-            max_velocity = std::max(max_velocity, velocity);            
-        }
-    }
-
-    double dt = cfl*min_h/max_velocity;
-    return dt;
+double velocity_y(const double x,
+                  const double y,
+                  const double t)
+{
+    return -function_g(t)*sin(2 * M_PI * x) * sin(M_PI * y) * sin(M_PI *y);
 }
 
 double initial_condition (const double x,
                           const double y,
-                          const double z,
                           const double t)
 { 
     
-    double dist = sqrt((x - 0.35)*(x - 0.35) + (y - 0.35)*(y - 0.35) + (z - 0.35)*(z - 0.35));
-    if(fabs(dist-0.15) < 5e-5)
+    double dist = (x - 0.5)*(x - 0.5) + (y - 0.75)*(y - 0.75);
+    if(dist-0.015 < 1.0E-3) 
         return 1.0;
     return 0.0;
 }
@@ -117,8 +75,7 @@ void init_transport(TransientImplicitSystem* system)
     {
         const double x = coords[i*3 + 0];
         const double y = coords[i*3 + 1];
-        const double z = coords[i*3 + 2];
-        solution[i*ndof+dof]    =  initial_condition(x, y, z, 0.0);
+        solution[i*ndof+dof]    =  initial_condition(x, y, 0.0);
     }
     system->restore_local_solution_array(&solution);
 
@@ -131,6 +88,7 @@ double f(Point p, double t)
 
 void assemble_transport(TransientImplicitSystem* system)
 {
+
     auto pmesh = system->get_mesh();
     int  ndim  =  pmesh.getDim();
 
@@ -190,49 +148,41 @@ void assemble_transport(TransientImplicitSystem* system)
             fem.ComputeFunction(elem,qrule.get(q));
             double h_carach = elem.calculate_h();
 
+            assert(h_carach >= 0.0);
+
+
             RealVector velocity;
             double u_old  = 0.0;
             Gradient grad_u_old;
+
         
             double    u = 0.0;
             Gradient  grad_u;
 
-            velocity(0) = 0.0; 
-            velocity(1) = 0.0;
-            velocity(2) = 0.0;
+            velocity(0)   = velocity_x(xyz(0), xyz(1),t);  //function_g(t)*sin(2 * M_PI * xyz(1)) * sin(M_PI * xyz(0)) * sin(M_PI * xyz(0)); 
+            velocity(1)   = velocity_y(xyz(0), xyz(1),t);  //-function_g(t)*sin(2 * M_PI * xyz(0)) * sin(M_PI * xyz(1)) * sin(M_PI * xyz(1));
            
             for (int i = 0; i < local_indices.size(); i++)
             {
-                double x      = elem.node(i)(0);
-                double y      = elem.node(i)(1);
-                double z      = elem.node(i)(2);
-                double vel_x = 2*sin(M_PI*x)*sin(M_PI*x)*sin(2*M_PI*y)*sin(2*M_PI*z)*gt;
-                double vel_y =  -sin(2*M_PI*x)*sin(M_PI*y)*sin(M_PI*y)*sin(2*M_PI*z)*gt;
-                double vel_z =  -sin(2*M_PI*x)*sin(2*M_PI*y)*sin(M_PI*z)*sin(M_PI*z)*gt;
-
-                velocity(0) += vel_x * phi[i];
-                velocity(1) += vel_y * phi[i];
-                velocity(2) += vel_z * phi[i];
-                
                 u_old         +=  old_solution[local_indices[i]]*phi[i];
                 grad_u_old(0) +=  old_solution[local_indices[i]]*dphi[i](0);
                 grad_u_old(1) +=  old_solution[local_indices[i]]*dphi[i](1);
-                grad_u_old(2) +=  old_solution[local_indices[i]]*dphi[i](2);
 
                 u             +=  solution[local_indices[i]]*phi[i];
                 grad_u(0)     +=  solution[local_indices[i]]*dphi[i](0);
                 grad_u(1)     +=  solution[local_indices[i]]*dphi[i](1);
-                grad_u(2)     +=  solution[local_indices[i]]*dphi[i](2);
+    
             }
 
             source_term = f(xyz,t);
+
 
             // SUPG stabilization parameters
             const double tau = TAUStab(velocity, G, k, dt_stab, dt);
 
             // CAU stabilization parameters
-            //const double ctau = CAUStab(u, u_old, grad_u, source_term, velocity, sigma, k, dt, h_carach);
-
+            // const double ctau = CAUStab(u, u_old, grad_u, source_term, velocity, sigma, k, dt, h_carach);
+            
             // YZB Stabilization 
             // Reference:
             // Bazilevs, Y., Calo, V.M., Tezduyar, T.E. and Hughes, T.J.R. (2007), 
@@ -263,15 +213,19 @@ void assemble_transport(TransientImplicitSystem* system)
                 // Galerkin 
                 Fe[i]   +=  JxW*(phi[i]*u_old - adt1*phi[i]*(velocity * grad_u_old) 
                                               - adt1*k*(dphi[i] * grad_u_old)  
-                                              //- adt1*sigma*phi[i]*u_old
+                                              - adt1*sigma*phi[i]*u_old
                                 );
 
                 //  SUPG contribution
                 Fe[i] += JxW * tau * (
                                          u_old * (velocity * dphi[i])+
                                          -adt1 * (grad_u_old * velocity)*(velocity * dphi[i])
-                                         //-adt1 * (sigma*u_old)*(velocity * dphi[i])
+                                         -adt1 * (sigma*u_old)*(velocity * dphi[i])
                                      );
+
+            
+
+                
 
                 for (int j = 0; j < local_indices.size(); j++)
                 {
@@ -279,18 +233,18 @@ void assemble_transport(TransientImplicitSystem* system)
                     Ke(i, j) += JxW * ( phi[i]*phi[j]                              // termo de massa
                                            + adt*(phi[i] * (velocity * dphi[j]))   // Na (vel. grad Nb) - Termo convectivo
                                            + adt*k*(dphi[i] * dphi[j])             // Grad Na Grad Nb - Termo difusivo
-                                           //+ adt*sigma*phi[i]*phi[j]              // \sigma* Na  Nb  - Termo reação      
+                                           + adt*sigma*phi[i]*phi[j]              // \sigma* Na  Nb  - Termo reação      
                                        );
 
                     // SUPG contribution
                     Ke(i, j) += JxW * tau * (
-                                    phi[j]*(velocity * dphi[i]) 
-                                       + adt * (velocity * dphi[j])*(velocity * dphi[i]) 
-                                    // + adt * (sigma * phi[j] )*(velocity * dphi[i])
+                                    phi[j]*(velocity * dphi[i]) +
+                                     adt * (velocity * dphi[j])*(velocity * dphi[i]) +
+                                     adt * (sigma * phi[j] )*(velocity * dphi[i])
                             );
 
-                    // CAU contribution
-                    Ke(i,j) += JxW * ctau * adt * (dphi[i] * dphi[j]);
+                    // YZB contribution
+                    Ke(i,j) += JxW * ctau * adt * (dphi[i] * dphi[j] );
 
                 }
             }
@@ -301,11 +255,12 @@ void assemble_transport(TransientImplicitSystem* system)
     }
 
     system->restore_old_solution_array(&old_solution);
+    system->restore_local_solution_array(&solution);
 
 }
 
 
-int sphere_stretching(int argc, char *argv[])
+int disk_stretching(int argc, char *argv[])
 {
     PetscErrorCode ierr;
     MeshPartition *parts = new MeshPartition();
@@ -317,84 +272,117 @@ int sphere_stretching(int argc, char *argv[])
     processor_id = MeshTools::processor_id();
     n_processors = MeshTools::n_processors();
 
-    if (processor_id == 0)
-    {
-        // Rodando serial ou em paralelo o processo mestre
-        // irá ler a malha.
-        string test_mesh_dir = TEST_MESH_DIR;
-        test_mesh_dir.append("benchmark_sphere_stretching/sphere_grossa.msh");
-        mesh = new Mesh(test_mesh_dir);
+#ifdef PROFILING
+   PetscLogStage  stagenum0;
+   PetscLogStage  stagenum1;
+   PetscLogStage  stagenum2;
+   PetscLogStage  stagenum3;
+   PetscLogStage  stagenum4;
 
-        // Se houver mais um processo, o processo mestre irá
-        // particionar a malha
-        if (n_processors > 1)
-        {
-            parts->ApplyPartitioner(mesh, n_processors);
-        }
-    }
+   PetscLogStageRegister("Disk Stretching", &stagenum0);
+   PetscLogStageRegister("Reads Mesh", &stagenum1);
+   PetscLogStageRegister("Catalyst", &stagenum2);
+   PetscLogStageRegister("Time Integration", &stagenum3);
+   PetscLogStageRegister("VTK Writer", &stagenum4);
+   PetscLogStagePush(stagenum0);
+   PetscLogStagePush(stagenum1);
+   std::string mesh_file(std::string(TEST_MESH_DIR) + "benchmark_disc_stretching/disk_quad4.msh");
+   pmesh = MeshTools::ReadMesh(mesh_file);
+   PetscLogStagePop();
+   PetscLogStagePush(stagenum2);
+#endif
 
-    pmesh = parts->DistributedMesh(mesh);
+    CatalystAdaptor::Initialize(argc, argv);
 
-
+#ifdef PROFILING
+    PetscLogStagePop();
+#endif
     // Cria o sistema de equações implicito
-    TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_sphere_stretching");
+    TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_disk_stretching");
     system->add_variable("u");
-    DirichletBoundary bc(1,0,"0.0","x,y,z");
-    InitialCondition  ic(2,0,"1.0","x,y,z");
-    InitialCondition  ic2(4,0,"0.5","x,y,z");
+    DirichletBoundary  bc(1,0,"0.0","x,y,z");
+    InitialCondition   ic(3,0,"1.0","x,y,z");
     system->add_initial_condition(ic);
-    system->add_initial_condition(ic2);
     system->add_dirichlet_boundary(bc);
-
-   
+    //system->attach_init_function(init_transport);
     system->attach_assemble(assemble_transport);
+
+    double dt = 0.0025;
     system->init();
-
-    double tf = 3.0;
-    double dt = 0.01;
-    
-
-    if (processor_id == 0)
-        printf("Respecting CFL condition, dt = %f\n", dt);
-
-    system->set_final_time(tf);
+    system->set_final_time(T);
     system->set_deltat(dt);
-    unsigned int write_interval = 50;
-
     system->set_nonlinear_max_iter(1);
     system->set_nonlinear_tolerance(1.0E-4);
     system->set_linear_tolerance(1.0E-8);
 
 
+    unsigned int write_interval    = 20;
+    unsigned int catalyst_interval = 10;
+
+
     char filename[100];
-    sprintf(filename,"sphere_stretching");
+    sprintf(filename,"disk_stretching");
     system->write_result(filename);
 
     // Time integratiom
+#ifdef PROFILING
+    PetscLogStagePush(stagenum3);
+    PetscLogStagePush(stagenum1);
+#endif
+
+#ifdef PROFILING
+    CatalystAdaptor::Execute(system->get_time_step(), system->get_time(), static_cast<ImplicitSystem*>(system));
+    PetscLogStagePop();
+#endif
     while(system->get_time() < system->get_final_time())
     {
         system->solve_time_step();
 
         if(system->get_time_step()%write_interval == 0 )
-            system->write_result(filename);
-        
-        // // Dynamic time step
-        // local_dt = calculate_stable_dt(pmesh, 1, system->get_time());
-        // MPI_Allreduce(&local_dt, &dt, 1, MPI_DOUBLE, MPI_MIN, PETSC_COMM_WORLD);
-        // if(dt < 0.0001)
-        //     dt = 0.0001;
-        // if(dt > 0.1)
-        //     dt = 0.1;
+        {
 
-        system->set_deltat(dt);
+#ifdef PROFILING
+            PetscLogStagePush(stagenum4);
+#endif
+            system->write_result(filename);
+
+#ifdef PROFILING
+            PetscLogStagePop();
+#endif
+        }
+
+
+        if(system->get_time_step()%catalyst_interval == 0 )
+        {
+
+#ifdef PROFILING  
+            PetscLogStagePush(stagenum1);
+#endif
+            CatalystAdaptor::Execute(system->get_time_step(), system->get_time(), static_cast<ImplicitSystem*>(system));
+#ifdef PROFILING
+            PetscLogStagePop();
+#endif
+
+        }
+
+
     }
+#ifdef PROFILING
+   PetscLogStagePop();   
+#endif
 
     system->write_result(filename);
 
-    delete system;
+#ifdef PROFILING
+    PetscLogStagePush(stagenum1);
+#endif
+    CatalystAdaptor::Finalize();
+#ifdef PROFILING
+    PetscLogStagePop();
+    PetscLogStagePop();
+#endif
 
-    if (MeshTools::processor_id() == 0)
-        delete mesh;
+    delete system;
     delete pmesh;
     delete parts;
 
@@ -404,6 +392,6 @@ int sphere_stretching(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     MeshTools::Init(argc,argv);
-    sphere_stretching(argc, argv);
+    disk_stretching(argc, argv);
     MeshTools::Finalize();
 }
