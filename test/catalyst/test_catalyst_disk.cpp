@@ -1,3 +1,4 @@
+
 #include <math.h>
 
 #include "petsc.h"
@@ -15,12 +16,17 @@
 #include "tensor.h"
 #include "xdmf_writer.h"
 #include "fem_stabilizations.h"
+#include "catalyst_adaptor.h"
 
 #include "test_config.h"
 
 static char help[] = "Benchmark with Disk Stretching experiment\n\n";
 
+
+
 #define PROFILING
+
+
 
 #define T 8.0
 double function_g(const double t)
@@ -185,7 +191,7 @@ void assemble_transport(TransientImplicitSystem* system)
             // https://doi.org/10.1002/fld.1484
             double beta    = 1.0;
             double phi_ref = 1.0;
-            double fopc    = 0.1;
+            double fopc    = 0.0;
             double inv_phi_ref = 1.0 / phi_ref;
 
             double dudt        = (u - u_old) / dt;
@@ -249,6 +255,7 @@ void assemble_transport(TransientImplicitSystem* system)
     }
 
     system->restore_old_solution_array(&old_solution);
+    system->restore_local_solution_array(&solution);
 
 }
 
@@ -265,25 +272,31 @@ int disk_stretching(int argc, char *argv[])
     processor_id = MeshTools::processor_id();
     n_processors = MeshTools::n_processors();
 
-    if (processor_id == 0)
-    {
-        // Rodando serial ou em paralelo o processo mestre
-        // irá ler a malha.
-        string test_mesh_dir = TEST_MESH_DIR;
-        test_mesh_dir.append("benchmark_disc_stretching/disk_quad4.msh");
-        mesh = new Mesh(test_mesh_dir);
+#ifdef PROFILING
+   PetscLogStage  stagenum0;
+   PetscLogStage  stagenum1;
+   PetscLogStage  stagenum2;
+   PetscLogStage  stagenum3;
+   PetscLogStage  stagenum4;
 
-        // Se houver mais um processo, o processo mestre irá
-        // particionar a malha
-        if (n_processors > 1)
-        {
-            parts->ApplyPartitioner(mesh, n_processors);
-        }
-    }
+   PetscLogStageRegister("Disk Stretching", &stagenum0);
+   PetscLogStageRegister("Reads Mesh", &stagenum1);
+   PetscLogStageRegister("Catalyst", &stagenum2);
+   PetscLogStageRegister("Time Integration", &stagenum3);
+   PetscLogStageRegister("VTK Writer", &stagenum4);
+   PetscLogStagePush(stagenum0);
+   PetscLogStagePush(stagenum1);
+   std::string mesh_file(std::string(TEST_MESH_DIR) + "benchmark_disc_stretching/disk_quad4.msh");
+   pmesh = MeshTools::ReadMesh(mesh_file);
+   PetscLogStagePop();
+   PetscLogStagePush(stagenum2);
+#endif
 
-    pmesh = parts->DistributedMesh(mesh);
+    CatalystAdaptor::Initialize(argc, argv);
 
-
+#ifdef PROFILING
+    PetscLogStagePop();
+#endif
     // Cria o sistema de equações implicito
     TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_disk_stretching");
     system->add_variable("u");
@@ -294,15 +307,17 @@ int disk_stretching(int argc, char *argv[])
     //system->attach_init_function(init_transport);
     system->attach_assemble(assemble_transport);
 
+    double dt = 0.0025;
     system->init();
     system->set_final_time(T);
-    system->set_deltat(0.0025);
-    system->set_nonlinear_max_iter(7);
+    system->set_deltat(dt);
+    system->set_nonlinear_max_iter(1);
     system->set_nonlinear_tolerance(1.0E-4);
-    system->set_linear_tolerance(1.0E-3);
+    system->set_linear_tolerance(1.0E-8);
 
 
-    unsigned int write_interval = 20;
+    unsigned int write_interval    = 20;
+    unsigned int catalyst_interval = 10;
 
 
     char filename[100];
@@ -311,9 +326,13 @@ int disk_stretching(int argc, char *argv[])
 
     // Time integratiom
 #ifdef PROFILING
-   PetscLogStage  stagenum0;
-   PetscLogStageRegister("Time Integration", &stagenum0); 
-   PetscLogStagePush(stagenum0);   
+    PetscLogStagePush(stagenum3);
+    PetscLogStagePush(stagenum1);
+#endif
+
+#ifdef PROFILING
+    CatalystAdaptor::Execute(system->get_time_step(), system->get_time(), static_cast<ImplicitSystem*>(system));
+    PetscLogStagePop();
 #endif
     while(system->get_time() < system->get_final_time())
     {
@@ -321,8 +340,32 @@ int disk_stretching(int argc, char *argv[])
 
         if(system->get_time_step()%write_interval == 0 )
         {
+
+#ifdef PROFILING
+            PetscLogStagePush(stagenum4);
+#endif
             system->write_result(filename);
+
+#ifdef PROFILING
+            PetscLogStagePop();
+#endif
         }
+
+
+        if(system->get_time_step()%catalyst_interval == 0 )
+        {
+
+#ifdef PROFILING  
+            PetscLogStagePush(stagenum1);
+#endif
+            CatalystAdaptor::Execute(system->get_time_step(), system->get_time(), static_cast<ImplicitSystem*>(system));
+#ifdef PROFILING
+            PetscLogStagePop();
+#endif
+
+        }
+
+
     }
 #ifdef PROFILING
    PetscLogStagePop();   
@@ -330,10 +373,16 @@ int disk_stretching(int argc, char *argv[])
 
     system->write_result(filename);
 
-    delete system;
+#ifdef PROFILING
+    PetscLogStagePush(stagenum1);
+#endif
+    CatalystAdaptor::Finalize();
+#ifdef PROFILING
+    PetscLogStagePop();
+    PetscLogStagePop();
+#endif
 
-    if (MeshTools::processor_id() == 0)
-        delete mesh;
+    delete system;
     delete pmesh;
     delete parts;
 

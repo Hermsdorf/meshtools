@@ -24,7 +24,7 @@ include/meshtools_config.h
 .vscode-server/*
 *.vtu
 *.pvtu
-
+build_catalyst
 test/finite_element/square256x256.msh
 test/finite_element/square32x32.msh
 test/finite_element/square16x16.msh

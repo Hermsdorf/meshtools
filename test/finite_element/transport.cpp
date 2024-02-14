@@ -118,7 +118,7 @@ void assemble_transport(TransientImplicitSystem* system)
         {
             // Calcula funções para elemento
             fem.ComputeFunction(elem,qrule.get(q));
-            double h_carach = elem.calculate_h(JxW);
+            double h_carach = elem.calculate_h();
         
             // SUPG stabilization parameters
             double tau = TAUStab(velocity, G, k, dt_stab, dt);
