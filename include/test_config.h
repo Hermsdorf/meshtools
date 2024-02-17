@@ -1,1 +1,1 @@
-#define TEST_MESH_DIR "/home/camata/git/meshtools/test/finite_element/msh/"
+#define TEST_MESH_DIR "${MESHTOOLS_DIR}/test/finite_element/msh/"
