@@ -111,6 +111,9 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/contrib/fparser)
 if(CATALYST_LEGACY_ENABLE)
   add_subdirectory(${CMAKE_SOURCE_DIR}/contrib/catalyst)
 endif()
+
+add_subdirectory(${CMAKE_SOURCE_DIR}/contrib/pugixml-1.14)
+
 file(GLOB source_files_lib
          "include/*.h"
          "include/*.hpp"
