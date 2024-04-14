@@ -527,6 +527,14 @@ class Mesh {
 
         double       *getCoordinatesData(); 
 
+        //------------------------ Mesh Refine Test Functions ------------------------//
+
+        void GetEdges();
+
+        void refine();
+
+        //-----------------------End Mesh Refine Test Functions ----------------------//
+
         std::vector<int>& getFaceToElement() { return face_to_element; };
         void             setFaceToElement(std::vector<int> face_to_element) { this->face_to_element = face_to_element; };
         int              getVTKElemContourNNodes(int vtk_type);
