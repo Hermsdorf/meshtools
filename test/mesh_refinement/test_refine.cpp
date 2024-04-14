@@ -5,7 +5,7 @@
 
 int main(int argc, char *argv[])
 {
-    PetscErrorCode ierr;
+    //PetscErrorCode ierr;
 
     Mesh mesh; 
     //mesh.read("test/mesh_refinement/mesh.msh");
