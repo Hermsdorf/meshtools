@@ -531,7 +531,15 @@ class Mesh {
 
         void GetEdges();
 
-        void refine();
+        void refine(int n_refinements);
+
+        void get_node_coord(int node_id, Point &coord);
+
+        vector<unsigned int> LINE_refine(unsigned int element_id, int dimension);
+        vector<unsigned int> TRIANGLE_refine(unsigned int i, unsigned int dim);
+        vector<unsigned int> QUADRANGLE_refine(unsigned int i, unsigned int dim);
+        vector<unsigned int> TETRAHEDRON_refine(unsigned int i, unsigned int dim);
+        vector<unsigned int> HEXAHEDRON_refine(unsigned int i, unsigned int dim);
 
         //-----------------------End Mesh Refine Test Functions ----------------------//
 
