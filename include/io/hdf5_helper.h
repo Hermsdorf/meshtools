@@ -1,3 +1,5 @@
+#if 0 
+
 #ifndef HDF5_HELPER_H
 #define HDF5_HELPER_H
 
@@ -42,3 +44,5 @@ void writeHDF5UshortDataSet(hid_t file, const char* datasetname, hsize_t dimsf, 
 
 #endif /* HDF5_ENABLE */
 #endif /* HDF5_HELPER_H */
+
+#endif 

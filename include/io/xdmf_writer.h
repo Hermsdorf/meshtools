@@ -1,3 +1,4 @@
+#if 0
 #ifndef XDMF_WRITER_H
 #define XDMF_WRITER_H
 
@@ -33,3 +34,5 @@ class XDMFWriter
 
 
 #endif /* XDMF_WRITER_H */
+
+#endif 

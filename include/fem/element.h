@@ -1,5 +1,5 @@
-#ifndef ELEMENT_H__
-#define ELEMENT_H__
+#ifndef ELEMENT_H
+#define ELEMENT_H
 
 #include "mesh.h"
 #include "numeric_vector.h"
@@ -9,6 +9,7 @@ class Element
     friend class Mesh;
     public:
         Element(){};
+        Element(std::vector<Point> &vertices, std::vector<unsigned int> &topo, unsigned short & type, unsigned int tag);
         std::vector<unsigned int>&  connectivity() {return _conn; };
         Point&                      node(int i) {return _coords[i]; } ;
         unsigned short&             type() {return _type; } ;
@@ -38,4 +39,4 @@ class SurfaceElement: public Element
         Element _internal_elem;
 };
 
-#endif // ELEMENT_H__
+#endif /* ELEMENT_H */

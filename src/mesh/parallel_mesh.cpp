@@ -1,17 +1,22 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <memory>
 
 #include "meshtools.h"
 #include "parallel_mesh.h"
 #include "mpi.h"
 
 
+// std::unique_ptr<ParallelMesh> ParallelMesh::New()
+// {
+//     return std::make_unique<ParallelMesh>(new ParallelMesh());
+// }
+        
 ParallelMesh::ParallelMesh()
 {
     this->n_elements                 = 0;
     this->n_nodes                    = 0;
-    this->internal_mesh              = false;
     this->processor_id               = MeshTools::processor_id();
     this->n_processors               = MeshTools::n_processors();
     this->n_global_elements          = 0;
@@ -22,19 +27,19 @@ ParallelMesh::ParallelMesh()
 
 ParallelMesh::~ParallelMesh() { }
 
-void ParallelMesh::setNeighborProcessors(std::vector<unsigned int> neighbors_processors)
+void ParallelMesh::set_neighbor_processors_vector(std::vector<unsigned int>& neighbors_processors)
 {
-    this->neighbor_processors = neighbor_processors;
+    this->neighbor_processors.swap(neighbor_processors);
 }
 
-void ParallelMesh::setSharedNodesOffset(std::vector<unsigned int> shared_nodes_offset)
+void ParallelMesh::set_shared_nodes_offset_vector(std::vector<unsigned int>& shared_nodes_offset)
 {
-    this->shared_nodes_offset = shared_nodes_offset;
+    this->shared_nodes_offset.swap(shared_nodes_offset);
 }
 
-void ParallelMesh::setSharedNodes(std::vector<unsigned int> shared_nodes)
+void ParallelMesh::set_shared_nodes_vector(std::vector<unsigned int>& shared_nodes)
 {
-    this->shared_nodes = shared_nodes;
+    this->shared_nodes.swap(shared_nodes);
 }
 
 void ParallelMesh::set_n_local_nodes(unsigned int n_local_nodes)
@@ -67,9 +72,9 @@ unsigned int ParallelMesh::get_n_global_elements()
     return this->n_global_elements;
 }
 
-void ParallelMesh::set_n_global_face_elements(unsigned int n_global_face_elements)
+void ParallelMesh::set_n_global_surface_elements(unsigned int n_global_face_elements)
 {
-    this->n_global_faces = n_global_face_elements;
+    this->n_global_surface_elements = n_global_face_elements;
 }
 
 void ParallelMesh::set_n_global_elements(unsigned int n_global_elements)
@@ -82,6 +87,8 @@ unsigned int ParallelMesh::get_n_local_nodes()
     return this->n_local_nodes;
 }
 
+
+/*
 void ParallelMesh::readParallelMesh(const char* filename)
 {
     this->setFilename(filename);
@@ -271,110 +278,8 @@ void ParallelMesh::readParallelMeshBin(const char* filename)
     }
 }
 
-#ifdef USE_HDF5
-void ParallelMesh::readParallelMeshHDF5(const char* filename)
-{
-    this->setFilename(filename);
-    std::ifstream in(filename, std::ios::binary);
-    std::string s;
 
-    hid_t       file, filetype, memtype, space, dset;/* Handles */
-    herr_t      status;
-    hsize_t     dims[1];
-
-    file = H5Fopen (FILE, H5F_ACC_RDONLY, H5P_DEFAULT);
-
-    unsigned int nelem, nnodes, connsize;
-
-
-    // readign attribute data
-
-     dset = H5Dopen(file,"attributes");
-     
-
-    //in.read((char *) &nelem, sizeof(unsigned int));
-    //in.read((char *) &nnodes, sizeof(unsigned int));
-    //in.read((char *) &connsize, sizeof(unsigned int));
-    dset = H5Dopen (file, "coordinates", H5P_DEFAULT);
-
-    /*
-     * Get the datatype and its dimensions.
-     */
-    filetype = H5Dget_type (dset);
-    ndims    = H5Tget_array_dims (filetype, 3);
-
-    /*
-     * Get dataspace and allocate memory for read buffer.  This is a
-     * three dimensional dataset when the array datatype is included so
-     * the dynamic allocation must be done in steps.
-     */
-    space = H5Dget_space (dset);
-    ndims = H5Sget_simple_extent_dims (space, dims, NULL);
-    
-    this->n_nodes = nnodes;
-
-
-
-    this->conn.resize(connsize);
-    this->coord.resize(nnodes*3);
-    this->offset.resize(nelem+1);
-    this->type.resize(nelem);
-    this->local_to_global.resize(nnodes);
-
-    while(!in.eof())
-    {
-        std::getline(in, s);
-        if(in)
-        {
-            if(s.find("COORD_LOCAL: ") == 0)
-            {
-                in.read((char*) &this->coord[0], nnodes*3*sizeof(double));
-            } 
-            else if(s.find("CONN_LOCAL: ") == 0)
-            {
-                in.read((char*) &this->conn[0], connsize*sizeof(unsigned int));
-            }
-            else if(s.find("OFFSET_LOCAL: ") == 0)
-            {
-                in.read((char*) &this->offset[0], (nelem+1)*sizeof(unsigned int));
-            }
-            else if(s.find("TYPE_LOCAL: ") == 0)
-            {
-                in.read((char*) &this->type[0], nelem*sizeof(unsigned short));
-            }
-            else if(s.find("LOCAL_TO_GLOBAL: ") == 0)
-            {
-                in.read((char*) &this->local_to_global[0], nnodes*sizeof(unsigned int));
-            }
-            else if(s.find("SHARED NODES: ") == 0)
-            {
-                unsigned int commsize;
-                in.read((char*) &commsize, sizeof(unsigned int));
-                this->communication_map.resize(commsize);
-                this->n_neighbor_processors = commsize;
-
-                for(int i = 0 ; i < commsize ; i++)
-                {
-                    unsigned int id_neighbor_process_i, n_shared_nodes_i;
-
-                    in.read((char*) &id_neighbor_process_i, sizeof(unsigned int));
-                    in.read((char*) &n_shared_nodes_i, sizeof(unsigned int));
-                    
-                    this->communication_map[i].set_id_neighbor_process(id_neighbor_process_i);
-                    this->communication_map[i].set_n_shared_nodes(n_shared_nodes_i);
-                    in.read((char*) &this->communication_map[i].nodes[0], n_shared_nodes_i*sizeof(unsigned int));
-
-                }
-            }
-            else
-            {
-                std::cout << "ERRO: Formato do arquivo invalido\n";
-            }
-        }
-    }
-}
-#endif
-
+/*
 void ParallelMesh::writePVTK(const char* fname, MeshIODataAppended* info)
 {   
     this->WriteVTK(fname, info);
@@ -457,8 +362,10 @@ void ParallelMesh::writePVTK(const char* fname, MeshIODataAppended* info)
     fout.close();
     std::cout << "Writing pvtu completed successfully\n";
 }
+*/
 
-void  ParallelMesh::getGhostNodesIds(std::vector<unsigned int>& local_ghosts_nodes, std::vector<unsigned int>& global_ghosts_nodes)
+
+void  ParallelMesh::get_ghost_nodes_ids(std::vector<unsigned int>& local_ghosts_nodes, std::vector<unsigned int>& global_ghosts_nodes)
 {
     // Indicates local node, what means that it is not shared with other process
     std::vector<unsigned short> mask_node(this->n_nodes);
@@ -484,19 +391,19 @@ void  ParallelMesh::getGhostNodesIds(std::vector<unsigned int>& local_ghosts_nod
 
     for(int ino = 0; ino < this->n_nodes; ++ino)
         if(mask_node[ino]){
-            local_ghosts_nodes.push_back(ino);
-            global_ghosts_nodes.push_back(this->node_index[ino]);
+            local_ghosts_nodes.emplace_back(ino);
+            global_ghosts_nodes.emplace_back(this->node_index[ino]);
         }
 
 }
 
 void  ParallelMesh::add_neighbor_shared_nodes(unsigned int p, unsigned int n_shared_nodes, const unsigned *node_list)
 {
-    this->neighbor_processors.push_back(p);
+    this->neighbor_processors.emplace_back(p);
     unsigned int ofs_prev = this->shared_nodes_offset.back();
     for(int i = 0; i < n_shared_nodes; ++i)
-        this->shared_nodes.push_back(node_list[i]);
-    this->shared_nodes_offset.push_back(ofs_prev+n_shared_nodes);
+        this->shared_nodes.emplace_back(node_list[i]);
+    this->shared_nodes_offset.emplace_back(ofs_prev+n_shared_nodes);
 }
 
 unsigned int ParallelMesh::n_neighbor_shared_nodes(unsigned int p)
@@ -510,17 +417,17 @@ const unsigned int *    ParallelMesh::get_neighbor_shared_nodes(unsigned int p)
     return   &this->shared_nodes[start];
 }
 
-std::vector<unsigned int>& ParallelMesh::getNeighborsProcessors()
+std::vector<unsigned int>& ParallelMesh::get_neighbors_processors_vector()
 {
     return this->neighbor_processors;
 }
         
-std::vector<unsigned int>&  ParallelMesh::getSharedNodesOffset()
+std::vector<unsigned int>&  ParallelMesh::get_shared_nodes_offset_vector()
 {
     return this->shared_nodes_offset;
 }
         
-std::vector<unsigned int>&  ParallelMesh::getSharedNodes()
+std::vector<unsigned int>&  ParallelMesh::get_shared_nodes_vector()
 {
     return this->shared_nodes;
 }
@@ -577,11 +484,11 @@ void ParallelMesh::build_communication_map()
             {   
                 int node_id = this->shared_nodes[ino]; 
                 if(greather_neighbor_process[node_id] == neighbor) {
-                    info.nodes.push_back(node_id);
+                    info.nodes.emplace_back(node_id);
                 }
             }
             if(info.nodes.size() > 0)
-                this->recvfrom_info.push_back(info);
+                this->recvfrom_info.emplace_back(info);
         } else if(this->processor_id > neighbor) // processor_id is master of p
         {
             MessageInformation info;
@@ -591,12 +498,12 @@ void ParallelMesh::build_communication_map()
             for(int ino = start; ino < end; ino++){   
                 int node_id = this->shared_nodes[ino];
                 if(greather_neighbor_process[node_id] == this->processor_id) {
-                    info.nodes.push_back(node_id);
+                    info.nodes.emplace_back(node_id);
                 }
                 //info.nodes.push_back(node_id);
             }
             if(info.nodes.size() > 0)
-                this->sendto_info.push_back(info);
+                this->sendto_info.emplace_back(info);
         }
     }
     if(MeshTools::processor_id() == 0)
@@ -741,7 +648,7 @@ void ParallelMesh::fill_node_index()
     }
 }
 
-
+/*
 void ParallelMesh::WritePMeshMTS(const char *fname)
 {
     char filename[256];
@@ -806,33 +713,26 @@ void ParallelMesh::WritePMeshMTS(const char *fname)
     fprintf(fout ,"$END_PARALLEL_DATA\n");
     fclose(fout);
 }
+*/
+
 
 void ParallelMesh::set_start_node_index(unsigned int start_node_index)
 {
     this->start_node_index = start_node_index;
 }
 
+
 void ParallelMesh::set_n_processors(int n_processors)
 {
     this->n_processors = n_processors;
 }
 
-void ParallelMesh::set_sendto_info(std::vector<MessageInformation>  info)
+void ParallelMesh::set_sendto_info(std::vector<MessageInformation>&  info)
 {
     this->sendto_info = info;
 }
 
-void ParallelMesh::set_recvfrom_info(std::vector<MessageInformation>  info)
+void ParallelMesh::set_recvfrom_info(std::vector<MessageInformation>&  info)
 {
     this->recvfrom_info = info;
-}
-
-bool ParallelMesh::get_internal_mesh()
-{
-    return this->internal_mesh;
-}
-
-void ParallelMesh::set_internal_mesh(bool internal_mesh)
-{
-    this->internal_mesh = internal_mesh;
 }

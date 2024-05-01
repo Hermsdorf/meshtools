@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20.0)
 cmake_policy(SET CMP0057 NEW)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 project(meshtools)
 include(CTest)
 enable_testing()
@@ -12,7 +12,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 option(MESHTOOLS_BUILD_APP  "Build meshtools application" ON)
 option(MPI_ENABLE           "Enable MPI" ON)
 option(OpenMP_ENABLE        "Enable OpenMP" ON)
-option(CATALYST_ENABLE      "Enable Paraview Catalyst" ON)
+option(CATALYST_ENABLE      "Enable Paraview Catalyst" OFF)
 if(CATALYST_ENABLE)
  option(CATALYST_LEGACY_ENABLE "Enable Paraview Catalyst Legacy" OFF)
 endif()
@@ -100,11 +100,15 @@ endif()
 SET(MESHTOOLS_DEP_INCLUDE_DIR ${PETSc_INCLUDE_DIRS} ${HDF5_INCLUDE_DIR} ${MPI_C_INCLUDE_PATH} ${METIS_INCLUDE_DIR})
 SET(MESHTOOLS_DEP_LIBS ${PETSc_LINK_LIBRARIES} ${MPI_LIBS} ${HDF5_LIBS} ${METIS_LIBRARIES} ${CATALYST_LIBS})
 
-configure_file(${CMAKE_SOURCE_DIR}/config/meshtools_config.h.in ${CMAKE_SOURCE_DIR}/include/meshtools_config.h @ONLY)
+SET(MESHTOOLS_SOURCE_DIR ${CMAKE_SOURCE_DIR})
 
 include_directories(${MESHTOOLS_DEP_INCLUDE_DIR})
-include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/include/base)
+include_directories(${CMAKE_SOURCE_DIR}/include/mesh)
+include_directories(${CMAKE_SOURCE_DIR}/include/io)
 include_directories(${CMAKE_SOURCE_DIR}/contrib/fparser)
+
+configure_file(${CMAKE_SOURCE_DIR}/config/meshtools_config.h.in ${CMAKE_SOURCE_DIR}/include/base/meshtools_config.h @ONLY)
 
 # Compilando bibliotecas de terceitos
 add_subdirectory(${CMAKE_SOURCE_DIR}/contrib/fparser)
@@ -114,30 +118,34 @@ endif()
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/contrib/pugixml-1.14)
 
-file(GLOB source_files_lib
-         "include/*.h"
-         "include/*.hpp"
-         "src/*.cpp"
+
+file(GLOB base_files
+         "include/base/*.h"
+         "include/base/*.hpp"
+         "src/base/*.cpp"
     )
+
+file(GLOB mesh_files
+         "include/mesh/*.h"
+         "include/mesh/*.hpp"
+         "src/mesh/*.cpp"
+    )
+
+file(GLOB io_files
+    "include/io/*.h"
+    "include/io/*.hpp"
+    "src/io/*.cpp"
+)
     
-add_library(meshtoolslib SHARED ${source_files_lib})
+add_library(meshtoolslib SHARED ${base_files} ${mesh_files} ${io_files})
 
 target_link_libraries(meshtoolslib fparser ${MESHTOOLS_DEP_LIBS})
 
-# add_subdirectory(app)
 add_subdirectory(test)
 
-if(MESHTOOLS_BUILD_APP)
- 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
-add_test(Help ./app/meshtools -h)
-add_test(Read:Ascii  ./app/meshtools -m    ../test/io/ascii/quadrado.msh)
-add_test(Read:Binary ./app/meshtools -m    ../test/io/binary/quadrado.msh)
-add_test(Reordering:RCM ./app/meshtools -m ../test/io/binary/quadrado.msh -r rcm)
-add_test(Reordering:ND ./app/meshtools -m  ../test/io/binary/quadrado.msh -r nd)
 
-endif()
 
 
 include(CPack)

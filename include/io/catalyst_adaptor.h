@@ -1,3 +1,6 @@
+
+#if 0 
+
 #ifndef CATALYST_ADAPTOR_H
 #define CATALYST_ADAPTOR_H
 
@@ -202,3 +205,5 @@ void Finalize()
 
 
 #endif /* CATALYST_ADAPTOR_H */
+
+#endif

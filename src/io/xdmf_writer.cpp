@@ -1,4 +1,6 @@
 
+#if 0 
+
 #include "meshtools.h"
 #include "xdmf_writer.h"
 #include "hdf5_helper.h"
@@ -311,3 +313,4 @@ void XDMFWriter::get_variable_solution(ImplicitSystem* system, int ivar, std::ve
     
 }
 
+#endif

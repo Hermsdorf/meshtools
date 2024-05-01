@@ -11,6 +11,7 @@
 #include "rcm.hpp"
 
 #include "hdf5_helper.h"
+#include "mesh_helper.h"
 
 size_t get_mesh_type_size(MeshDataType type)
 {
@@ -76,23 +77,8 @@ void MeshIODataAppended::addTimeDataInfo(double time, int timestep)
     this->time_step = timestep;
 }
 
-int GmshToVTKType(int type)
-{
-    switch (type)
-    {
-        case 1: return 3; // EDGE2
-        case 2: return 5; // TRI3
-        case 3: return 9; // QUAD4
-        case 4: return 10; // TET4
-        case 5: return 12; // HEX8
-        case 15: return 1;
-        default: return -1;
-        break;
 
-    }
-}
-
-void Mesh::MeshGmshReader(const char* filename)
+void Mesh::gmsh_reader(const char* filename)
 {
     int format=0, size=0;
     double version = 1.0;
@@ -228,27 +214,36 @@ void Mesh::MeshGmshReader(const char* filename)
                         int header[3]; // elm_type, num_elm_follow, num_tags
                         in.read((char*)header, 3*sizeof(int));
 
-                        int elm_type = header[0];
+                        int elm_type       = header[0];
                         int num_elm_follow = header[1];
-                        int ntags = header[2];
+                        int ntags          = header[2];
+
+                        if( MeshHelper::GmshIdToVtkId.find(elm_type) == MeshHelper::GmshIdToVtkId.end() )
+                        {
+                            std::cout << "\nERROR: ELEMENT TYPE " << elm_type << " INVALID\n";
+                            in.close();
+                            delete this;
+                            exit(1);
+                        }
+
 
                         for(unsigned int i = 0; i < num_elm_follow; i++)
                         {
-                            this->type[elem_count] = GmshToVTKType(elm_type);
-                            int nnodes             = getGmshElemNNodes(elm_type);
-                            int elem_dim           = getGmshElemTypeDim(elm_type);
+                            this->type[elem_count] = MeshHelper::GmshIdToVtkId[elm_type];
+                            int nnodes             = MeshHelper::GmshIdToNumberOfNodes[elm_type];
+                            int elem_dim           = MeshHelper::GmshIdToElementDim[elm_type];
 
                             int arr_size = 3 + nnodes;
                             int data[arr_size]; // num_i, physical, elementary, node_i_1, ... node_i_x
                             in.read((char*)data, arr_size*sizeof(int));
 
-                            if(nnodes < 0 )
-                            {
-                                std::cout << "\nERROR: ELEMENT TYPE " << elm_type << " INVALID\n";
-                                in.close();
-                                delete this;
-                                exit(1);
-                            }
+                            // if(nnodes < 0 )
+                            // {
+                            //     std::cout << "\nERROR: ELEMENT TYPE " << elm_type << " INVALID\n";
+                            //     in.close();
+                            //     delete this;
+                            //     exit(1);
+                            // }
 
                             dim_count[elem_dim]++;
 
@@ -282,19 +277,25 @@ void Mesh::MeshGmshReader(const char* filename)
 #ifdef DEBUG_                   
                         std::cout << id << "  " << type << "  " << ntags << " ";
 #endif
-
-                        this->type[i] = GmshToVTKType(type);
-
-                        nnodes   = getGmshElemNNodes(type);
-                        elem_dim = getGmshElemTypeDim(type);
-
-                        if(nnodes < 0 )
+                        if( MeshHelper::GmshIdToVtkId.find(type) == MeshHelper::GmshIdToVtkId.end() )
                         {
                             std::cout << "\nERROR: ELEMENT TYPE " << type << " INVALID\n";
                             in.close();
                             delete this;
                             exit(1);
                         }
+
+                        this->type[i] = MeshHelper::GmshIdToVtkId[type];
+                        nnodes        = MeshHelper::GmshIdToNumberOfNodes[type];
+                        elem_dim      = MeshHelper::GmshIdToElementDim[type];
+
+                        // if(nnodes < 0 )
+                        // {
+                        //     std::cout << "\nERROR: ELEMENT TYPE " << type << " INVALID\n";
+                        //     in.close();
+                        //     delete this;
+                        //     exit(1);
+                        // }
 
                         dim_count[elem_dim]++;
 
@@ -352,17 +353,15 @@ void Mesh::MeshGmshReader(const char* filename)
     }
 
     this->element_type          = this->type[this->n_face_elements];
-    this->boundary_element_type = this->type[0];
+    this->surface_element_type  = this->type[0];
     
     std::string str(filename);
     str.resize(str.length()-4);
 
-    this->filename = str;
-
-    std::cout << " Num. Nodes: " << this->n_nodes << "\n";
+    std::cout << " Num. Nodes: "             << this->n_nodes << "\n";
     std::cout << " Num. Elements: "          << this->n_elements << "\n";
     std::cout << " Num. Boundary Elements: " << this->n_face_elements << "\n";
-    std::cout << " Connectivity size: " << this->conn.size() << "\n";
+    std::cout << " Connectivity size: "      << this->conn.size() << "\n";
 
     in.close();
 
@@ -376,7 +375,7 @@ bool BinaryBigEndian(void)
 }
 
 
-void Mesh::WriteVTK(const char* fname, MeshIODataAppended* info )
+void Mesh::write_vtk(const char* fname, MeshIODataAppended* info )
 {
     if(MeshTools::processor_id() == 0)
         std::cout << "Writing VTK ...\n";
@@ -552,52 +551,52 @@ void Mesh::WriteVTK(const char* fname, MeshIODataAppended* info )
     }
 }
 
-void Mesh::WriteMTS(const char *fname)
-{
-    char filename[256];
-    sprintf(filename,"%s_%04d.mts",fname,MeshTools::processor_id());
-    FILE* fout = fopen(filename,"w");
-    if(!fout) return ;
+// void Mesh::WriteMTS(const char *fname)
+// {
+//     char filename[256];
+//     sprintf(filename,"%s_%04d.mts",fname,MeshTools::processor_id());
+//     FILE* fout = fopen(filename,"w");
+//     if(!fout) return ;
 
 
-    fprintf(fout, "# Mesh Tools File \n");
-    fprintf(fout, "1.0  0  0 # [version] [0:ascii - 1:binary] [0:serial - 1:parallel]\n");
-    fprintf(fout, "%d # num. faces   \n", this->n_face_elements);
-    fprintf(fout, "%d # num. elements\n", this->n_elements);
-    fprintf(fout, "%d # num. nodes \n",   this->n_nodes);
-    fprintf(fout, "%ld # num. physical region\n", this->physical_map.size());
-    fprintf(fout, "$BEGIN_PHYSICAL_DATA\n");
-    for(auto it = this->physical_map.begin(); it != this->physical_map.end(); it++)
-        fprintf(fout, "%d %d %s\n", it->first, it->second.first, it->second.second.c_str());
-    fprintf(fout, "$END_PHYSICAL_DATA\n"); 
-    fprintf(fout, "$BEGIN_NODE_DATA\n");
-    for(int n = 0; n < this->n_nodes; n++)
-        fprintf(fout,"%-4d %8.8e %8.8e %8.8e\n",n,coord[n*3],coord[n*3+1], coord[n*3+2]);
-    fprintf(fout, "$ENDNODE_DATA\n");
-    fprintf(fout,"$BEGIN_BOUNDARY_DATA\n");
-    for(int iel = 0; iel <  this->n_face_elements; iel++)
-    {
-        fprintf(fout,"%-4d %-4d", iel, this->physical_tag[iel]);
-        unsigned int connsize = this->getSurfaceElementConnSize(iel);
-        unsigned int *conn    = this->getSurfaceElementConn(iel);
-        for(int i = 0; i < connsize; ++i)
-            fprintf(fout, "%-4d ", conn[i]);
-        fprintf(fout,"\n");
-    }
-    fprintf(fout,"$END_BOUNDARY_DATA\n");
-    fprintf(fout,"$BEGIN_ELEMENT DATA\n");
-    for(int iel = 0; iel < this->n_elements; iel++)
-    {
-        fprintf(fout,"%-4d %-4d ", iel, this->physical_tag[iel+this->n_face_elements]);
-        unsigned int connsize = this->getElementConnSize(iel);
-        unsigned int *conn    = this->getElementConn(iel);
-        for(int i = 0; i < connsize; ++i)
-            fprintf(fout, "%-4d ", conn[i]);
-        fprintf(fout,"\n");
-    }
-    fprintf(fout,"$END_ELEMENT DATA\n");
-    fclose(fout);
-}
+//     fprintf(fout, "# Mesh Tools File \n");
+//     fprintf(fout, "1.0  0  0 # [version] [0:ascii - 1:binary] [0:serial - 1:parallel]\n");
+//     fprintf(fout, "%d # num. faces   \n", this->n_face_elements);
+//     fprintf(fout, "%d # num. elements\n", this->n_elements);
+//     fprintf(fout, "%d # num. nodes \n",   this->n_nodes);
+//     fprintf(fout, "%ld # num. physical region\n", this->physical_map.size());
+//     fprintf(fout, "$BEGIN_PHYSICAL_DATA\n");
+//     for(auto it = this->physical_map.begin(); it != this->physical_map.end(); it++)
+//         fprintf(fout, "%d %d %s\n", it->first, it->second.first, it->second.second.c_str());
+//     fprintf(fout, "$END_PHYSICAL_DATA\n"); 
+//     fprintf(fout, "$BEGIN_NODE_DATA\n");
+//     for(int n = 0; n < this->n_nodes; n++)
+//         fprintf(fout,"%-4d %8.8e %8.8e %8.8e\n",n,coord[n*3],coord[n*3+1], coord[n*3+2]);
+//     fprintf(fout, "$ENDNODE_DATA\n");
+//     fprintf(fout,"$BEGIN_BOUNDARY_DATA\n");
+//     for(int iel = 0; iel <  this->n_face_elements; iel++)
+//     {
+//         fprintf(fout,"%-4d %-4d", iel, this->physical_tag[iel]);
+//         unsigned int connsize = this->getSurfaceElementConnSize(iel);
+//         unsigned int *conn    = this->getSurfaceElementConn(iel);
+//         for(int i = 0; i < connsize; ++i)
+//             fprintf(fout, "%-4d ", conn[i]);
+//         fprintf(fout,"\n");
+//     }
+//     fprintf(fout,"$END_BOUNDARY_DATA\n");
+//     fprintf(fout,"$BEGIN_ELEMENT DATA\n");
+//     for(int iel = 0; iel < this->n_elements; iel++)
+//     {
+//         fprintf(fout,"%-4d %-4d ", iel, this->physical_tag[iel+this->n_face_elements]);
+//         unsigned int connsize = this->getElementConnSize(iel);
+//         unsigned int *conn    = this->getElementConn(iel);
+//         for(int i = 0; i < connsize; ++i)
+//             fprintf(fout, "%-4d ", conn[i]);
+//         fprintf(fout,"\n");
+//     }
+//     fprintf(fout,"$END_ELEMENT DATA\n");
+//     fclose(fout);
+// }
 
 // void WriteHDF5(const char* fname, MeshIODataAppended* info)
 // {

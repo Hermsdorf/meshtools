@@ -4,6 +4,7 @@
 
 #include "GetPot.hpp"
 #include "meshtools_config.h"
+#include  "numeric_vector.h"
 
 #ifdef MPI_ENABLE
 #include "mpi.h"

@@ -14,6 +14,7 @@
 
 #cmakedefine DEBUG_
 
+#cmakedefine MESHTOOLS_SOURCE_DIR "@MESHTOOLS_SOURCE_DIR@"
 
 
 

@@ -193,6 +193,11 @@ void MeshToRCMGraph(Mesh *mesh, idx_t **xadj, idx_t **adjncy)
         adjncyA[i] += 1;
 }
 
+void rcm_run(size_t n, idx_t *xadj, idx_t *adjncy, int *perm, int *iperm)
+{
+    
+}
+
 void MeshReorderingRCM(Mesh *mesh, idx_t *xadj, idx_t *adjncy, int *perm, int *iperm)
 {
     std::cout << "  Applyng RCM reordering\n";

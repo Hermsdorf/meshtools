@@ -1,3 +1,7 @@
+#pragma once
+
+#include <string>
+
 int adj_bandwidth ( int node_num, int adj_num, int adj_row[], int adj[]);
 bool adj_contains_ij ( int node_num, int adj_num, int adj_row[], int adj[], 
   int i, int j );
