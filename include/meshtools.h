@@ -1,6 +1,8 @@
 #ifndef MESHTOOLS_H
 #define MESHTOOLS_H
 
+#define DEBUG_
+
 
 #include "GetPot.hpp"
 #include "meshtools_config.h"

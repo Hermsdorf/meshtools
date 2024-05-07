@@ -529,6 +529,10 @@ class Mesh {
 
         //------------------------ Mesh Refine Test Functions ------------------------//
 
+        void report();
+
+        void mshExport(string FileName);
+
         void GetEdges();
 
         void refine(int n_refinements);
@@ -540,6 +544,7 @@ class Mesh {
         vector<unsigned int> QUADRANGLE_refine(unsigned int element_id, unsigned int dim);
         vector<unsigned int> TETRAHEDRON_refine(unsigned int element_id, unsigned int dim);
         vector<unsigned int> HEXAHEDRON_refine(unsigned int element_id, unsigned int dim);
+
 
         //-----------------------End Mesh Refine Test Functions ----------------------//
 
@@ -575,6 +580,11 @@ class Mesh {
         std::string filename;                    // Nome do arquvios de entrada de tipo msh
         std::vector<unsigned int> coloring;
         unsigned int              n_colors;       // Número total de cores dos elementos internos da malha.
+        //test refine
+        std::vector<unsigned int>   gmshEleType;  // Array indicando o tipo de elemento segundo o arquivo .msh do Gmsh
+        double MeshFormat[3]; 
+        unsigned int numPhyGroups;
+        vector <unsigned int> phyIds;
 };
 
 #endif // MESH_H

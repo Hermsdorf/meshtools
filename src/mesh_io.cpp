@@ -121,6 +121,11 @@ void Mesh::MeshGmshReader(const char* filename)
             if(s.find("$MeshFormat") == 0)
             {
                 in >> version >> format >> size;
+                //----refine test----
+                MeshFormat[0] = version;
+                MeshFormat[1] = format;
+                MeshFormat[2] = size;
+                //------------------
 
                 if(version != 2.2)
                 {  
@@ -148,6 +153,9 @@ void Mesh::MeshGmshReader(const char* filename)
                 // Read in the number of physical groups to expect in the file.
                 unsigned int num_physical_groups = 0;
                 in >> num_physical_groups;
+                //----refine test----
+                numPhyGroups = num_physical_groups;
+                //-------------------
                 
                 std::string phy_name;
                 for (unsigned int i=0; i<num_physical_groups; ++i)
@@ -156,7 +164,11 @@ void Mesh::MeshGmshReader(const char* filename)
 
                     in >> phy_dim >> phy_id >> phy_name;
 
-                    this->physical_map[phy_id] = std::make_pair(phy_dim, phy_name);
+                    ////----refine test----
+                    phyIds.emplace_back(phy_id);
+                    //---------------------
+
+                    this->physical_map[phy_id] = std::make_pair(phy_dim, phy_name); //Como eu recupero o par se não tenho onde recuperar o valor chave?
                 }
             }
             else if(s.find("$Nodes") == 0) 
@@ -283,6 +295,9 @@ void Mesh::MeshGmshReader(const char* filename)
                         std::cout << id << "  " << type << "  " << ntags << " ";
 #endif
 
+                        //----refine test----
+                        gmshEleType.emplace_back(type);
+                        //-------------------
                         this->type[i] = GmshToVTKType(type);
 
                         nnodes   = getGmshElemNNodes(type);
