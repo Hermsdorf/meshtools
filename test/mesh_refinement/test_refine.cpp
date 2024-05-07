@@ -55,7 +55,7 @@
 int Tri3Edge[3][2] = {{0, 1}, {1, 2}, {2, 0}};
 int Quad4Edge[4][2] = {{0, 1}, {1, 2}, {2, 3}, {3, 0}};
 int Tetra6Edge[6][2] = {{0, 1}, {0, 3}, {1, 2}, {1, 3}, {2, 0}, {2, 3}};
-int Hexa8Edge[12][2] = {{0, 1}, {1, 2}, {2, 3}, {3, 0}, {4, 5}, {5, 6}, {6, 7}, {7, 4}, {0, 4}, {1, 5}, {2, 6}, {3, 7}};
+int Hexa12Edge[12][2] = {{0, 1}, {1, 2}, {2, 3}, {3, 0}, {4, 5}, {5, 6}, {6, 7}, {7, 4}, {0, 4}, {1, 5}, {2, 6}, {3, 7}};
 
 // Refine Elements templates
 int RefineLine [2][2] = {{0,1}, {1,2}};
@@ -205,6 +205,104 @@ void Mesh::GetEdges()
       }
     }
   }
+
+  if(dim == 3)
+  {
+    for(int i = 0; i < n_face_elements; i++)
+    {
+      if (gmshEleType[i] == TRIANGLE)
+      {
+        vector<unsigned int> conn;
+        unsigned long key;
+        get_surface_element_connectivity(i, conn); 
+
+        for (int j = 0; j < 3; j++)
+        {
+          unsigned int nl1 = Tri3Edge[j][0];
+          unsigned int nl2 = Tri3Edge[j][1];
+
+          unsigned int ng1 = conn[nl1];
+          unsigned int ng2 = conn[nl2];
+
+          Edge e(ng1, ng2);
+          key = EdgeKey(e.v1, e.v2);
+          if (EdgeMap.find(key) == EdgeMap.end())
+          {
+            EdgeMap[key] = e;
+          }
+        }
+      }
+
+      if (gmshEleType[i] == QUADRANGLE)
+      {
+        vector<unsigned int> conn;
+        unsigned long key;
+        get_surface_element_connectivity(i, conn);
+        for (int j = 0; j < 4; j++)
+        {
+          unsigned int nl1 = Quad4Edge[j][0];
+          unsigned int nl2 = Quad4Edge[j][1];
+
+          unsigned int ng1 = conn[nl1];
+          unsigned int ng2 = conn[nl2];
+
+          key = EdgeKey(ng1, ng2);
+          if (EdgeMap.find(key) == EdgeMap.end())
+          {
+            Edge e(ng1, ng2);
+            EdgeMap[key] = e;
+          }
+        }
+      }
+    }
+
+    for(int i = 0; i< n_elements; i++)
+    {
+      if(gmshEleType[i + n_face_elements] == TETRAHEDRON)
+      {
+        vector<unsigned int> conn;
+        unsigned long key;
+        get_element_connectivity(i,conn);
+        for(int j = 0; j < 6; j++)
+        {
+          unsigned int nl1 = Tetra6Edge[j][0];
+          unsigned int nl2 = Tetra6Edge[j][1];
+
+          unsigned int ng1 = conn[nl1];
+          unsigned int ng2 = conn[nl2];
+
+          key = EdgeKey(ng1, ng2);
+          if (EdgeMap.find(key) == EdgeMap.end())
+          {
+            Edge e(ng1, ng2);
+            EdgeMap[key] = e;
+          }
+        }
+      }
+
+      if(gmshEleType[i + n_face_elements] == HEXAHEDRON)
+      {
+        vector<unsigned int> conn;
+        unsigned long key;
+        get_element_connectivity(i,conn);
+        for(int j = 0; j < 12; j++)
+        {
+          unsigned int nl1 = Hexa12Edge[j][0];
+          unsigned int nl2 = Hexa12Edge[j][1];
+
+          unsigned int ng1 = conn[nl1];
+          unsigned int ng2 = conn[nl2];
+
+          key = EdgeKey(ng1, ng2);
+          if (EdgeMap.find(key) == EdgeMap.end())
+          {
+            Edge e(ng1, ng2);
+            EdgeMap[key] = e;
+          }
+        }
+      }
+    }
+  }
 }
 
 void Mesh::refine(int n_refinaments)
@@ -252,7 +350,7 @@ void Mesh::refine(int n_refinaments)
             unsigned int idx = j * 3;
             new_element_type.emplace_back(type[i]);
             new_GmshElement_type.emplace_back(gmshEleType[i + n_face_elements]);
-            new_element_physical_tag.emplace_back(physical_tag[i]);
+            new_element_physical_tag.emplace_back(physical_tag[i + n_face_elements]);
             new_conn.emplace_back(new_elements_conn[idx + 0]);
             new_conn.emplace_back(new_elements_conn[idx + 1]);
             new_conn.emplace_back(new_elements_conn[idx + 2]);
@@ -269,7 +367,7 @@ void Mesh::refine(int n_refinaments)
             unsigned int idx = j * 4;
             new_element_type.emplace_back(type[i]);
             new_GmshElement_type.emplace_back(gmshEleType[i + n_face_elements]);
-            new_element_physical_tag.emplace_back(physical_tag[i]);
+            new_element_physical_tag.emplace_back(physical_tag[i + n_face_elements]);
             new_conn.emplace_back(new_elements_conn[idx + 0]);
             new_conn.emplace_back(new_elements_conn[idx + 1]);
             new_conn.emplace_back(new_elements_conn[idx + 2]);
@@ -278,6 +376,73 @@ void Mesh::refine(int n_refinaments)
           new_n_elements += 4;
         }
       }
+    }
+
+    //----------------------------------------
+
+    if(dim == 3)
+    {
+      for (int i = 0; i < n_face_elements; i++)
+      {
+        if (gmshEleType[i] == TRIANGLE)
+        {
+          vector<unsigned int> new_elements_conn = TRIANGLE_refine(i, dim);
+          for (int j = 0; j < 4; j++)
+          {
+            new_offset.emplace_back(new_conn.size());
+            unsigned int idx = j * 3;
+            new_element_type.emplace_back(type[i]);
+            new_GmshElement_type.emplace_back(gmshEleType[i]);
+            new_element_physical_tag.emplace_back(physical_tag[i]);
+            new_conn.emplace_back(new_elements_conn[idx + 0]);
+            new_conn.emplace_back(new_elements_conn[idx + 1]);
+            new_conn.emplace_back(new_elements_conn[idx + 2]);
+          }
+          new_n_surface_elements += 4;
+        }
+
+        if (gmshEleType[i] == QUADRANGLE)
+        {
+          cout << "Entrou no quadrado"<<endl;//log
+          vector<unsigned int> new_elements_conn = QUADRANGLE_refine(i, dim);
+          for (int j = 0; j < 4; j++)
+          {
+            new_offset.emplace_back(new_conn.size());
+            unsigned int idx = j * 4;
+            new_element_type.emplace_back(type[i]);
+            new_GmshElement_type.emplace_back(gmshEleType[i]);
+            new_element_physical_tag.emplace_back(physical_tag[i]);
+            new_conn.emplace_back(new_elements_conn[idx + 0]);
+            new_conn.emplace_back(new_elements_conn[idx + 1]);
+            new_conn.emplace_back(new_elements_conn[idx + 2]);
+            new_conn.emplace_back(new_elements_conn[idx + 3]);
+          }
+          new_n_surface_elements += 4;
+        }
+      }
+
+      for(int i = 0; i < n_elements; i++)
+      {
+        if(gmshEleType[i + n_face_elements] == TETRAHEDRON)
+        {
+          vector<unsigned int> new_elements_conn = TETRAHEDRON_refine(i, dim);
+          for (int j = 0; j < 8; j++)
+          {
+            new_offset.emplace_back(new_conn.size());
+            unsigned int idx = j * 4;
+            new_element_type.emplace_back(type[i]);
+            new_GmshElement_type.emplace_back(gmshEleType[i + n_face_elements]);
+            new_element_physical_tag.emplace_back(physical_tag[i + n_face_elements]);
+            new_conn.emplace_back(new_elements_conn[idx + 0]);
+            new_conn.emplace_back(new_elements_conn[idx + 1]);
+            new_conn.emplace_back(new_elements_conn[idx + 2]);
+            new_conn.emplace_back(new_elements_conn[idx + 3]);
+          }
+          new_n_elements += 8;
+        }
+
+      }
+
     }
     new_offset.emplace_back(new_conn.size());
   }
@@ -392,18 +557,18 @@ vector<unsigned int> Mesh::QUADRANGLE_refine(unsigned int element_id, unsigned i
   vector<Point> points;
   unsigned long NewVertexId[9];
 
-  if (dim == 2)
+  if (dim == 3)
   {
     get_surface_element_connectivity(element_id, conn);
     get_surface_element_coordinates(element_id, points);
   }
-  if (dim == 3)
+  if (dim == 2)
   {
     get_element_connectivity(element_id, conn);
     get_element_coordinates(element_id, points);
   }
 
-  for (int i = 0; i < 3; i++)
+  for (int i = 0; i < 4; i++)
   {
     unsigned int nl1 = Quad4Edge[i][0];
     unsigned int nl2 = Quad4Edge[i][1];
@@ -438,11 +603,11 @@ vector<unsigned int> Mesh::QUADRANGLE_refine(unsigned int element_id, unsigned i
   unsigned long key = QuadKey(ng1, ng2, ng3, ng4);
   if (cpQuadrangle.find(key) == cpQuadrangle.end())
   {
-    n_nodes++;
     Point p = QuadMidPoint(points[0], points[1], points[2], points[3]);
     node_index.push_back(n_nodes);
     cpQuadrangle[key] = n_nodes;
     NewVertexId[8] = n_nodes;
+    n_nodes++;
     for (int i = 0; i < 3; i++)
     {
       coord.push_back(p.operator()(i));
@@ -459,6 +624,58 @@ vector<unsigned int> Mesh::QUADRANGLE_refine(unsigned int element_id, unsigned i
     for (int j = 0; j < 4; j++)
     {
       unsigned int idx = RefineQuadrangle[i][j];
+      new_elements_coon.emplace_back(NewVertexId[idx]);
+    }
+  }
+
+  return new_elements_coon;
+}
+
+vector<unsigned int> Mesh::TETRAHEDRON_refine(unsigned int element_id, unsigned int dim)
+{
+  vector<unsigned int> conn;
+  vector<Point> points;
+  unsigned long NewVertexId[10];
+
+  
+  get_element_connectivity(element_id, conn);
+  get_element_coordinates(element_id, points);
+
+  for(int i = 0; i < 6; i++)
+  {
+    unsigned int nl1 = Tetra6Edge[i][0];
+    unsigned int nl2 = Tetra6Edge[i][1];
+
+    unsigned int ng1 = conn[nl1];
+    unsigned int ng2 = conn[nl2];
+    unsigned long key = EdgeKey(ng1, ng2);
+    NewVertexId[i] = ng1;
+
+    if (EdgeMap[key].divided == false)
+    {
+      Point p = EdgeMidPoint(points[nl1], points[nl2]);
+      EdgeMap[key].divided = true;
+      EdgeMap[key].new_node_id = n_nodes;
+      node_index.push_back(n_nodes);
+      NewVertexId[4 + i] = n_nodes;
+      n_nodes++;
+      for (int i = 0; i < 3; i++)
+      {
+        coord.push_back(p.operator()(i));
+      }
+    }
+    else
+    {
+      NewVertexId[4 + i] = EdgeMap[key].new_node_id;
+    }
+  }
+
+  vector<unsigned int> new_elements_coon;
+  for (int i = 0; i < 8; i++)
+  {
+    for (int j = 0; j < 4; j++)
+    {
+      unsigned int idx = RefineTetrahedron[i][j];
       new_elements_coon.emplace_back(NewVertexId[idx]);
     }
   }
