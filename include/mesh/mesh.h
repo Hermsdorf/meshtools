@@ -322,7 +322,7 @@ class Mesh {
 
         void   gmsh_reader(const char* filename); 
 
-        void   write_vtk(const char* filename, MeshIODataAppended* info = nullptr);
+        void   write_vtk(std::string basename, MeshIODataAppended* info = nullptr);
 
         void   process_face_to_element();
 

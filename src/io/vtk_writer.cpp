@@ -26,7 +26,7 @@ vtkWriter::vtkWriter():is_point_data_open(false), is_cell_data_open(false)
 }
 
 
-void vtkWriter::open(std::string base_file_name)
+bool vtkWriter::open(std::string base_file_name)
 {   
     this->base_name = base_file_name;
 
@@ -38,6 +38,11 @@ void vtkWriter::open(std::string base_file_name)
     std::string pvtu_file = base_name_sufix.str() +".pvtu";
 
     this->fvtu.open(vtu_file);
+    if(!fvtu.is_open())
+    {
+        std::cout << "[vtkWriter]: Error opening file: "<< vtu_file << std::endl;
+        return false;
+    }
     fvtu << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\""<< BinaryBigEndian() <<"\" header_type=\"UInt64\">" << std::endl;
     fvtu << prefix_level(1) <<"<UnstructuredGrid>" << std::endl ;
 
@@ -47,11 +52,15 @@ void vtkWriter::open(std::string base_file_name)
         fvtu << "<VTKFile type=\"PUnstructuredGrid\" version=\"1.0\" byte_order=\""<< BinaryBigEndian() <<"\" header_type=\"UInt64\">" << std::endl;
         fvtu << prefix_level(1) <<"<PUnstructuredGrid>" << std::endl;
     }
+
+    return true;
 }
 
-
-
-
+vtkWriter::~vtkWriter()
+{
+    if(fvtu.is_open()) fvtu.close();
+    if(fpvtu.is_open()) fpvtu.close();
+}
 
 void vtkWriter::write_mesh(Mesh & mesh)
 {

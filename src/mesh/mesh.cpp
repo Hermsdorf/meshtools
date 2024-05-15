@@ -5,6 +5,7 @@
 #include "mesh.h" 
 #include "numeric_vector.h"
 
+#include "vtk_writer.h"
 #include "glvis_writer.h"
 
 
@@ -701,11 +702,11 @@ void Mesh::write_glvis(string filename, MeshIODataAppended* info)
     }
 }
 
-void Mesh::write_vtk(string bansename, MeshIODataAppended* info)
+void Mesh::write_vtk(string basename, MeshIODataAppended* info)
 {
    
     vtkWriter writer;
-    if(writer.open(filename))
+    if(writer.open(basename))
     {
         writer.write_mesh(*this);
         writer.close();

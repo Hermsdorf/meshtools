@@ -18,7 +18,7 @@ class vtkWriter
 
         ~vtkWriter();
 
-        void open(std::string _filename);
+        bool open(std::string _filename);
 
         void write_mesh(Mesh &mesh);
         

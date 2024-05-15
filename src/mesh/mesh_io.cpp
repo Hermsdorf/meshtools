@@ -374,182 +374,183 @@ bool BinaryBigEndian(void)
     return ((char*)&_v)[0] ? false : true;
 }
 
-
-void Mesh::write_vtk(const char* fname, MeshIODataAppended* info )
-{
-    if(MeshTools::processor_id() == 0)
-        std::cout << "Writing VTK ...\n";
+ 
+// void Mesh::write_vtk(const char* fname, MeshIODataAppended* info )
+// {
+//     if(MeshTools::processor_id() == 0)
+//         std::cout << "Writing VTK ...\n";
     
-    std::FILE*         fout;
-    char filename[256];
+//     std::FILE*         fout;
+//     char filename[256];
 
-    unsigned int boffset = 0; /* Offset into binary file */
-    const char *byte_order = BinaryBigEndian() ? "BigEndian" : "LittleEndian";
+//     unsigned int boffset = 0; /* Offset into binary file */
+//     const char *byte_order = BinaryBigEndian() ? "BigEndian" : "LittleEndian";
 
-    int timestep = info->getTimeStep();
+//     int timestep = info->getTimeStep();
 
-    if (timestep != -1)
-        sprintf(filename,"%s_%d_%d_%04d.vtu",fname,MeshTools::n_processors(),MeshTools::processor_id(), timestep);
-    else
-        sprintf(filename,"%s_%d_%d.vtu",fname,MeshTools::n_processors(),MeshTools::processor_id());
+//     if (timestep != -1)
+//         sprintf(filename,"%s_%d_%d_%04d.vtu",fname,MeshTools::n_processors(),MeshTools::processor_id(), timestep);
+//     else
+//         sprintf(filename,"%s_%d_%d.vtu",fname,MeshTools::n_processors(),MeshTools::processor_id());
     
-    fout = fopen(filename, "wb");
+//     fout = fopen(filename, "wb");
 
-    if(fout)
-    {
+//     if(fout)
+//     {
 
-        // Writting header info
-        fprintf(fout, "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"%s\" header_type=\"UInt64\">\n", byte_order);
-        fprintf(fout, " <UnstructuredGrid>\n");
-        fprintf(fout, "  <Piece NumberOfPoints=\"%d\" NumberOfCells=\"%d\">\n", this->n_nodes, this->n_elements);
-
-
-        // writing mesh info
-        fprintf(fout, "   <Points>\n");
-        fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Float64","Points",3, boffset);
-        boffset += 3*this->n_nodes*sizeof(double) + sizeof(unsigned long);
-
-        fprintf(fout, "   </Points>\n") ;
-        fprintf(fout, "   <Cells>\n");
-
-        fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","connectivity",1, boffset);
-        int ofs = this->offset[this->n_face_elements];
-        int sz  = this->conn.size() - ofs;
-        boffset += sz*sizeof(int) + sizeof(unsigned long);
+//         // Writting header info
+//         fprintf(fout, "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"%s\" header_type=\"UInt64\">\n", byte_order);
+//         fprintf(fout, " <UnstructuredGrid>\n");
+//         fprintf(fout, "  <Piece NumberOfPoints=\"%d\" NumberOfCells=\"%d\">\n", this->n_nodes, this->n_elements);
 
 
-        fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","offsets",1, boffset);
-        sz       = this->offset.size() - (this->n_face_elements + 1);
-        boffset += sz*sizeof(int) + sizeof(unsigned long);
+//         // writing mesh info
+//         fprintf(fout, "   <Points>\n");
+//         fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Float64","Points",3, boffset);
+//         boffset += 3*this->n_nodes*sizeof(double) + sizeof(unsigned long);
 
-        fprintf(fout,"        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","UInt16","types",1, boffset);
-        boffset += this->n_elements*sizeof(unsigned short) + sizeof(unsigned long);
-        fprintf(fout, "   </Cells>\n");
-        fprintf(fout, "   <PointData>\n");
-        fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","UInt32", "node-id",1,boffset);
-        boffset += this->n_nodes*sizeof(unsigned int) + sizeof(unsigned long);
-        if(info != nullptr)
-        {
-            auto& point_data = info->getPointDataInfo();
-            if( point_data.size() != 0)
-            {
-                // Writting nodal attribute data
-                for(int i= 0; i < point_data.size(); ++i)
-                {
-                   fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n",MeshDataTypeSTR[point_data[i].type].c_str(), point_data[i].name.c_str(),1,boffset);
-                   boffset += this->n_nodes*get_mesh_type_size(point_data[i].type) + sizeof(unsigned long);
-                }
+//         fprintf(fout, "   </Points>\n") ;
+//         fprintf(fout, "   <Cells>\n");
+
+//         fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","connectivity",1, boffset);
+//         int ofs = this->offset[this->n_face_elements];
+//         int sz  = this->conn.size() - ofs;
+//         boffset += sz*sizeof(int) + sizeof(unsigned long);
+
+
+//         fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","Int32","offsets",1, boffset);
+//         sz       = this->offset.size() - (this->n_face_elements + 1);
+//         boffset += sz*sizeof(int) + sizeof(unsigned long);
+
+//         fprintf(fout,"        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","UInt16","types",1, boffset);
+//         boffset += this->n_elements*sizeof(unsigned short) + sizeof(unsigned long);
+//         fprintf(fout, "   </Cells>\n");
+//         fprintf(fout, "   <PointData>\n");
+//         fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","UInt32", "node-id",1,boffset);
+//         boffset += this->n_nodes*sizeof(unsigned int) + sizeof(unsigned long);
+//         if(info != nullptr)
+//         {
+//             auto& point_data = info->getPointDataInfo();
+//             if( point_data.size() != 0)
+//             {
+//                 // Writting nodal attribute data
+//                 for(int i= 0; i < point_data.size(); ++i)
+//                 {
+//                    fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n",MeshDataTypeSTR[point_data[i].type].c_str(), point_data[i].name.c_str(),1,boffset);
+//                    boffset += this->n_nodes*get_mesh_type_size(point_data[i].type) + sizeof(unsigned long);
+//                 }
                 
-            }
-        }
-        fprintf(fout, "   </PointData>\n");
-        fprintf(fout, "   <CellData>\n");
-        fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","UInt32", "tag-id",1,boffset);
-        boffset += this->n_elements*sizeof(unsigned int) + sizeof(unsigned long);
-        if(info != nullptr)
-        {
-            auto& cell_data = info->getCellDataInfo();
-            if( cell_data.size() != 0)
-            {
-                // Writting nodal attribute data
-                for(int i= 0; i < cell_data.size(); ++i)
-                {
-                   fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n",MeshDataTypeSTR[cell_data[i].type].c_str(),cell_data[i].name.c_str(),1,boffset);
-                   boffset += this->n_elements*get_mesh_type_size(cell_data[i].type) + sizeof(unsigned long);
-                }
+//             }
+//         }
+//         fprintf(fout, "   </PointData>\n");
+//         fprintf(fout, "   <CellData>\n");
+//         fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n","UInt32", "tag-id",1,boffset);
+//         boffset += this->n_elements*sizeof(unsigned int) + sizeof(unsigned long);
+//         if(info != nullptr)
+//         {
+//             auto& cell_data = info->getCellDataInfo();
+//             if( cell_data.size() != 0)
+//             {
+//                 // Writting nodal attribute data
+//                 for(int i= 0; i < cell_data.size(); ++i)
+//                 {
+//                    fprintf(fout, "        <DataArray type=\"%s\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"appended\" offset=\"%d\" />\n",MeshDataTypeSTR[cell_data[i].type].c_str(),cell_data[i].name.c_str(),1,boffset);
+//                    boffset += this->n_elements*get_mesh_type_size(cell_data[i].type) + sizeof(unsigned long);
+//                 }
                
-            }
-        }
-        fprintf(fout, "   </CellData>\n");
-        fprintf(fout, "  </Piece>\n");
-        fprintf(fout, " </UnstructuredGrid>\n");
-        fprintf(fout, "  <AppendedData encoding=\"raw\">\n");
-        fprintf(fout, "_");
+//             }
+//         }
+//         fprintf(fout, "   </CellData>\n");
+//         fprintf(fout, "  </Piece>\n");
+//         fprintf(fout, " </UnstructuredGrid>\n");
+//         fprintf(fout, "  <AppendedData encoding=\"raw\">\n");
+//         fprintf(fout, "_");
 
-        // writting nodes coordinates
-        unsigned long nbytes = sizeof(double)*this->n_nodes*3;
-        fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-        fwrite((void*)&this->coord[0], sizeof(double),this->n_nodes*3,fout);
+//         // writting nodes coordinates
+//         unsigned long nbytes = sizeof(double)*this->n_nodes*3;
+//         fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+//         fwrite((void*)&this->coord[0], sizeof(double),this->n_nodes*3,fout);
         
-        // writting element connectivity
-        int nfe = this->n_face_elements;
-        int ne = this->n_elements;
-        ofs = this->offset[nfe];
+//         // writting element connectivity
+//         int nfe = this->n_face_elements;
+//         int ne = this->n_elements;
+//         ofs = this->offset[nfe];
 
-        nbytes = sizeof(int)*(this->conn.size() - ofs);
-        fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-        fwrite((void*)&this->conn[ofs], sizeof(int),this->conn.size() - ofs,fout);
+//         nbytes = sizeof(int)*(this->conn.size() - ofs);
+//         fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+//         fwrite((void*)&this->conn[ofs], sizeof(int),this->conn.size() - ofs,fout);
 
-        // writting element offsets
-        nbytes = sizeof(int)*(this->offset.size() - (nfe + 1));
-        fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-        for(int i = nfe+1 ; i < this->offset.size() ; i++)
-        {
-            int offset = this->offset[i] - this->offset[nfe];
-            fwrite((void*)&offset, sizeof(int), 1,fout);
-        }
+//         // writting element offsets
+//         nbytes = sizeof(int)*(this->offset.size() - (nfe + 1));
+//         fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+//         for(int i = nfe+1 ; i < this->offset.size() ; i++)
+//         {
+//             int offset = this->offset[i] - this->offset[nfe];
+//             fwrite((void*)&offset, sizeof(int), 1,fout);
+//         }
 
-        // writting types
-        nbytes = sizeof(unsigned short)*(ne);
-        fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-        fwrite((void*)&this->type[nfe], sizeof(unsigned short),ne,fout);
-        // writing node indices
-        nbytes = sizeof(unsigned int)*this->n_nodes;
-        fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
-        fwrite((void*)&this->node_index[0],sizeof(unsigned int),this->n_nodes,fout);
+//         // writting types
+//         nbytes = sizeof(unsigned short)*(ne);
+//         fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+//         fwrite((void*)&this->type[nfe], sizeof(unsigned short),ne,fout);
+//         // writing node indices
+//         nbytes = sizeof(unsigned int)*this->n_nodes;
+//         fwrite((void*)&nbytes, sizeof(unsigned long),1,fout);
+//         fwrite((void*)&this->node_index[0],sizeof(unsigned int),this->n_nodes,fout);
 
-        if(info != nullptr)
-        {
-            auto& point_data = info->getPointDataInfo();
+//         if(info != nullptr)
+//         {
+//             auto& point_data = info->getPointDataInfo();
             
-            if( point_data.size() != 0)
-            {
+//             if( point_data.size() != 0)
+//             {
                 
-                for(int i= 0; i < point_data.size(); ++i)
-                {
-                    nbytes = get_mesh_type_size(point_data[i].type)*this->n_nodes;
-                    fwrite(&nbytes, sizeof(unsigned long),1,fout);
-                    fwrite(point_data[i].data,nbytes,1,fout);
-                }
-            }
-        }
-     //  
-        fwrite((void*)&this->physical_tag[n_face_elements],sizeof(unsigned int),this->n_elements,fout);
-        if(info != nullptr)
-        {
-            auto& cell_data   = info->getCellDataInfo();
-            if( cell_data.size() != 0)
-            {
+//                 for(int i= 0; i < point_data.size(); ++i)
+//                 {
+//                     nbytes = get_mesh_type_size(point_data[i].type)*this->n_nodes;
+//                     fwrite(&nbytes, sizeof(unsigned long),1,fout);
+//                     fwrite(point_data[i].data,nbytes,1,fout);
+//                 }
+//             }
+//         }
+//      //  
+//         fwrite((void*)&this->physical_tag[n_face_elements],sizeof(unsigned int),this->n_elements,fout);
+//         if(info != nullptr)
+//         {
+//             auto& cell_data   = info->getCellDataInfo();
+//             if( cell_data.size() != 0)
+//             {
                 
-                for(int i= 0; i < cell_data.size(); ++i)
-                {
-                    // int max = 0;
-                    // int min = n_elements;
+//                 for(int i= 0; i < cell_data.size(); ++i)
+//                 {
+//                     // int max = 0;
+//                     // int min = n_elements;
 
-                    nbytes = get_mesh_type_size(cell_data[i].type)*this->n_elements;
-                    fwrite(&nbytes, sizeof(unsigned long),1,fout);
-                    fwrite(cell_data[i].data,nbytes,1,fout);
+//                     nbytes = get_mesh_type_size(cell_data[i].type)*this->n_elements;
+//                     fwrite(&nbytes, sizeof(unsigned long),1,fout);
+//                     fwrite(cell_data[i].data,nbytes,1,fout);
 
-                    // if(cell_data[i].name == "partition_elem") 
-                    // {
-                    //     int  *data = (int*)cell_data[i].data;
-                    //     for(int j = 0; j < n_elements;j++)
-                    //     {
-                    //         std::cout << "data[" << j << "] = " << data[j] << std::endl;
-                    //     }
-                    // }
-                }
-            }
-        }
+//                     // if(cell_data[i].name == "partition_elem") 
+//                     // {
+//                     //     int  *data = (int*)cell_data[i].data;
+//                     //     for(int j = 0; j < n_elements;j++)
+//                     //     {
+//                     //         std::cout << "data[" << j << "] = " << data[j] << std::endl;
+//                     //     }
+//                     // }
+//                 }
+//             }
+//         }
     
-        fprintf(fout,"\n </AppendedData>\n");
-        fprintf(fout,"</VTKFile>");
-        fclose(fout);
+//         fprintf(fout,"\n </AppendedData>\n");
+//         fprintf(fout,"</VTKFile>");
+//         fclose(fout);
 
-        if(MeshTools::processor_id() == 0)
-            std::cout << "Writing completed successfully\n";
-    }
-}
+//         if(MeshTools::processor_id() == 0)
+//             std::cout << "Writing completed successfully\n";
+//     }
+// }
+// 
 
 // void Mesh::WriteMTS(const char *fname)
 // {
