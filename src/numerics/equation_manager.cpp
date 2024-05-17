@@ -62,7 +62,7 @@ void EquationManager::local_indices(int id_dof, std::vector<unsigned int>& conn,
 
 }
 
-void EquationManager::equation_indices(int id_dof, int conn_size, const unsigned int *conn_local, int *global_equation)
+void EquationManager::equation_indices(int id_dof, std::vector<unsigned int> &conn, std::vector<unsigned int> & global_equation)
 {
     std::vector<int> dof_required;
 
@@ -79,9 +79,9 @@ void EquationManager::equation_indices(int id_dof, int conn_size, const unsigned
         dof_required[0] = id_dof;
     }
     
-    for(int i = 0 ; i < conn_size ; i++)
+    for(int i = 0 ; i < conn.size() ; i++)
     {
-        unsigned int node_id = conn_local[i];
+        unsigned int node_id = conn[i];
         
         for(int j = 0 ; j < dof_required.size(); j++)
         {
@@ -106,9 +106,9 @@ void EquationManager::prepare_to_use()
 
     //* 1. Defining nodes with boundary conditions
     int n_nodes                      = _mesh.get_n_nodes();
-    int n_boundary_elements          = _mesh.get_n_face_elements();
-    std::vector<unsigned int> &  l2g = _mesh.getNodeIndexes();
-    std::vector<int> &tags           = _mesh.getPhysicalTag();
+    int n_boundary_elements          = _mesh.get_n_surface_elements();
+    std::vector<unsigned int> &  l2g = _mesh.get_node_index_vector();
+    std::vector<int> &tags           = _mesh.get_element_physical_tag_vector();
 
     _equation_indices.resize(n_nodes*_ndof);
     _boundary_nodes_map.resize(_boundaries.size());
@@ -127,9 +127,9 @@ void EquationManager::prepare_to_use()
         {
             if(tags[iel] == boundary_id)
             {
-                unsigned int connsize = _mesh.getSurfaceElementConnSize(iel);
-                unsigned int *conn    = _mesh.getSurfaceElementConn(iel);
-                for(int ino = 0; ino < connsize; ++ino)
+                std::vector<unsigned int> conn;
+                _mesh.get_surface_element_connectivity(iel, conn);
+                for(int ino = 0; ino < conn.size(); ++ino)
                     boundary_nodes.insert(conn[ino]);
             }
         }
@@ -159,7 +159,7 @@ void EquationManager::prepare_to_use()
     }
 
     this->_first_global_equation_index =  _mesh.get_start_global_index()*_ndof;
-    this->_n_local_equations = _mesh.get_n_local_nodes()*_ndof;
+    this->_n_local_equations           = _mesh.get_n_local_nodes()*_ndof;
     
     
     /*
@@ -331,13 +331,16 @@ void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::
     // Getting the d_nnz e o_nnz vector needed to matrix preallocation
     for (int iel = 0; iel < _mesh.get_n_elements(); ++iel)
     {
-        int         connsz = _mesh.getElementConnSize(iel);
-        const unsigned int *conn = _mesh.getElementConn(iel);
-
+        std::vector<unsigned int> conn;
+        _mesh.get_element_connectivity(iel, conn);
+        int         connsz = conn.size();
+        
         int n_equations = connsz*_ndof;
-        int* global_equations = new int[n_equations];
+
+        std::vector<unsigned int> global_equations(n_equations);
+
         // stores global equation numbering for each node of the element in equations variable
-        equation_indices(-1, connsz, conn, global_equations);
+        equation_indices(-1, conn, global_equations);
 
         for(int i = 0; i < n_equations; i++)
         {
@@ -361,8 +364,6 @@ void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::
                 }
              }
         }
-
-        delete [] global_equations;
     }
 
     for(int i = 0; i < _n_local_equations; i++)

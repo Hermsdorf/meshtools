@@ -12,8 +12,8 @@ int main(int argc, char* argv[])
     mesh.read(std::string(MESHTOOLS_SOURCE_DIR)+"/test/io/ascii/tri3.msh");
 
     mesh.write_glvis("tri3.mesh");
-
-    GmshIO::write("out_tri3.msh", mesh);
+    
+    mesh.write_vtk("tri3");
 
     MeshTools::Finalize();
 }

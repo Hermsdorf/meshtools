@@ -3,6 +3,8 @@
 #include "meshtools.h"
 #include "transient_implicit_system.h"
 
+#include "vtk_writer.h"
+
 /**
  * Constructor
  * 
@@ -219,11 +221,12 @@ void TransientImplicitSystem::apply_initial_conditions()
     
     for(int iel=0; iel < this->_mesh.get_n_elements(); iel++)
     {
-        auto *conn  = this->_mesh.getElementConn(iel);
-        auto  connsz = _mesh.getElementConnSize(iel);
+        std::vector<unsigned int> conn;
+        _mesh.get_element_connectivity(iel, conn);
+        auto  connsz = conn.size();
         for(int i=0; i < _initial_conditions.size(); i++)
         {
-            if(_initial_conditions[i].get_region_id() == _mesh.getElementTag(iel))
+            if(_initial_conditions[i].get_region_id() == _mesh.get_element_physical_tag(iel))
             {
                 for(int j=0; j < connsz; j++)
                 {
@@ -233,7 +236,7 @@ void TransientImplicitSystem::apply_initial_conditions()
         }
     }
 
-    auto coords = _mesh.getCoord();
+    auto &coords = _mesh.get_coordinate_vector();
     auto *solution = this->get_local_solution_array();
 
     for(int i=0; i < _initial_conditions.size(); i++)
@@ -283,23 +286,29 @@ void TransientImplicitSystem::attach_init_function(void _init(TransientImplicitS
 void TransientImplicitSystem::write_result(string filename)
 {
     auto n_nodes = _mesh.get_n_nodes();
+
+     vtkWriter output;
+     output.open(filename, _n_write++);
+     output.write_mesh(_mesh);
+     output.start_point_data_section();
     
     std::vector<double> solution(n_nodes*_n_dof);
     unsigned int offset  = 0;
     double *solution_ptr = get_local_solution_array();
-    MeshIODataAppended info;
+    //MeshIODataAppended info;
     for(int i = 0; i < _n_dof; i++)
     {
         for(int ino = 0; ino < n_nodes; ino++)
             solution[ino+offset] = solution_ptr[ino*_n_dof + i];
 
         std::string var = this->_variables_names[0];
-        info.addPointDataInfo(var.c_str(), Float64, &solution[offset]);
-        offset += n_nodes;
+        //info.addPointDataInfo(var.c_str(), Float64, &solution[offset]);
+        //offset += n_nodes;
+        output.write_point_data<double>(&solution[0], n_nodes, var);
     }
-    info.addTimeDataInfo(this->get_time(), _n_write++);
-    
-    this->_mesh.writePVTK(filename.c_str(), &info);
+
+    output.close_point_data_section();
+    output.close();
 
     restore_local_solution_array(&solution_ptr);
 }

@@ -249,7 +249,7 @@ double ImplicitSystem::get_linear_final_residual()
 */
 double ImplicitSystem::compute_error_from_exact_solution( int idof, double(*func_exac)(double x,double y, double z, double t) )
 {
-    auto coords  = this->_mesh.getCoord();
+    auto &coords  = this->_mesh.get_coordinate_vector();
     auto eqIndex = this->_equations.get_equation_indices();
     int start, end;
 
@@ -427,8 +427,8 @@ void ImplicitSystem::print_rhs()
 void ImplicitSystem::apply_dirichlet_boundary_conditions()
 {
 
-    std::vector<unsigned int>& node_ids = _mesh.getNodeIndexes();
-    auto coords = _mesh.getCoord();
+    auto          & node_ids = _mesh.get_node_index_vector();
+    auto          & coords = _mesh.get_coordinate_vector();
 
     int nbc = this->_equations.get_number_of_dirichlet_boundaries();
     for(int ibc = 0; ibc < nbc; ibc++)
@@ -479,7 +479,7 @@ void ImplicitSystem::write_result(string filename)
         info.addPointDataInfo(var.c_str(), Float64, &solution[offset]);
         offset += n_nodes;
     }
-    this->_mesh.writePVTK(filename.c_str(), &info);
+    //this->_mesh.write(filename.c_str(), &info);
     restore_local_solution_array(&solution_ptr);
 }
 

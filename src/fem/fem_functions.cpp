@@ -86,7 +86,7 @@ the reference coordinate system:  (x, y) -> (xi, eta)
 
 */
 
-FEMFunction::FEMFunction() { }
+FEMFunction::FEMFunction(ParallelMesh& mesh):_mesh(mesh) { }
 
 void FEMFunction::ComputeFunction(Element& elem, QGaussData qp)
 {

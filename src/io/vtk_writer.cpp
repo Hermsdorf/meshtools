@@ -26,14 +26,16 @@ vtkWriter::vtkWriter():is_point_data_open(false), is_cell_data_open(false)
 }
 
 
-bool vtkWriter::open(std::string base_file_name)
+bool vtkWriter::open(std::string base_file_name, unsigned int file_number)
 {   
-    this->base_name = base_file_name;
+    this->base_name   = base_file_name;
+    this->file_number = file_number;
 
     stringstream base_name_sufix;
-    base_name_sufix << base_file_name 
+    base_name_sufix << base_file_name << "_"
                     << std::setw(4) << std::setfill('0') << MeshTools::n_processors() << "_"
-                    << std::setw(4) << std::setfill('0') << MeshTools::processor_id();
+                    << std::setw(4) << std::setfill('0') << MeshTools::processor_id() << "_"
+                    << std::setw(4) << std::setfill('0') << file_number;
     std::string vtu_file  = base_name_sufix.str() +".vtu";
     std::string pvtu_file = base_name_sufix.str() +".pvtu";
 
@@ -46,12 +48,17 @@ bool vtkWriter::open(std::string base_file_name)
     fvtu << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\""<< BinaryBigEndian() <<"\" header_type=\"UInt64\">" << std::endl;
     fvtu << prefix_level(1) <<"<UnstructuredGrid>" << std::endl ;
 
+    fvtu << std::flush;
+
     if(MeshTools::processor_id() == 0)
     {
         this->fpvtu.open(pvtu_file);
-        fvtu << "<VTKFile type=\"PUnstructuredGrid\" version=\"1.0\" byte_order=\""<< BinaryBigEndian() <<"\" header_type=\"UInt64\">" << std::endl;
-        fvtu << prefix_level(1) <<"<PUnstructuredGrid>" << std::endl;
+        fpvtu << "<VTKFile type=\"PUnstructuredGrid\" version=\"1.0\" byte_order=\""<< BinaryBigEndian() <<"\" header_type=\"UInt64\">" << std::endl;
+        fpvtu << prefix_level(1) <<"<PUnstructuredGrid>" << std::endl;
+        fpvtu << std::flush;
     }
+
+
 
     return true;
 }
@@ -65,7 +72,8 @@ vtkWriter::~vtkWriter()
 void vtkWriter::write_mesh(Mesh & mesh)
 {
 
-    fvtu << prefix_level(2) << "<Piece NumberOfPoints=\""<<mesh.get_n_nodes()<<"\" NumberOfCells=\"" << mesh.get_n_elements() <<"\">" << std::endl;
+    fvtu << std::setprecision(16);
+    fvtu << prefix_level(2) << "<Piece NumberOfPoints=\""<<mesh.get_n_nodes()<<"\" NumberOfCells=\"" << mesh.get_n_elements() + mesh.get_n_surface_elements() <<"\">" << std::endl;
     fvtu << prefix_level(3) << "<Points>" << std::endl;
     write_data_item<double>(mesh.get_coordinate_vector().data(),mesh.get_coordinate_vector().size(),"Points", prefix_level(4),3);
     fvtu << prefix_level(3) << "</Points>" << std::endl;
@@ -78,7 +86,7 @@ void vtkWriter::write_mesh(Mesh & mesh)
     if(MeshTools::processor_id()==0)
     {
         fpvtu << prefix_level(2) <<"<PPoints>" << std::endl;
-        fpvtu << prefix_level(3) <<"<PDataArray type=\"Float64\" Name = \"Pointa\" NumberOfComponents=\"3\"/>" << std::endl;
+        fpvtu << prefix_level(3) <<"<PDataArray type=\"Float64\" Name = \"Points\" NumberOfComponents=\"3\"/>" << std::endl;
         fpvtu << prefix_level(2) <<"</PPoints>" << std::endl;
         fpvtu << prefix_level(2) <<"<PCells>" <<std::endl;
         fpvtu << prefix_level(3) <<"<PDataArray type=\"" << get_vtk_type_name<unsigned int>()   <<"\" Name=\"connectivity\"/>" << std::endl;
@@ -94,32 +102,32 @@ void vtkWriter::start_point_data_section()
     this->is_point_data_open = true;
     fvtu <<  prefix_level(3) <<"<PointData>"<< std::endl ;
     if(MeshTools::processor_id()==0)
-       fvtu <<  prefix_level(3) <<"<PPointData>"<< std::endl;
+       fpvtu <<  prefix_level(3) <<"<PPointData>"<< std::endl;
 }
 
-template <typename T>
-void vtkWriter::write_point_data(T* data, size_t size, std::string name, int ncomp)
-{
-    if(!is_point_data_open)
-    {
-        std::cout << "[vtkWriter]: Impossivel write dataset: "<< name<< std::endl;
-        return;
-    }
-    write_data_item<T>(data,size,name,prefix_level(4), ncomp);
+// template <typename T>
+// void vtkWriter::write_point_data(T* data, size_t size, std::string name, int ncomp)
+// {
+//     if(!is_point_data_open)
+//     {
+//         std::cout << "[vtkWriter]: Impossivel write dataset: "<< name<< std::endl;
+//         return;
+//     }
+//     write_data_item<T>(data,size,name,prefix_level(4), ncomp);
 
-    if(MeshTools::processor_id() == 0)
-    {
-        fpvtu << prefix_level(4) <<"<PDataArray type=\"" << get_vtk_type_name<T>()   <<"\" Name=\""<< name <<"\"/>" << std::endl;
-    }
+//     if(MeshTools::processor_id() == 0)
+//     {
+//         fpvtu << prefix_level(4) <<"<PDataArray type=\"" << get_vtk_type_name<T>()   <<"\" Name=\""<< name <<"\"/>" << std::endl;
+//     }
 
-}
+// }
 
 void vtkWriter::close_point_data_section()
 {
     this->is_point_data_open = false;
     fvtu <<  prefix_level(3) <<"</PointData>"<<std::endl;
     if(MeshTools::processor_id()==0)
-       fvtu <<  prefix_level(3) <<"</PPointData>"<<std::endl;
+       fpvtu <<  prefix_level(3) <<"</PPointData>"<<std::endl;
 }
 
 void vtkWriter::start_cell_data_section()
@@ -127,37 +135,22 @@ void vtkWriter::start_cell_data_section()
     this->is_cell_data_open = true;
     fvtu <<  prefix_level(3)    <<"<CellData>"   <<std::endl;
     if(MeshTools::processor_id()==0)
-       fvtu <<  prefix_level(3) <<"<PCellData>"  <<std::endl;
+       fpvtu <<  prefix_level(3) <<"<PCellData>"  <<std::endl;
 }
 
-template <typename T>
-void vtkWriter::write_cell_data(T* data, size_t size, std::string name, int ncomp)
-{
-    if(!is_cell_data_open)
-    {
-        std::cout << "[vtkWriter]: Impossible write dataset: "<<name<< std::endl;
-        return;
-    }
-    write_data_item<T>(data,size,name,prefix_level(4),ncomp);
-
-    if(MeshTools::processor_id() == 0)
-    {
-        fpvtu << prefix_level(4) <<"<PDataArray type=\"" << get_vtk_type_name<T>()   <<"\" Name=\""<< name <<"\"/>" << std::endl;
-    }
-}
 
 void vtkWriter::close_cell_data_section()
 {
     this->is_cell_data_open = false;
     fvtu <<  prefix_level(3) <<"</CellData>"<< std::endl;
     if(MeshTools::processor_id()==0)
-       fvtu <<  prefix_level(3) <<"</PCellData>"<<std::endl;
+       fpvtu <<  prefix_level(3) <<"</PCellData>"<<std::endl;
 }
 
 void vtkWriter::close()
 {
     
-    fvtu << prefix_level(1)<<"</UnstructuredGrid>\n" << std::endl;
+    fvtu << prefix_level(1)<<"</UnstructuredGrid>" << std::endl;
     fvtu << "</VTKFile>" << std::endl;
     fvtu.close();
     
@@ -167,13 +160,14 @@ void vtkWriter::close()
         {
             
             stringstream base_name_sufix;
-            base_name_sufix << base_name 
+            base_name_sufix << base_name << "_"
                             << std::setw(4) << std::setfill('0') << MeshTools::n_processors() << "_"
-                            << std::setw(4) << std::setfill('0') << MeshTools::processor_id();
+                            << std::setw(4) << std::setfill('0') << MeshTools::processor_id() << "_"
+                            << std::setw(4) << std::setfill('0') << file_number;
             std::string vtu_file  = base_name_sufix.str() +".vtu";
 
             fpvtu <<  prefix_level(2) << "<Piece Source=\""<< vtu_file << "\" \\> " << std::endl;
-            fpvtu  << prefix_level(1) << "</PUnstructuredGrid>\n" << std::endl;
+            fpvtu  << prefix_level(1) << "</PUnstructuredGrid>" << std::endl;
             fpvtu << "</VTKFile>"     << endl;
         }
         fpvtu.close();

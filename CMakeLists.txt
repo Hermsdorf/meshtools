@@ -106,7 +106,10 @@ include_directories(${MESHTOOLS_DEP_INCLUDE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/include/base)
 include_directories(${CMAKE_SOURCE_DIR}/include/mesh)
 include_directories(${CMAKE_SOURCE_DIR}/include/io)
+include_directories(${CMAKE_SOURCE_DIR}/include/numerics)
+
 include_directories(${CMAKE_SOURCE_DIR}/contrib/fparser)
+
 
 configure_file(${CMAKE_SOURCE_DIR}/config/meshtools_config.h.in ${CMAKE_SOURCE_DIR}/include/base/meshtools_config.h @ONLY)
 
@@ -136,8 +139,14 @@ file(GLOB io_files
     "include/io/*.hpp"
     "src/io/*.cpp"
 )
+
+file(GLOB numerics_files
+    "include/numerics/*.h"
+    "include/numerics/*.hpp"
+    "src/numerics/*.cpp"
+)
     
-add_library(meshtoolslib SHARED ${base_files} ${mesh_files} ${io_files})
+add_library(meshtoolslib SHARED ${base_files} ${mesh_files} ${io_files} ${numerics_files})
 
 target_link_libraries(meshtoolslib fparser ${MESHTOOLS_DEP_LIBS})
 

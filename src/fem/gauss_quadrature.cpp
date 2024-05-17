@@ -1,5 +1,5 @@
 
-#include "qgauss.h"
+#include "gauss_quadrature.h"
 
 
 QGauss::QGauss():order(1),npoints(1)

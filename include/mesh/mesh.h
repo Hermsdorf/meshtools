@@ -316,13 +316,15 @@ class Mesh {
 
         std::vector<unsigned int>&   get_node_index_vector();  
 
+        void   write_vtk(std::string basename);
+
     protected:
 
         // void   extract_boundary_nodes(std::vector<unsigned int>& nodes);
 
         void   gmsh_reader(const char* filename); 
 
-        void   write_vtk(std::string basename, MeshIODataAppended* info = nullptr);
+
 
         void   process_face_to_element();
 

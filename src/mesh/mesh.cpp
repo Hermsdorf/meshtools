@@ -647,7 +647,7 @@ void Mesh::write_glvis(string filename, MeshIODataAppended* info)
     }
 }
 
-void Mesh::write_vtk(string basename, MeshIODataAppended* info)
+void Mesh::write_vtk(string basename)
 {
    
     vtkWriter writer;

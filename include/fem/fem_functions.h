@@ -1,5 +1,5 @@
-#ifndef FEM_FUNCTIONS_H
-#define FEM_FUNCTIONS_H
+#ifndef FEM_FUNCTIONS_H__
+#define FEM_FUNCTIONS_H__
 
 #include <iostream>
 #include "parallel_mesh.h"
@@ -11,7 +11,7 @@
 class FEMFunction
 {
     public:
-        FEMFunction();
+        FEMFunction(ParallelMesh& mesh);
         void ComputeFunction(Element& elem, QGaussData qp);
 
         std::vector<double>  &  get_phi() { return _phi; } ;
@@ -44,9 +44,10 @@ class FEMFunction
         void QUAD4Function(Element& elem, QGaussData qp);
         void TET4Function(Element& elem, QGaussData qp);
         
+        ParallelMesh& _mesh;
 };
 
 
-#endif /* FEM_FUNCTIONS_H */
+#endif /* FEM_FUNCTIONS_H__ */
 
 

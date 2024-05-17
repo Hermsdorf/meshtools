@@ -9,7 +9,7 @@ class Element
     friend class Mesh;
     public:
         Element(){};
-        Element(std::vector<Point> &vertices, std::vector<unsigned int> &topo, unsigned short & type, unsigned int tag);
+        Element(std::vector<Point> &vertices, std::vector<unsigned int> &topo, unsigned short type, unsigned int tag);
         std::vector<unsigned int>&  connectivity() {return _conn; };
         Point&                      node(int i) {return _coords[i]; } ;
         unsigned short&             type() {return _type; } ;

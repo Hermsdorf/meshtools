@@ -23,19 +23,21 @@ public:
      * @param conn_size        number of nodes at the element
      * @param global_equation  global equation numbering for dof id
      */
-    void              equation_indices(int id_dof, int conn_size, const unsigned int *conn_local , int *global_equation);
+    void              equation_indices(int id_dof, std::vector<unsigned int> &conn, std::vector<unsigned int> & global_equation);
     void              global_indices(int id_dof, std::vector<unsigned int>& conn, std::vector<int>& global_equation);
     void              local_indices(int id_dof, std::vector<unsigned int>& conn, std::vector<int>& local_equation);
     void              add_dirichlet_boundary(DirichletBoundary &boundary);
-    void              prepare_to_use();
+
     void              calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::vector<unsigned int> &onnz);
     std::vector<int>& get_equation_indices() { return this->_equation_indices; };
 
     int get_number_of_dirichlet_boundaries() { return this->_boundaries.size(); };
     DirichletBoundary& get_dirichlet_boundary(int id) { return this->_boundaries[id]; };
     std::vector<unsigned int>& get_boundary_nodes(int id) { return _boundary_nodes_map[id]; };
-
+    void              prepare_to_use();
 private:
+
+ 
     // Private 
     ParallelMesh &              _mesh;
     unsigned int                _ndof;
