@@ -368,11 +368,11 @@ void Mesh::gmsh_reader(const char* filename)
     this->process_face_to_element();
 }
 
-bool BinaryBigEndian(void) 
-{
-    long _v = 1; 
-    return ((char*)&_v)[0] ? false : true;
-}
+// bool BinaryBigEndian(void) 
+// {
+//     long _v = 1; 
+//     return ((char*)&_v)[0] ? false : true;
+// }
 
  
 // void Mesh::write_vtk(const char* fname, MeshIODataAppended* info )

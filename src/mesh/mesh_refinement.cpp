@@ -4,7 +4,7 @@
 #include "mesh_helper.h"
 #include "mesh_refinement.h"
 
-MeshRefinement::MeshRefinement()
+MeshRefinement::MeshRefinement(ParallelMesh &mesh): mesh(mesh)
 {
 }
 
@@ -12,12 +12,14 @@ MeshRefinement::~MeshRefinement()
 {
 }
 
-void MeshRefinement::refine(Mesh &mesh)
+void MeshRefinement::refine(unsigned int n_refinements)
 {
+    
     // Clear the maps
     edge_map.clear();
     face_map.clear();
     cell_map.clear();
+
 
     // Get the mesh data
     auto coords       = mesh.get_coordinate_vector();
@@ -28,15 +30,26 @@ void MeshRefinement::refine(Mesh &mesh)
 
     unsigned int n_nodes = mesh.get_n_nodes();
     unsigned int new_n_elements;
+
+    unsigned int n_new_surface_elements = 0;
+    unsigned int n_new_elements         = 0;
+
     // New mesh data
     std::vector<double> new_coords;
     std::vector<unsigned int> new_conn;
     std::vector<unsigned int> new_offset;
-    std::vector<unsigned int> new_type;
-    std::vector<unsigned int> new_physical_tag;
+    std::vector<unsigned short> new_type;
+    std::vector<int> new_physical_tag;
+
+    std::vector<unsigned int> new_neighbors_processors;
+    std::vector<unsigned int> new_shared_nodes;
+    std::vector<unsigned int> new_shared_nodes_offset;
 
     // copia os vertices
     new_coords.insert(new_coords.end(), coords.begin(), coords.end());
+
+    // Build the shared processor per node map
+    build_shared_processor_per_node_map(mesh);
 
     int nse = mesh.get_n_surface_elements();
     int ne  = mesh.get_n_elements();
@@ -47,48 +60,66 @@ void MeshRefinement::refine(Mesh &mesh)
     {
         std::vector<unsigned int> element_conn;
         std::vector<unsigned int> refine_conn;
+        unsigned int n_count_elements = 0;
         mesh.get_surface_element_connectivity(i, element_conn);
         switch (type[i])
         {
         case EDGE2:
-            edge_refinement_template(new_coords, element_conn, refine_conn, n_nodes, new_n_elements);  
+            edge_refinement_template(new_coords, element_conn, refine_conn, n_nodes, n_count_elements);  
             break;
         case TRI3:
-            triangle_refinement_template(new_coords, element_conn, refine_conn, n_nodes, new_n_elements);
+            triangle_refinement_template(new_coords, element_conn, refine_conn, n_nodes, n_count_elements);
             break;
         case QUAD4:
-            quad_refinement_template(new_coords, element_conn, refine_conn, n_nodes, new_n_elements);
+            quad_refinement_template(new_coords, element_conn, refine_conn, n_nodes, n_count_elements);
             break;
         default:
             break;
         }
-        parent2child(offset_count, type[i], physical_tag[i], MeshHelper::VtkIdToNumberOfNodes[type[i]], new_n_elements, refine_conn, new_conn, new_offset, new_type, new_physical_tag);
+        parent2child(offset_count, type[i], physical_tag[i], MeshHelper::VtkIdToNumberOfNodes[type[i]], n_count_elements, refine_conn, new_conn, new_offset, new_type, new_physical_tag);
+        n_new_surface_elements += n_count_elements;
     }
 
-  
     for(int i = 0; i < ne; i++)
     {
         std::vector<unsigned int> element_conn;
         std::vector<unsigned int> refine_conn;
+        unsigned int n_count_elements = 0;
         mesh.get_surface_element_connectivity(i, element_conn);
         switch (type[i])
         {
         case TRI3:
-            edge_refinement_template(new_coords, element_conn, refine_conn, n_nodes, new_n_elements);  
+            edge_refinement_template(new_coords, element_conn, refine_conn, n_nodes, n_count_elements);  
             break;
         case QUAD4:
-            triangle_refinement_template(new_coords, element_conn, refine_conn, n_nodes, new_n_elements);
+            triangle_refinement_template(new_coords, element_conn, refine_conn, n_nodes, n_count_elements);
             break;
         case TET4:
-            tetrahedron_refinement_template(new_coords, element_conn, refine_conn, n_nodes, new_n_elements);
+            tetrahedron_refinement_template(new_coords, element_conn, refine_conn, n_nodes, n_count_elements);
             break;
         default:
             break;
         }
-        parent2child(offset_count, type[i], physical_tag[i], MeshHelper::VtkIdToNumberOfNodes[type[i]], new_n_elements, refine_conn, new_conn, new_offset, new_type, new_physical_tag);
+        parent2child(offset_count, type[i], physical_tag[i], MeshHelper::VtkIdToNumberOfNodes[type[i]], n_count_elements, refine_conn, new_conn, new_offset, new_type, new_physical_tag);
+        n_new_elements += n_count_elements;
     }
 
+    mesh.set_n_elements(n_new_elements);
+    mesh.set_n_surface_elements(n_new_surface_elements);
+    coords.swap(new_coords);
+    conn.swap(new_conn);
+    offset.swap(new_offset);
+    type.swap(new_type);
+    physical_tag.swap(new_physical_tag);
+    
+    // update the mesh arrays
+    //update_mesh_arrays(mesh, new_conn, new_offset, new_type, new_physical_tag);
+    rebuild_communication_map();
+
 }
+
+
+
 /*
 
     Input:  edge_vertices: the vertices of the edge
@@ -217,6 +248,132 @@ unsigned int MeshRefinement::cell_central_vertice(unsigned int &n_nodes, std::ve
     
 }
 
+void MeshRefinement::build_shared_processor_per_node_map(ParallelMesh& mesh)
+{
+
+    auto& shared_nodes_offset  = mesh.get_shared_nodes_offset_vector();
+    auto& shared_nodes         = mesh.get_shared_nodes_vector();
+    auto& neighbors_processors = mesh.get_neighbors_processors_vector();
+
+    for(auto process : neighbors_processors)
+    {
+        unsigned int offset = shared_nodes_offset[process];
+        unsigned int n_shared_nodes = shared_nodes_offset[process+1] - offset;
+        for(unsigned int i = 0; i < n_shared_nodes; i++)
+        {
+            shared_processors_per_node[shared_nodes[offset+i]].insert(process);
+        }
+    }
+
+}
+
+void MeshRefinement::find_processor_neighbours_edge(std::vector<unsigned int> &conn, unsigned int new_node)
+{
+
+    if(shared_processors_per_node[new_node].size() > 0)
+    {
+        return;
+    }
+    /*
+        find the processors that share the mid point of the edge
+        1. Get the processors that share the vertices of the edge   
+        2. Get the intersection of the processors that share the vertices of the edge
+    */
+
+   // verifica se os vertices do edge compartilham processadores
+   if(shared_processors_per_node.find(conn[0]) == shared_processors_per_node.end() || 
+      shared_processors_per_node.find(conn[1]) == shared_processors_per_node.end())
+   {
+       return;
+   }
+   // Get the processors that share the vertices of the edge
+   std::set<unsigned int> processors_v1 = shared_processors_per_node[conn[0]];
+   std::set<unsigned int> processors_v2 = shared_processors_per_node[conn[1]];
+
+    // Get the intersection of the processors that share the vertices of the edge
+    std::set<unsigned int> processors;
+    std::set_intersection(processors_v1.begin(), processors_v1.end(), processors_v2.begin(), processors_v2.end(), std::inserter(processors, processors.begin()));
+
+    // Add the new node to the shared nodes
+    shared_processors_per_node[new_node] = processors;
+}
+
+void MeshRefinement::find_processor_neighbours_face_3_edges(std::vector<unsigned int> &conn, unsigned int new_node)
+{
+    if(shared_processors_per_node[new_node].size() > 0)
+    {
+        return;
+    }
+    /*
+        find the processors that share the mid point of the face
+        1. Get the processors that share the vertices of the face   
+        2. Get the intersection of the processors that share the vertices of the face
+    */
+
+   if(shared_processors_per_node.find(conn[0]) == shared_processors_per_node.end() || 
+      shared_processors_per_node.find(conn[1]) == shared_processors_per_node.end() ||
+      shared_processors_per_node.find(conn[2]) == shared_processors_per_node.end())
+   {
+       return;
+   }
+
+   // Get the processors that share the vertices of the face
+   std::set<unsigned int> processors_v1 = shared_processors_per_node[conn[0]];
+   std::set<unsigned int> processors_v2 = shared_processors_per_node[conn[1]];
+   std::set<unsigned int> processors_v3 = shared_processors_per_node[conn[2]];
+
+    // Get the intersection of the processors that share the vertices of the face
+    std::set<unsigned int> intersect1;
+    std::set_intersection(processors_v1.begin(), processors_v1.end(), processors_v2.begin(), processors_v2.end(), std::inserter(intersect1, intersect1.begin()));
+
+    std::set<unsigned int> result;
+    std::set_intersection(intersect1.begin(), intersect1.end(), processors_v3.begin(), processors_v3.end(), std::inserter(result, result.begin()));
+
+    // Add the new node to the shared nodes
+    shared_processors_per_node[new_node] = result;
+}
+
+void MeshRefinement::find_processor_neighbours_face_4_edges(std::vector<unsigned int> &conn, unsigned int new_node)
+{
+    if(shared_processors_per_node[new_node].size() > 0)
+    {
+        return;
+    }
+    /*
+        find the processors that share the mid point of the face
+        1. Get the processors that share the vertices of the face   
+        2. Get the intersection of the processors that share the vertices of the face
+    */
+
+    if( shared_processors_per_node.find(conn[0]) == shared_processors_per_node.end() || 
+        shared_processors_per_node.find(conn[1]) == shared_processors_per_node.end() ||
+        shared_processors_per_node.find(conn[2]) == shared_processors_per_node.end() ||
+        shared_processors_per_node.find(conn[3]) == shared_processors_per_node.end())
+    {
+        return;
+    }
+
+   // Get the processors that share the vertices of the face
+   std::set<unsigned int> processors_v1 = shared_processors_per_node[conn[0]];
+   std::set<unsigned int> processors_v2 = shared_processors_per_node[conn[1]];
+   std::set<unsigned int> processors_v3 = shared_processors_per_node[conn[2]];
+   std::set<unsigned int> processors_v4 = shared_processors_per_node[conn[3]];
+
+    // Get the intersection of the processors that share the vertices of the face
+    std::set<unsigned int> intersect1;
+    std::set_intersection(processors_v1.begin(), processors_v1.end(), processors_v2.begin(), processors_v2.end(), std::inserter(intersect1, intersect1.begin()));
+
+    std::set<unsigned int> intersect2;
+    std::set_intersection(processors_v3.begin(), processors_v3.end(), processors_v4.begin(), processors_v4.end(), std::inserter(intersect2, intersect2.begin()));
+
+    std::set<unsigned int> result;
+    std::set_intersection(intersect1.begin(), intersect1.end(), intersect2.begin(), intersect2.end(), std::inserter(result, result.begin()));
+
+    // Add the new node to the shared nodes
+    shared_processors_per_node[new_node] = result;
+}
+
+
 void MeshRefinement::edge_refinement_template(std::vector<double>&      coords, 
                                               std::vector<unsigned int> &conn,
                                               std::vector<unsigned int> &new_conn,
@@ -232,6 +389,8 @@ void MeshRefinement::edge_refinement_template(std::vector<double>&      coords,
     unsigned int v1 = conn[1];
     unsigned int v2 = edge_central_vertice(n_nodes, coords, conn);
 
+    find_processor_neighbours_edge(conn, v2);
+
     // Add the new vertex to the new connectivity
     new_conn.push_back(v0);
     new_conn.push_back(v2);
@@ -241,6 +400,24 @@ void MeshRefinement::edge_refinement_template(std::vector<double>&      coords,
 
     n_edges = 2;
 }
+
+/*
+    Triange Refinement Template
+    3                     2
+    +                     +
+    |\                    | \
+    | \                   |  \
+    |  \                  |   \
+    |   \                 |    \
+    |    \              5 +-----+ 4     
+    |     \               |\    /\
+    |      \              | \  /  \
+    |       \             |  \/    \
+    +-------+             +---+-----+
+    1       2             0   3     1
+
+*/
+
 
 void MeshRefinement::triangle_refinement_template(std::vector<double>&      coords, 
                                                   std::vector<unsigned int> &triangle_conn,
@@ -264,6 +441,7 @@ void MeshRefinement::triangle_refinement_template(std::vector<double>&      coor
         std::vector<unsigned int> edge_conn(2);
         MeshHelper::triangle_face_connectivity(edge, triangle_conn, edge_conn);
         nodes[3+edge] = edge_central_vertice(n_nodes, coords, edge_conn);
+        find_processor_neighbours_edge(edge_conn, nodes[3+edge]);
     }
 
     // Add the new vertices to the new connectivity
@@ -286,6 +464,19 @@ void MeshRefinement::triangle_refinement_template(std::vector<double>&      coor
     n_triangles = 4;
 
 }
+
+// Quad Refinement Template
+/*
+    3                 2         3        6         2
+    +-----------------+         +--------+---------+
+    |                 |         |        |         |
+    |                 |         |        | 8       |
+    |                 |      7  +--------+---------+ 5
+    |                 |         |        |         |
+    |                 |         |        |         |
+    +-----------------+         +--------+---------+
+    0                 1         0        4         1
+*/
 
 void MeshRefinement::quad_refinement_template(std::vector<double>&        coords,
                                                 std::vector<unsigned int> &quad_conn,
@@ -310,9 +501,11 @@ void MeshRefinement::quad_refinement_template(std::vector<double>&        coords
         std::vector<unsigned int> edge_conn(2);
         MeshHelper::quad_face_connectivity(edge, quad_conn, edge_conn);
         nodes[4+edge] = edge_central_vertice(n_nodes, coords, edge_conn);
+        find_processor_neighbours_edge(edge_conn, nodes[4+edge]);
     }
 
     nodes[8] = face_central_vertice(n_nodes, coords, quad_conn);
+    find_processor_neighbours_face_4_edges(quad_conn, nodes[8]);
 
     // Add the new vertices to the new connectivity
 
@@ -361,16 +554,33 @@ void MeshRefinement::tetrahedron_refinement_template(std::vector<double>&   coor
         std::vector<unsigned int> edge_conn(2);
         MeshHelper::tetrahedron_edge_connectivity(edge, tetra_conn, edge_conn);
         nodes[4+edge] = edge_central_vertice(n_nodes, coords, edge_conn);
+        find_processor_neighbours_edge(edge_conn, nodes[4+edge]);
     }
 
-    // // Get the tetrahedron faces
-    // for(int face=0; face < 4; face++)
-    // {
-    //     std::vector<unsigned int> face_conn(3);
-    //     MeshHelper::tetrahedron_face(face, tetra_conn, face_conn);
-    //     nodes[10+face] = face_central_vertice(n_nodes, coords, face_conn);
-    // }
+    nodes[10] = cell_central_vertice(n_nodes, coords, tetra_conn);
 
+    // Add the new vertices to the new connectivity 
+    new_conn.push_back(nodes[0]);
+    new_conn.push_back(nodes[4]);
+    new_conn.push_back(nodes[5]);
+    new_conn.push_back(nodes[10]);
+
+    new_conn.push_back(nodes[4]);
+    new_conn.push_back(nodes[1]);
+    new_conn.push_back(nodes[6]);
+    new_conn.push_back(nodes[10]);
+
+    new_conn.push_back(nodes[5]);
+    new_conn.push_back(nodes[6]);
+    new_conn.push_back(nodes[2]);
+    new_conn.push_back(nodes[10]);
+
+    new_conn.push_back(nodes[4]);
+    new_conn.push_back(nodes[6]);
+    new_conn.push_back(nodes[5]);
+    new_conn.push_back(nodes[10]);
+
+    n_tets = 4;
 
 }
 
@@ -400,6 +610,7 @@ void MeshRefinement::hexahedron_refinement_template(std::vector<double>&   coord
         std::vector<unsigned int> edge_conn(2);
         MeshHelper::hexahedron_edge_connectivity(edge, hexa_conn, edge_conn);
         nodes[8+edge] = edge_central_vertice(n_nodes, coords, edge_conn);
+        find_processor_neighbours_edge(edge_conn, nodes[8+edge]);
     }
 
     // Get the hexahedron faces
@@ -408,6 +619,7 @@ void MeshRefinement::hexahedron_refinement_template(std::vector<double>&   coord
         std::vector<unsigned int> face_conn(4);
         MeshHelper::hexahedron_face_connectivity(face, hexa_conn, face_conn);
         nodes[20+face] = face_central_vertice(n_nodes, coords, face_conn);
+        find_processor_neighbours_face_4_edges(face_conn, nodes[20+face]);
     }
 
     // Get the hexahedron volume
@@ -431,5 +643,41 @@ void MeshRefinement::parent2child(unsigned int &offset, unsigned short type, int
         new_type.push_back(type);
         new_physical_tag.push_back(tag);
     }   
+}
+
+void MeshRefinement::rebuild_communication_map()
+{
+    std::map<unsigned int, std::set<unsigned int>> shared_nodes_map;
+
+    // loop over nodes that are shared
+    for(auto& shared_nodes : shared_processors_per_node)
+    {
+        // loop over the processors that share the node
+        for(auto& process : shared_nodes.second)
+        {
+            shared_nodes_map[process].insert(shared_nodes.first);
+        }
+    }
+
+    std::vector<unsigned int> neighbors_processors;
+    std::vector<unsigned int> shared_nodes_offset;
+    std::vector<unsigned int> shared_nodes;
+
+    shared_nodes_offset.push_back(0);
+    unsigned int offset = 0;
+    for(auto& nodes : shared_nodes_map)
+    {
+        neighbors_processors.push_back(nodes.first);
+        offset += nodes.second.size();
+        shared_nodes_offset.push_back(offset);
+        shared_nodes.insert(shared_nodes.end(), nodes.second.begin(), nodes.second.end());
+    }
+
+    mesh.get_shared_nodes_vector().swap(shared_nodes);
+    mesh.get_shared_nodes_offset_vector().swap(shared_nodes_offset);
+    mesh.get_neighbors_processors_vector().swap(neighbors_processors);
+
+    mesh.build_communication_map();
+
 }
 

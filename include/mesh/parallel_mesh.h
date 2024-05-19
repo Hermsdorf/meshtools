@@ -141,8 +141,9 @@ class ParallelMesh : public Mesh{
         int processor_id;
         int n_processors;
         int n_neighbor_processors;
+
         std::vector<unsigned int> neighbor_processors; // armazena os ids dos processadores vizinhos
-        std::vector<unsigned int> shared_nodes_offset; // Indica oa posisção do dos nós compartilhados
+        std::vector<unsigned int> shared_nodes_offset; // Indica oa posição do dos nós compartilhados
         std::vector<unsigned int> shared_nodes;
         
         std::vector <MessageInformation> sendto_info;

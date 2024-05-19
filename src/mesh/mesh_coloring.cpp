@@ -5,7 +5,6 @@
 #include <cstring>
 
 #include "metis.h"
-#include "omp.h"
 #include "mesh.h"
 #include "mesh_coloring.h"
 

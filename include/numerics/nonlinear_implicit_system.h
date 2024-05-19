@@ -16,7 +16,7 @@ class NonLinearImplicitSystem : public ImplicitSystem
         double get_nonlinear_tolerance() { return _tolerance; };
         unsigned int get_nonlinear_max_iter() { return _max_nonlinear_iterations; };
         Vec&    get_previous_nonlinear_solution() { return _previous_nonlinear_solution; };
-        void    set_previous_nonlinear_solution(Vec& previous_solution) { _previous_nonlinear_solution = _previous_nonlinear_solution; };
+        void    set_previous_nonlinear_solution(Vec& previous_solution) { _previous_nonlinear_solution = previous_solution; };
         
         ~NonLinearImplicitSystem();
     
