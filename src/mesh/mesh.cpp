@@ -233,7 +233,7 @@ void   Mesh::set_n_surface_elements(unsigned int _n_surface_elements)
 
 void   Mesh::set_n_nodes(unsigned int _n_nodes)
 {
-    this->n_nodes;
+    this->n_nodes = _n_nodes;
     this->coord.resize(this->n_nodes*3);
 }
 

@@ -12,7 +12,7 @@ MeshRefinement::~MeshRefinement()
 {
 }
 
-void MeshRefinement::refine(unsigned int n_refinements)
+void MeshRefinement::uniform_refinement(unsigned int n_refinements)
 {
     
     // Clear the maps
@@ -20,6 +20,8 @@ void MeshRefinement::refine(unsigned int n_refinements)
     face_map.clear();
     cell_map.clear();
 
+    unsigned int nse = mesh.get_n_surface_elements();
+    unsigned int ne  = mesh.get_n_elements();
 
     // Get the mesh data
     auto coords       = mesh.get_coordinate_vector();
@@ -27,6 +29,7 @@ void MeshRefinement::refine(unsigned int n_refinements)
     auto offset       = mesh.get_offset_vector();
     auto type         = mesh.get_element_type_vector();
     auto physical_tag = mesh.get_element_physical_tag_vector();
+
 
     unsigned int n_nodes = mesh.get_n_nodes();
     unsigned int new_n_elements;
@@ -45,15 +48,28 @@ void MeshRefinement::refine(unsigned int n_refinements)
     std::vector<unsigned int> new_shared_nodes;
     std::vector<unsigned int> new_shared_nodes_offset;
 
+    int nnoel         = MeshHelper::VtkIdToNumberOfNodes[mesh.get_mesh_element_type()];
+    int nnoel_surface = MeshHelper::VtkIdToNumberOfNodes[mesh.get_surface_mesh_element_type()];
+    unsigned int size_conn = nnoel_surface*nse + nnoel*ne; 
+    
+    // reserve memory
+    coords.reserve(2*n_nodes);
+    new_conn.reserve(size_conn);
+    new_offset.reserve(8*ne+4*nse);
+    new_type.reserve(8*ne+4*nse);
+    new_physical_tag.reserve(8*ne+4*nse);
+
+    new_neighbors_processors.reserve(mesh.get_neighbors_processors_vector().size());
+    new_shared_nodes.reserve(mesh.get_shared_nodes_vector().size());
+    new_shared_nodes_offset.reserve(mesh.get_shared_nodes_offset_vector().size());
+    
     // copia os vertices
     new_coords.insert(new_coords.end(), coords.begin(), coords.end());
 
     // Build the shared processor per node map
     build_shared_processor_per_node_map(mesh);
 
-    int nse = mesh.get_n_surface_elements();
-    int ne  = mesh.get_n_elements();
-    new_offset.push_back(0);
+    new_offset.emplace_back(0);
     unsigned int offset_count = 0;
 
     for(int i = 0; i < nse; i++)
@@ -104,6 +120,7 @@ void MeshRefinement::refine(unsigned int n_refinements)
         n_new_elements += n_count_elements;
     }
 
+    mesh.set_n_nodes(n_nodes);
     mesh.set_n_elements(n_new_elements);
     mesh.set_n_surface_elements(n_new_surface_elements);
     coords.swap(new_coords);
@@ -248,7 +265,7 @@ unsigned int MeshRefinement::cell_central_vertice(unsigned int &n_nodes, std::ve
     
 }
 
-void MeshRefinement::build_shared_processor_per_node_map(ParallelMesh& mesh)
+void MeshRefinement::build_shared_processor_per_node_map()
 {
 
     auto& shared_nodes_offset  = mesh.get_shared_nodes_offset_vector();
@@ -584,6 +601,8 @@ void MeshRefinement::tetrahedron_refinement_template(std::vector<double>&   coor
 
 }
 
+
+
 void MeshRefinement::hexahedron_refinement_template(std::vector<double>&   coords, 
                                                   std::vector<unsigned int> &hexa_conn,
                                                   std::vector<unsigned int> &new_conn,
@@ -624,16 +643,103 @@ void MeshRefinement::hexahedron_refinement_template(std::vector<double>&   coord
 
     // Get the hexahedron volume
     nodes[26] = cell_central_vertice(n_nodes, coords, hexa_conn);
+/*
 
+    Hexahedron Refinement Template
+
+    3        10        2       15        23          14       7      18         6
+    +--------+--------+         +--------+---------+       +--------+---------+
+    |        |        |         |        |         |       |        |         |
+    |        | 20     |         |        |26       |       |        | 25      |
+  11+--------+--------+ 9    24 +--------+---------+22   19+--------+---------+ 17
+    |        |        |         |        |         |       |        |         |
+    |        |        |         |        |         |       |        |         |
+    +--------+--------+         +--------+---------+       +--------+---------+
+    0        8        1         12      21         13     4        16        5
+    
+*/
     // Add the new vertices to the new connectivity
     // TODO: Add the new vertices to the new connectivity
+    new_conn.push_back(nodes[0]);
+    new_conn.push_back(nodes[8]);
+    new_conn.push_back(nodes[20]);
+    new_conn.push_back(nodes[11]);
+    new_conn.push_back(nodes[12]);
+    new_conn.push_back(nodes[21]);
+    new_conn.push_back(nodes[26]);
+    new_conn.push_back(nodes[24]);
+
+    new_conn.push_back(nodes[8]);
+    new_conn.push_back(nodes[1]);
+    new_conn.push_back(nodes[9]);
+    new_conn.push_back(nodes[20]);
+    new_conn.push_back(nodes[21]);
+    new_conn.push_back(nodes[13]);
+    new_conn.push_back(nodes[22]);
+    new_conn.push_back(nodes[26]);
+
+    new_conn.push_back(nodes[11]);
+    new_conn.push_back(nodes[20]);
+    new_conn.push_back(nodes[10]);
+    new_conn.push_back(nodes[3]);
+    new_conn.push_back(nodes[24]);
+    new_conn.push_back(nodes[26]);
+    new_conn.push_back(nodes[23]);
+    new_conn.push_back(nodes[15]);
+
+    new_conn.push_back(nodes[20]);
+    new_conn.push_back(nodes[9]);
+    new_conn.push_back(nodes[2]);
+    new_conn.push_back(nodes[10]);
+    new_conn.push_back(nodes[26]);
+    new_conn.push_back(nodes[22]);
+    new_conn.push_back(nodes[14]);
+    new_conn.push_back(nodes[23]);
+
+    new_conn.push_back(nodes[12]);
+    new_conn.push_back(nodes[21]);
+    new_conn.push_back(nodes[26]);
+    new_conn.push_back(nodes[24]);
+    new_conn.push_back(nodes[4]);
+    new_conn.push_back(nodes[16]);
+    new_conn.push_back(nodes[25]);
+    new_conn.push_back(nodes[19]);
+
+    new_conn.push_back(nodes[21]);
+    new_conn.push_back(nodes[13]);
+    new_conn.push_back(nodes[22]);
+    new_conn.push_back(nodes[26]);
+    new_conn.push_back(nodes[16]);
+    new_conn.push_back(nodes[5]);
+    new_conn.push_back(nodes[17]);
+    new_conn.push_back(nodes[25]);
+
+    new_conn.push_back(nodes[26]);
+    new_conn.push_back(nodes[22]);
+    new_conn.push_back(nodes[14]);
+    new_conn.push_back(nodes[23]);
+    new_conn.push_back(nodes[25]);
+    new_conn.push_back(nodes[17]);
+    new_conn.push_back(nodes[6]);
+    new_conn.push_back(nodes[18]);
+
+    new_conn.push_back(nodes[24]);
+    new_conn.push_back(nodes[26]);
+    new_conn.push_back(nodes[23]);
+    new_conn.push_back(nodes[15]);
+    new_conn.push_back(nodes[19]);
+    new_conn.push_back(nodes[25]);
+    new_conn.push_back(nodes[18]);
+    new_conn.push_back(nodes[7]);
+
+    n_elements = 8;
 
 
 
 }
                                         
 
-void MeshRefinement::parent2child(unsigned int &offset, unsigned short type, int tag, unsigned int nnoel, unsigned int n_new_element, std::vector<unsigned int> &refine_conn, std::vector<unsigned int> &new_conn, std::vector<unsigned int> &new_offset, std::vector<unsigned int> &new_type, std::vector<unsigned int> &new_physical_tag)
+void MeshRefinement::parent2child(unsigned int &offset, unsigned short type, int tag, unsigned int nnoel, unsigned int n_new_element, std::vector<unsigned int> &refine_conn, std::vector<unsigned int> &new_conn, std::vector<unsigned int> &new_offset, std::vector<unsigned short> &new_type, std::vector<int> &new_physical_tag)
 {
     new_conn.insert(new_conn.end(), refine_conn.begin(), refine_conn.end());
     for(int i = 0; i < n_new_element; i++)
@@ -678,6 +784,7 @@ void MeshRefinement::rebuild_communication_map()
     mesh.get_neighbors_processors_vector().swap(neighbors_processors);
 
     mesh.build_communication_map();
+    mesh.fill_node_index();
 
 }
 

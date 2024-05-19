@@ -15,6 +15,8 @@ int main(int argc, char* argv[])
     
     mesh.write_vtk("tri3");
 
+    GmshIO::write("tri3.msh", mesh);
+
     MeshTools::Finalize();
 }
 
