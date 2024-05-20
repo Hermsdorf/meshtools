@@ -1,5 +1,8 @@
 #include "hash.h"
 
+#include <vector>
+#include <algorithm>
+
 #define rot(x,k) (((x)<<(k)) | ((x)>>(32-(k))))
 #define mix(a,b,c) \
 { \
@@ -27,9 +30,12 @@ unsigned long long cantor_pairing(unsigned long long a, unsigned long long b) {
     return hash;
 }
 
-unsigned long  compute_hash(unsigned int len, unsigned int *keys)
+unsigned long  compute_hash(std::vector<unsigned int> conn)
 {
-    
+    std::sort(conn.begin(), conn.end());
+    unsigned int len   = conn.size();
+    unsigned int *keys = conn.data();
+
     uint32_t a = 0,b=0,c=0;
     a = b = c = 0xdeadbeef + (((uint32_t)len)<<2);
 

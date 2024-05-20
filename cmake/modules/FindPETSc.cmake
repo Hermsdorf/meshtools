@@ -92,6 +92,7 @@ find_path (PETSC_DIR include/petsc.h
   /opt/petsc/linux-c-opt
   # MacPorts path
   /opt/local/lib/petsc
+  /opt/lib/petsc/gnu/opt
   $ENV{HOME}/petsc
   DOC "PETSc Directory")
 

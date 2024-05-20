@@ -48,13 +48,13 @@ void MeshRefinement::uniform_refinement(unsigned int n_refinements)
     std::vector<unsigned int> new_shared_nodes;
     std::vector<unsigned int> new_shared_nodes_offset;
 
-    int nnoel         = MeshHelper::VtkIdToNumberOfNodes[mesh->get_mesh_element_type()];
-    int nnoel_surface = MeshHelper::VtkIdToNumberOfNodes[mesh->get_surface_mesh_element_type()];
-    unsigned int size_conn = nnoel_surface*nse + nnoel*ne; 
+    //int nnoel         = MeshHelper::VtkIdToNumberOfNodes[mesh->get_mesh_element_type()];
+    //int nnoel_surface = MeshHelper::VtkIdToNumberOfNodes[mesh->get_surface_mesh_element_type()];
+    //unsigned int size_conn = nnoel_surface*nse + nnoel*ne; 
     
     // reserve memory
-    coords.reserve(2*n_nodes);
-    new_conn.reserve(size_conn);
+
+    new_conn.reserve(2*conn.size());
     new_offset.reserve(8*ne+4*nse);
     new_type.reserve(8*ne+4*nse);
     new_physical_tag.reserve(8*ne+4*nse);
@@ -63,9 +63,6 @@ void MeshRefinement::uniform_refinement(unsigned int n_refinements)
     new_shared_nodes.reserve(mesh->get_shared_nodes_vector().size());
     new_shared_nodes_offset.reserve(mesh->get_shared_nodes_offset_vector().size());
     
-    // copia os vertices
-    new_coords.insert(new_coords.end(), coords.begin(), coords.end());
-
     // Build the shared processor per node map
     build_shared_processor_per_node_map();
 
@@ -75,24 +72,32 @@ void MeshRefinement::uniform_refinement(unsigned int n_refinements)
     for(int i = 0; i < nse; i++)
     {
         std::vector<unsigned int> element_conn;
-        std::vector<unsigned int> refine_conn;
         unsigned int n_count_elements = 0;
         mesh->get_surface_element_connectivity(i, element_conn);
+        // std::cout << "Element Conn: ";
+        // std::for_each(element_conn.begin(), element_conn.end(), [&](unsigned int &val){ std::cout << val << " ";});
+        // std::cout << std::endl;
         switch (type[i])
         {
         case EDGE2:
-            edge_refinement_template(new_coords, element_conn, refine_conn, n_nodes, n_count_elements);  
+            edge_refinement_template(coords, element_conn, physical_tag[i], 
+                                     new_conn, new_offset,
+                                     new_type, new_physical_tag, n_nodes, n_count_elements);  
             break;
         case TRI3:
-            triangle_refinement_template(new_coords, element_conn, refine_conn, n_nodes, n_count_elements);
+            triangle_refinement_template(coords, element_conn, physical_tag[i], 
+                                     new_conn, new_offset,
+                                     new_type, new_physical_tag, n_nodes, n_count_elements); 
             break;
         case QUAD4:
-            quad_refinement_template(new_coords, element_conn, refine_conn, n_nodes, n_count_elements);
+            quad_refinement_template(coords, element_conn, physical_tag[i], 
+                                     new_conn, new_offset,
+                                     new_type, new_physical_tag, n_nodes, n_count_elements); 
             break;
         default:
             break;
         }
-        parent2child(offset_count, type[i], physical_tag[i], MeshHelper::VtkIdToNumberOfNodes[type[i]], n_count_elements, refine_conn, new_conn, new_offset, new_type, new_physical_tag);
+        
         n_new_surface_elements += n_count_elements;
     }
 
@@ -100,25 +105,33 @@ void MeshRefinement::uniform_refinement(unsigned int n_refinements)
     for(int i = 0; i < ne; i++)
     {
         std::vector<unsigned int> element_conn;
-        std::vector<unsigned int> refine_conn;
+        
         unsigned int n_count_elements = 0;
         mesh->get_element_connectivity(i, element_conn);
+        // std::cout << "Element Conn: ";
+        // std::for_each(element_conn.begin(), element_conn.end(), [&](unsigned int &val){ std::cout << val << " ";});
+        // std::cout << std::endl;
         switch (mesh->get_element_type(i))
         {
         case TRI3:
-            triangle_refinement_template(new_coords, element_conn, refine_conn, n_nodes, n_count_elements);  
+            triangle_refinement_template(coords, element_conn, physical_tag[i], 
+                                     new_conn, new_offset,
+                                     new_type, new_physical_tag, n_nodes, n_count_elements); 
             break;
         case QUAD4:
-            quad_refinement_template(new_coords, element_conn, refine_conn, n_nodes, n_count_elements);
+            quad_refinement_template(coords, element_conn, physical_tag[i], 
+                                     new_conn, new_offset,
+                                     new_type, new_physical_tag, n_nodes, n_count_elements); 
             break;
         case TET4:
-            tetrahedron_refinement_template(new_coords, element_conn, refine_conn, n_nodes, n_count_elements);
+            tetrahedron_refinement_template(coords, element_conn, physical_tag[i], 
+                                     new_conn, new_offset,
+                                     new_type, new_physical_tag, n_nodes, n_count_elements); 
             break;
         default:
             MeshTools::PrintDebug("Element Type not implemented\n");
             break;
         }
-        parent2child(offset_count, type[i], physical_tag[i], MeshHelper::VtkIdToNumberOfNodes[type[i]], n_count_elements, refine_conn, new_conn, new_offset, new_type, new_physical_tag);
         n_new_elements += n_count_elements;
     }
 
@@ -126,11 +139,12 @@ void MeshRefinement::uniform_refinement(unsigned int n_refinements)
     mesh->set_n_nodes(n_nodes);
     mesh->set_n_elements(n_new_elements);
     mesh->set_n_surface_elements(n_new_surface_elements);
-    coords.swap(new_coords);
-    conn.swap(new_conn);
-    offset.swap(new_offset);
-    type.swap(new_type);
-    physical_tag.swap(new_physical_tag);
+
+    assert(new_offset.size() == n_new_elements + n_new_surface_elements + 1);
+    
+    offset       = new_offset ;
+    type         = new_type ;
+    physical_tag = new_physical_tag;
     MeshTools::PrintDebug("end update mesh\n");
     
     // update the mesh arrays
@@ -158,8 +172,8 @@ void MeshRefinement::uniform_refinement(unsigned int n_refinements)
 
 unsigned int MeshRefinement::edge_central_vertice(unsigned int &n_nodes, std::vector<double> &coords, std::vector<unsigned int> &edge_conn)
 {
-    std::sort(edge_conn.begin(), edge_conn.end());
-    unsigned long hash = compute_hash(edge_conn.size(), edge_conn.data());
+    
+    unsigned long hash = compute_hash(edge_conn);
     // Check if the edge has been refined
     if (edge_map.find(hash) == edge_map.end())
     {
@@ -181,6 +195,8 @@ unsigned int MeshRefinement::edge_central_vertice(unsigned int &n_nodes, std::ve
         coords.push_back(x);
         coords.push_back(y);
         coords.push_back(z);
+
+        std::cout << "Edge Central Vertice: " << n_nodes << " " << x << " " << y << " " << z << std::endl;
     
         // Add the new vertex to the edge map
         edge_map[hash] = n_nodes;
@@ -195,8 +211,7 @@ unsigned int MeshRefinement::edge_central_vertice(unsigned int &n_nodes, std::ve
 unsigned int MeshRefinement::face_central_vertice(unsigned int &n_nodes, std::vector<double> &coords, std::vector<unsigned int> &face_conn)
 {
 
-    std::sort(face_conn.begin(), face_conn.end());
-    unsigned long hash = compute_hash(face_conn.size(), face_conn.data());
+    unsigned long hash = compute_hash(face_conn);
     // Check if the face has been refined
     if (face_map.find(hash) == face_map.end())
     {
@@ -221,6 +236,8 @@ unsigned int MeshRefinement::face_central_vertice(unsigned int &n_nodes, std::ve
         coords.push_back(y);
         coords.push_back(z);
     
+        std::cout << "Face Central Vertice: " << n_nodes << " " << x << " " << y << " " << z << std::endl;
+
         // Add the new vertex to the face map
         face_map[hash] = n_nodes;
         n_nodes++;
@@ -233,8 +250,8 @@ unsigned int MeshRefinement::face_central_vertice(unsigned int &n_nodes, std::ve
 
 unsigned int MeshRefinement::cell_central_vertice(unsigned int &n_nodes, std::vector<double> &coords, std::vector<unsigned int> &cell_conn)
 {
-    std::sort(cell_conn.begin(), cell_conn.end());
-    unsigned long hash = compute_hash(cell_conn.size(), cell_conn.data());
+
+    unsigned long hash = compute_hash(cell_conn);
     // Check if the face has been refined
     if (cell_map.find(hash) == cell_map.end())
     {
@@ -396,10 +413,14 @@ void MeshRefinement::find_processor_neighbours_face_4_edges(std::vector<unsigned
 
 
 void MeshRefinement::edge_refinement_template(std::vector<double>&      coords, 
-                                              std::vector<unsigned int> &conn,
-                                              std::vector<unsigned int> &new_conn,
-                                              unsigned int              &n_nodes,
-                                              unsigned int              &n_edges
+                                              std::vector<unsigned int>    &conn,
+                                              int                         &parent_tag,
+                                              std::vector<unsigned int>    &new_conn,
+                                              std::vector<unsigned int>   &new_offset,
+                                              std::vector<unsigned short> &new_type,
+                                              std::vector<int>            &new_physical_tag,
+                                              unsigned int                &n_nodes,
+                                              unsigned int                &n_children
                                               )
 {
     assert(conn.size() == 2);
@@ -415,11 +436,20 @@ void MeshRefinement::edge_refinement_template(std::vector<double>&      coords,
     // Add the new vertex to the new connectivity
     new_conn.push_back(v0);
     new_conn.push_back(v2);
+    
+    //get last offset store
+    unsigned int last_offset = new_offset.back();
+    new_offset.push_back(last_offset + 2);
+    new_type.push_back(EDGE2);
+    new_physical_tag.push_back(parent_tag);
 
     new_conn.push_back(v2);
     new_conn.push_back(v1);
+    new_offset.push_back(last_offset + 4);
+    new_type.push_back(EDGE2);
+    new_physical_tag.push_back(parent_tag);
 
-    n_edges = 2;
+    n_children = 2;
 
     MeshTools::PrintDebug("Edge Refinement Template\n");
 }
@@ -443,10 +473,14 @@ void MeshRefinement::edge_refinement_template(std::vector<double>&      coords,
 
 
 void MeshRefinement::triangle_refinement_template(std::vector<double>&      coords, 
-                                                  std::vector<unsigned int> &triangle_conn,
-                                                  std::vector<unsigned int> &new_conn,
-                                                  unsigned int              &n_nodes,
-                                                  unsigned int              &n_triangles
+                                              std::vector<unsigned int>    &conn,
+                                              int                         &parent_tag,
+                                              std::vector<unsigned int>         &new_conn,
+                                              std::vector<unsigned int>   &new_offset,
+                                              std::vector<unsigned short> &new_type,
+                                              std::vector<int>            &new_physical_tag,
+                                              unsigned int                &n_nodes,
+                                              unsigned int                &n_children
                                               )
 {
 
@@ -454,37 +488,52 @@ void MeshRefinement::triangle_refinement_template(std::vector<double>&      coor
 
     std::vector<unsigned int> nodes(6);
 
-    nodes[0] = triangle_conn[0];
-    nodes[1] = triangle_conn[1];
-    nodes[2] = triangle_conn[2];
+    nodes[0] = conn[0];
+    nodes[1] = conn[1];
+    nodes[2] = conn[2];
 
     // Get the triangle edges
     for(int edge=0; edge < 3; edge++)
     {
         std::vector<unsigned int> edge_conn(2);
-        MeshHelper::triangle_face_connectivity(edge, triangle_conn, edge_conn);
+        MeshHelper::triangle_face_connectivity(edge, conn, edge_conn);
         nodes[3+edge] = edge_central_vertice(n_nodes, coords, edge_conn);
         find_processor_neighbours_edge(edge_conn, nodes[3+edge]);
     }
 
     // Add the new vertices to the new connectivity
+    unsigned int last_offset = new_offset.back();
+
     new_conn.push_back(nodes[0]);
     new_conn.push_back(nodes[3]);
     new_conn.push_back(nodes[5]);
+    new_offset.push_back(last_offset + 3);
+    new_type.push_back(TRI3);
+    new_physical_tag.push_back(parent_tag);
+
 
     new_conn.push_back(nodes[3]);
     new_conn.push_back(nodes[1]);
     new_conn.push_back(nodes[4]);
+    new_offset.push_back(last_offset + 6);
+    new_type.push_back(TRI3);
+    new_physical_tag.push_back(parent_tag);
 
     new_conn.push_back(nodes[5]);
     new_conn.push_back(nodes[4]);
     new_conn.push_back(nodes[2]);
+    new_offset.push_back(last_offset + 9);
+    new_type.push_back(TRI3);
+    new_physical_tag.push_back(parent_tag);
 
     new_conn.push_back(nodes[3]);
     new_conn.push_back(nodes[4]);
     new_conn.push_back(nodes[5]);
+    new_offset.push_back(last_offset + 12);
+    new_type.push_back(TRI3);
+    new_physical_tag.push_back(parent_tag);
 
-    n_triangles = 4;
+    n_children = 4;
     MeshTools::PrintDebug("Triangle Refinement Template\n");
 
 }
@@ -503,10 +552,14 @@ void MeshRefinement::triangle_refinement_template(std::vector<double>&      coor
 */
 
 void MeshRefinement::quad_refinement_template(std::vector<double>&        coords,
-                                                std::vector<unsigned int> &quad_conn,
-                                                std::vector<unsigned int> &new_conn,
-                                                unsigned int              &n_nodes,
-                                                unsigned int              &n_quads
+                                              std::vector<unsigned int>    &quad_conn,
+                                              int                         &parent_tag,
+                                              std::vector<unsigned int>         &new_conn,
+                                              std::vector<unsigned int>   &new_offset,
+                                              std::vector<unsigned short> &new_type,
+                                              std::vector<int>            &new_physical_tag,
+                                              unsigned int                &n_nodes,
+                                              unsigned int                &n_children
                                                 )
 {
 
@@ -533,36 +586,54 @@ void MeshRefinement::quad_refinement_template(std::vector<double>&        coords
 
     // Add the new vertices to the new connectivity
 
+    unsigned int last_offset = new_offset.back();
+
     new_conn.push_back(nodes[0]);
     new_conn.push_back(nodes[4]);
     new_conn.push_back(nodes[8]);
     new_conn.push_back(nodes[7]);
+    new_offset.push_back(last_offset + 4);
+    new_type.push_back(QUAD4);
+    new_physical_tag.push_back(parent_tag);
 
     new_conn.push_back(nodes[4]);
     new_conn.push_back(nodes[1]);
     new_conn.push_back(nodes[5]);
     new_conn.push_back(nodes[8]);
+    new_offset.push_back(last_offset + 8);
+    new_type.push_back(QUAD4);
+    new_physical_tag.push_back(parent_tag);
 
     new_conn.push_back(nodes[8]);
     new_conn.push_back(nodes[5]);
     new_conn.push_back(nodes[2]);
     new_conn.push_back(nodes[6]);
+    new_offset.push_back(last_offset + 12);
+    new_type.push_back(QUAD4);
+    new_physical_tag.push_back(parent_tag);
 
     new_conn.push_back(nodes[7]);
     new_conn.push_back(nodes[8]);
     new_conn.push_back(nodes[6]);
     new_conn.push_back(nodes[3]);
+    new_offset.push_back(last_offset + 16);
+    new_type.push_back(QUAD4);
+    new_physical_tag.push_back(parent_tag);
 
-    n_quads = 4;
+    n_children = 4;
 
     MeshTools::PrintDebug("Quadrilateral Refinement Template\n");
 }
 
 void MeshRefinement::tetrahedron_refinement_template(std::vector<double>&   coords, 
-                                                  std::vector<unsigned int> &tetra_conn,
-                                                  std::vector<unsigned int> &new_conn,
-                                                  unsigned int              &n_nodes,
-                                                  unsigned int              &n_tets
+                                              std::vector<unsigned int>    &tetra_conn,
+                                              int                         &parent_tag,
+                                              std::vector<unsigned int>         &new_conn,
+                                              std::vector<unsigned int>   &new_offset,
+                                              std::vector<unsigned short> &new_type,
+                                              std::vector<int>            &new_physical_tag,
+                                              unsigned int                &n_nodes,
+                                              unsigned int                &n_children
                                               )
 {
     assert(tetra_conn.size() == 4);
@@ -582,46 +653,73 @@ void MeshRefinement::tetrahedron_refinement_template(std::vector<double>&   coor
         nodes[4+edge] = edge_central_vertice(n_nodes, coords, edge_conn);
     }
 
+    unsigned int last_offset = new_offset.back();
+
     new_conn.push_back(nodes[0]);
     new_conn.push_back(nodes[4]);
     new_conn.push_back(nodes[6]);
     new_conn.push_back(nodes[7]);
+    new_offset.push_back(last_offset + 4);
+    new_type.push_back(TET4);
+    new_physical_tag.push_back(parent_tag);
 
     new_conn.push_back(nodes[4]);
     new_conn.push_back(nodes[1]);
     new_conn.push_back(nodes[5]);
     new_conn.push_back(nodes[9]);
+    new_offset.push_back(last_offset + 8);
+    new_type.push_back(TET4);
+    new_physical_tag.push_back(parent_tag);
 
     new_conn.push_back(nodes[6]);
     new_conn.push_back(nodes[5]);
     new_conn.push_back(nodes[2]);
     new_conn.push_back(nodes[8]);
+    new_offset.push_back(last_offset + 12);
+    new_type.push_back(TET4);
+    new_physical_tag.push_back(parent_tag);
 
     new_conn.push_back(nodes[7]);
     new_conn.push_back(nodes[9]);
     new_conn.push_back(nodes[8]);
     new_conn.push_back(nodes[3]);
+    new_offset.push_back(last_offset + 16);
+    new_type.push_back(TET4);
+    new_physical_tag.push_back(parent_tag);
 
     new_conn.push_back(nodes[4]);
     new_conn.push_back(nodes[6]);
     new_conn.push_back(nodes[7]);
     new_conn.push_back(nodes[9]);
+    new_offset.push_back(last_offset + 20);
+    new_type.push_back(TET4);
+    new_physical_tag.push_back(parent_tag);
 
     new_conn.push_back(nodes[4]);
     new_conn.push_back(nodes[9]);
     new_conn.push_back(nodes[5]);
     new_conn.push_back(nodes[6]);
+    new_offset.push_back(last_offset + 24);
+    new_type.push_back(TET4);
+    new_physical_tag.push_back(parent_tag);
 
     new_conn.push_back(nodes[6]);
     new_conn.push_back(nodes[7]);
     new_conn.push_back(nodes[9]);
     new_conn.push_back(nodes[8]);
+    new_offset.push_back(last_offset + 28);
+    new_type.push_back(TET4);
+    new_physical_tag.push_back(parent_tag);
 
     new_conn.push_back(nodes[6]);
     new_conn.push_back(nodes[8]);
     new_conn.push_back(nodes[9]);
+    new_conn.push_back(nodes[5]);
+    new_offset.push_back(last_offset + 32);
+    new_type.push_back(TET4);
+    new_physical_tag.push_back(parent_tag);
 
-    n_tets = 8;
+    n_children = 8;
 
 
 }
@@ -629,10 +727,14 @@ void MeshRefinement::tetrahedron_refinement_template(std::vector<double>&   coor
 
 
 void MeshRefinement::hexahedron_refinement_template(std::vector<double>&   coords, 
-                                                  std::vector<unsigned int> &hexa_conn,
-                                                  std::vector<unsigned int> &new_conn,
-                                                  unsigned int              &n_nodes,
-                                                  unsigned int              &n_elements
+                                              std::vector<unsigned int>    &hexa_conn,
+                                              int                         &parent_tag,
+                                              std::vector<unsigned int>         &new_conn,
+                                              std::vector<unsigned int>   &new_offset,
+                                              std::vector<unsigned short> &new_type,
+                                              std::vector<int>            &new_physical_tag,
+                                              unsigned int                &n_nodes,
+                                              unsigned int                &n_children
                                               )
 {
     assert(hexa_conn.size() == 8);
@@ -685,6 +787,8 @@ void MeshRefinement::hexahedron_refinement_template(std::vector<double>&   coord
 */
     // Add the new vertices to the new connectivity
     // TODO: Add the new vertices to the new connectivity
+
+    unsigned int last_offset = new_offset.back();
     new_conn.push_back(nodes[0]);
     new_conn.push_back(nodes[8]);
     new_conn.push_back(nodes[20]);
@@ -693,6 +797,7 @@ void MeshRefinement::hexahedron_refinement_template(std::vector<double>&   coord
     new_conn.push_back(nodes[21]);
     new_conn.push_back(nodes[26]);
     new_conn.push_back(nodes[24]);
+    new_offset.push_back(last_offset + 8);
 
     new_conn.push_back(nodes[8]);
     new_conn.push_back(nodes[1]);
@@ -702,6 +807,7 @@ void MeshRefinement::hexahedron_refinement_template(std::vector<double>&   coord
     new_conn.push_back(nodes[13]);
     new_conn.push_back(nodes[22]);
     new_conn.push_back(nodes[26]);
+    new_offset.push_back(last_offset + 16);
 
     new_conn.push_back(nodes[11]);
     new_conn.push_back(nodes[20]);
@@ -711,6 +817,7 @@ void MeshRefinement::hexahedron_refinement_template(std::vector<double>&   coord
     new_conn.push_back(nodes[26]);
     new_conn.push_back(nodes[23]);
     new_conn.push_back(nodes[15]);
+    new_offset.push_back(last_offset + 24);
 
     new_conn.push_back(nodes[20]);
     new_conn.push_back(nodes[9]);
@@ -720,6 +827,7 @@ void MeshRefinement::hexahedron_refinement_template(std::vector<double>&   coord
     new_conn.push_back(nodes[22]);
     new_conn.push_back(nodes[14]);
     new_conn.push_back(nodes[23]);
+    new_offset.push_back(last_offset + 32);
 
     new_conn.push_back(nodes[12]);
     new_conn.push_back(nodes[21]);
@@ -729,6 +837,7 @@ void MeshRefinement::hexahedron_refinement_template(std::vector<double>&   coord
     new_conn.push_back(nodes[16]);
     new_conn.push_back(nodes[25]);
     new_conn.push_back(nodes[19]);
+    new_offset.push_back(last_offset + 40);
 
     new_conn.push_back(nodes[21]);
     new_conn.push_back(nodes[13]);
@@ -738,6 +847,7 @@ void MeshRefinement::hexahedron_refinement_template(std::vector<double>&   coord
     new_conn.push_back(nodes[5]);
     new_conn.push_back(nodes[17]);
     new_conn.push_back(nodes[25]);
+    new_offset.push_back(last_offset + 48);
 
     new_conn.push_back(nodes[26]);
     new_conn.push_back(nodes[22]);
@@ -747,6 +857,7 @@ void MeshRefinement::hexahedron_refinement_template(std::vector<double>&   coord
     new_conn.push_back(nodes[17]);
     new_conn.push_back(nodes[6]);
     new_conn.push_back(nodes[18]);
+    new_offset.push_back(last_offset + 56);
 
     new_conn.push_back(nodes[24]);
     new_conn.push_back(nodes[26]);
@@ -756,25 +867,26 @@ void MeshRefinement::hexahedron_refinement_template(std::vector<double>&   coord
     new_conn.push_back(nodes[25]);
     new_conn.push_back(nodes[18]);
     new_conn.push_back(nodes[7]);
+    new_offset.push_back(last_offset + 64);
 
-    n_elements = 8;
+    n_children = 8;
 
 
 
 }
                                         
 
-void MeshRefinement::parent2child(unsigned int &offset, unsigned short type, int tag, unsigned int nnoel, unsigned int n_new_element, std::vector<unsigned int> &refine_conn, std::vector<unsigned int> &new_conn, std::vector<unsigned int> &new_offset, std::vector<unsigned short> &new_type, std::vector<int> &new_physical_tag)
-{
-    new_conn.insert(new_conn.end(), refine_conn.begin(), refine_conn.end());
-    for(int i = 0; i < n_new_element; i++)
-    {
-        offset += nnoel;
-        new_offset.push_back(offset);
-        new_type.push_back(type);
-        new_physical_tag.push_back(tag);
-    }   
-}
+// void MeshRefinement::parent2child(unsigned int &offset, unsigned short type, int tag, unsigned int nnoel, unsigned int n_new_element, std::vector<unsigned int> &refine_conn, std::vector<unsigned int> &new_conn, std::vector<unsigned int> &new_offset, std::vector<unsigned short> &new_type, std::vector<int> &new_physical_tag)
+// {
+//     new_conn.insert(new_conn.end(), refine_conn.begin(), refine_conn.end());
+//     for(int i = 0; i < n_new_element; i++)
+//     {
+//         offset += nnoel;
+//         new_offset.push_back(offset);
+//         new_type.push_back(type);
+//         new_physical_tag.push_back(tag);
+//     }   
+// }
 
 void MeshRefinement::rebuild_communication_map()
 {

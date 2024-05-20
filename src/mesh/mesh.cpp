@@ -538,7 +538,7 @@ void Mesh::process_face_to_element()
 
         std::sort(conn_tmp.begin(), conn_tmp.end());
 
-        unsigned long long element_hash = compute_hash(conn_tmp.size(), conn_tmp.data());
+        unsigned long long element_hash = compute_hash(conn_tmp);
 
         // unsigned long long element_hash = conn_tmp[0];
         // for (unsigned short conn_i = 1 ; conn_i < surf_element_nnodes ; conn_i++){
@@ -596,7 +596,7 @@ void Mesh::process_face_to_element()
             }
 
             std::sort(face_nodes.begin(), face_nodes.end());
-            unsigned long element_hash = compute_hash(n_face_nodes, face_nodes.data());
+            unsigned long element_hash = compute_hash(face_nodes);
 
             // unsigned long element_hash = face_nodes[0];
             // for (unsigned short conn_i = 1 ; conn_i < face_nodes.size() ; conn_i++)

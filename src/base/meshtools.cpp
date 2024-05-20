@@ -91,7 +91,6 @@ std::unique_ptr<ParallelMesh> read(const std::string filename)
 
         mesh->read(filename);
 
-        MeshReordering::reordering(mesh);
 
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha

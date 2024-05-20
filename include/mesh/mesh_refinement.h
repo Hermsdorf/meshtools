@@ -41,10 +41,14 @@ class MeshRefinement
          * @param n_edges 
          */
         void edge_refinement_template(std::vector<double>&      coords, 
-                                              std::vector<unsigned int> &conn,
-                                              std::vector<unsigned int> &new_conn,
-                                              unsigned int              &n_nodes,
-                                              unsigned int              &n_edges
+                                              std::vector<unsigned int>    &conn,
+                                              int                         &parent_tag,
+                                              std::vector<unsigned int>         &new_conn,
+                                              std::vector<unsigned int>   &new_offset,
+                                              std::vector<unsigned short> &new_type,
+                                              std::vector<int>            &new_physical_tag,
+                                              unsigned int                &n_nodes,
+                                              unsigned int                &n_children
                                               );
 
         /**
@@ -57,10 +61,14 @@ class MeshRefinement
          * @param n_edges 
          */
         void triangle_refinement_template(std::vector<double>&      coords, 
-                                              std::vector<unsigned int> &conn,
-                                              std::vector<unsigned int> &new_conn,
-                                              unsigned int              &n_nodes,
-                                              unsigned int              &n_edges
+                                              std::vector<unsigned int>    &conn,
+                                              int                         &parent_tag,
+                                              std::vector<unsigned int>         &new_conn,
+                                              std::vector<unsigned int>   &new_offset,
+                                              std::vector<unsigned short> &new_type,
+                                              std::vector<int>            &new_physical_tag,
+                                              unsigned int                &n_nodes,
+                                              unsigned int                &n_children
                                                   );
 
         /**
@@ -73,10 +81,14 @@ class MeshRefinement
          * @param n_edges 
          */
         void quad_refinement_template(std::vector<double>&      coords,
-                                              std::vector<unsigned int> &conn,
-                                              std::vector<unsigned int> &new_conn,
-                                              unsigned int              &n_nodes,
-                                              unsigned int              &n_edges
+                                              std::vector<unsigned int>    &conn,
+                                              int                         &parent_tag,
+                                              std::vector<unsigned int>         &new_conn,
+                                              std::vector<unsigned int>   &new_offset,
+                                              std::vector<unsigned short> &new_type,
+                                              std::vector<int>            &new_physical_tag,
+                                              unsigned int                &n_nodes,
+                                              unsigned int                &n_children
                                                 );
 
         /**
@@ -89,10 +101,14 @@ class MeshRefinement
          * @param n_tets 
          */
         void tetrahedron_refinement_template(std::vector<double>&   coords, 
-                                                  std::vector<unsigned int> &tetra_conn,
-                                                  std::vector<unsigned int> &new_conn,
-                                                  unsigned int              &n_vertices,
-                                                  unsigned int              &n_tets
+                                              std::vector<unsigned int>    &conn,
+                                              int                         &parent_tag,
+                                              std::vector<unsigned int>         &new_conn,
+                                              std::vector<unsigned int>   &new_offset,
+                                              std::vector<unsigned short> &new_type,
+                                              std::vector<int>            &new_physical_tag,
+                                              unsigned int                &n_nodes,
+                                              unsigned int                &n_children
                                               );
         
         /**
@@ -105,10 +121,14 @@ class MeshRefinement
          * @param n_elements 
          */
         void hexahedron_refinement_template(std::vector<double>&   coords, 
-                                                  std::vector<unsigned int> &hexa_conn,
-                                                  std::vector<unsigned int> &new_conn,
-                                                  unsigned int              &n_vertices,
-                                                  unsigned int              &n_elements
+                                              std::vector<unsigned int>    &conn,
+                                              int                         &parent_tag,
+                                              std::vector<unsigned int>         &new_conn,
+                                              std::vector<unsigned int>   &new_offset,
+                                              std::vector<unsigned short> &new_type,
+                                              std::vector<int>            &new_physical_tag,
+                                              unsigned int                &n_nodes,
+                                              unsigned int                &n_children
                                               );
 
         /**
@@ -125,12 +145,9 @@ class MeshRefinement
          * @param new_type 
          * @param new_physical_tag 
          */
-        void parent2child(unsigned int &offset, unsigned short type, int tag, unsigned int nnoel, unsigned int n_new_element, 
-                        std::vector<unsigned int> &refine_conn, 
-                        std::vector<unsigned int> &new_conn, 
-                        std::vector<unsigned int> &new_offset, 
-                        std::vector<unsigned short> &new_type, 
-                        std::vector<int> &new_physical_tag);
+        // void parent2child(unsigned int &offset, unsigned short type, int tag, unsigned int nnoel, unsigned int n_new_element, 
+        //                 std::vector<unsigned short> &new_type, 
+        //                 std::vector<int> &new_physical_tag);
 
         /**
          * @brief mapeia os processadores vizinhos de cada nó do domínio
