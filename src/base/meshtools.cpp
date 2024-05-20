@@ -46,6 +46,9 @@ void Init(int argc, char* argv[])
 
 void Finalize()
 {
+#ifdef DEBUG_OUTPUT
+    fclose(_output); 
+#endif
 #if defined(PETSC_ENABLE)
     PetscFinalize();
 #elif defined(USE_MPI)
@@ -90,7 +93,6 @@ std::unique_ptr<ParallelMesh> read(const std::string filename)
         mesh = std::make_unique<Mesh>();
 
         mesh->read(filename);
-
 
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha

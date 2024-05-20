@@ -80,8 +80,8 @@ endif()
 
 
 if(DEFINED ENV{PETSC_DIR})
-  #set (ENV{PKG_CONFIG_PATH} "$ENV{PETSC_DIR}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
-  set (ENV{PKG_CONFIG_PATH} "/opt/lib/petsc/gnu/opt/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+  set (ENV{PKG_CONFIG_PATH} "$ENV{PETSC_DIR}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+  #set (ENV{PKG_CONFIG_PATH} "/opt/lib/petsc/gnu/opt/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
   pkg_search_module(PETSc REQUIRED PETSc>3.10)
   if(PETSc_FOUND)
      message(STATUS "PETSc ${PETSc_VERSION} was found!")

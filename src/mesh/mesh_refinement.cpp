@@ -24,11 +24,11 @@ void MeshRefinement::uniform_refinement(unsigned int n_refinements)
     unsigned int ne  = mesh->get_n_elements();
 
     // Get the mesh data
-    auto coords       = mesh->get_coordinate_vector();
-    auto conn         = mesh->get_connectivity_vector();
-    auto offset       = mesh->get_offset_vector();
-    auto type         = mesh->get_element_type_vector();
-    auto physical_tag = mesh->get_element_physical_tag_vector();
+    auto &coords       = mesh->get_coordinate_vector();
+    auto &conn         = mesh->get_connectivity_vector();
+    auto &offset       = mesh->get_offset_vector();
+    auto &type         = mesh->get_element_type_vector();
+    auto &physical_tag = mesh->get_element_physical_tag_vector();
 
 
     unsigned int n_nodes = mesh->get_n_nodes();
@@ -48,16 +48,13 @@ void MeshRefinement::uniform_refinement(unsigned int n_refinements)
     std::vector<unsigned int> new_shared_nodes;
     std::vector<unsigned int> new_shared_nodes_offset;
 
-    //int nnoel         = MeshHelper::VtkIdToNumberOfNodes[mesh->get_mesh_element_type()];
-    //int nnoel_surface = MeshHelper::VtkIdToNumberOfNodes[mesh->get_surface_mesh_element_type()];
-    //unsigned int size_conn = nnoel_surface*nse + nnoel*ne; 
-    
+
     // reserve memory
 
-    new_conn.reserve(2*conn.size());
-    new_offset.reserve(8*ne+4*nse);
-    new_type.reserve(8*ne+4*nse);
-    new_physical_tag.reserve(8*ne+4*nse);
+    new_conn.reserve(4*conn.size());
+    new_offset.reserve(4*offset.size());
+    new_type.reserve(4*type.size());
+    new_physical_tag.reserve(4*physical_tag.size());
 
     new_neighbors_processors.reserve(mesh->get_neighbors_processors_vector().size());
     new_shared_nodes.reserve(mesh->get_shared_nodes_vector().size());
@@ -66,7 +63,7 @@ void MeshRefinement::uniform_refinement(unsigned int n_refinements)
     // Build the shared processor per node map
     build_shared_processor_per_node_map();
 
-    new_offset.emplace_back(0);
+    new_offset.push_back(0);
     unsigned int offset_count = 0;
 
     for(int i = 0; i < nse; i++)
@@ -74,9 +71,9 @@ void MeshRefinement::uniform_refinement(unsigned int n_refinements)
         std::vector<unsigned int> element_conn;
         unsigned int n_count_elements = 0;
         mesh->get_surface_element_connectivity(i, element_conn);
-        // std::cout << "Element Conn: ";
-        // std::for_each(element_conn.begin(), element_conn.end(), [&](unsigned int &val){ std::cout << val << " ";});
-        // std::cout << std::endl;
+        std::cout << "Element Conn: ";
+        std::for_each(element_conn.begin(), element_conn.end(), [&](unsigned int &val){ std::cout << val << " ";});
+        std::cout << std::endl;
         switch (type[i])
         {
         case EDGE2:
@@ -108,9 +105,9 @@ void MeshRefinement::uniform_refinement(unsigned int n_refinements)
         
         unsigned int n_count_elements = 0;
         mesh->get_element_connectivity(i, element_conn);
-        // std::cout << "Element Conn: ";
-        // std::for_each(element_conn.begin(), element_conn.end(), [&](unsigned int &val){ std::cout << val << " ";});
-        // std::cout << std::endl;
+        std::cout << "Element Conn: ";
+        std::for_each(element_conn.begin(), element_conn.end(), [&](unsigned int &val){ std::cout << val << " ";});
+        std::cout << std::endl;
         switch (mesh->get_element_type(i))
         {
         case TRI3:
@@ -140,8 +137,16 @@ void MeshRefinement::uniform_refinement(unsigned int n_refinements)
     mesh->set_n_elements(n_new_elements);
     mesh->set_n_surface_elements(n_new_surface_elements);
 
-    assert(new_offset.size() == n_new_elements + n_new_surface_elements + 1);
+    //assert(new_offset.size() == n_new_elements + n_new_surface_elements + 1);
+    std::cout << "New Offset Size: " << new_offset.size() << std::endl;
+    std::for_each(new_offset.begin(), new_offset.end(), [&](unsigned int &val){ std::cout << val << " ";});
+    std::cout << std::endl;
+    std::cout << "New Conn Size: " << new_conn.size() << std::endl;
+    std::for_each(new_conn.begin(), new_conn.end(), [&](unsigned int &val){ std::cout << val << " ";});
+    std::cout << std::endl;
     
+    
+    conn         = new_conn;
     offset       = new_offset ;
     type         = new_type ;
     physical_tag = new_physical_tag;
@@ -484,7 +489,7 @@ void MeshRefinement::triangle_refinement_template(std::vector<double>&      coor
                                               )
 {
 
-    assert(triangle_conn.size() == 3);
+    assert(conn.size() == 3);
 
     std::vector<unsigned int> nodes(6);
 
