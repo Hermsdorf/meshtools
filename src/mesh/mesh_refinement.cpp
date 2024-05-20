@@ -20,8 +20,9 @@ void MeshRefinement::uniform_refinement(unsigned int n_refinements)
     face_map.clear();
     cell_map.clear();
 
-    unsigned int nse = mesh->get_n_surface_elements();
-    unsigned int ne  = mesh->get_n_elements();
+    unsigned int n_nodes = mesh->get_n_nodes();
+    unsigned int nse     = mesh->get_n_surface_elements();
+    unsigned int ne      = mesh->get_n_elements();
 
     // Get the mesh data
     auto &coords       = mesh->get_coordinate_vector();
@@ -29,10 +30,6 @@ void MeshRefinement::uniform_refinement(unsigned int n_refinements)
     auto &offset       = mesh->get_offset_vector();
     auto &type         = mesh->get_element_type_vector();
     auto &physical_tag = mesh->get_element_physical_tag_vector();
-
-
-    unsigned int n_nodes = mesh->get_n_nodes();
-    unsigned int new_n_elements;
 
     unsigned int n_new_surface_elements = 0;
     unsigned int n_new_elements         = 0;
@@ -50,7 +47,6 @@ void MeshRefinement::uniform_refinement(unsigned int n_refinements)
 
 
     // reserve memory
-
     new_conn.reserve(4*conn.size());
     new_offset.reserve(4*offset.size());
     new_type.reserve(4*type.size());
