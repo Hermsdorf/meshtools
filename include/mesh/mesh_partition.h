@@ -43,7 +43,7 @@ class MeshPartition
         std::vector<int> face_part;      
         bool applied; 
 
-        std::unique_ptr<ParallelMesh> recv_local_data_from_master();
+        void recv_local_data_from_master(std::unique_ptr<ParallelMesh>& pmesh);
 
         void get_node_partition(std::unique_ptr<Mesh>& mesh, std::map<unsigned int, std::set<unsigned int> > &node_partition);
 

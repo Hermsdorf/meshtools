@@ -26,10 +26,12 @@ vtkWriter::vtkWriter():is_point_data_open(false), is_cell_data_open(false)
 }
 
 
-bool vtkWriter::open(std::string base_file_name, unsigned int file_number)
+bool vtkWriter::open(std::string base_file_name, bool _is_ascii, unsigned int file_number)
 {   
     this->base_name   = base_file_name;
     this->file_number = file_number;
+
+    this->is_ascii = _is_ascii;
 
     stringstream base_name_sufix;
     base_name_sufix << base_file_name << "_"
@@ -71,16 +73,22 @@ vtkWriter::~vtkWriter()
 
 void vtkWriter::write_mesh(Mesh & mesh)
 {
+    std::vector<unsigned int> offset_vector;
 
-    fvtu << std::setprecision(16);
-    fvtu << prefix_level(2) << "<Piece NumberOfPoints=\""<<mesh.get_n_nodes()<<"\" NumberOfCells=\"" << mesh.get_n_elements() + mesh.get_n_surface_elements() <<"\">" << std::endl;
+    unsigned int n_elements         = mesh.get_n_elements();
+    unsigned int connectivity_size  = mesh.get_element_connectivity_size();
+    
+    mesh.get_only_element_offset_vector(offset_vector);
+    
+    fvtu << std::scientific<<std::setprecision(10);
+    fvtu << prefix_level(2) << "<Piece NumberOfPoints=\""<<mesh.get_n_nodes()<<"\" NumberOfCells=\"" << n_elements <<"\">" << std::endl;
     fvtu << prefix_level(3) << "<Points>" << std::endl;
     write_data_item<double>(mesh.get_coordinate_vector().data(),mesh.get_coordinate_vector().size(),"Points", prefix_level(4),3);
     fvtu << prefix_level(3) << "</Points>" << std::endl;
     fvtu << prefix_level(3) << "<Cells>" << std::endl;
-    write_data_item<unsigned int>(mesh.get_connectivity_vector().data(),mesh.get_connectivity_vector().size(),"connectivity", prefix_level(4));
-    write_data_item<unsigned int>(mesh.get_offset_vector().data(),mesh.get_offset_vector().size(),"offsets", prefix_level(4));
-    write_data_item<unsigned short>(mesh.get_element_type_vector().data(),mesh.get_element_type_vector().size(),"types", prefix_level(4));
+    write_data_item<unsigned int>(mesh.get_element_connectivity_pointer(),connectivity_size,"connectivity", prefix_level(4));
+    write_data_item<unsigned int>(offset_vector.data()+1,offset_vector.size()-1,"offsets", prefix_level(4));
+    write_data_item<unsigned short>(mesh.get_element_type_pointer(),n_elements,"types", prefix_level(4));
     fvtu << prefix_level(3) << "</Cells>"    << std::endl;
 
     if(MeshTools::processor_id()==0)
@@ -149,7 +157,7 @@ void vtkWriter::close_cell_data_section()
 
 void vtkWriter::close()
 {
-    
+    fvtu  << prefix_level(2)<<"</Piece>"            << std::endl;
     fvtu << prefix_level(1)<<"</UnstructuredGrid>" << std::endl;
     fvtu << "</VTKFile>" << std::endl;
     fvtu.close();
@@ -166,7 +174,7 @@ void vtkWriter::close()
                             << std::setw(4) << std::setfill('0') << file_number;
             std::string vtu_file  = base_name_sufix.str() +".vtu";
 
-            fpvtu <<  prefix_level(2) << "<Piece Source=\""<< vtu_file << "\" \\> " << std::endl;
+            fpvtu <<  prefix_level(2) << "<Piece Source=\""<< vtu_file << "\"/> " << std::endl;
             fpvtu  << prefix_level(1) << "</PUnstructuredGrid>" << std::endl;
             fpvtu << "</VTKFile>"     << endl;
         }

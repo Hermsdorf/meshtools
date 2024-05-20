@@ -4,7 +4,7 @@
 #include "mesh_helper.h"
 #include "mesh_refinement.h"
 
-MeshRefinement::MeshRefinement(ParallelMesh &mesh): mesh(mesh)
+MeshRefinement::MeshRefinement(std::unique_ptr<ParallelMesh> &mesh): mesh(mesh)
 {
 }
 
@@ -20,36 +20,36 @@ void MeshRefinement::uniform_refinement(unsigned int n_refinements)
     face_map.clear();
     cell_map.clear();
 
-    unsigned int nse = mesh.get_n_surface_elements();
-    unsigned int ne  = mesh.get_n_elements();
+    unsigned int nse = mesh->get_n_surface_elements();
+    unsigned int ne  = mesh->get_n_elements();
 
     // Get the mesh data
-    auto coords       = mesh.get_coordinate_vector();
-    auto conn         = mesh.get_connectivity_vector();
-    auto offset       = mesh.get_offset_vector();
-    auto type         = mesh.get_element_type_vector();
-    auto physical_tag = mesh.get_element_physical_tag_vector();
+    auto coords       = mesh->get_coordinate_vector();
+    auto conn         = mesh->get_connectivity_vector();
+    auto offset       = mesh->get_offset_vector();
+    auto type         = mesh->get_element_type_vector();
+    auto physical_tag = mesh->get_element_physical_tag_vector();
 
 
-    unsigned int n_nodes = mesh.get_n_nodes();
+    unsigned int n_nodes = mesh->get_n_nodes();
     unsigned int new_n_elements;
 
     unsigned int n_new_surface_elements = 0;
     unsigned int n_new_elements         = 0;
 
     // New mesh data
-    std::vector<double> new_coords;
-    std::vector<unsigned int> new_conn;
-    std::vector<unsigned int> new_offset;
+    std::vector<double>         new_coords;
+    std::vector<unsigned int>   new_conn;
+    std::vector<unsigned int>   new_offset;
     std::vector<unsigned short> new_type;
-    std::vector<int> new_physical_tag;
+    std::vector<int>            new_physical_tag;
 
     std::vector<unsigned int> new_neighbors_processors;
     std::vector<unsigned int> new_shared_nodes;
     std::vector<unsigned int> new_shared_nodes_offset;
 
-    int nnoel         = MeshHelper::VtkIdToNumberOfNodes[mesh.get_mesh_element_type()];
-    int nnoel_surface = MeshHelper::VtkIdToNumberOfNodes[mesh.get_surface_mesh_element_type()];
+    int nnoel         = MeshHelper::VtkIdToNumberOfNodes[mesh->get_mesh_element_type()];
+    int nnoel_surface = MeshHelper::VtkIdToNumberOfNodes[mesh->get_surface_mesh_element_type()];
     unsigned int size_conn = nnoel_surface*nse + nnoel*ne; 
     
     // reserve memory
@@ -59,15 +59,15 @@ void MeshRefinement::uniform_refinement(unsigned int n_refinements)
     new_type.reserve(8*ne+4*nse);
     new_physical_tag.reserve(8*ne+4*nse);
 
-    new_neighbors_processors.reserve(mesh.get_neighbors_processors_vector().size());
-    new_shared_nodes.reserve(mesh.get_shared_nodes_vector().size());
-    new_shared_nodes_offset.reserve(mesh.get_shared_nodes_offset_vector().size());
+    new_neighbors_processors.reserve(mesh->get_neighbors_processors_vector().size());
+    new_shared_nodes.reserve(mesh->get_shared_nodes_vector().size());
+    new_shared_nodes_offset.reserve(mesh->get_shared_nodes_offset_vector().size());
     
     // copia os vertices
     new_coords.insert(new_coords.end(), coords.begin(), coords.end());
 
     // Build the shared processor per node map
-    build_shared_processor_per_node_map(mesh);
+    build_shared_processor_per_node_map();
 
     new_offset.emplace_back(0);
     unsigned int offset_count = 0;
@@ -77,7 +77,7 @@ void MeshRefinement::uniform_refinement(unsigned int n_refinements)
         std::vector<unsigned int> element_conn;
         std::vector<unsigned int> refine_conn;
         unsigned int n_count_elements = 0;
-        mesh.get_surface_element_connectivity(i, element_conn);
+        mesh->get_surface_element_connectivity(i, element_conn);
         switch (type[i])
         {
         case EDGE2:
@@ -96,42 +96,46 @@ void MeshRefinement::uniform_refinement(unsigned int n_refinements)
         n_new_surface_elements += n_count_elements;
     }
 
+
     for(int i = 0; i < ne; i++)
     {
         std::vector<unsigned int> element_conn;
         std::vector<unsigned int> refine_conn;
         unsigned int n_count_elements = 0;
-        mesh.get_surface_element_connectivity(i, element_conn);
-        switch (type[i])
+        mesh->get_element_connectivity(i, element_conn);
+        switch (mesh->get_element_type(i))
         {
         case TRI3:
-            edge_refinement_template(new_coords, element_conn, refine_conn, n_nodes, n_count_elements);  
+            triangle_refinement_template(new_coords, element_conn, refine_conn, n_nodes, n_count_elements);  
             break;
         case QUAD4:
-            triangle_refinement_template(new_coords, element_conn, refine_conn, n_nodes, n_count_elements);
+            quad_refinement_template(new_coords, element_conn, refine_conn, n_nodes, n_count_elements);
             break;
         case TET4:
             tetrahedron_refinement_template(new_coords, element_conn, refine_conn, n_nodes, n_count_elements);
             break;
         default:
+            MeshTools::PrintDebug("Element Type not implemented\n");
             break;
         }
         parent2child(offset_count, type[i], physical_tag[i], MeshHelper::VtkIdToNumberOfNodes[type[i]], n_count_elements, refine_conn, new_conn, new_offset, new_type, new_physical_tag);
         n_new_elements += n_count_elements;
     }
 
-    mesh.set_n_nodes(n_nodes);
-    mesh.set_n_elements(n_new_elements);
-    mesh.set_n_surface_elements(n_new_surface_elements);
+    MeshTools::PrintDebug("begin update mesh\n");
+    mesh->set_n_nodes(n_nodes);
+    mesh->set_n_elements(n_new_elements);
+    mesh->set_n_surface_elements(n_new_surface_elements);
     coords.swap(new_coords);
     conn.swap(new_conn);
     offset.swap(new_offset);
     type.swap(new_type);
     physical_tag.swap(new_physical_tag);
+    MeshTools::PrintDebug("end update mesh\n");
     
     // update the mesh arrays
     //update_mesh_arrays(mesh, new_conn, new_offset, new_type, new_physical_tag);
-    rebuild_communication_map();
+    // rebuild_communication_map();
 
 }
 
@@ -268,9 +272,9 @@ unsigned int MeshRefinement::cell_central_vertice(unsigned int &n_nodes, std::ve
 void MeshRefinement::build_shared_processor_per_node_map()
 {
 
-    auto& shared_nodes_offset  = mesh.get_shared_nodes_offset_vector();
-    auto& shared_nodes         = mesh.get_shared_nodes_vector();
-    auto& neighbors_processors = mesh.get_neighbors_processors_vector();
+    auto& shared_nodes_offset  = mesh->get_shared_nodes_offset_vector();
+    auto& shared_nodes         = mesh->get_shared_nodes_vector();
+    auto& neighbors_processors = mesh->get_neighbors_processors_vector();
 
     for(auto process : neighbors_processors)
     {
@@ -416,6 +420,8 @@ void MeshRefinement::edge_refinement_template(std::vector<double>&      coords,
     new_conn.push_back(v1);
 
     n_edges = 2;
+
+    MeshTools::PrintDebug("Edge Refinement Template\n");
 }
 
 /*
@@ -479,6 +485,7 @@ void MeshRefinement::triangle_refinement_template(std::vector<double>&      coor
     new_conn.push_back(nodes[5]);
 
     n_triangles = 4;
+    MeshTools::PrintDebug("Triangle Refinement Template\n");
 
 }
 
@@ -547,6 +554,8 @@ void MeshRefinement::quad_refinement_template(std::vector<double>&        coords
     new_conn.push_back(nodes[3]);
 
     n_quads = 4;
+
+    MeshTools::PrintDebug("Quadrilateral Refinement Template\n");
 }
 
 void MeshRefinement::tetrahedron_refinement_template(std::vector<double>&   coords, 
@@ -558,7 +567,7 @@ void MeshRefinement::tetrahedron_refinement_template(std::vector<double>&   coor
 {
     assert(tetra_conn.size() == 4);
 
-    std::vector<unsigned int> nodes(6);
+     std::vector<unsigned int> nodes(10);
 
     nodes[0] = tetra_conn[0];
     nodes[1] = tetra_conn[1];
@@ -571,33 +580,49 @@ void MeshRefinement::tetrahedron_refinement_template(std::vector<double>&   coor
         std::vector<unsigned int> edge_conn(2);
         MeshHelper::tetrahedron_edge_connectivity(edge, tetra_conn, edge_conn);
         nodes[4+edge] = edge_central_vertice(n_nodes, coords, edge_conn);
-        find_processor_neighbours_edge(edge_conn, nodes[4+edge]);
     }
 
-    nodes[10] = cell_central_vertice(n_nodes, coords, tetra_conn);
-
-    // Add the new vertices to the new connectivity 
     new_conn.push_back(nodes[0]);
     new_conn.push_back(nodes[4]);
-    new_conn.push_back(nodes[5]);
-    new_conn.push_back(nodes[10]);
+    new_conn.push_back(nodes[6]);
+    new_conn.push_back(nodes[7]);
 
     new_conn.push_back(nodes[4]);
     new_conn.push_back(nodes[1]);
-    new_conn.push_back(nodes[6]);
-    new_conn.push_back(nodes[10]);
-
     new_conn.push_back(nodes[5]);
+    new_conn.push_back(nodes[9]);
+
     new_conn.push_back(nodes[6]);
+    new_conn.push_back(nodes[5]);
     new_conn.push_back(nodes[2]);
-    new_conn.push_back(nodes[10]);
+    new_conn.push_back(nodes[8]);
+
+    new_conn.push_back(nodes[7]);
+    new_conn.push_back(nodes[9]);
+    new_conn.push_back(nodes[8]);
+    new_conn.push_back(nodes[3]);
 
     new_conn.push_back(nodes[4]);
     new_conn.push_back(nodes[6]);
-    new_conn.push_back(nodes[5]);
-    new_conn.push_back(nodes[10]);
+    new_conn.push_back(nodes[7]);
+    new_conn.push_back(nodes[9]);
 
-    n_tets = 4;
+    new_conn.push_back(nodes[4]);
+    new_conn.push_back(nodes[9]);
+    new_conn.push_back(nodes[5]);
+    new_conn.push_back(nodes[6]);
+
+    new_conn.push_back(nodes[6]);
+    new_conn.push_back(nodes[7]);
+    new_conn.push_back(nodes[9]);
+    new_conn.push_back(nodes[8]);
+
+    new_conn.push_back(nodes[6]);
+    new_conn.push_back(nodes[8]);
+    new_conn.push_back(nodes[9]);
+
+    n_tets = 8;
+
 
 }
 
@@ -779,12 +804,12 @@ void MeshRefinement::rebuild_communication_map()
         shared_nodes.insert(shared_nodes.end(), nodes.second.begin(), nodes.second.end());
     }
 
-    mesh.get_shared_nodes_vector().swap(shared_nodes);
-    mesh.get_shared_nodes_offset_vector().swap(shared_nodes_offset);
-    mesh.get_neighbors_processors_vector().swap(neighbors_processors);
+    mesh->get_shared_nodes_vector().swap(shared_nodes);
+    mesh->get_shared_nodes_offset_vector().swap(shared_nodes_offset);
+    mesh->get_neighbors_processors_vector().swap(neighbors_processors);
 
-    mesh.build_communication_map();
-    mesh.fill_node_index();
+    mesh->build_communication_map();
+    mesh->fill_node_index();
 
 }
 

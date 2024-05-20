@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include <set>
+#include <memory>
 
 #include "parallel_mesh.h"
 
@@ -22,7 +23,7 @@ typedef EdgeHash CellHash;
 class MeshRefinement
 {
     public:
-        MeshRefinement(ParallelMesh &mesh);
+        MeshRefinement(std::unique_ptr<ParallelMesh> &mesh);
         ~MeshRefinement();
 
     void uniform_refinement(unsigned int n_refinements);
@@ -213,7 +214,7 @@ class MeshRefinement
 
         std::unordered_map<unsigned int, std::set<unsigned int> > shared_processors_per_node;    
 
-        ParallelMesh &mesh;
+        std::unique_ptr<ParallelMesh> &mesh;
 
 };
 

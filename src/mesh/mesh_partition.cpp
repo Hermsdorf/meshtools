@@ -173,7 +173,7 @@ void MeshPartition::apply_metis_partition(std::unique_ptr<Mesh>& mesh, int npart
     if(MeshTools::processor_id() == 0)
     {
         for(int p = 0; p < this->n_partitions; p++)
-        std::cout << "Partition " << p << " has " << count_face[p] << " face elements, " << count_elem[p] << " elements and \n";  
+        std::cout << "Partition " << p << " has " << count_face[p] << " face elements, " << count_elem[p] << " elements\n";  
     }
         
 
@@ -190,6 +190,8 @@ void MeshPartition::apply_metis_partition(std::unique_ptr<Mesh>& mesh, int npart
  */
 void MeshPartition::get_node_partition(std::unique_ptr<Mesh>& mesh, std::map<unsigned int, std::set<unsigned int> > &node_partition)
 {
+    MeshTools::PrintDebug("Starting get_node_partition\n");
+
     unsigned int ne  = mesh->get_n_elements();
     unsigned int nfe = mesh->get_n_surface_elements();
 
@@ -211,6 +213,7 @@ void MeshPartition::get_node_partition(std::unique_ptr<Mesh>& mesh, std::map<uns
         std::cout << std::endl;
     }
 #endif
+    MeshTools::PrintDebug("Ending get_node_partition\n");
 }
 
 void MeshPartition::get_and_send_local_data(
@@ -232,6 +235,7 @@ void MeshPartition::get_and_send_local_data(
 )
 {
     
+    MeshTools::PrintDebug("Starting get_and_send_local_data\n");
     // Getting values from mesh, which is going 
     // to be splitted among processors
     unsigned int nelem             = mesh->get_n_elements();
@@ -486,15 +490,15 @@ void MeshPartition::get_and_send_local_data(
         MPI_Isend(&face_to_element[0]  , face_to_element.size()  , MPI_UNSIGNED      , sendto, 0, MPI_COMM_WORLD, &requests[7]);
         MPI_Waitall(8,&requests[0],&status[0]);
     }
+
+    MeshTools::PrintDebug("Ending get_and_send_local_data\n");
 }
 
 
-std::unique_ptr<ParallelMesh> MeshPartition::recv_local_data_from_master()
+void MeshPartition::recv_local_data_from_master(std::unique_ptr<ParallelMesh>& pmesh)
 {
     int          array_sizes[CONST_BUFFER_SIZE];
     MPI_Status   status;
-
-    std::unique_ptr<ParallelMesh> pmesh = std::make_unique<ParallelMesh>();
 
     //std::cout <<"Processor " << MeshTools::processor_id() <<" receving data form 0" << std::endl;
     MPI_Recv(array_sizes,CONST_BUFFER_SIZE , MPI_INT,0, 0, MPI_COMM_WORLD, &status);
@@ -558,16 +562,20 @@ std::unique_ptr<ParallelMesh> MeshPartition::recv_local_data_from_master()
     MPI_Recv(&_tag[0]                 , _tag.size()                 , MPI_INT           , 0, 0, MPI_COMM_WORLD, &status);
     MPI_Recv(&_face_to_element[0]     , _face_to_element.size()     , MPI_UNSIGNED      , 0, 0, MPI_COMM_WORLD, &status);
     
-    return pmesh;
 }
 
 
 std::unique_ptr<ParallelMesh> MeshPartition::distributed_mesh(std::unique_ptr<Mesh> &mesh)
 {
+
+    MeshTools::PrintDebug("Starting distributed_mesh\n");
+
     int processor_id  = MeshTools::processor_id();
     int n_processors  = MeshTools::n_processors(); 
         
-    std::unique_ptr<ParallelMesh> pmesh;
+    std::unique_ptr<ParallelMesh> pmesh(new ParallelMesh());
+
+    pmesh->set_n_processors(n_processors);
 
     if(!this->applied)
         this->apply_metis_partition(mesh,n_processors);
@@ -617,15 +625,14 @@ std::unique_ptr<ParallelMesh> MeshPartition::distributed_mesh(std::unique_ptr<Me
             }
 
 
-            // Processing and filling local arrays and variables to process 0
-            pmesh = std::make_unique<ParallelMesh>();
+
 
             auto & _coords = pmesh->get_coordinate_vector();
             auto & _conn   = pmesh->get_connectivity_vector();
             auto & _type   = pmesh->get_element_type_vector();
             auto & _tag    = pmesh->get_element_physical_tag_vector(); 
-            auto & _offset = pmesh->get_offset_vector();
-            auto & _node_index = pmesh->get_node_index_vector();
+            auto & _offset              = pmesh->get_offset_vector();
+            auto & _node_index          = pmesh->get_node_index_vector();
             auto & _neighbors           = pmesh->get_neighbors_processors_vector();
             auto & _shared_nodes_offset = pmesh->get_shared_nodes_offset_vector();
             auto & _shared_nodes        = pmesh->get_shared_nodes_vector();
@@ -697,7 +704,7 @@ std::unique_ptr<ParallelMesh> MeshPartition::distributed_mesh(std::unique_ptr<Me
         }   
         else
         {
-            pmesh = this->recv_local_data_from_master();
+            this->recv_local_data_from_master(pmesh);
 
             int n_physical;
 
@@ -732,8 +739,6 @@ std::unique_ptr<ParallelMesh> MeshPartition::distributed_mesh(std::unique_ptr<Me
     }
     else
     {
-        // pmesh is actually a serial mesh
-        pmesh = std::make_unique<ParallelMesh>();
 
         pmesh->set_n_processors(1);
         pmesh->set_n_neighbor_processors(0);

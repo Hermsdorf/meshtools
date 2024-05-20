@@ -205,12 +205,12 @@ void Mesh::apply_colors(ColoringMode mode, int block_size)
 
 unsigned short Mesh::get_mesh_element_type()
 {
-    return this->type[this->n_face_elements];
+    return this->element_type;
 }
 
 unsigned short Mesh::get_surface_mesh_element_type()
 {
-    return this->type[0];
+    return this->surface_element_type;
 }
 
 unsigned int Mesh::get_element_with_surface_element(unsigned int face_elem_id)
@@ -657,4 +657,46 @@ void Mesh::write_vtk(string basename)
         writer.close();
     }
     
+}
+
+unsigned int Mesh::get_element_connectivity_size()
+{
+    return this->offset[this->n_face_elements + this->n_elements] - this->offset[this->n_face_elements];
+}
+
+unsigned int Mesh::get_surface_element_connectivity_size()
+{
+    return this->offset[this->n_face_elements];
+
+}
+
+const unsigned int* Mesh::get_element_connectivity_pointer()
+{
+    return &this->conn[this->offset[this->n_face_elements]];
+}
+
+const unsigned int* Mesh::get_surface_element_connectivity_pointer()
+{
+    return &this->conn[0];
+}
+
+void Mesh::get_only_element_offset_vector(std::vector<unsigned int>& offset)
+{
+    offset.resize(this->n_elements+1);
+    unsigned int start = this->offset[this->n_face_elements];
+    for(int i = 0; i < this->n_elements+1; i++)
+    {
+        offset[i] = this->offset[this->n_face_elements+i] - start;
+    }
+}
+
+const unsigned short* Mesh::get_element_type_pointer()
+{
+    return &this->type[this->n_face_elements];
+
+}
+
+const unsigned short* Mesh::get_surface_element_type_pointer()
+{
+    return &this->type[0];
 }

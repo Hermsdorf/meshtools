@@ -19,7 +19,7 @@ class vtkWriter
 
         ~vtkWriter();
 
-        bool open(std::string _filename, unsigned int file_number=0);
+        bool open(std::string _filename, bool _is_ascii=true, unsigned int file_number=0);
 
         void write_mesh(Mesh &mesh);
         
@@ -28,10 +28,10 @@ class vtkWriter
         void close_point_data_section();
 
         template <typename T>
-        void write_point_data(T* data, size_t size, std::string name, int ncomp = 0);
+        void write_point_data(const T* data, size_t size, std::string name, int ncomp = 0);
 
         template <typename T>
-        void write_cell_data(T* data, size_t size, std::string name, int ncomp = 0);
+        void write_cell_data(const T* data, size_t size, std::string name, int ncomp = 0);
 
 
         void start_cell_data_section();
@@ -45,7 +45,7 @@ class vtkWriter
         //template <typename T> string get_vtk_type_name();
         
         template <typename T>
-        void write_data_item(T* data, size_t size, std::string name, std::string prefix, int ncomp = 0);
+        void write_data_item(const T* data, size_t size, std::string name, std::string prefix, int ncomp = 0);
 
         std::ofstream fvtu;
         std::ofstream fpvtu;
@@ -57,6 +57,8 @@ class vtkWriter
         bool is_point_data_open;
 
         bool is_cell_data_open;
+
+        bool is_ascii;
 
 };
 
@@ -75,26 +77,36 @@ string get_vtk_type_name()
 }
 
 template <typename T>
-void vtkWriter::write_data_item(T* data, size_t size, std::string name,std::string  prefix, int ncomp)
+void vtkWriter::write_data_item(const T* data, size_t size, std::string name,std::string  prefix, int ncomp)
 {
-    //std::stringstream encoded_data; 
-    //Encoder::encode_base64(data,size, encoded_data);
+
 
     this->fvtu << prefix << "<DataArray type=\""               << get_vtk_type_name<T>() <<"\""
                                    << " Name=\""               << name                   << "\"";
     
-    if(ncomp > 0 )
+    int change_line = 8;
+    if(ncomp > 0 ) {
         this->fvtu << " NumberOfComponents=\"" << ncomp << "\"";
+        change_line = ncomp;
+    }
     
-    //this->fvtu << " format=\"binary\" />"  << endl;
-    //this->fvtu << encoded_data.str() ;
-    this->fvtu << " format=\"ascii\">"  << endl;
-    this->fvtu << prefix_level(5);
-    for(int i = 0; i < size; i++)
-    {
-        this->fvtu << data[i] << " ";
-        if((i+1)%6 == 0)
-            this->fvtu << std::endl << prefix_level(5) ;
+
+    if(!is_ascii) {
+        this->fvtu << " format=\"binary\" />"  << endl;
+        std::stringstream encoded_data; 
+        Encoder::encode_base64(data,size, encoded_data);
+        this->fvtu << encoded_data.str() ;
+    }
+    else {
+
+        this->fvtu << " format=\"ascii\">"  << endl;
+        this->fvtu << prefix_level(5);
+        for(int i = 0; i < size; i++)
+        {
+            this->fvtu << data[i] << " ";
+            if((i+1)%change_line == 0 && i != size-1)
+                this->fvtu << std::endl << prefix_level(5) ;
+        }
     }
 
     this->fvtu << endl << prefix << "</DataArray>" << std::endl;
@@ -102,7 +114,7 @@ void vtkWriter::write_data_item(T* data, size_t size, std::string name,std::stri
 }
 
 template <typename T>
-void vtkWriter::write_point_data(T* data, size_t size, std::string name, int ncomp)
+void vtkWriter::write_point_data(const T* data, size_t size, std::string name, int ncomp)
 {
     if(!is_point_data_open)
     {
@@ -118,7 +130,7 @@ void vtkWriter::write_point_data(T* data, size_t size, std::string name, int nco
 }
 
 template <typename T>
-void vtkWriter::write_cell_data(T* data, size_t size, std::string name, int ncomp)
+void vtkWriter::write_cell_data(const T* data, size_t size, std::string name, int ncomp)
 {
     if(!is_cell_data_open)
     {

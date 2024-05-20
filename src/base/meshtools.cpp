@@ -5,10 +5,12 @@
 #include "meshtools.h"
 #include "parallel_mesh.h"
 #include "mesh_partition.h"
+#include "mesh_reordering.h"
 namespace MeshTools
 {
     static int _processor_id;
     static int _n_processors;
+    static FILE* _output;
     MPI_Comm  _mpi_comm;
 
 void Init(int argc, char* argv[])
@@ -26,6 +28,15 @@ void Init(int argc, char* argv[])
     MPI_Comm_size(_mpi_comm, &_n_processors);
     MPI_Comm_rank(_mpi_comm, &_processor_id);
 #endif
+
+#ifdef DEBUG_OUTPUT
+    char _output_filename[255];
+    snprintf(_output_filename, 255, "output_%d.txt", _processor_id);
+    _output = fopen(_output_filename, "w");
+#else
+    _output = stdout;
+#endif
+
     if(_processor_id == 0) {
         std::cout<<"\nMeshTools Initialization\n"
              <<"  Number of Processors: " << _n_processors << std::endl;
@@ -67,30 +78,33 @@ MPI_Comm Comm()
     return _mpi_comm;
 }
 
-// ParallelMesh* ReadMesh(const std::string& filename)
-// {
-//     Mesh* mesh = nullptr;
-//     MeshPartition* parts = new MeshPartition();
-//     if (_processor_id == 0)
-//     {
-//         // Rodando serial ou em paralelo o processo mestre
-//         // irá ler a malha.
-//         mesh = new Mesh(filename);
+std::unique_ptr<ParallelMesh> read(const std::string filename)
+{
+    
+    std::unique_ptr<MeshPartition> parts(new MeshPartition());
+    std::unique_ptr<Mesh>    mesh;
+    if (_processor_id == 0)
+    {
+        // Rodando serial ou em paralelo o processo mestre
+        // irá ler a malha.
+        mesh = std::make_unique<Mesh>();
 
-//         // Se houver mais um processo, o processo mestre irá
-//         // particionar a malha
-//         if (_n_processors > 1)
-//         {
-//             parts->ApplyPartitioner(mesh, _n_processors);
-//         }
-//     }
+        mesh->read(filename);
 
-//     ParallelMesh* pmesh = parts->DistributedMesh(mesh);
-//     if(mesh) delete mesh;
-//     if(parts) delete parts;
-//     return pmesh;
+        MeshReordering::reordering(mesh);
 
-// }
+        // Se houver mais um processo, o processo mestre irá
+        // particionar a malha
+        if (_n_processors > 1)
+        {
+            parts->apply_metis_partition(mesh, _n_processors);
+        }
+    }
+
+    std::unique_ptr<ParallelMesh> pmesh = parts->distributed_mesh(mesh);
+    return pmesh;
+}
+
 
 void Printf(const char format[],...)
 {
@@ -100,6 +114,17 @@ void Printf(const char format[],...)
         fprintf(stdout, format, Argp);
         va_end(Argp);
      }
+}
+
+void PrintDebug(const char format[],...)
+{
+#ifdef NDEBUG
+    va_list Argp;
+    va_start(Argp, format);
+    fprintf(stdout, "Processor %d: ", _processor_id);
+    fprintf(stdout, format, Argp);
+    va_end(Argp);
+#endif
 }
 
 }

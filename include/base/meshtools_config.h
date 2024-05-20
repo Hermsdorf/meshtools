@@ -14,7 +14,7 @@
 
 /* #undef DEBUG_ */
 
-#define MESHTOOLS_SOURCE_DIR "/Users/camata/Develop/works/meshtools"
+#define MESHTOOLS_SOURCE_DIR "/home/camata/git/meshtools"
 
 
 

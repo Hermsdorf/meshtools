@@ -316,6 +316,20 @@ class Mesh {
 
         std::vector<unsigned int>&   get_node_index_vector();  
 
+        unsigned int get_element_connectivity_size();
+
+        unsigned int get_surface_element_connectivity_size();
+
+        const unsigned int* get_element_connectivity_pointer();
+
+        const unsigned int* get_surface_element_connectivity_pointer();
+
+        const unsigned short* get_element_type_pointer();
+
+        const unsigned short* get_surface_element_type_pointer();   
+
+        void get_only_element_offset_vector(std::vector<unsigned int>& offset);
+
         void   write_vtk(std::string basename);
 
     protected:

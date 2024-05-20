@@ -26,6 +26,8 @@
 #include "FEAdaptor.h"
 #endif
 
+#include <memory>
+
 class ParallelMesh;
 namespace MeshTools 
 {
@@ -33,7 +35,8 @@ namespace MeshTools
     void Init(int argc, char* argv[]);    
     void Finalize();
     void Printf(const char format[],...);
-    ParallelMesh* ReadMesh(const std::string& filename);
+    void PrintDebug(const char format[],...);
+    std::unique_ptr<ParallelMesh> read(const std::string filename);
 
     int& processor_id();
     int& n_processors();
