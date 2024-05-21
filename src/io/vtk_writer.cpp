@@ -39,7 +39,7 @@ bool vtkWriter::open(std::string base_file_name, bool _is_ascii, unsigned int fi
                     << std::setw(4) << std::setfill('0') << MeshTools::processor_id() << "_"
                     << std::setw(4) << std::setfill('0') << file_number;
     std::string vtu_file  = base_name_sufix.str() +".vtu";
-    std::string pvtu_file = base_name_sufix.str() +".pvtu";
+   
 
     this->fvtu.open(vtu_file);
     if(!fvtu.is_open())
@@ -54,6 +54,11 @@ bool vtkWriter::open(std::string base_file_name, bool _is_ascii, unsigned int fi
 
     if(MeshTools::processor_id() == 0)
     {
+        stringstream base_pvtu_name_sufix;
+        base_pvtu_name_sufix << base_file_name << "_"
+                    << std::setw(4) << std::setfill('0') << MeshTools::n_processors() << "_"
+                    << std::setw(4) << std::setfill('0') << file_number;
+        std::string pvtu_file = base_pvtu_name_sufix.str() +".pvtu";
         this->fpvtu.open(pvtu_file);
         fpvtu << "<VTKFile type=\"PUnstructuredGrid\" version=\"1.0\" byte_order=\""<< BinaryBigEndian() <<"\" header_type=\"UInt64\">" << std::endl;
         fpvtu << prefix_level(1) <<"<PUnstructuredGrid>" << std::endl;
@@ -170,14 +175,15 @@ void vtkWriter::close()
             stringstream base_name_sufix;
             base_name_sufix << base_name << "_"
                             << std::setw(4) << std::setfill('0') << MeshTools::n_processors() << "_"
-                            << std::setw(4) << std::setfill('0') << MeshTools::processor_id() << "_"
+                            << std::setw(4) << std::setfill('0') << p                         << "_"
                             << std::setw(4) << std::setfill('0') << file_number;
             std::string vtu_file  = base_name_sufix.str() +".vtu";
 
             fpvtu <<  prefix_level(2) << "<Piece Source=\""<< vtu_file << "\"/> " << std::endl;
-            fpvtu  << prefix_level(1) << "</PUnstructuredGrid>" << std::endl;
-            fpvtu << "</VTKFile>"     << endl;
+
         }
+        fpvtu  << prefix_level(1) << "</PUnstructuredGrid>" << std::endl;
+        fpvtu << "</VTKFile>"     << endl;
         fpvtu.close();
     }
 

@@ -128,6 +128,8 @@ class ParallelMesh : public Mesh{
         void fill_node_index();
         void build_communication_map();
 
+        void print_info(bool debug_mode = false);
+
     private:
         
         unsigned int n_global_nodes;

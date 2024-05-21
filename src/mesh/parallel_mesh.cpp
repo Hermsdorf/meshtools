@@ -22,7 +22,7 @@ ParallelMesh::ParallelMesh()
     this->n_global_elements          = 0;
     this->n_global_internal_elements = 0;
     this->n_global_nodes             = 0;
-    shared_nodes_offset.push_back(0);
+    shared_nodes_offset.emplace_back(0);
 }
 
 ParallelMesh::~ParallelMesh() { }
@@ -235,6 +235,8 @@ void ParallelMesh::build_communication_map()
     }
     if(MeshTools::processor_id() == 0)
         std::cout << "Communication map finished\n";
+
+
 }
 
 /*
@@ -246,6 +248,7 @@ void ParallelMesh::fill_node_index()
 {
     // Indicates local node, what means that it is not shared with other process
     std::vector<unsigned short> mask_node(this->n_nodes);
+    this->node_index.resize(this->n_nodes);
 
     for(int i = 0; i < this->n_nodes; ++i)
          mask_node[i] = 0;
@@ -462,4 +465,57 @@ void ParallelMesh::set_sendto_info(std::vector<MessageInformation>&  info)
 void ParallelMesh::set_recvfrom_info(std::vector<MessageInformation>&  info)
 {
     this->recvfrom_info = info;
+}
+
+void ParallelMesh::print_info(bool debug_mode)
+{
+    FILE *fout = !debug_mode ? stdout : MeshTools::DebugOutput();
+    fprintf(fout,"-----------------------------------------------\n");
+    fprintf(fout, "Mesh on Processor ID: %d\n", this->processor_id);
+    fprintf(fout,"-----------------------------------------------\n");
+    fprintf(fout, "Number of Nodes: %d\n", this->n_nodes);
+    for(int i = 0; i < this->n_nodes; i++)
+        fprintf(fout, "[%d, %d]: (%f, %f, %f)\n", i, this->node_index[i], this->coord[i*3], this->coord[i*3+1], this->coord[i*3+2]);
+    fprintf(fout, "Number of Elements: %d\n", this->n_elements);
+    fprintf(fout, "Number of Global Elements: %d\n", this->n_global_elements);
+    fprintf(fout, "Number of Global Nodes: %d\n", this->n_global_nodes);
+    fprintf(fout, "Number of Global Surface Elements: %d\n", this->n_global_surface_elements);
+    fprintf(fout, "Number of Local Nodes: %d\n", this->n_local_nodes);
+    fprintf(fout, "Number of Neighbors: %ld\n", neighbor_processors.size());
+    fprintf(fout, "Neighbors Processors: ");
+    for(int i = 0; i < this->neighbor_processors.size(); i++) {
+        fprintf(fout, "%d\n", this->neighbor_processors[i]);
+
+        for(int j = this->shared_nodes_offset[i]; j < this->shared_nodes_offset[i+1]; j++){
+            unsigned int node = this->shared_nodes[j];
+            unsigned int global_node = this->node_index[node];
+            fprintf(fout, "[%d, %d]: ", node, global_node);
+            fprintf(fout, "(%f, %f, %f)\n", this->coord[node*3], this->coord[node*3+1], this->coord[node*3+2]);
+        }
+    }
+    fprintf(fout, "Send to Info: \n");
+    for(int i = 0; i < this->sendto_info.size(); i++)
+    {
+        fprintf(fout, "Processor ID: %d\n", this->sendto_info[i].processor_id);
+        for(int j = 0; j < this->sendto_info[i].nodes.size(); j++)
+        {
+            unsigned int node        = this->sendto_info[i].nodes[j];
+            unsigned int global_node = this->node_index[node];
+            fprintf(fout, "[%d, %d]: ", node, global_node);
+            fprintf(fout, "(%f, %f, %f)\n", this->coord[node*3], this->coord[node*3+1], this->coord[node*3+2]);
+        }
+    }
+    fprintf(fout, "Recv from Info: \n");
+    for(int i = 0; i < this->recvfrom_info.size(); i++)
+    {
+        fprintf(fout, "Processor ID: %d\n", this->recvfrom_info[i].processor_id);
+        for(int j = 0; j < this->recvfrom_info[i].nodes.size(); j++)
+        {
+            unsigned int node        = this->recvfrom_info[i].nodes[j];
+            unsigned int global_node = this->node_index[node];
+            fprintf(fout, "[%d, %d]: ", node, global_node);
+            fprintf(fout, "(%f, %f, %f)\n", this->coord[node*3], this->coord[node*3+1], this->coord[node*3+2]);
+        }
+    }
+    fprintf(fout,"-----------------------------------------------\n");
 }

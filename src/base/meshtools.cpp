@@ -31,7 +31,7 @@ void Init(int argc, char* argv[])
 
 #ifdef DEBUG_OUTPUT
     char _output_filename[255];
-    snprintf(_output_filename, 255, "output_%d.txt", _processor_id);
+    snprintf(_output_filename, 255, "debug_output_%d.txt", _processor_id);
     _output = fopen(_output_filename, "w");
 #else
     _output = stdout;
@@ -58,6 +58,9 @@ void Finalize()
 
 void Exit()
 {
+#ifdef DEBUG_OUTPUT
+    fclose(_output); 
+#endif
 #if defined(PETSC_ENABLE)
     PetscFinalize();
 #elif defined(USE_MPI)
@@ -112,7 +115,7 @@ void Printf(const char format[],...)
     if (_processor_id == 0) {
         va_list Argp;
         va_start(Argp, format);
-        fprintf(stdout, format, Argp);
+        vfprintf(stdout, format, Argp);
         va_end(Argp);
      }
 }
@@ -122,10 +125,14 @@ void PrintDebug(const char format[],...)
 #ifdef NDEBUG
     va_list Argp;
     va_start(Argp, format);
-    fprintf(stdout, "Processor %d: ", _processor_id);
-    fprintf(stdout, format, Argp);
+    vfprintf(_output, format, Argp);
     va_end(Argp);
 #endif
 }
+
+ FILE* DebugOutput()
+ {
+    return _output;
+ }
 
 }

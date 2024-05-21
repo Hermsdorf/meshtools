@@ -20,7 +20,7 @@
 
 MeshPartition::MeshPartition()
 {
-    this->n_partitions = 1;
+    this->n_partitions = MeshTools::n_processors();
     this->applied  = false;
 }
 
@@ -205,12 +205,13 @@ void MeshPartition::get_node_partition(std::unique_ptr<Mesh>& mesh, std::map<uns
         for(int ino = offset_start; ino < offset_end; ino++)
                 node_partition[mesh_conn[ino]].insert(this->elem_part[iel]);
     }
-#ifdef _DEBUG
+    
+#ifdef NDEBUG
     for(auto it = node_partition.begin(); it != node_partition.end(); ++it){
-        std::cout << it->first << " shared with ";
+        MeshTools::PrintDebug("Node %d Shared with ",it->first);
         for(auto p = it->second.begin(); p != it->second.end(); ++p)
-            std::cout << *p << " ";
-        std::cout << std::endl;
+            MeshTools::PrintDebug("%d ",*p);
+        MeshTools::PrintDebug("\n");
     }
 #endif
     MeshTools::PrintDebug("Ending get_node_partition\n");
@@ -230,7 +231,7 @@ void MeshPartition::get_and_send_local_data(
     std::vector<unsigned int>   & neighbors,
     std::vector<unsigned int>   & neighbors_offset,
     std::vector<unsigned int>   & neighbors_nodes,
-    std::vector<unsigned int>            & face_to_element,
+    std::vector<unsigned int>   & face_to_element,
     bool                        enable_send
 )
 {
@@ -242,7 +243,6 @@ void MeshPartition::get_and_send_local_data(
     unsigned int nface_elem        = mesh->get_n_surface_elements();
     unsigned int nnodes            = mesh->get_n_nodes();
 
-    
 
     MPI_Request requests[11];
     MPI_Status  status[11];
@@ -305,6 +305,7 @@ void MeshPartition::get_and_send_local_data(
         }
     }
 
+    
     for (unsigned int iel = 0; iel < nface_elem; ++iel)
     {
         if (this->face_part[iel] == sendto) // if the element that is being processed 
@@ -335,7 +336,7 @@ void MeshPartition::get_and_send_local_data(
     // Fills nodes_per_processors vector which contains the local nodes present in each processor other than the one is going to be sent.
     // Its like the inversion of node_partition structure
     auto map_it     = node_partition.begin();
-    std::vector< std::set <unsigned int> > nodes_per_processors(this->n_partitions);
+    std::vector< std::set <unsigned int> > nodes_per_processors(MeshTools::n_processors());
     for( ; map_it !=  node_partition.end(); map_it++)
     {
         int node_id = map_it->first;
@@ -354,16 +355,16 @@ void MeshPartition::get_and_send_local_data(
     }
 
     unsigned int ofs = 0;
-    neighbors_offset.push_back(ofs);
+    neighbors_offset.emplace_back(ofs);
     for (int np = 0; np < this->n_partitions; np++)
     {
         if (np != sendto && nodes_per_processors[np].size() != 0)   
         {
-            neighbors.push_back(np);
-            neighbors_offset.push_back(ofs + nodes_per_processors[np].size());
+            neighbors.emplace_back(np);
+            neighbors_offset.emplace_back(ofs + nodes_per_processors[np].size());
             ofs      += nodes_per_processors[np].size();
             for(auto it_list = nodes_per_processors[np].begin(); it_list != nodes_per_processors[np].end(); it_list++)
-                neighbors_nodes.push_back(g2l[*it_list]);
+                neighbors_nodes.emplace_back(g2l[*it_list]);
         }
     }
 
@@ -764,27 +765,18 @@ std::unique_ptr<ParallelMesh> MeshPartition::distributed_mesh(std::unique_ptr<Me
         pmesh->set_node_index_vector(mesh->get_node_index_vector());
         pmesh->set_mesh_dimension(mesh->get_mesh_dimension());
         
-        // Empty vectors because it doesn't exists any neighbors
-        // std::vector<unsigned int> empty_vector;
-        
-        // pmesh->setNeighborProcessors(empty_vector);
-        // pmesh->setSharedNodesOffset(empty_vector);
-        // pmesh->setSharedNodes(empty_vector);
-
-        // std::vector<MessageInformation> empty_vector_message;
-        // pmesh->set_sendto_info(empty_vector_message);
-        // pmesh->set_recvfrom_info(empty_vector_message);
 
         pmesh->set_start_node_index(0);
     }   
 
     pmesh->fill_node_index();
+    MeshTools::PrintDebug("Ending distributed_mesh\n");
+#ifdef NDEBUG
+    
+#endif
+
+
     return pmesh;
 }
 
 
-// void MeshPartition::WriteVTK(Mesh* mesh, const char* fname)
-// {
-//     //mesh->setFilename(fname);
-//     //mesh->MeshVTKWriterInternal(0,&this->nodal_part[0],&this->elem_part[0]);
-// }

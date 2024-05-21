@@ -332,16 +332,13 @@ class Mesh {
 
         void   write_vtk(std::string basename);
 
+        void   process_face_to_element();
+
     protected:
 
         // void   extract_boundary_nodes(std::vector<unsigned int>& nodes);
 
         void   gmsh_reader(const char* filename); 
-
-
-
-        void   process_face_to_element();
-
 
 
 

@@ -24,9 +24,10 @@ class MeshRefinement
 {
     public:
         MeshRefinement(std::unique_ptr<ParallelMesh> &mesh);
+        MeshRefinement(const MeshRefinement&) = delete;
         ~MeshRefinement();
 
-    void uniform_refinement(unsigned int n_refinements);
+    void refine();
 
     private:
 
@@ -229,7 +230,9 @@ class MeshRefinement
         std::unordered_map<unsigned long, unsigned int> face_map;
         std::unordered_map<unsigned long, unsigned int> cell_map;
 
-        std::unordered_map<unsigned int, std::set<unsigned int> > shared_processors_per_node;    
+        std::unordered_map<unsigned int, unsigned long> node_map;
+  
+        std::unordered_map<unsigned int, std::set<unsigned int> > shared_processors_per_node; 
 
         std::unique_ptr<ParallelMesh> &mesh;
 

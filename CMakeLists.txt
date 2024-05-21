@@ -16,8 +16,8 @@ option(CATALYST_ENABLE      "Enable Paraview Catalyst" OFF)
 if(CATALYST_ENABLE)
  option(CATALYST_LEGACY_ENABLE "Enable Paraview Catalyst Legacy" OFF)
 endif()
-option(DEBUG_ENABLE         "Enable Debug Mode" ON)
-option(DEBUG_OUTPUT_ENABLE  "Enable Write Debug at File" ON)
+option(DEBUG_ENABLE         "Enable Debug Mode" OFF)
+option(DEBUG_OUTPUT_ENABLE  "Enable Write Debug at File" OFF)
 
 set(CMAKE_CXX_FLAGS "-fPIC")
 

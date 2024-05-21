@@ -527,33 +527,20 @@ void Mesh::process_face_to_element()
     // Calculating hash to each surface element
     for (int i = 0; i < n_face_elements; i++) 
     {
-        unsigned offset_start = this->offset[i];
-        unsigned offset_end   = this->offset[i+1];
 
-        std::vector<unsigned int> conn_tmp(offset_end - offset_start);
-
-        for (unsigned int j = 0, i = offset_start; i < offset_end; i++, j++) {
-            conn_tmp[j] = this->conn[i];
-        }
-
-        std::sort(conn_tmp.begin(), conn_tmp.end());
+        std::vector<unsigned int> conn_tmp;
+        this->get_surface_element_connectivity(i, conn_tmp);
 
         unsigned long long element_hash = compute_hash(conn_tmp);
 
-        // unsigned long long element_hash = conn_tmp[0];
-        // for (unsigned short conn_i = 1 ; conn_i < surf_element_nnodes ; conn_i++){
-        //     element_hash = cantor_pairing(element_hash, conn_tmp[conn_i]);
-        // }
-
-        // unordered_map[hash] = face_id
         face_elements_hash[element_hash] = i;
 
-#ifdef NDEGUG
-        std::cout << "Element " << i << " hash: " << element_hash << " Nodes: ";
-        for(int j = 0; j < surf_element_nnodes; j++) {
-            std::cout << " " << conn_tmp[j];
+#ifdef NDEBUG
+        MeshTools::PrintDebug("Face Element %d hash: %ld Nodes: ", i, element_hash);
+        for(int j = 0; j < conn_tmp.size(); j++) {
+            MeshTools::PrintDebug(" %d", conn_tmp[j]);
         }
-        std::cout << std::endl;
+        MeshTools::PrintDebug("\n");
 #endif
     }
 
@@ -561,7 +548,7 @@ void Mesh::process_face_to_element()
     {
         std::cout << "Face to element relation wasn't calculated correctly, ";
         std::cout << "there are equal hashs to different elements, exiting..." << std::endl;
-        exit(1);
+        MeshTools::Exit();
     }
 
 
@@ -577,7 +564,7 @@ void Mesh::process_face_to_element()
             element_conn_vec[j] = this->conn[i];
 
         // Getting element's faces
-        int n_faces      = MeshHelper::VTKIdToNumberFaces[element_type]; 
+        int n_faces       = MeshHelper::VTKIdToNumberFaces[element_type]; 
                     
         // getting face nodes
         int  n_face_nodes = MeshHelper::VTKIdToNumberFaceNodes[element_type];
@@ -595,7 +582,7 @@ void Mesh::process_face_to_element()
                 face_nodes[face_node_i] = element_conn_vec[local_node];
             }
 
-            std::sort(face_nodes.begin(), face_nodes.end());
+            //std::sort(face_nodes.begin(), face_nodes.end());
             unsigned long element_hash = compute_hash(face_nodes);
 
             // unsigned long element_hash = face_nodes[0];
@@ -654,6 +641,9 @@ void Mesh::write_vtk(string basename)
     if(writer.open(basename))
     {
         writer.write_mesh(*this);
+        writer.start_point_data_section();
+        writer.write_point_data<unsigned int>(this->get_node_index_vector().data(),this->get_node_index_vector().size(),"node_index");
+        writer.close_point_data_section();
         writer.close();
     }
     

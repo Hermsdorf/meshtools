@@ -5,6 +5,7 @@
 # add_subdirectory(mesh_refinement)
 
 add_subdirectory(io)
+add_subdirectory(parallel_mesh)
 add_subdirectory(mesh_refinement)
 
 # set(TEST_MESH_DIR "${CMAKE_SOURCE_DIR}/test/finite_element/msh/")

@@ -36,6 +36,7 @@ namespace MeshTools
     void Finalize();
     void Printf(const char format[],...);
     void PrintDebug(const char format[],...);
+    FILE* DebugOutput();
     std::unique_ptr<ParallelMesh> read(const std::string filename);
 
     int& processor_id();
