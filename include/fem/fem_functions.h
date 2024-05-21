@@ -5,13 +5,17 @@
 #include "parallel_mesh.h"
 #include "numeric_vector.h"
 #include "tensor.h" 
-#include "qgauss.h"
+#include "gauss_quadrature.h"
 
 
 class FEMFunction
 {
     public:
-        FEMFunction(ParallelMesh& mesh);
+        static std::unique_ptr<FEMFunction> New()
+        {
+            return std::make_unique<FEMFunction>();
+        }
+        FEMFunction();
         void ComputeFunction(Element& elem, QGaussData qp);
 
         std::vector<double>  &  get_phi() { return _phi; } ;
@@ -44,7 +48,6 @@ class FEMFunction
         void QUAD4Function(Element& elem, QGaussData qp);
         void TET4Function(Element& elem, QGaussData qp);
         
-        ParallelMesh& _mesh;
 };
 
 

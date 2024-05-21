@@ -690,3 +690,11 @@ const unsigned short* Mesh::get_surface_element_type_pointer()
 {
     return &this->type[0];
 }
+
+void Mesh::get_element(unsigned int element_id, Element& elem)
+{
+    this->get_element_connectivity(element_id, elem._conn);
+    this->get_element_vertices(conn, elem._coords);
+    elem._type = this->get_element_type(element_id);
+    elem._tag  = this->get_element_physical_tag(element_id);
+}

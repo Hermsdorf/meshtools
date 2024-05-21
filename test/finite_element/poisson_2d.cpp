@@ -3,7 +3,6 @@
 
 #include "meshtools.h"
 #include "mesh.h"
-#include "mesh_part.h"
 #include "parallel_mesh.h"
 #include "implicit_system.h"
 #include "dirichlet_boundary.h"
@@ -11,8 +10,6 @@
 #include "dense_matrix.h"
 #include "numeric_vector.h"
 #include "xdmf_writer.h"
-
-#include "test_config.h"
 
 
 static char help[] = "2D Poisson Problem\n\n";
@@ -55,10 +52,10 @@ double body_force(double x, double y)
     return fxy;
 }
 
-double compute_H1_error(ImplicitSystem &system, int dof)
+double compute_H1_error(std::unique_ptr<ImplicitSystem> &system, int dof)
 {
-    auto pmesh                  = system.get_mesh();
-    auto eq_manager = system.get_equation_manager();
+    auto &mesh                   = system->get_mesh();
+    auto &eq_manager             = system->get_equation_manager();
 
     // Compute the error estimator
     // ===========================
@@ -68,43 +65,41 @@ double compute_H1_error(ImplicitSystem &system, int dof)
     //   - e = \int_\Omega_e ||(grad.u - grad.u_h)|| dx
 
     // Get the solution vector
-    double *solution = system.get_local_solution_array();
+    double *solution = system->get_local_solution_array();
 
-    int n_elements = pmesh.get_n_elements();
-    int n_dofs = eq_manager.get_n_dofs();
+    int n_elements = mesh->get_n_elements();
+    int n_dofs     = eq_manager->get_n_dofs();
 
-    QGauss qrule;
-    FEMFunction fem;
+    std::unique_ptr<QGauss>      qrule = std::make_unique<QGauss>();
+    std::unique_ptr<FEMFunction> fem   = std::make_unique<FEMFunction>();
 
-    std::vector<double>   & phi = fem.get_phi();
-    std::vector<Gradient> & dphi= fem.get_dphi();
-    double                & JxW    = fem.get_JxW();
-    Point                 & qpoint = fem.get_xyz();
+    std::vector<double>   & phi    = fem->get_phi();
+    std::vector<Gradient> & dphi   = fem->get_dphi();
+    double                & JxW    = fem->get_JxW();
+    Point                 & qpoint = fem->get_xyz();
 
     double error_per_processor = 0.0;
-
+    Element elem;
+    
     for (int iel = 0; iel < n_elements; ++iel)
     {
-
-        Element elem;
-        pmesh.getElement(iel,elem);
+        mesh->get_element(iel,elem);
 
         double error_per_element = 0.0;
    
         std::vector<int> local_indices;
 
-
-        eq_manager.local_indices(dof,  elem.connectivity(), local_indices);
+        eq_manager->local_indices(dof,  elem.connectivity(), local_indices);
 
         // Obtem pontos de integração para elemento elem
-        qrule.reset(elem);
+        qrule->reset(elem);
 
         // loop sobre os pontos de integração
-        for (int q = 0; q < qrule.n_points(); q++)
+        for (int q = 0; q < qrule->n_points(); q++)
         {
 
             // calculando a função de forma e suas derivadas para o ponto de integração q
-           fem.ComputeFunction(elem,qrule.get(q));
+           fem->ComputeFunction(elem,qrule->get(q));
 
             Gradient gradu;
             Gradient gradu_h;
@@ -130,10 +125,10 @@ double compute_H1_error(ImplicitSystem &system, int dof)
     return h1_error;
 }
 
-double compute_L2_error(ImplicitSystem &system, int dof)
+double compute_L2_error(std::unique_ptr<ImplicitSystem> &system, int dof)
 {
-    auto pmesh      = system.get_mesh();
-    auto eq_manager = system.get_equation_manager();
+    auto  &mesh       = system->get_mesh();
+    auto  &eq_manager = system->get_equation_manager();
 
     // Compute the error estimator
     // =========================
@@ -144,43 +139,39 @@ double compute_L2_error(ImplicitSystem &system, int dof)
     //  - E = \sqrt(e)
 
     // Get the solution vector
-    double *solution = system.get_local_solution_array();
+    double *solution = system->get_local_solution_array();
 
-    int n_elements = pmesh.get_n_elements();
-    int n_dofs = eq_manager.get_n_dofs();
+    int n_elements =   mesh->get_n_elements();
+    int n_dofs = eq_manager->get_n_dofs();
 
     double error_per_processor = 0.0;
 
-    QGauss qrule;
-    FEMFunction fem;
+    std::unique_ptr<QGauss>      qrule = QGauss::New();
+    std::unique_ptr<FEMFunction> fem   = FEMFunction::New();
 
-    std::vector<double>   & phi = fem.get_phi();
-    std::vector<Gradient> & dphi= fem.get_dphi();
-    double                & JxW    = fem.get_JxW();
-    Point                 & qpoint = fem.get_xyz();
+    std::vector<double>   & phi    = fem->get_phi();
+    std::vector<Gradient> & dphi   = fem->get_dphi();
+    double                & JxW    = fem->get_JxW();
+    Point                 & qpoint = fem->get_xyz();
+    Element elem;
 
     for (int iel = 0; iel < n_elements; ++iel)
     {
-
-        Element elem;
-        pmesh.getElement(iel,elem);
-
         double error_per_element = 0.0;
-   
         std::vector<int> local_indices;
-
-
-        eq_manager.local_indices(dof, elem.connectivity(), local_indices);
+    
+        mesh->get_element(iel,elem);
+        eq_manager->local_indices(dof, elem.connectivity(), local_indices);
 
         // Obtem pontos de integração para elemento elem
-        qrule.reset(elem);
+        qrule->reset(elem);
 
         // loop sobre os pontos de integração
-        for (int q = 0; q < qrule.n_points(); q++)
+        for (int q = 0; q < qrule->n_points(); q++)
         {
 
             // calculando a função de forma e suas derivadas para o ponto de integração q
-           fem.ComputeFunction(elem,qrule.get(q));
+           fem->ComputeFunction(elem,qrule->get(q));
 
             double u_h = 0.0;
             for (int i = 0; i < local_indices.size(); i++)
@@ -202,43 +193,43 @@ double compute_L2_error(ImplicitSystem &system, int dof)
 
 void assemble_poisson(ImplicitSystem* system)
 {
-    auto pmesh = system->get_mesh();
-    int ndim   = pmesh.getDim();
+    auto & mesh =  system->get_mesh();
+    int ndim   = mesh->get_mesh_dimension();
     int dof    = 0;
     // Gerencia as numerações das equações do sistema
-    EquationManager &equation_manager = system->get_equation_manager();
-    QGauss qrule;
-    FEMFunction fem;
+    auto & equation_manager            = system->get_equation_manager();
+    std::unique_ptr<QGauss>     qrule = std::make_unique<QGauss>();
+    std::unique_ptr<FEMFunction> fem  = std::make_unique<FEMFunction>();
         
-    std::vector<double>   & phi = fem.get_phi();
-    std::vector<Gradient> & dphi= fem.get_dphi();
-    double                & JxW    = fem.get_JxW();
-    Point                 & qpoint = fem.get_xyz();
+    std::vector<double>   & phi    = fem->get_phi();
+    std::vector<Gradient> & dphi   = fem->get_dphi();
+    double                & JxW    = fem->get_JxW();
+    Point                 & qpoint = fem->get_xyz();
 
     // loop sobre os elementos da malha
-    for (int iel = 0; iel < pmesh.get_n_elements(); iel++)
+    for (int iel = 0; iel < mesh->get_n_elements(); iel++)
     {
         Element elem;
-        pmesh.getElement(iel,elem);
+        mesh->get_element(iel,elem);
         
         int nnoel = elem.n_nodes();
 
         std::vector<int>        global_indices;
         std::vector<int>        local_indices;
-        DenseMatrix<double>     Ke(nnoel, nnoel);  // matriz de rigidez do elemento
+        DenseMatrix<double>     Ke(nnoel, nnoel);   // matriz de rigidez do elemento
         std::vector<double>     Fe(nnoel);          // vetor de força do elemento
 
-        equation_manager.global_indices(dof, elem.connectivity(), global_indices);
-        equation_manager.local_indices(dof,  elem.connectivity(), local_indices);
+        equation_manager->global_indices(dof, elem.connectivity(), global_indices);
+        equation_manager->local_indices(dof,  elem.connectivity(), local_indices);
 
         // Obtem pontos de integração para elemento elem
-        qrule.reset(elem);
+        qrule->reset(elem);
 
         // loop sobre os pontos de integração
-        for (int q = 0; q < qrule.n_points(); q++)
+        for (int q = 0; q < qrule->n_points(); q++)
         {
             // calculando a função de forma e suas derivadas para o ponto de integração q
-            fem.ComputeFunction(elem,qrule.get(q));
+            fem->ComputeFunction(elem,qrule->get(q));
 
             // calculando a matriz de rigidez e o vetor de forca local
             for (int i = 0; i < local_indices.size(); i++)
@@ -263,39 +254,12 @@ void assemble_poisson(ImplicitSystem* system)
  *   p = std::log(std::fabs(erro[i - 1] / erro[i])) / std::log(2.0));
  */
 
-int poisson(int argc, char *argv[], double& error_vec_l2, double& error_vec_h1)
+int poisson(int argc, char *argv[])
 {
-    PetscErrorCode ierr;
-    MeshPartition *parts = new MeshPartition();
+    // /home/camata/git/meshtools/test/finite_element/msh/poisson_2d/poisson_quad4.msh
+    std::unique_ptr<ParallelMesh>   mesh              = MeshTools::read(std::string(MESHTOOLS_SOURCE_DIR)+"/test/finite_element/msh/poisson_2d/poisson_quad4.msh");
+    std::unique_ptr<ImplicitSystem> implicit_system   = ImplicitSystem::New(mesh, "poisson");
 
-    Mesh *mesh;          // serial mesh
-    ParallelMesh *pmesh; // parallel mesh
-    int processor_id, n_processors;
-
-    processor_id = MeshTools::processor_id();
-    n_processors = MeshTools::n_processors();
-
-    if (processor_id == 0)
-    {
-        // Rodando serial ou em paralelo o processo mestre
-        // irá ler a malha.
-        string test_mesh_dir = TEST_MESH_DIR;
-        test_mesh_dir.append("poisson_2d/poisson.msh");
-        mesh = new Mesh(test_mesh_dir);
-
-        // Se houver mais um processo, o processo mestre irá
-        // particionar a malha
-        if (n_processors > 1)
-        {
-            parts->ApplyPartitioner(mesh, n_processors);
-        }
-    }
-
-    pmesh = parts->DistributedMesh(mesh);
-
-
-    // Cria o sistema de equações implicito
-    ImplicitSystem *implicit_system = new ImplicitSystem(*pmesh, "poisson");
 
     // Adiciona uma variável ao sistema
     int dof = implicit_system->add_variable("u");
@@ -315,19 +279,10 @@ int poisson(int argc, char *argv[], double& error_vec_l2, double& error_vec_h1)
 
     implicit_system->write_result("poisson_2d");
 
-    double l2_error = compute_L2_error(*implicit_system, 0);
-    double h1_error = compute_H1_error(*implicit_system, 0);
+    double l2_error = compute_L2_error(implicit_system, 0);
+    double h1_error = compute_H1_error(implicit_system, 0);
     MeshTools::Printf( "Erro |u - u_exato| = %e\n", l2_error);
     MeshTools::Printf( "Erro |grad.u - grad.u_exato| = %e\n", h1_error);
-    error_vec_l2 = l2_error;
-    error_vec_h1 = h1_error;
-
-    delete implicit_system;
-
-    if (MeshTools::processor_id() == 0)
-        delete mesh;
-    delete pmesh;
-    delete parts;
 
     return 0;
 }
@@ -335,8 +290,7 @@ int poisson(int argc, char *argv[], double& error_vec_l2, double& error_vec_h1)
 int main(int argc, char *argv[])
 {
     MeshTools::Init(argc, argv);
-    double error_L2, error_H1;
-    poisson(argc, argv, error_L2, error_H1);
+    poisson(argc, argv);
     MeshTools::Finalize();
 
     return 0;

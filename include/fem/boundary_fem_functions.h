@@ -7,7 +7,7 @@
 #include "parallel_mesh.h"
 #include "numeric_vector.h"
 #include "tensor.h" 
-#include "qgauss.h"
+#include "gauss_quadrature.h"
 #include "element.h"
 
 

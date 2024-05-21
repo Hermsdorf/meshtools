@@ -114,6 +114,8 @@ include_directories(${CMAKE_SOURCE_DIR}/include/base)
 include_directories(${CMAKE_SOURCE_DIR}/include/mesh)
 include_directories(${CMAKE_SOURCE_DIR}/include/io)
 include_directories(${CMAKE_SOURCE_DIR}/include/numerics)
+include_directories(${CMAKE_SOURCE_DIR}/include/fem)
+
 
 include_directories(${CMAKE_SOURCE_DIR}/contrib/fparser)
 
@@ -153,8 +155,14 @@ file(GLOB numerics_files
     "include/numerics/*.hpp"
     "src/numerics/*.cpp"
 )
+
+file(GLOB fem_files
+    "include/fem/*.h"
+    "include/fem/*.hpp"
+    "src/fem/*.cpp"
+)
     
-add_library(meshtoolslib SHARED ${base_files} ${mesh_files} ${io_files} ${numerics_files})
+add_library(meshtoolslib SHARED ${base_files} ${mesh_files} ${io_files} ${numerics_files} ${fem_files})
 
 target_link_libraries(meshtoolslib fparser ${MESHTOOLS_DEP_LIBS})
 

@@ -11,10 +11,10 @@ using namespace std;
  * @param mesh: parallel mesh object
  * @param name: name of the system
 */
-ImplicitSystem::ImplicitSystem(ParallelMesh &mesh, std::string name):
-    _mesh(mesh), _system_name(name), _n_dof(0), _equations(mesh), _assemble_function(nullptr)
+ImplicitSystem::ImplicitSystem(std::unique_ptr<ParallelMesh> &mesh, std::string name):
+    _mesh(mesh), _system_name(name), _n_dof(0), _assemble_function(nullptr)
     {
-
+        _equations = EquationManager::New(mesh);
     }   
 
 /**
@@ -68,7 +68,7 @@ int ImplicitSystem::get_variable_id(std::string name)
 */
 void ImplicitSystem::add_dirichlet_boundary(DirichletBoundary &boundary)
 {
-    this->_equations.add_dirichlet_boundary(boundary);
+    this->_equations->add_dirichlet_boundary(boundary);
 }
 
 
@@ -79,25 +79,25 @@ void ImplicitSystem::add_dirichlet_boundary(DirichletBoundary &boundary)
 */
 void ImplicitSystem::init()
 {
-    this->_equations.set_n_dofs(this->_variables_names.size());
+    this->_equations->set_n_dofs(this->_variables_names.size());
     
-    this->_equations.prepare_to_use();
+    this->_equations->prepare_to_use();
 
-    std::vector<unsigned int> onnz(this->_equations.n_local_equations());
-    std::vector<unsigned int> dnnz(this->_equations.n_local_equations());
+    std::vector<unsigned int> onnz(this->_equations->n_local_equations());
+    std::vector<unsigned int> dnnz(this->_equations->n_local_equations());
 
-    this->_equations.calculate_dnnz_onnz(dnnz, onnz);
+    this->_equations->calculate_dnnz_onnz(dnnz, onnz);
 
     if(MeshTools::n_processors() == 1)
     {
-        MatCreateSeqAIJ(MeshTools::Comm(), this->_equations.n_local_equations(), this->_equations.n_local_equations(),
+        MatCreateSeqAIJ(MeshTools::Comm(), this->_equations->n_local_equations(), this->_equations->n_local_equations(),
                         PETSC_DECIDE, (PetscInt*) dnnz.data(), &this->_A);
     } 
     else
     {
         // Create the matrix
         MatCreateAIJ(MeshTools::Comm(), 
-                this->_equations.n_local_equations(), this->_equations.n_local_equations(),
+                this->_equations->n_local_equations(), this->_equations->n_local_equations(),
                  PETSC_DETERMINE, PETSC_DETERMINE, 
                  PETSC_DECIDE, (PetscInt*) dnnz.data(), 
                  PETSC_DECIDE, (PetscInt*) onnz.data(), &this->_A);
@@ -110,7 +110,7 @@ void ImplicitSystem::init()
     MatZeroEntries(_A);
     // Create the right-hand-side vector
     VecCreate(MeshTools::Comm(), &this->_rhs);
-    VecSetSizes(this->_rhs, this->_equations.n_local_equations(), PETSC_DETERMINE);
+    VecSetSizes(this->_rhs, this->_equations->n_local_equations(), PETSC_DETERMINE);
     VecSetFromOptions(this->_rhs);   
 
     // Create the solution vector
@@ -121,7 +121,7 @@ void ImplicitSystem::init()
   
     std::vector<unsigned int> eq_local;
     std::vector<unsigned int> eq_global;
-    unsigned int n_nodes = this->_mesh.get_n_nodes();
+    unsigned int n_nodes = this->_mesh->get_n_nodes();
 
    for(int ino = 0; ino < n_nodes; ino++)
    {
@@ -129,7 +129,7 @@ void ImplicitSystem::init()
          {
               unsigned int idxLocal = ino*this->_n_dof + idof;
               eq_local.push_back(idxLocal);
-              eq_global.push_back(this->_equations.get_equation_indices()[idxLocal]);
+              eq_global.push_back(this->_equations->get_equation_indices()[idxLocal]);
          }
    }
 
@@ -249,14 +249,14 @@ double ImplicitSystem::get_linear_final_residual()
 */
 double ImplicitSystem::compute_error_from_exact_solution( int idof, double(*func_exac)(double x,double y, double z, double t) )
 {
-    auto &coords  = this->_mesh.get_coordinate_vector();
-    auto eqIndex = this->_equations.get_equation_indices();
+    auto &coords  = this->_mesh->get_coordinate_vector();
+    auto eqIndex = this->_equations->get_equation_indices();
     int start, end;
 
     Vec r;
     VecDuplicate(this->_solution, &r);
     VecGetOwnershipRange(this->_solution, &start, &end);
-    for(int ino = 0; ino < this->_mesh.get_n_nodes(); ino++)
+    for(int ino = 0; ino < this->_mesh->get_n_nodes(); ino++)
     {
 
         double valor = func_exac(coords[ino*3], coords[ino*3+1],0.0, 0.0);
@@ -379,7 +379,7 @@ void ImplicitSystem::restore_local_solution_array(double** solution_array)
  * 
  * @return EquationManager& with the equation manager
 */
-EquationManager& ImplicitSystem::get_equation_manager()
+std::unique_ptr<EquationManager>& ImplicitSystem::get_equation_manager()
 {
     return this->_equations;
 }
@@ -427,14 +427,14 @@ void ImplicitSystem::print_rhs()
 void ImplicitSystem::apply_dirichlet_boundary_conditions()
 {
 
-    auto          & node_ids = _mesh.get_node_index_vector();
-    auto          & coords = _mesh.get_coordinate_vector();
+    auto          & node_ids = _mesh->get_node_index_vector();
+    auto          & coords = _mesh->get_coordinate_vector();
 
-    int nbc = this->_equations.get_number_of_dirichlet_boundaries();
+    int nbc = this->_equations->get_number_of_dirichlet_boundaries();
     for(int ibc = 0; ibc < nbc; ibc++)
     {
-        DirichletBoundary &bc            = this->_equations.get_dirichlet_boundary(ibc);
-        std::vector<unsigned int>& nodes = this->_equations.get_boundary_nodes(ibc);
+        DirichletBoundary &bc            = this->_equations->get_dirichlet_boundary(ibc);
+        std::vector<unsigned int>& nodes = this->_equations->get_boundary_nodes(ibc);
         std::vector<PetscScalar> values(nodes.size());
         std::vector<PetscInt> idx(nodes.size());
 
@@ -464,7 +464,7 @@ void ImplicitSystem::apply_dirichlet_boundary_conditions()
 */
 void ImplicitSystem::write_result(string filename)
 {
-    auto n_nodes = _mesh.get_n_nodes();
+    auto n_nodes = _mesh->get_n_nodes();
     
     std::vector<double> solution(n_nodes*_n_dof);
     unsigned int offset  = 0;
@@ -488,7 +488,7 @@ void ImplicitSystem::write_result(string filename)
  * 
  * @return ParallelMesh& with the mesh
 */
-ParallelMesh& ImplicitSystem::get_mesh()
+std::unique_ptr<ParallelMesh>& ImplicitSystem::get_mesh()
 {
     return this->_mesh;
 }

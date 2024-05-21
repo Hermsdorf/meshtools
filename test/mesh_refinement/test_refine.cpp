@@ -12,12 +12,8 @@ int main(int argc, char *argv[])
 
     mesh->write_vtk("quad4");
 
-    mesh->print_info(true);
-
     MeshRefinement refiner(mesh);
     refiner.refine();
-
-    mesh->print_info(true);
 
     mesh->write_vtk("quad4_refined");
 

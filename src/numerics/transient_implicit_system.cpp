@@ -11,7 +11,7 @@
  * @param mesh: parallel mesh object
  * @param name: name of the system
 */
-TransientImplicitSystem::TransientImplicitSystem(ParallelMesh &mesh, std::string name):
+TransientImplicitSystem::TransientImplicitSystem(std::unique_ptr<ParallelMesh> &mesh, std::string name):
     NonLinearImplicitSystem(mesh, name)
     {
         _t  = 0.0;
@@ -219,14 +219,14 @@ void TransientImplicitSystem::apply_initial_conditions()
 
     std::vector< std::set<unsigned int> > nodelist(_initial_conditions.size());
     
-    for(int iel=0; iel < this->_mesh.get_n_elements(); iel++)
+    for(int iel=0; iel < this->_mesh->get_n_elements(); iel++)
     {
         std::vector<unsigned int> conn;
-        _mesh.get_element_connectivity(iel, conn);
+        _mesh->get_element_connectivity(iel, conn);
         auto  connsz = conn.size();
         for(int i=0; i < _initial_conditions.size(); i++)
         {
-            if(_initial_conditions[i].get_region_id() == _mesh.get_element_physical_tag(iel))
+            if(_initial_conditions[i].get_region_id() == _mesh->get_element_physical_tag(iel))
             {
                 for(int j=0; j < connsz; j++)
                 {
@@ -236,7 +236,7 @@ void TransientImplicitSystem::apply_initial_conditions()
         }
     }
 
-    auto &coords = _mesh.get_coordinate_vector();
+    auto &coords = _mesh->get_coordinate_vector();
     auto *solution = this->get_local_solution_array();
 
     for(int i=0; i < _initial_conditions.size(); i++)
@@ -285,25 +285,23 @@ void TransientImplicitSystem::attach_init_function(void _init(TransientImplicitS
 */
 void TransientImplicitSystem::write_result(string filename)
 {
-    auto n_nodes = _mesh.get_n_nodes();
+    auto n_nodes = _mesh->get_n_nodes();
 
      vtkWriter output;
      output.open(filename, _n_write++);
-     output.write_mesh(_mesh);
+     output.write_mesh(*_mesh);
      output.start_point_data_section();
     
     std::vector<double> solution(n_nodes*_n_dof);
     unsigned int offset  = 0;
     double *solution_ptr = get_local_solution_array();
-    //MeshIODataAppended info;
     for(int i = 0; i < _n_dof; i++)
     {
         for(int ino = 0; ino < n_nodes; ino++)
             solution[ino+offset] = solution_ptr[ino*_n_dof + i];
 
         std::string var = this->_variables_names[0];
-        //info.addPointDataInfo(var.c_str(), Float64, &solution[offset]);
-        //offset += n_nodes;
+
         output.write_point_data<double>(&solution[0], n_nodes, var);
     }
 

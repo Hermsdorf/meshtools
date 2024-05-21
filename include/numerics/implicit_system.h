@@ -9,7 +9,11 @@
 class ImplicitSystem 
 {
     public:
-        ImplicitSystem(ParallelMesh &mesh, std::string name);
+        static unique_ptr<ImplicitSystem> New(std::unique_ptr<ParallelMesh> &mesh, std::string name)
+        {
+            return unique_ptr<ImplicitSystem>(new ImplicitSystem(mesh, name));
+        };
+        ImplicitSystem(std::unique_ptr<ParallelMesh> &mesh, std::string name);
         int     add_variable(std::string name);
         std::string  get_variable_name(int id);
         int     get_variable_id(std::string name);
@@ -32,8 +36,8 @@ class ImplicitSystem
         void    print_matrix();
         void    print_rhs();
 
-        ParallelMesh& get_mesh();
-        EquationManager& get_equation_manager();
+        std::unique_ptr<ParallelMesh>&    get_mesh();
+        std::unique_ptr<EquationManager>& get_equation_manager();
         
         void   attach_assemble(void _assemble(ImplicitSystem*) );
         
@@ -54,13 +58,16 @@ class ImplicitSystem
         Mat                      _A;
         Vec                      _solution_local;
         KSP                      _ksp;
-        EquationManager          _equations;
-        ParallelMesh&            _mesh;
-        VecScatter               _scatter;
+        
+        
+        VecScatter                _scatter;
         double                   _linear_tolerance;
         void   solve_linear_system();
         void   write_hdf5(unsigned int nfile);
         
+        std::unique_ptr<ParallelMesh>        &_mesh;
+        std::unique_ptr<EquationManager>     _equations;
+
     private:
 
         void (* _assemble_function)(ImplicitSystem*  _system);

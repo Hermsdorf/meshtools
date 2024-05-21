@@ -6,7 +6,7 @@
 class NonLinearImplicitSystem : public ImplicitSystem
 {
     public:
-        NonLinearImplicitSystem(ParallelMesh &mesh, std::string name);
+        NonLinearImplicitSystem(std::unique_ptr<ParallelMesh> &mesh, std::string name);
 
         void   attach_assemble(void _assemble(NonLinearImplicitSystem*));
         void   solve();

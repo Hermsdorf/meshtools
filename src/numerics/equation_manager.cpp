@@ -6,7 +6,7 @@
 #include "equation_manager.h"
 using namespace std;
 
-EquationManager::EquationManager(ParallelMesh &mesh):
+EquationManager::EquationManager(std::unique_ptr<ParallelMesh> &mesh):
     _mesh(mesh),
     _ndof(0),
     _first_global_equation_index(0),
@@ -105,10 +105,10 @@ void EquationManager::prepare_to_use()
 {
 
     //* 1. Defining nodes with boundary conditions
-    int n_nodes                      = _mesh.get_n_nodes();
-    int n_boundary_elements          = _mesh.get_n_surface_elements();
-    std::vector<unsigned int> &  l2g = _mesh.get_node_index_vector();
-    std::vector<int> &tags           = _mesh.get_element_physical_tag_vector();
+    int n_nodes                      = _mesh->get_n_nodes();
+    int n_boundary_elements          = _mesh->get_n_surface_elements();
+    std::vector<unsigned int> &  l2g = _mesh->get_node_index_vector();
+    std::vector<int> &tags           = _mesh->get_element_physical_tag_vector();
 
     _equation_indices.resize(n_nodes*_ndof);
     _boundary_nodes_map.resize(_boundaries.size());
@@ -128,7 +128,7 @@ void EquationManager::prepare_to_use()
             if(tags[iel] == boundary_id)
             {
                 std::vector<unsigned int> conn;
-                _mesh.get_surface_element_connectivity(iel, conn);
+                _mesh->get_surface_element_connectivity(iel, conn);
                 for(int ino = 0; ino < conn.size(); ++ino)
                     boundary_nodes.insert(conn[ino]);
             }
@@ -158,167 +158,17 @@ void EquationManager::prepare_to_use()
         }
     }
 
-    this->_first_global_equation_index =  _mesh.get_start_global_index()*_ndof;
-    this->_n_local_equations           = _mesh.get_n_local_nodes()*_ndof;
+    this->_first_global_equation_index =  _mesh->get_start_global_index()*_ndof;
+    this->_n_local_equations           = _mesh->get_n_local_nodes()*_ndof;
     
-    
-    /*
-    // 2. Marking nodes that doesnt belongs to the processor
-    
-    // Mark at _equation_indices, nodes that are belong to my master (which are process with id greater than mine)
-    std::vector<MessageInformation>& recvfrom = _mesh.get_recvfrom_info();
-
-    unsigned int max_buffer_size = 0;
-    unsigned int n_dof_shared   = 0;
-    for(int i = 0; i < recvfrom.size(); ++i)
-    {
-        unsigned int neighbor                   = recvfrom[i].processor_id;
-        std::vector<unsigned int>& shared_nodes = recvfrom[i].nodes;
-        unsigned int n_shared_nodes             = shared_nodes.size();
-        
-        if(n_shared_nodes > max_buffer_size) max_buffer_size = n_shared_nodes;
-        for(int ino = 0; ino < n_shared_nodes ; ino++)
-        {
-            int node_id = shared_nodes[ino]; 
-
-            for(int dof_id =0; dof_id < _ndof; ++dof_id) {
-                // flag indicanting that this node belongs to my master, so the equation belongs to him
-                _equation_indices[node_id*_ndof + dof_id] = -1;
-                n_dof_shared++;
-            }
-        }
-        
-    }
-
-    // 3. Defining the number of the equations that were not marked with the previous -1 and -2 flags
-    unsigned int n_equations_offset = 0;
-    int n_local_equations = 0;
-    for(int i = 0; i < _equation_indices.size(); ++i)
-    {
-        if(_equation_indices[i] >= 0)
-        {
-            _equation_indices[i] = n_local_equations;
-            n_local_equations++;
-        }
-    }
-
-    this->_n_local_equations = n_local_equations;
-    this->_first_global_equation_index = 0;
-
-
-    //if(MeshTools::n_processors() == 1)
-    //{
-    //    _prepared_to_use = true;
-    //    return;
-    //}
-
-    // 4. Calculating offset
-        
-    // Sends from predecessor process the value of `n_local_equations` to calculate `n_equations_offset` variable
-    MPI_Scan(&n_local_equations,&n_equations_offset,1,MPI_UNSIGNED,MPI_SUM,MPI_COMM_WORLD);
-    n_equations_offset -= n_local_equations;
-
-    
-    if(MeshTools::processor_id() == 1) std::cout <<  "n_equations_offset = " << n_equations_offset << std::endl;
-
-    this->_first_global_equation_index = n_equations_offset; 
-
-    for(int i=0; i < _equation_indices.size(); i++)
-    {
-        if(_equation_indices[i] >= 0)
-            _equation_indices[i] += n_equations_offset;
-    }
-
-    std::vector<MessageInformation>& sendto_neighbors_map   = _mesh.get_sendto_info();
-    std::vector<MessageInformation>& recvfrom_neighbors_map = _mesh.get_recvfrom_info();
-
-    unsigned int recv_n_shared_nodes = 0;
-    for(int i = 0; i < recvfrom_neighbors_map.size(); ++i)
-        recv_n_shared_nodes += recvfrom_neighbors_map[i].nodes.size();
-
-    unsigned int sendto_n_shared_nodes = 0;
-    for(int i = 0; i < sendto_neighbors_map.size(); ++i)
-        sendto_n_shared_nodes += sendto_neighbors_map[i].nodes.size();
-
-    std::vector<unsigned int> recvBuffer(recv_n_shared_nodes*_ndof);
-    std::vector<unsigned int> sendBuffer(sendto_n_shared_nodes*_ndof);
-    std::vector<MPI_Request>  requests(sendto_neighbors_map.size()+recvfrom_neighbors_map.size());
-    std::vector<MPI_Status>   status(sendto_neighbors_map.size()+recvfrom_neighbors_map.size());
-    
-    // Exchange Data from
-    unsigned int r = 0;
-    unsigned int offset = 0;
-    int n_recvs = recvfrom_neighbors_map.size();
-    for(int i =0; i < n_recvs; i++)
-    {
-        std::vector<unsigned int> neighbor_nodes  = recvfrom_neighbors_map[i].nodes;
-        int recv_from                             = recvfrom_neighbors_map[i].processor_id;
-        unsigned int n_shared_dof                 = neighbor_nodes.size()*_ndof;
-
-        MPI_Irecv(&recvBuffer[offset],n_shared_dof,MPI_UNSIGNED, recv_from,0,MPI_COMM_WORLD,&requests[r++]);
-
-        offset += n_shared_dof;
-
-    }
-
-    int n_sends = sendto_neighbors_map.size();
-    offset = 0;
-    for(int i =0; i < n_sends; i++)
-    {
-        std::vector<unsigned int> neighbor_nodes = sendto_neighbors_map[i].nodes;
-        int sendto                               = sendto_neighbors_map[i].processor_id;
-        unsigned int n_shared_dof                = neighbor_nodes.size()*_ndof;
-
-        for(int ino =0; ino < neighbor_nodes.size(); ino++) 
-        {
-            int node = neighbor_nodes[ino];
-            for(int dof_id =0; dof_id < _ndof; ++dof_id) {
-                unsigned int idx = ino*_ndof + dof_id;
-                sendBuffer[offset+idx] = _equation_indices[node*_ndof + dof_id];
-            }
-        }
-        
-        MPI_Isend(&sendBuffer[offset],n_shared_dof,MPI_UNSIGNED,sendto,0,MPI_COMM_WORLD,&requests[r++]);
-        offset += n_shared_dof;
-    }
-
-    MPI_Waitall(r,&requests[0], &status[0]);
-
-    offset = 0;
-    for(int i =0; i < n_recvs; i++)
-    {
-        std::vector<unsigned int> neighbor_nodes  = recvfrom_neighbors_map[i].nodes;
-        unsigned int n_shared_nodes               = neighbor_nodes.size()*_ndof;
-        
-        for(int ino = 0; ino <  neighbor_nodes.size(); ino++) 
-        {
-            int node = neighbor_nodes[ino];
-
-            for(int dof_id =0; dof_id < _ndof; ++dof_id){
-                int recv_value = recvBuffer[offset+ino*_ndof + dof_id];
-                //if(recv_value >= 0)
-                    _equation_indices[node*_ndof + dof_id] = recv_value;
-            }
-        } 
-        offset += n_shared_nodes; 
-    }
-
-    
-    if(MeshTools::processor_id() == 0)
-    {
-        cout << "Equation indices: " << endl;
-        for(int i = 0; i < _equation_indices.size(); ++i)
-            cout << _equation_indices[i] << " ";
-    }
-    */
-
     _prepared_to_use = true;
+    
 }
 
 void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::vector<unsigned int> &onnz)
 {
     // Preallocation Matrix
-    int n_nodes = _mesh.get_n_nodes();
+    int n_nodes = _mesh->get_n_nodes();
     std::vector< std::set<int> > vdiag(_n_local_equations);
     std::vector< std::set<int> > voff(_n_local_equations);
     
@@ -329,10 +179,10 @@ void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::
     int end   = start + _n_local_equations;
 
     // Getting the d_nnz e o_nnz vector needed to matrix preallocation
-    for (int iel = 0; iel < _mesh.get_n_elements(); ++iel)
+    for (int iel = 0; iel < _mesh->get_n_elements(); ++iel)
     {
         std::vector<unsigned int> conn;
-        _mesh.get_element_connectivity(iel, conn);
+        _mesh->get_element_connectivity(iel, conn);
         int         connsz = conn.size();
         
         int n_equations = connsz*_ndof;

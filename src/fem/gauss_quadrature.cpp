@@ -77,4 +77,9 @@ QGaussData QGauss::get(int i)
     return p;
 }
 
+QGaussData QGauss::operator[](int qp)
+{
+    return std::pair<Point,double>(_gauss_p[qp],_gauss_w[qp]);
+}
+
 

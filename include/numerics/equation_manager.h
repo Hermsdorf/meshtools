@@ -8,7 +8,12 @@
 class EquationManager
 {
 public:
-    EquationManager(ParallelMesh &mesh);
+    static std::unique_ptr<EquationManager> New(std::unique_ptr<ParallelMesh> &mesh)
+    {
+        return std::unique_ptr<EquationManager>(new EquationManager(mesh));
+    };
+    
+    EquationManager(std::unique_ptr<ParallelMesh> &mesh);
     ~EquationManager();
     unsigned int get_n_dofs() { return this->_ndof; };
     void         set_n_dofs(unsigned int n){this->_ndof = n;};
@@ -39,7 +44,7 @@ private:
 
  
     // Private 
-    ParallelMesh &              _mesh;
+    std::unique_ptr<ParallelMesh> &              _mesh;
     unsigned int                _ndof;
     unsigned int                _first_global_equation_index;
     bool                        _prepared_to_use;

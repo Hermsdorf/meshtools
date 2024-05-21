@@ -7,7 +7,7 @@
  * @param mesh: parallel mesh object
  * @param name: name of the system
 */
-NonLinearImplicitSystem::NonLinearImplicitSystem(ParallelMesh &mesh, std::string name): ImplicitSystem(mesh, name)
+NonLinearImplicitSystem::NonLinearImplicitSystem(std::unique_ptr<ParallelMesh> &mesh, std::string name): ImplicitSystem(mesh, name)
 {
     _tolerance                = 1e-4;
     _max_nonlinear_iterations = 20;

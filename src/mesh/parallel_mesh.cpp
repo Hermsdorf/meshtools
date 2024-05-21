@@ -176,8 +176,7 @@ void ParallelMesh::build_communication_map()
     this->sendto_info.clear();
     this->recvfrom_info.clear();
 
-    if(MeshTools::processor_id() == 0)
-        std::cout << "Building communication map\n";
+    MeshTools::PrintDebug("Building communication map\n");
 
     int greather_neighbor_process[this->n_nodes];
     for(int i = 0; i < this->n_nodes; ++i)
@@ -233,9 +232,6 @@ void ParallelMesh::build_communication_map()
                 this->sendto_info.emplace_back(info);
         }
     }
-    if(MeshTools::processor_id() == 0)
-        std::cout << "Communication map finished\n";
-
 
 }
 

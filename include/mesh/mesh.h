@@ -8,6 +8,8 @@
 #include "meshtools.h"
 #include "mesh_coloring.h" 
 
+#include "element.h"
+
 using namespace std;
 
 typedef enum {EDGE2=3, TRI3=5, QUAD4=9, TET4=10, HEX8=12} MeshElementType;
@@ -333,6 +335,8 @@ class Mesh {
         void   write_vtk(std::string basename);
 
         void   process_face_to_element();
+
+        void get_element(unsigned int iel, Element &elem);
 
     protected:
 

@@ -3,7 +3,7 @@
 #include "parallel_mesh.h"
 #include "numeric_vector.h"
 #include "tensor.h"
-
+#include "element.h"
 #include "fem_functions.h"
 
 // To learn: https://www.youtube.com/watch?v=gJzqCaOEqsA
@@ -86,7 +86,10 @@ the reference coordinate system:  (x, y) -> (xi, eta)
 
 */
 
-FEMFunction::FEMFunction(ParallelMesh& mesh):_mesh(mesh) { }
+FEMFunction::FEMFunction()
+{ 
+    
+}
 
 void FEMFunction::ComputeFunction(Element& elem, QGaussData qp)
 {
