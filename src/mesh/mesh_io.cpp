@@ -13,69 +13,69 @@
 #include "hdf5_helper.h"
 #include "mesh_helper.h"
 
-size_t get_mesh_type_size(MeshDataType type)
-{
-    switch(type)
-    {
-        case UInt8: return sizeof(unsigned short);
-        case Int8: return sizeof(short);
-        case UInt32: return sizeof(unsigned int);
-        case Int32: return sizeof(int);
-        case Float32: return sizeof(float);
-        case Float64: return sizeof(double);
-        default:
-            return 0;
-    }
-}
+// size_t get_mesh_type_size(MeshDataType type)
+// {
+//     switch(type)
+//     {
+//         case UInt8: return sizeof(unsigned short);
+//         case Int8: return sizeof(short);
+//         case UInt32: return sizeof(unsigned int);
+//         case Int32: return sizeof(int);
+//         case Float32: return sizeof(float);
+//         case Float64: return sizeof(double);
+//         default:
+//             return 0;
+//     }
+// }
 
 
-bool is_mesh_data_type_valid(MeshDataType type)
-{
-    switch(type)
-    {
-        case UInt8:
-        case Int8:
-        case UInt32:
-        case Int32:
-        case Float32:
-        case Float64:
-            return 1;
-        default:
-            return 0;
-    }
-}
+// bool is_mesh_data_type_valid(MeshDataType type)
+// {
+//     switch(type)
+//     {
+//         case UInt8:
+//         case Int8:
+//         case UInt32:
+//         case Int32:
+//         case Float32:
+//         case Float64:
+//             return 1;
+//         default:
+//             return 0;
+//     }
+// }
 
-MeshIODataAppended::MeshIODataAppended()
-{
-    this->time = -1.0;
-    this->time_step = -1;
-}
+// MeshIODataAppended::MeshIODataAppended()
+// {
+//     this->time = -1.0;
+//     this->time_step = -1;
+// }
 
-void MeshIODataAppended::addPointDataInfo(const char* name, MeshDataType type, void *data_ptr)
-{
-    PointData tmp;
-    assert(is_mesh_data_type_valid(type));
-    tmp.name = name;
-    tmp.data = data_ptr;
-    tmp.type = type;
-    this->list_point_data.push_back(tmp);
-}
+// void MeshIODataAppended::addPointDataInfo(const char* name, MeshDataType type, void *data_ptr)
+// {
+//     PointData tmp;
+//     assert(is_mesh_data_type_valid(type));
+//     tmp.name = name;
+//     tmp.data = data_ptr;
+//     tmp.type = type;
+//     this->list_point_data.push_back(tmp);
+// }
 
-void MeshIODataAppended::addCellDataInfo(const char* name, MeshDataType type, void *data_ptr)
-{
-    CellData tmp;
-    assert(is_mesh_data_type_valid(type));
-    tmp.name = name;
-    tmp.data = data_ptr;
-    tmp.type = type;
-    this->list_cell_data.push_back(tmp);
-}
+// void MeshIODataAppended::addCellDataInfo(const char* name, MeshDataType type, void *data_ptr)
+// {
+//     CellData tmp;
+//     assert(is_mesh_data_type_valid(type));
+//     tmp.name = name;
+//     tmp.data = data_ptr;
+//     tmp.type = type;
+//     this->list_cell_data.push_back(tmp);
+// }
 
-void MeshIODataAppended::addTimeDataInfo(double time, int timestep)
-{
-    this->time = time;
-    this->time_step = timestep;
-}
+// void MeshIODataAppended::addTimeDataInfo(double time, int timestep)
+// {
+//     this->time = time;
+//     this->time_step = timestep;
+// }
 
 
 void Mesh::gmsh_reader(const char* filename)

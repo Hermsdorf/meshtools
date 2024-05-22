@@ -14,48 +14,46 @@ using namespace std;
 
 typedef enum {EDGE2=3, TRI3=5, QUAD4=9, TET4=10, HEX8=12} MeshElementType;
 
-typedef enum {Int8=0, UInt8=1,Int32=2, UInt32=3, Float32=4,Float64=5} MeshDataType;
-static string MeshDataTypeSTR[6] = {"Int8","UInt8","Int32", "UInt32", "Float32","Float64"}; 
+//typedef enum {Int8=0, UInt8=1,Int32=2, UInt32=3, Float32=4,Float64=5} MeshDataType;
+//static string MeshDataTypeSTR[6] = {"Int8","UInt8","Int32", "UInt32", "Float32","Float64"}; 
 
-typedef struct 
-{
-    string        name;
-    MeshDataType  type;
-    void          *data;
+// typedef struct 
+// {
+//     string        name;
+//     MeshDataType  type;
+//     void          *data;
 
-} MeshIODataInfo;
+// } MeshIODataInfo;
 
 
-typedef MeshIODataInfo PointData;
-typedef MeshIODataInfo CellData;
+// typedef MeshIODataInfo PointData;
+// typedef MeshIODataInfo CellData;
 
 class Element;
 class SurfaceElement;
 class MeshPartition;
 
-class MeshIODataAppended{
+// class MeshIODataAppended{
     
-    public:
-        MeshIODataAppended();
-        void addPointDataInfo(const char* name, MeshDataType type, void *data_ptr);
-        void addCellDataInfo(const char* name, MeshDataType type, void *data_ptr);
-        void addTimeDataInfo(double time, int time_step);
-        std::vector<PointData>& getPointDataInfo() { return list_point_data; };
-        std::vector<CellData>& getCellDataInfo() { return list_cell_data;};
-        double& getTime() { return time; };
-        int& getTimeStep() { return time_step; };
-    private:
-        std::vector<PointData> list_point_data;
-        std::vector<CellData>  list_cell_data;
-        double time;
-        int time_step;
-};
+//     public:
+//         MeshIODataAppended();
+//         void addPointDataInfo(const char* name, MeshDataType type, void *data_ptr);
+//         void addCellDataInfo(const char* name, MeshDataType type, void *data_ptr);
+//         void addTimeDataInfo(double time, int time_step);
+//         std::vector<PointData>& getPointDataInfo() { return list_point_data; };
+//         std::vector<CellData>& getCellDataInfo() { return list_cell_data;};
+//         double& getTime() { return time; };
+//         int& getTimeStep() { return time_step; };
+//     private:
+//         std::vector<PointData> list_point_data;
+//         std::vector<CellData>  list_cell_data;
+//         double time;
+//         int time_step;
+// };
 
 
 typedef std::pair<int, std::string> PhysicalData;
 
-typedef enum {METIS_ND=0, RCM, FF} reorder_t;
-typedef enum {BINARY=0, ASCII} write_t;
 
 class Mesh {
     public:
@@ -222,7 +220,7 @@ class Mesh {
          * @param filename 
          * @param info 
          */
-        void write_glvis(string filename, MeshIODataAppended* info = nullptr);
+        void write_glvis(string filename);
 
  
         /**
@@ -276,67 +274,229 @@ class Mesh {
          */
         void   set_n_nodes(unsigned int _n_nodes);
 
+        /**
+         * @brief Set the n colors object
+         * 
+         * @param _n_colors 
+         */
         void   set_n_colors(unsigned int _n_colors);
 
+        /**
+         * @brief Set the coordinate vector object
+         * 
+         * @param _coords 
+         */
         void   set_coordinate_vector(std::vector<double>& _coords);
 
+        /**
+         * @brief Set the connectivity vector object
+         * 
+         * @param _conn 
+         */
         void   set_connectivity_vector(std::vector<unsigned int> &_conn);
 
+        /**
+         * @brief Set the offset vector object
+         * 
+         * @param _offset 
+         */
         void   set_offset_vector(std::vector<unsigned int>&   _offset);
 
+        /**
+         * @brief Set the element physical tag vector object
+         * 
+         * @param _physical_tag 
+         */
         void   set_element_physical_tag_vector(std::vector<int>& _physical_tag);
 
+        /**
+         * @brief Set the element type vector object
+         * 
+         * @param _type 
+         */
         void   set_element_type_vector(std::vector<unsigned short>& _type);
 
+        /**
+         * @brief Set the node index vector object
+         * 
+         * @param _node_index 
+         */
         void   set_node_index_vector(std::vector<unsigned int> &_node_index);
 
+        /**
+         * @brief Set the mesh element type object
+         * 
+         * @param _new_type 
+         */
         void   set_mesh_element_type(unsigned int _new_type);
 
+        /**
+         * @brief Set the surface mesh element type object
+         * 
+         * @param _new_type 
+         */
         void   set_surface_mesh_element_type(unsigned int _new_type);
 
+        /**
+         * @brief Set the mesh dimension object
+         * 
+         * @param _dim 
+         */
         void   set_mesh_dimension(unsigned int _dim);
 
+        /**
+         * @brief Set the colors vector object
+         * 
+         * @param _colors 
+         */
         void   set_colors_vector( std::vector<unsigned int> & _colors);
 
+        /**
+         * @brief Set the physical map object
+         * 
+         * @param _new_map 
+         */
         void   set_physical_map(const std::map<int, PhysicalData> & _new_map);
 
+        /**
+         * @brief Set the face to element vector object
+         * 
+         * @param _new_face_to_elem 
+         */
         void   set_face_to_element_vector(std::vector<unsigned int>& _new_face_to_elem);
 
+        /**
+         * @brief Get the coordinate vector object
+         * 
+         * @return std::vector<double>& 
+         */
         std::vector<double>&         get_coordinate_vector();
 
+        /**
+         * @brief Get the connectivity vector object reference
+         * 
+         * @return std::vector<unsigned int>& 
+         */
         std::vector<unsigned int>&   get_connectivity_vector();
 
+        /**
+         * @brief Get the offset vector object reference
+         * 
+         * @return std::vector<unsigned int>& 
+         */
         std::vector<unsigned int>&   get_offset_vector();
 
+        /**
+         * @brief Get the element type vector object reference
+         * 
+         * @return std::vector<unsigned short>& 
+         */
         std::vector<unsigned short>& get_element_type_vector(); 
 
+        /**
+         * @brief Get the element physical tag vector object reference
+         * 
+         * @return std::vector<int>& 
+         */
         std::vector<int>&            get_element_physical_tag_vector();
 
+        /**
+         * @brief Get the face to element vector object reference
+         * 
+         * @return std::vector<unsigned int>& 
+         */
         std::vector<unsigned int>&   get_face_to_element_vector();
 
+        /**
+         * @brief Get the colors vector object reference
+         * 
+         * @return std::vector<unsigned int>& 
+         */
         std::vector<unsigned int>&   get_colors_vector();
 
+        /**
+         * @brief Get the node index vector object reference
+         * 
+         * @return std::vector<unsigned int>& 
+         */
         std::vector<unsigned int>&   get_node_index_vector();  
 
+        /**
+         * @brief Get the element connectivity size
+         * 
+         * @return unsigned int 
+         */
         unsigned int get_element_connectivity_size();
 
+        /**
+         * @brief Get the surface element connectivity size
+         * 
+         * @return unsigned int 
+         */
         unsigned int get_surface_element_connectivity_size();
 
+        /**
+         * @brief Get the element connectivity pointer 
+         * 
+         * @return const unsigned* 
+         */
         const unsigned int* get_element_connectivity_pointer();
 
+        /**
+         * @brief Get the surface element connectivity pointer object
+         * 
+         * @return const unsigned* 
+         */
         const unsigned int* get_surface_element_connectivity_pointer();
 
+        /**
+         * @brief Get the element type pointer object
+         * 
+         * @return const unsigned* 
+         */
         const unsigned short* get_element_type_pointer();
 
+        /**
+         * @brief Get the surface element type pointer object
+         * 
+         * @return const unsigned* 
+         */
         const unsigned short* get_surface_element_type_pointer();   
 
+        /**
+         * @brief Get the only element offset vector object
+         * 
+         * @param offset 
+         */
         void get_only_element_offset_vector(std::vector<unsigned int>& offset);
 
+        /**
+         * @brief 
+         * 
+         * @param basename 
+         */
         void   write_vtk(std::string basename);
 
+        /**
+         * @brief 
+         * 
+         */
         void   process_face_to_element();
 
+        /**
+         * @brief Get the element object    
+         * 
+         * @param iel 
+         * @param elem 
+         */
         void get_element(unsigned int iel, Element &elem);
+
+        /**
+         * @brief Print mesh information
+         * 
+         * @param debug_on 
+         */
+        void print_info(bool debug_on = false);
 
     protected:
 

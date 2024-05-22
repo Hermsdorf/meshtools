@@ -374,72 +374,7 @@ void ParallelMesh::fill_node_index()
     }
 }
 
-/*
-void ParallelMesh::WritePMeshMTS(const char *fname)
-{
-    char filename[256];
-    sprintf(filename,"%s_%04d_%04d.mts",fname,MeshTools::n_processors(),MeshTools::processor_id());
-    FILE* fout = fopen(filename,"w");
-    if(!fout) return ;
 
-
-    fprintf(fout, "# MeshTools File \n");
-    fprintf(fout, "1.0  0  1 \n");
-    fprintf(fout, "%8d  # num. faces   \n", this->n_face_elements);
-    fprintf(fout, "%8d  # num. elements\n", this->n_elements);
-    fprintf(fout, "%8d  # num. nodes \n",   this->n_nodes);
-    fprintf(fout, "%8ld # num. physical region\n", this->physical_map.size());
-    fprintf(fout, "$BEGIN_PHYSICAL_DATA\n");
-    for(auto it = this->physical_map.begin(); it != this->physical_map.end(); it++)
-        fprintf(fout, "%d %d %s\n", it->first, it->second.first, it->second.second.c_str());
-    fprintf(fout, "$END_PHYSICAL_DATA\n"); 
-    fprintf(fout, "$BEGIN_NODE_DATA\n");
-    for(int n = 0; n < this->n_nodes; n++)
-        fprintf(fout,"%-4d %8.8e %8.8e %8.8e\n",n,coord[n*3],coord[n*3+1], coord[n*3+2]);
-    fprintf(fout, "$ENDNODE_DATA\n");
-    fprintf(fout,"$BEGIN_BOUNDARY_DATA\n");
-    for(int iel = 0; iel <  this->n_face_elements; iel++)
-    {
-        fprintf(fout,"%-4d %-4d", iel, this->physical_tag[iel]);
-        unsigned int connsize = this->getSurfaceElementConnSize(iel);
-        unsigned int *conn    = this->getSurfaceElementConn(iel);
-        for(int i = 0; i < connsize; ++i)
-            fprintf(fout, "%-4d ", conn[i]);
-        fprintf(fout,"\n");
-    }
-    fprintf(fout,"$END_BOUNDARY_DATA\n");
-    fprintf(fout,"$BEGIN_ELEMENT_DATA\n");
-    for(int iel = 0; iel < this->n_elements; iel++)
-    {
-        fprintf(fout,"%-4d %-4d ", iel, this->physical_tag[iel+this->n_face_elements]);
-        unsigned int connsize = this->getElementConnSize(iel);
-        unsigned int *conn    = this->getElementConn(iel);
-        for(int i = 0; i < connsize; ++i)
-            fprintf(fout, "%-4d ", conn[i]);
-        fprintf(fout,"\n");
-    }
-    fprintf(fout,"$END_ELEMENT_DATA\n");
-    fprintf(fout,"$BEGIN_GLOBAL_NODE_IDS\n");
-    for(int i = 0; i < this->n_nodes; ++i) {
-        fprintf(fout, "%-4d ", this->node_index[i]);
-        if((i+1)%5 == 0) fprintf(fout,"\n");
-    }
-    fprintf(fout,"\n$END_GLOBAL_NODE_IDS\n");
-    fprintf(fout ,"$BEGIN_PARALLEL_DATA\n");
-    fprintf(fout, "%ld  # number of neighbor processors \n", neighbor_processors.size());
-    for(int i=0; i < this->neighbor_processors.size(); i++)
-            fprintf(fout,"%d ", neighbor_processors[i]);
-    fprintf(fout, "  # neighbor processors\n");
-    for(int i=0; i < this->shared_nodes_offset.size(); i++)
-        fprintf(fout,"%d ", shared_nodes_offset[i]);
-    fprintf(fout, " # node offset\n");
-    for(int i=0; i < shared_nodes.size(); i++)
-        fprintf(fout,"%d ", shared_nodes[i]);
-    fprintf(fout, "\n");
-    fprintf(fout ,"$END_PARALLEL_DATA\n");
-    fclose(fout);
-}
-*/
 
 
 void ParallelMesh::set_start_node_index(unsigned int start_node_index)
@@ -465,14 +400,8 @@ void ParallelMesh::set_recvfrom_info(std::vector<MessageInformation>&  info)
 
 void ParallelMesh::print_info(bool debug_mode)
 {
+    Mesh::print_info(debug_mode);
     FILE *fout = !debug_mode ? stdout : MeshTools::DebugOutput();
-    fprintf(fout,"-----------------------------------------------\n");
-    fprintf(fout, "Mesh on Processor ID: %d\n", this->processor_id);
-    fprintf(fout,"-----------------------------------------------\n");
-    fprintf(fout, "Number of Nodes: %d\n", this->n_nodes);
-    for(int i = 0; i < this->n_nodes; i++)
-        fprintf(fout, "[%d, %d]: (%f, %f, %f)\n", i, this->node_index[i], this->coord[i*3], this->coord[i*3+1], this->coord[i*3+2]);
-    fprintf(fout, "Number of Elements: %d\n", this->n_elements);
     fprintf(fout, "Number of Global Elements: %d\n", this->n_global_elements);
     fprintf(fout, "Number of Global Nodes: %d\n", this->n_global_nodes);
     fprintf(fout, "Number of Global Surface Elements: %d\n", this->n_global_surface_elements);

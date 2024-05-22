@@ -2,6 +2,7 @@
 #include <algorithm>
 using namespace std;
 
+#include "vtk_writer.h"
 #include "implicit_system.h"
 #include "meshtools.h"
 
@@ -465,21 +466,27 @@ void ImplicitSystem::apply_dirichlet_boundary_conditions()
 void ImplicitSystem::write_result(string filename)
 {
     auto n_nodes = _mesh->get_n_nodes();
-    
     std::vector<double> solution(n_nodes*_n_dof);
     unsigned int offset  = 0;
     double *solution_ptr = get_local_solution_array();
-    MeshIODataAppended info;
+
+    vtkWriter writer;
+    writer.open(filename.c_str());
+    writer.write_mesh(*_mesh.get());
+    writer.start_point_data_section();
+    
     for(int i = 0; i < _n_dof; i++)
     {
         for(int ino = 0; ino < n_nodes; ino++)
             solution[ino+offset] = solution_ptr[ino*_n_dof + i];
 
         std::string var = this->_variables_names[0];
-        info.addPointDataInfo(var.c_str(), Float64, &solution[offset]);
+        writer.write_point_data<double>(solution.data(),solution.size(),var);
         offset += n_nodes;
     }
-    //this->_mesh.write(filename.c_str(), &info);
+    
+    writer.close_point_data_section();
+    writer.close();
     restore_local_solution_array(&solution_ptr);
 }
 

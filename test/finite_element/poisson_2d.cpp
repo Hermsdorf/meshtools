@@ -1,5 +1,5 @@
 
-#include "petsc.h"
+
 
 #include "meshtools.h"
 #include "mesh.h"
@@ -257,7 +257,7 @@ void assemble_poisson(ImplicitSystem* system)
 int poisson(int argc, char *argv[])
 {
     // /home/camata/git/meshtools/test/finite_element/msh/poisson_2d/poisson_quad4.msh
-    std::unique_ptr<ParallelMesh>   mesh              = MeshTools::read(std::string(MESHTOOLS_SOURCE_DIR)+"/test/finite_element/msh/poisson_2d/poisson_quad4.msh");
+    std::unique_ptr<ParallelMesh>   mesh              = MeshTools::read(std::string(MESHTOOLS_SOURCE_DIR)+"/test/finite_element/msh/poisson_2d/poisson_grosseiro.msh");
     std::unique_ptr<ImplicitSystem> implicit_system   = ImplicitSystem::New(mesh, "poisson");
 
 

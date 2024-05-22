@@ -267,7 +267,7 @@ void FEMFunction::TRI3Function(Element& elem, QGaussData qp)
     }
 
     double detJ = J[0][0]*J[1][1] - J[0][1]*J[1][0];
-    if(detJ < 0.0)
+    if(detJ <= 0.0)
     {
         std::cout << "Error: detJ < 0.0  -- det = " << detJ << std::endl;
         exit(1);

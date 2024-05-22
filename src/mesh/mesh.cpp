@@ -620,7 +620,7 @@ void Mesh::process_face_to_element()
 }
 
 
-void Mesh::write_glvis(string filename, MeshIODataAppended* info)
+void Mesh::write_glvis(string filename)
 {
     if(filename.find(".mesh") != std::string::npos)
     {
@@ -697,4 +697,32 @@ void Mesh::get_element(unsigned int element_id, Element& elem)
     this->get_element_vertices(conn, elem._coords);
     elem._type = this->get_element_type(element_id);
     elem._tag  = this->get_element_physical_tag(element_id);
+}
+
+void Mesh::print_info(bool debug_on)
+{
+    FILE *fout = stdout; //!debug_on ? stdout : MeshTools::DebugOutput();
+    fprintf(fout,"-----------------------------------------------\n");
+    fprintf(fout, "Mesh on Processor ID: %d\n", MeshTools::processor_id);
+    fprintf(fout,"-----------------------------------------------\n");
+    fprintf(fout, "Number of Nodes: %d\n", this->n_nodes);
+    for(int i = 0; i < this->n_nodes; i++)
+        fprintf(fout, "[%d, %d]: (%f, %f, %f)\n", i, this->node_index[i], this->coord[i*3], this->coord[i*3+1], this->coord[i*3+2]);
+    fprintf(fout, "Number of Surface Elements: %d\n", this->n_face_elements);
+    for(int i = 0; i < this->n_face_elements; i++)
+    {
+        fprintf(fout, "[%d]: ", i);
+        for(int j = this->offset[i]; j < this->offset[i+1]; j++)
+            fprintf(fout, "%d ", this->conn[j]);
+        fprintf(fout, "\n");
+    }
+    fprintf(fout, "Number of Elements: %d\n", this->n_elements);
+    for(int i = 0; i < this->n_elements; i++)
+    {
+        fprintf(fout, "[%d]: ", i);
+        for(int j = this->offset[this->n_face_elements+i]; j < this->offset[this->n_face_elements+i+1]; j++)
+            fprintf(fout, "%d ", this->conn[j]);
+        fprintf(fout, "\n");
+    }
+    fprintf(fout,"-----------------------------------------------\n");
 }
