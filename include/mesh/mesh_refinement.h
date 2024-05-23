@@ -234,6 +234,8 @@ class MeshRefinement
   
         std::unordered_map<unsigned int, std::set<unsigned int> > shared_processors_per_node; 
 
+        std::unordered_map<unsigned int, std::set<unsigned int> > new_shared_processors_per_node; 
+
         std::unique_ptr<ParallelMesh> &mesh;
 
 };

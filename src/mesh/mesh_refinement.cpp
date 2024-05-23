@@ -34,6 +34,7 @@ void MeshRefinement::refine()
 
     
     shared_processors_per_node.clear();
+    new_shared_processors_per_node.clear();
 
     unsigned int n_nodes = mesh->get_n_nodes();
     unsigned int nse     = mesh->get_n_surface_elements();
@@ -73,11 +74,11 @@ void MeshRefinement::refine()
     new_shared_nodes.reserve(mesh->get_shared_nodes_vector().size());
     new_shared_nodes_offset.reserve(mesh->get_shared_nodes_offset_vector().size());
     
-    for(int i = 0; i < n_nodes; i++)
-    {
-        //std::vector<unsigned int> node_conn = {mesh->get_node_id(i)};
-        node_map[i] = compute_hash({mesh->get_node_id(i)});
-    }
+    // for(int i = 0; i < n_nodes; i++)
+    // {
+    //     //std::vector<unsigned int> node_conn = {mesh->get_node_id(i)};
+    //     node_map[i] = compute_hash({mesh->get_node_id(i)});
+    // }
 
     // Build the shared processor per node map
     build_shared_processor_per_node_map();
@@ -366,7 +367,7 @@ void MeshRefinement::build_shared_processor_per_node_map()
 void MeshRefinement::find_processor_neighbours_edge(std::vector<unsigned int> &conn, unsigned int new_node)
 {
 
-   if(shared_processors_per_node.find(new_node) != shared_processors_per_node.end())
+   if(new_shared_processors_per_node.find(new_node) != new_shared_processors_per_node.end())
         return;
     
     /*
@@ -390,12 +391,13 @@ void MeshRefinement::find_processor_neighbours_edge(std::vector<unsigned int> &c
     std::set_intersection(processors_v1.begin(), processors_v1.end(), processors_v2.begin(), processors_v2.end(), std::inserter(processors, processors.begin()));
 
     // Add the new node to the shared nodes
-    shared_processors_per_node[new_node] = processors;
+    new_shared_processors_per_node[new_node] = processors;
+
 }
 
 void MeshRefinement::find_processor_neighbours_face_3_edges(std::vector<unsigned int> &conn, unsigned int new_node)
 {
-    if(shared_processors_per_node.find(new_node) != shared_processors_per_node.end())
+    if(new_shared_processors_per_node.find(new_node) != new_shared_processors_per_node.end())
     {
         return;
     }
@@ -425,12 +427,15 @@ void MeshRefinement::find_processor_neighbours_face_3_edges(std::vector<unsigned
     std::set_intersection(intersect1.begin(), intersect1.end(), processors_v3.begin(), processors_v3.end(), std::inserter(result, result.begin()));
 
     // Add the new node to the shared nodes
-    shared_processors_per_node[new_node] = result;
+    new_shared_processors_per_node[new_node] = result;
+
+    MeshTools::PrintDebug("Node %d is shared\n", new_node);
+
 }
 
 void MeshRefinement::find_processor_neighbours_face_4_edges(std::vector<unsigned int> &conn, unsigned int new_node)
 {
-    if(shared_processors_per_node.find(new_node) != shared_processors_per_node.end())
+    if(new_shared_processors_per_node.find(new_node) != new_shared_processors_per_node.end())
     {
         return;
     }
@@ -465,7 +470,9 @@ void MeshRefinement::find_processor_neighbours_face_4_edges(std::vector<unsigned
     std::set_intersection(intersect1.begin(), intersect1.end(), intersect2.begin(), intersect2.end(), std::inserter(result, result.begin()));
 
     // Add the new node to the shared nodes
-    shared_processors_per_node[new_node] = result;
+    new_shared_processors_per_node[new_node] = result;
+
+    MeshTools::PrintDebug("Node %d is shared\n", new_node);
 }
 
 
@@ -936,23 +943,23 @@ void MeshRefinement::hexahedron_refinement_template(std::vector<double>&   coord
 
 void MeshRefinement::rebuild_comunication_map()
 {
-    std::map<unsigned int, std::unordered_set<unsigned int> > shared_nodes_map;
+    std::map<unsigned int, std::unordered_set<unsigned int> > processor_node_map;
 
     // loop over nodes that are shared
-    for(auto& shared_nodes : shared_processors_per_node)
+    for(auto& node : new_shared_processors_per_node)
     {
         // loop over the processors that share the node
-        for(auto& process : shared_nodes.second)
+        for(auto& process : node.second)
         {
-            shared_nodes_map[process].insert(shared_nodes.first);
+            processor_node_map[process].insert(node.first);
         }
     }
 
-    for(auto& shared_nodes : shared_nodes_map)
+    for(auto& iter : processor_node_map)
     {
-        std::vector<NodeHash> nodes(shared_nodes.second.size());
+        std::vector<NodeHash> nodes(iter.second.size());
         int i = 0;
-        for(auto& node : shared_nodes.second)
+        for(auto& node : iter.second)
         {
             nodes[i++] = {node_map[node], node};
         }
@@ -960,43 +967,67 @@ void MeshRefinement::rebuild_comunication_map()
         std::sort(nodes.begin(), nodes.end(), [](const NodeHash &a, const NodeHash &b) { return a.hash < b.hash; });
         
         // inserir nodes associado ao processador
-        shared_nodes.second.clear();
+        iter.second.clear();
         for(auto& node : nodes)
         {
-            shared_nodes.second.insert(node.id);
+            iter.second.insert(node.id);
         }
     }
 
-    std::vector<unsigned int> neighbors_processors;
-    std::vector<unsigned int> shared_nodes_offset;
-    std::vector<unsigned int> shared_nodes;
+    auto & shared_nodes         = mesh->get_shared_nodes_vector();
+    auto & shared_nodes_offset  = mesh->get_shared_nodes_offset_vector();
+    auto & neighbors_processors = mesh->get_neighbors_processors_vector();
 
-    shared_nodes_offset.emplace_back(0);
+    std::vector<unsigned int> new_shared_nodes_offset;
+    std::vector<unsigned int> new_shared_nodes;
+
+    new_shared_nodes_offset.emplace_back(0);
     unsigned int offset = 0;
-    for(auto& nodes : shared_nodes_map)
-    {
-        neighbors_processors.emplace_back(nodes.first);
-        offset += nodes.second.size();
-        shared_nodes_offset.emplace_back(offset);
-        shared_nodes.insert(shared_nodes.end(), nodes.second.begin(), nodes.second.end());
 
+    // adiciona os nós ja existes
+    for(int p = 0; p < neighbors_processors.size();p++)
+    {
+        unsigned int start = shared_nodes_offset[p];
+        unsigned int end = shared_nodes_offset[p+1];
+        for(int i = start; i < end; i++)
+            new_shared_nodes.emplace_back(shared_nodes[i]);
+        offset+=(end-start);
+
+        auto node_list = processor_node_map[neighbors_processors[p]];
+        for(auto node : node_list)
+            new_shared_nodes.emplace_back(node);
+        offset += node_list.size();
+        new_shared_nodes_offset.emplace_back(offset);
     }
+    
+    // for(auto& nodes : shared_nodes_map)
+    // {
+    //     neighbors_processors.emplace_back(nodes.first);
+    //     offset += nodes.second.size();
+    //     shared_nodes_offset.emplace_back(offset);
+    //     shared_nodes.insert(shared_nodes.end(), nodes.second.begin(), nodes.second.end());
+
+    // }
+
+    mesh->get_shared_nodes_offset_vector() = new_shared_nodes_offset;
+    mesh->get_shared_nodes_vector()        = new_shared_nodes;
+    
+
+
 
 #ifdef NDEBUG
     for(int i = 0; i < neighbors_processors.size(); i++)
     {
         MeshTools::PrintDebug("Processor: %d\n", neighbors_processors[i]);
-        for(int j = shared_nodes_offset[i]; j < shared_nodes_offset[i+1]; j++)
+        for(int j = new_shared_nodes_offset[i]; j < new_shared_nodes_offset[i+1]; j++)
         {
-            MeshTools::PrintDebug("Node: %d\n", shared_nodes[j]);
+            MeshTools::PrintDebug("Node: %d\n", new_shared_nodes[j]);
         }
     }
 #endif
 
 
-    mesh->get_shared_nodes_vector()         = shared_nodes;
-    mesh->get_shared_nodes_offset_vector()  = shared_nodes_offset;
-    mesh->get_neighbors_processors_vector() = neighbors_processors;
+
 
     mesh->build_communication_map();
     mesh->fill_node_index();
