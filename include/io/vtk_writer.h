@@ -1,5 +1,5 @@
-#ifndef VTK_WRITER_H__
-#define VTK_WRITER_H__
+#ifndef VTK_WRITER_H
+#define VTK_WRITER_H
 
 #include <iostream>
 #include <fstream>
@@ -148,4 +148,4 @@ void vtkWriter::write_cell_data(const T* data, size_t size, std::string name, in
 
 
 
-#endif /* VTK_WRITER_H__ */
+#endif /* VTK_WRITER_H */

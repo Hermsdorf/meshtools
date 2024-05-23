@@ -519,6 +519,10 @@ void Mesh::process_face_to_element()
     int n_elements       = this->n_elements;
     int dim              = this->dim;
 
+#ifdef NDEBUG
+    MeshTools::PrintDebug("Start process_face_to_element()\n");
+#endif
+
     this->face_to_element.resize(n_face_elements);
     std::fill(face_to_element.begin(), face_to_element.end(),-1);
 
@@ -694,16 +698,16 @@ const unsigned short* Mesh::get_surface_element_type_pointer()
 void Mesh::get_element(unsigned int element_id, Element& elem)
 {
     this->get_element_connectivity(element_id, elem._conn);
-    this->get_element_vertices(conn, elem._coords);
+    this->get_element_vertices( elem._conn, elem._coords);
     elem._type = this->get_element_type(element_id);
     elem._tag  = this->get_element_physical_tag(element_id);
 }
 
 void Mesh::print_info(bool debug_on)
 {
-    FILE *fout = stdout; //!debug_on ? stdout : MeshTools::DebugOutput();
+    FILE *fout =  !debug_on ? stdout : MeshTools::DebugOutput();
     fprintf(fout,"-----------------------------------------------\n");
-    fprintf(fout, "Mesh on Processor ID: %d\n", MeshTools::processor_id);
+    fprintf(fout, "Mesh on Processor ID: %d\n", MeshTools::processor_id());
     fprintf(fout,"-----------------------------------------------\n");
     fprintf(fout, "Number of Nodes: %d\n", this->n_nodes);
     for(int i = 0; i < this->n_nodes; i++)

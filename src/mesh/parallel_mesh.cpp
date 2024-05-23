@@ -179,6 +179,7 @@ void ParallelMesh::build_communication_map()
     MeshTools::PrintDebug("Building communication map\n");
 
     int greather_neighbor_process[this->n_nodes];
+
     for(int i = 0; i < this->n_nodes; ++i)
         greather_neighbor_process[i] = processor_id;
     
@@ -251,16 +252,19 @@ void ParallelMesh::fill_node_index()
    
     unsigned int n_nodes_offset;
 
-    std::vector<MessageInformation>& recvfrom = this->get_recvfrom_info();
+    //std::vector<MessageInformation>& recvfrom = this->get_recvfrom_info();
+        
+    std::vector<MessageInformation>& sendto_neighbors_map   =  this->get_sendto_info();
+    std::vector<MessageInformation>& recvfrom_neighbors_map =  this->get_recvfrom_info();
 
-    unsigned int max_buffer_size = 0;
+    unsigned int max_buffer_size  = 0;
     unsigned int n_nodes_shared   = 0;
 
     // Mark nodes that belongs to my master (which are process with id greater than mine)
-    for(int i = 0; i < recvfrom.size(); ++i)
+    for(int i = 0; i < recvfrom_neighbors_map.size(); ++i)
     {
-        unsigned int neighbor                   = recvfrom[i].processor_id;
-        std::vector<unsigned int>& shared_nodes = recvfrom[i].nodes;
+        unsigned int neighbor                   = recvfrom_neighbors_map[i].processor_id;
+        std::vector<unsigned int>& shared_nodes = recvfrom_neighbors_map[i].nodes;
         unsigned int n_shared_nodes             = shared_nodes.size();
         
         if(n_shared_nodes > max_buffer_size) max_buffer_size = n_shared_nodes;
@@ -303,8 +307,7 @@ void ParallelMesh::fill_node_index()
         } 
     }
 
-    std::vector<MessageInformation>& sendto_neighbors_map   =  this->get_sendto_info();
-    std::vector<MessageInformation>& recvfrom_neighbors_map =  this->get_recvfrom_info();
+
 
     unsigned int recv_n_shared_nodes = 0;
     // Number of shared nodes that will be received from my master
@@ -348,7 +351,7 @@ void ParallelMesh::fill_node_index()
 
         for(int ino =0; ino < neighbor_nodes.size(); ino++) 
         {
-            int node = neighbor_nodes[ino];
+            int node               = neighbor_nodes[ino];
             sendBuffer[offset+ino] = node_index[node];
         }
         
@@ -366,12 +369,25 @@ void ParallelMesh::fill_node_index()
         
         for(int ino = 0; ino <  neighbor_nodes.size(); ino++) 
         {
-            int node = neighbor_nodes[ino];
+            int node                = neighbor_nodes[ino];
             unsigned int recv_value = recvBuffer[offset+ino];
-            node_index[node] = recv_value; 
+            node_index[node]        = recv_value; 
         } 
         offset += n_shared_nodes; 
     }
+
+    unsigned int sendbuffer[3];
+    unsigned int recvbuffer[3];
+    sendbuffer[0] = this->n_local_nodes;
+    sendbuffer[1] = this->n_elements;
+    sendbuffer[2] = this->n_face_elements;
+
+    MPI_Allreduce(sendbuffer, recvbuffer,3,MPI_UNSIGNED,MPI_SUM,MeshTools::Comm());
+
+    this->n_global_nodes    = recvbuffer[0];
+    this->n_global_elements = recvbuffer[1];
+    this->n_global_surface_elements = recvbuffer[2];
+
 }
 
 

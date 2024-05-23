@@ -132,7 +132,11 @@ void PrintDebug(const char format[],...)
 
  FILE* DebugOutput()
  {
+#ifdef NDEBUG
     return _output;
+#else
+    return  stdout;
+#endif
  }
 
 }

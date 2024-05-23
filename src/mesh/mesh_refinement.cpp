@@ -45,6 +45,7 @@ void MeshRefinement::refine()
     auto &offset       = mesh->get_offset_vector();
     auto &type         = mesh->get_element_type_vector();
     auto &physical_tag = mesh->get_element_physical_tag_vector();
+    
 
     unsigned int n_new_surface_elements = 0;
     unsigned int n_new_elements         = 0;
@@ -89,9 +90,6 @@ void MeshRefinement::refine()
         std::vector<unsigned int> element_conn;
         unsigned int n_count_elements = 0;
         mesh->get_surface_element_connectivity(i, element_conn);
-        // std::cout << "Element Conn: ";
-        // std::for_each(element_conn.begin(), element_conn.end(), [&](unsigned int &val){ std::cout << val << " ";});
-        // std::cout << std::endl;
         switch (type[i])
         {
         case EDGE2:
@@ -160,15 +158,7 @@ void MeshRefinement::refine()
     mesh->set_n_elements(n_new_elements);
     mesh->set_n_surface_elements(n_new_surface_elements);
 
-    //assert(new_offset.size() == n_new_elements + n_new_surface_elements + 1);
-    // std::cout << "New Offset Size: " << new_offset.size() << std::endl;
-    // std::for_each(new_offset.begin(), new_offset.end(), [&](unsigned int &val){ std::cout << val << " ";});
-    // std::cout << std::endl;
-    // std::cout << "New Conn Size: " << new_conn.size() << std::endl;
-    // std::for_each(new_conn.begin(), new_conn.end(), [&](unsigned int &val){ std::cout << val << " ";});
-    // std::cout << std::endl;
-    
-    
+
     conn         = new_conn;
     offset       = new_offset ;
     type         = new_type ;
@@ -179,7 +169,7 @@ void MeshRefinement::refine()
 
     // update the mesh arrays
     //update_mesh_arrays(mesh, new_conn, new_offset, new_type, new_physical_tag);
-    rebuild_communication_map();
+    this->rebuild_comunication_map();
 
 }
 
@@ -944,7 +934,7 @@ void MeshRefinement::hexahedron_refinement_template(std::vector<double>&   coord
                                         
 
 
-void MeshRefinement::rebuild_communication_map()
+void MeshRefinement::rebuild_comunication_map()
 {
     std::map<unsigned int, std::unordered_set<unsigned int> > shared_nodes_map;
 

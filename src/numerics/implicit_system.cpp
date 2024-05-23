@@ -137,6 +137,17 @@ void ImplicitSystem::init()
     ISCreateGeneral(MeshTools::Comm(), eq_local.size() , (PetscInt *)eq_local.data() , PETSC_COPY_VALUES, &is_local);
     ISCreateGeneral(MeshTools::Comm(), eq_global.size(), (PetscInt *)eq_global.data(), PETSC_COPY_VALUES, &is_global);
 
+#ifdef NDEBUG
+    assert(eq_local.size() == eq_global.size());
+    MeshTools::PrintDebug("Start ImplicitSystem::Init()\n");
+    for(int i = 0; i < eq_local.size(); i++)
+    {
+        MeshTools::PrintDebug(" Eq. local: %d -- Global Equation: %d\n", eq_local[i], eq_global[i]);
+    }
+    MeshTools::PrintDebug("End ImplicitSystem::Init()\n");
+    
+#endif
+
     VecCreateSeq(PETSC_COMM_SELF, n_nodes*_n_dof, &_solution_local);
     VecScatterCreate(_solution, is_global, _solution_local, is_local, &_scatter);
 
@@ -429,15 +440,16 @@ void ImplicitSystem::apply_dirichlet_boundary_conditions()
 {
 
     auto          & node_ids = _mesh->get_node_index_vector();
-    auto          & coords = _mesh->get_coordinate_vector();
+    auto          & coords   = _mesh->get_coordinate_vector();
 
     int nbc = this->_equations->get_number_of_dirichlet_boundaries();
+
     for(int ibc = 0; ibc < nbc; ibc++)
     {
         DirichletBoundary &bc            = this->_equations->get_dirichlet_boundary(ibc);
         std::vector<unsigned int>& nodes = this->_equations->get_boundary_nodes(ibc);
         std::vector<PetscScalar> values(nodes.size());
-        std::vector<PetscInt> idx(nodes.size());
+        std::vector<PetscInt>    idx(nodes.size());
 
         int dof = bc.get_dof_id();
         for(unsigned int inode = 0; inode < nodes.size(); inode++)
@@ -448,7 +460,7 @@ void ImplicitSystem::apply_dirichlet_boundary_conditions()
             double z    = coords[node_id*3+2];  
 
             values[inode] =  bc.get_value(x,y,z);
-            idx[inode]    = _n_dof*node_ids[nodes[inode]] + dof;
+            idx[inode]    = _n_dof*node_ids[node_id] + dof;
         }
 
         MatZeroRows( this->_A  , nodes.size(), &idx[0],1.0        , 0, 0);
@@ -465,24 +477,28 @@ void ImplicitSystem::apply_dirichlet_boundary_conditions()
 */
 void ImplicitSystem::write_result(string filename)
 {
-    auto n_nodes = _mesh->get_n_nodes();
-    std::vector<double> solution(n_nodes*_n_dof);
+    auto n_nodes        = _mesh->get_n_nodes();
+    std::vector<double> solution(n_nodes);
+    std::vector<int>    partition(_mesh->get_n_elements());
+    std::fill(partition.begin(),partition.end(),MeshTools::processor_id());
     unsigned int offset  = 0;
     double *solution_ptr = get_local_solution_array();
 
     vtkWriter writer;
     writer.open(filename.c_str());
     writer.write_mesh(*_mesh.get());
+    writer.start_cell_data_section();
+    writer.write_cell_data<int>(partition.data(),solution.size(),"partition");
+    writer.close_cell_data_section();
     writer.start_point_data_section();
     
-    for(int i = 0; i < _n_dof; i++)
+    for(int i_dof = 0; i_dof < _n_dof; i_dof++)
     {
         for(int ino = 0; ino < n_nodes; ino++)
-            solution[ino+offset] = solution_ptr[ino*_n_dof + i];
+            solution[ino] = solution_ptr[ino*_n_dof + i_dof];
 
-        std::string var = this->_variables_names[0];
+        std::string var    = this->_variables_names[0];
         writer.write_point_data<double>(solution.data(),solution.size(),var);
-        offset += n_nodes;
     }
     
     writer.close_point_data_section();

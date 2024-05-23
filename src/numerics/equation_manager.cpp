@@ -105,10 +105,10 @@ void EquationManager::prepare_to_use()
 {
 
     //* 1. Defining nodes with boundary conditions
-    int n_nodes                      = _mesh->get_n_nodes();
-    int n_boundary_elements          = _mesh->get_n_surface_elements();
-    std::vector<unsigned int> &  l2g = _mesh->get_node_index_vector();
-    std::vector<int> &tags           = _mesh->get_element_physical_tag_vector();
+    int n_nodes                           = _mesh->get_n_nodes();
+    int n_boundary_elements               = _mesh->get_n_surface_elements();
+    std::vector<unsigned int> &  node_ids = _mesh->get_node_index_vector();
+    std::vector<int> &tags                = _mesh->get_element_physical_tag_vector();
 
     _equation_indices.resize(n_nodes*_ndof);
     _boundary_nodes_map.resize(_boundaries.size());
@@ -154,12 +154,12 @@ void EquationManager::prepare_to_use()
     {
         for(int idof = 0; idof < _ndof; idof++)
         {
-            _equation_indices[ino*_ndof + idof] = l2g[ino]*_ndof + idof;
+            _equation_indices[ino*_ndof + idof] = node_ids[ino]*_ndof + idof;
         }
     }
 
-    this->_first_global_equation_index =  _mesh->get_start_global_index()*_ndof;
-    this->_n_local_equations           = _mesh->get_n_local_nodes()*_ndof;
+    this->_first_global_equation_index =   _mesh->get_start_global_index()*_ndof;
+    this->_n_local_equations           =   _mesh->get_n_local_nodes()*_ndof;
     
     _prepared_to_use = true;
     

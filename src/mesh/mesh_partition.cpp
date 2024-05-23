@@ -626,8 +626,6 @@ std::unique_ptr<ParallelMesh> MeshPartition::distributed_mesh(std::unique_ptr<Me
             }
 
 
-
-
             auto & _coords = pmesh->get_coordinate_vector();
             auto & _conn   = pmesh->get_connectivity_vector();
             auto & _type   = pmesh->get_element_type_vector();

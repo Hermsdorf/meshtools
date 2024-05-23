@@ -12,7 +12,7 @@
 
 #define HDF5_ENABLE
 
-/* #undef DEBUG_ */
+/* #undef OUTPUT_DEBUG */
 
 #define MESHTOOLS_SOURCE_DIR "/home/camata/git/meshtools"
 

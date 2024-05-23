@@ -17,7 +17,7 @@ if(CATALYST_ENABLE)
  option(CATALYST_LEGACY_ENABLE "Enable Paraview Catalyst Legacy" OFF)
 endif()
 option(DEBUG_ENABLE         "Enable Debug Mode" ON)
-option(DEBUG_OUTPUT_ENABLE  "Enable Write Debug at File" OFF)
+option(DEBUG_OUTPUT_ENABLE  "Enable Write Debug at File" ON)
 
 set(CMAKE_CXX_FLAGS "-fPIC")
 
@@ -28,6 +28,7 @@ endif()
 
 if(DEBUG_OUTPUT_ENABLE) 
   add_definitions(-DDEBUG_OUTPUT)
+  set(DEBUG_OUTPUT 1)
 endif()
 
 find_package(METIS REQUIRED)

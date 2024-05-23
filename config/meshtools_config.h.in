@@ -12,7 +12,7 @@
 
 #cmakedefine HDF5_ENABLE
 
-#cmakedefine DEBUG_
+#cmakedefine OUTPUT_DEBUG
 
 #cmakedefine MESHTOOLS_SOURCE_DIR "@MESHTOOLS_SOURCE_DIR@"
 

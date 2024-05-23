@@ -1,5 +1,5 @@
-#ifndef MESH_REFINEMENT_H__
-#define MESH_REFINEMENT_H__
+#ifndef MESH_REFINEMENT_H
+#define MESH_REFINEMENT_H
 
 #include <vector>
 #include <unordered_map>
@@ -160,7 +160,7 @@ class MeshRefinement
          * @brief Reconstroi o mapa de comunicação entre os processadores
          * 
          */
-        void rebuild_communication_map();
+        void rebuild_comunication_map();
 
         /**
          * @brief Atualiza os arrays de conectividade, offset, tipo e tag
@@ -238,4 +238,4 @@ class MeshRefinement
 
 };
 
-#endif /* MESH_REFINEMENT_H__ */
+#endif /* MESH_REFINEMENT_H */
