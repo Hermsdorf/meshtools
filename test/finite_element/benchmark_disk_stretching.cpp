@@ -4,7 +4,6 @@
 
 #include "meshtools.h"
 #include "mesh.h"
-#include "mesh_part.h"
 #include "parallel_mesh.h"
 #include "implicit_system.h"
 #include "transient_implicit_system.h"
@@ -16,7 +15,6 @@
 #include "xdmf_writer.h"
 #include "fem_stabilizations.h"
 
-#include "test_config.h"
 
 static char help[] = "Benchmark with Disk Stretching experiment\n\n";
 
@@ -57,11 +55,11 @@ double initial_condition (const double x,
 void init_transport(TransientImplicitSystem* system)
 {
 
-    auto mesh   = system->get_mesh();
-    auto coords = mesh.getCoord();
-    int n_nodes = mesh.get_n_nodes();
+    auto & mesh   = system->get_mesh();
+    auto & coords = mesh->get_coordinate_vector();
+    int n_nodes   = mesh->get_n_nodes();
 
-    int ndof = system->get_equation_manager().get_n_dofs();
+    int ndof = system->get_equation_manager()->get_n_dofs();
     int dof  = system->get_variable_id("u");
 
     double* solution = system->get_local_solution_array();
@@ -83,48 +81,49 @@ double f(Point p, double t)
 void assemble_transport(TransientImplicitSystem* system)
 {
 
-    auto pmesh = system->get_mesh();
-    int  ndim  =  pmesh.getDim();
+    auto &mesh  =  system->get_mesh();
+    int  ndim  =  mesh->get_mesh_dimension();
 
     // Gerencia as numerações das equações do sistema
-    EquationManager &equation_manager = system->get_equation_manager();
+    auto &equation_manager = system->get_equation_manager();
     int dof  = 0;
 
-    int n_elements = pmesh.get_n_elements();
+    int n_elements      = mesh->get_n_elements();
 
     double *old_solution = system->get_old_solution_array();
     double *solution     = system->get_local_solution_array();
 
-    QGauss qrule;
-    FEMFunction fem;
+    auto qrule = QGauss::New();
+    auto fem   = FEMFunction::New();
+    auto elem  = Element::New();
 
     // loop sobre os elementos da malha por cores
     for (int iel = 0; iel < n_elements; iel++)
     {
-        Element elem;
-        pmesh.getElement(iel,elem);
+        
+        mesh->get_element(iel,*elem);
 
-        int nnoel = elem.n_nodes();
+        int nnoel = elem->n_nodes();
 
         std::vector<int>        global_indices;
         std::vector<int>        local_indices;
         DenseMatrix<double>     Ke(nnoel, nnoel);  // matriz de rigidez do elemento
         std::vector<double>     Fe(nnoel);         // vetor de força do elemento
-        std::vector<double>   & phi   = fem.get_phi();
-        std::vector<Gradient> & dphi  = fem.get_dphi();
-        double                & JxW   = fem.get_JxW();
-        RealVector            & g     = fem.get_g();
-        RealTensor            & G     = fem.get_G();
-        RealVector            & dxi   = fem.get_dxi();
-        RealVector            & deta  = fem.get_deta();
-        RealVector            & dzeta = fem.get_dzeta();
-        Point                 & xyz   = fem.get_xyz();
+        std::vector<double>   & phi   = fem->get_phi();
+        std::vector<Gradient> & dphi  = fem->get_dphi();
+        double                & JxW   = fem->get_JxW();
+        RealVector            & g     = fem->get_g();
+        RealTensor            & G     = fem->get_G();
+        RealVector            & dxi   = fem->get_dxi();
+        RealVector            & deta  = fem->get_deta();
+        RealVector            & dzeta = fem->get_dzeta();
+        Point                 & xyz   = fem->get_xyz();
         
-        equation_manager.global_indices(dof, elem.connectivity(), global_indices);
-        equation_manager.local_indices(dof,  elem.connectivity(), local_indices);
+        equation_manager->global_indices(dof, elem->connectivity(), global_indices);
+        equation_manager->local_indices(dof,  elem->connectivity(), local_indices);
 
         // Obtem pontos de integração para elemento
-        qrule.reset(elem);
+        qrule->reset(*elem);
 
         double           source_term;
         double k            = 1E-5;
@@ -136,11 +135,11 @@ void assemble_transport(TransientImplicitSystem* system)
         double gt = function_g(t);
 
         // loop sobre os pontos de integração
-        for (int q = 0; q < qrule.n_points(); q++)
+        for (int q = 0; q < qrule->n_points(); q++)
         {
             // Calcula funções para elemento
-            fem.ComputeFunction(elem,qrule.get(q));
-            double h_carach = elem.calculate_h();
+            fem->ComputeFunction(*elem,qrule->get(q));
+            double h_carach = elem->calculate_h();
 
             assert(h_carach >= 0.0);
 
@@ -185,7 +184,7 @@ void assemble_transport(TransientImplicitSystem* system)
             // https://doi.org/10.1002/fld.1484
             double beta    = 1.0;
             double phi_ref = 1.0;
-            double fopc    = 0.1;
+            double fopc    = 0.0;
             double inv_phi_ref = 1.0 / phi_ref;
 
             double dudt        = (u - u_old) / dt;
@@ -255,37 +254,14 @@ void assemble_transport(TransientImplicitSystem* system)
 
 int disk_stretching(int argc, char *argv[])
 {
-    PetscErrorCode ierr;
-    MeshPartition *parts = new MeshPartition();
+ 
+    string test_mesh_dir = MESHTOOLS_SOURCE_DIR;
+    test_mesh_dir.append("/test/finite_element/msh/benchmark_disc_stretching/disk_quad4.msh");
 
-    Mesh *mesh;          // serial mesh
-    ParallelMesh *pmesh; // parallel mesh
-    int processor_id, n_processors;
+    std::unique_ptr<ParallelMesh> mesh = MeshTools::read(test_mesh_dir);
 
-    processor_id = MeshTools::processor_id();
-    n_processors = MeshTools::n_processors();
+    std::unique_ptr<TransientImplicitSystem> system = TransientImplicitSystem::New(mesh,"benchmark_disk_stretching");
 
-    if (processor_id == 0)
-    {
-        // Rodando serial ou em paralelo o processo mestre
-        // irá ler a malha.
-        string test_mesh_dir = TEST_MESH_DIR;
-        test_mesh_dir.append("benchmark_disc_stretching/disk_quad4.msh");
-        mesh = new Mesh(test_mesh_dir);
-
-        // Se houver mais um processo, o processo mestre irá
-        // particionar a malha
-        if (n_processors > 1)
-        {
-            parts->ApplyPartitioner(mesh, n_processors);
-        }
-    }
-
-    pmesh = parts->DistributedMesh(mesh);
-
-
-    // Cria o sistema de equações implicito
-    TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_disk_stretching");
     system->add_variable("u");
     DirichletBoundary  bc(1,0,"0.0","x,y,z");
     InitialCondition   ic(3,0,"1.0","x,y,z");
@@ -330,12 +306,6 @@ int disk_stretching(int argc, char *argv[])
 
     system->write_result(filename);
 
-    delete system;
-
-    if (MeshTools::processor_id() == 0)
-        delete mesh;
-    delete pmesh;
-    delete parts;
 
     return 0;
 }

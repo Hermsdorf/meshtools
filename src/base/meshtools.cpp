@@ -97,6 +97,10 @@ std::unique_ptr<ParallelMesh> read(const std::string filename)
 
         mesh->read(filename);
 
+#ifdef NDEBUG
+        mesh->print_info(true);  
+#endif
+
         // Se houver mais um processo, o processo mestre irá
         // particionar a malha
         if (_n_processors > 1)

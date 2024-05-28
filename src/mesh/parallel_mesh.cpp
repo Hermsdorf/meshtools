@@ -178,7 +178,8 @@ void ParallelMesh::build_communication_map()
 
     MeshTools::PrintDebug("Building communication map\n");
 
-    int greather_neighbor_process[this->n_nodes];
+    std::vector<int> greather_neighbor_process(this->n_nodes);
+    //int greather_neighbor_process[this->n_nodes];
 
     for(int i = 0; i < this->n_nodes; ++i)
         greather_neighbor_process[i] = processor_id;

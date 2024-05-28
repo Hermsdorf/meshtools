@@ -1,5 +1,5 @@
-#ifndef HASH_H__
-#define HASH_H__
+#ifndef HASH_H
+#define HASH_H
 
 #include <iostream>
 #include <vector>
@@ -11,4 +11,4 @@ unsigned long long cantor_pairing(unsigned long long a, unsigned long long b);
 
 unsigned long  compute_hash(std::vector<unsigned int> conn);
 
-#endif /* HASH_H__ */
+#endif /* HASH_H */

@@ -6,6 +6,12 @@
 class NonLinearImplicitSystem : public ImplicitSystem
 {
     public:
+
+        static unique_ptr<NonLinearImplicitSystem> New(std::unique_ptr<ParallelMesh> &mesh, std::string name)
+        {
+            return unique_ptr<NonLinearImplicitSystem>(new NonLinearImplicitSystem(mesh, name));
+        };
+
         NonLinearImplicitSystem(std::unique_ptr<ParallelMesh> &mesh, std::string name);
 
         void   attach_assemble(void _assemble(NonLinearImplicitSystem*));

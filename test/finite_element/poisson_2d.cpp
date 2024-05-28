@@ -198,8 +198,8 @@ void assemble_poisson(ImplicitSystem* system)
     int dof    = 0;
     // Gerencia as numerações das equações do sistema
     auto & equation_manager            = system->get_equation_manager();
-    std::unique_ptr<QGauss>     qrule = std::make_unique<QGauss>();
-    std::unique_ptr<FEMFunction> fem  = std::make_unique<FEMFunction>();
+    std::unique_ptr<QGauss>     qrule  = QGauss::New();
+    std::unique_ptr<FEMFunction> fem   = FEMFunction::New();
         
     std::vector<double>   & phi    = fem->get_phi();
     std::vector<Gradient> & dphi   = fem->get_dphi();
@@ -259,15 +259,20 @@ int poisson(int argc, char *argv[])
     // /home/camata/git/meshtools/test/finite_element/msh/poisson_2d/poisson_quad4.msh
     std::unique_ptr<ParallelMesh>   mesh              = MeshTools::read(std::string(MESHTOOLS_SOURCE_DIR)+"/test/finite_element/msh/poisson_2d/poisson_quad_4x4.msh");
     
+#ifdef NDEBUG
     mesh->print_info(true);
+    mesh->write_vtk("mesh_level_0");
+#endif
 
-    int r_levels = 1;
+    int r_levels = 2;
     MeshRefinement refiner(mesh);
-    for(int r = 0; r < r_levels; r++)
-        refiner.refine();
-
-
+    refiner.refine();
     mesh->print_info(true);
+    mesh->write_vtk("mesh_level_1");
+    refiner.refine();
+    mesh->print_info(true);
+    mesh->write_vtk("mesh_level_2");
+
 
     std::unique_ptr<ImplicitSystem> implicit_system   = ImplicitSystem::New(mesh, "poisson");
 
@@ -291,7 +296,7 @@ int poisson(int argc, char *argv[])
 
     double l2_error = compute_L2_error(implicit_system, 0);
     double h1_error = compute_H1_error(implicit_system, 0);
-    MeshTools::Printf( "Erro |u - u_exato| = %e\n", l2_error);
+    MeshTools::Printf( "Erro |u - u_exato|           = %e\n", l2_error);
     MeshTools::Printf( "Erro |grad.u - grad.u_exato| = %e\n", h1_error);
 
     return 0;

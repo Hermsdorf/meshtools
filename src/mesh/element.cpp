@@ -1,11 +1,15 @@
 #include "element.h"
 
-Element::Element(std::vector<Point> &vertices, 
+void Element::reset(unsigned int index, std::vector<Point> &vertices, 
                  std::vector<unsigned int> &topo, 
                 unsigned short type, 
-                unsigned int tag): 
-           _coords(vertices), _conn(topo), _type(type), _tag(tag)
+                unsigned int tag)
            {
+                _id       = index;
+                _coords  = vertices;
+                _conn     = topo;
+                _type     = type;
+                _tag      = tag;
            }
 
 Point Element::calculate_centroid()

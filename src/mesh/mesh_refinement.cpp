@@ -52,7 +52,7 @@ void MeshRefinement::refine()
     unsigned int n_new_elements         = 0;
 
     // New mesh data
-    std::vector<double>         new_coords;
+    //std::vector<double>         new_coords;
     std::vector<unsigned int>   new_conn;
     std::vector<unsigned int>   new_offset;
     std::vector<unsigned short> new_type;
@@ -76,8 +76,8 @@ void MeshRefinement::refine()
     
     // for(int i = 0; i < n_nodes; i++)
     // {
-    //     //std::vector<unsigned int> node_conn = {mesh->get_node_id(i)};
-    //     node_map[i] = compute_hash({mesh->get_node_id(i)});
+    //     std::vector<unsigned int> tmp = {mesh->get_node_id(i)};
+    //     node_map[i] = compute_hash(tmp);
     // }
 
     // Build the shared processor per node map
@@ -222,10 +222,10 @@ unsigned int MeshRefinement::edge_central_vertice(unsigned int &n_nodes, std::ve
         coords.emplace_back(z);
 
         //std::cout << "Edge Central Vertice: " << n_nodes << " " << x << " " << y << " " << z << std::endl;
-        MeshTools::PrintDebug("Edge Central Vertice: %d %f %f %f\n", n_nodes, x, y, z);
+        MeshTools::PrintDebug("Edge (%d - %d)  Central Vertice: %d %f %f %f - hash: %ld\n",edge_conn_global[0],edge_conn_global[1],n_nodes, x, y, z, hash);
 
         // Add the new vertex to the edge map
-        edge_map[hash]            = n_nodes;
+        edge_map[hash]    = n_nodes;
         node_map[n_nodes] = hash;
         n_nodes++;
     
@@ -320,7 +320,7 @@ unsigned int MeshRefinement::cell_central_vertice(unsigned int &n_nodes, std::ve
         MeshTools::PrintDebug("Cell Central Vertice: %d %f %f %f\n", n_nodes, x, y, z);
     
         // Add the new vertex to the face map
-        cell_map[hash]            = n_nodes;
+        cell_map[hash]    = n_nodes;
         node_map[n_nodes] = hash;
         n_nodes++;
     
@@ -387,11 +387,18 @@ void MeshRefinement::find_processor_neighbours_edge(std::vector<unsigned int> &c
    std::set<unsigned int> processors_v2 = shared_processors_per_node[conn[1]];
 
     // Get the intersection of the processors that share the vertices of the edge
-    std::set<unsigned int> processors;
-    std::set_intersection(processors_v1.begin(), processors_v1.end(), processors_v2.begin(), processors_v2.end(), std::inserter(processors, processors.begin()));
+    std::set<unsigned int> result;
+    std::set_intersection(processors_v1.begin(), processors_v1.end(), processors_v2.begin(), processors_v2.end(), std::inserter(result, result.begin()));
 
     // Add the new node to the shared nodes
-    new_shared_processors_per_node[new_node] = processors;
+    new_shared_processors_per_node[new_node] = result;
+
+#ifdef NDEBUG
+    MeshTools::PrintDebug("Node %d is shared with ", new_node);
+    for(auto p: result)
+        MeshTools::PrintDebug("%d ", p);
+    MeshTools::PrintDebug("\n");
+#endif
 
 }
 
@@ -428,8 +435,12 @@ void MeshRefinement::find_processor_neighbours_face_3_edges(std::vector<unsigned
 
     // Add the new node to the shared nodes
     new_shared_processors_per_node[new_node] = result;
-
-    MeshTools::PrintDebug("Node %d is shared\n", new_node);
+#ifdef NDEBUG
+    MeshTools::PrintDebug("Node %d is shared with ", new_node);
+    for(auto p: result)
+        MeshTools::PrintDebug("%d ", p);
+    MeshTools::PrintDebug("\n");
+#endif
 
 }
 
@@ -472,7 +483,13 @@ void MeshRefinement::find_processor_neighbours_face_4_edges(std::vector<unsigned
     // Add the new node to the shared nodes
     new_shared_processors_per_node[new_node] = result;
 
-    MeshTools::PrintDebug("Node %d is shared\n", new_node);
+#ifdef NDEBUG
+    MeshTools::PrintDebug("Node %d is shared with ", new_node);
+    for(auto p: result)
+        MeshTools::PrintDebug("%d ", p);
+    MeshTools::PrintDebug("\n");
+#endif
+
 }
 
 
@@ -943,37 +960,8 @@ void MeshRefinement::hexahedron_refinement_template(std::vector<double>&   coord
 
 void MeshRefinement::rebuild_comunication_map()
 {
-    std::map<unsigned int, std::unordered_set<unsigned int> > processor_node_map;
 
-    // loop over nodes that are shared
-    for(auto& node : new_shared_processors_per_node)
-    {
-        // loop over the processors that share the node
-        for(auto& process : node.second)
-        {
-            processor_node_map[process].insert(node.first);
-        }
-    }
-
-    for(auto& iter : processor_node_map)
-    {
-        std::vector<NodeHash> nodes(iter.second.size());
-        int i = 0;
-        for(auto& node : iter.second)
-        {
-            nodes[i++] = {node_map[node], node};
-        }
-        // ordenar vetor pela hash
-        std::sort(nodes.begin(), nodes.end(), [](const NodeHash &a, const NodeHash &b) { return a.hash < b.hash; });
-        
-        // inserir nodes associado ao processador
-        iter.second.clear();
-        for(auto& node : nodes)
-        {
-            iter.second.insert(node.id);
-        }
-    }
-
+    auto & coords               = mesh->get_coordinate_vector();
     auto & shared_nodes         = mesh->get_shared_nodes_vector();
     auto & shared_nodes_offset  = mesh->get_shared_nodes_offset_vector();
     auto & neighbors_processors = mesh->get_neighbors_processors_vector();
@@ -984,50 +972,70 @@ void MeshRefinement::rebuild_comunication_map()
     new_shared_nodes_offset.emplace_back(0);
     unsigned int offset = 0;
 
-    // adiciona os nós ja existes
+
+    // mapeia o processador e os nós que compartilhados
+    std::map<unsigned int, std::unordered_set<unsigned int> > processor_node_map;
+
+    // para cada nó obtem a lista de processadores que o compartilham
+    for(auto& node : new_shared_processors_per_node)
+    {
+        // da lista de processadores, insere o nó no mapeiamento do processador
+        for(auto& process : node.second)
+        {
+            processor_node_map[process].insert(node.first);
+        }
+    }
+
     for(int p = 0; p < neighbors_processors.size();p++)
     {
         unsigned int start = shared_nodes_offset[p];
         unsigned int end = shared_nodes_offset[p+1];
+        
+        // adiciona os nós ja existentes no novo vetor
         for(int i = start; i < end; i++)
             new_shared_nodes.emplace_back(shared_nodes[i]);
         offset+=(end-start);
 
+        // os novos nós compartilhados devem ser ordenados em função da hash
+        // para casar nas partições
         auto node_list = processor_node_map[neighbors_processors[p]];
-        for(auto node : node_list)
-            new_shared_nodes.emplace_back(node);
-        offset += node_list.size();
+
+        std::vector<std::pair<unsigned long, unsigned int> > nodes;
+        for(auto node : node_list) {
+            nodes.push_back(std::pair<unsigned long, unsigned int>(node_map[node], node));
+        }
+
+        std::sort(nodes.begin(), nodes.end(), [](std::pair<unsigned long, unsigned int> &a, std::pair<unsigned long, unsigned int> &b) { return a.first < b.first; });
+
+        // insere os novos nos no novo vetor.
+        for(int i = 0; i < nodes.size(); i++)
+            new_shared_nodes.emplace_back(nodes[i].second);
+
+        offset+=nodes.size();
         new_shared_nodes_offset.emplace_back(offset);
+
     }
     
-    // for(auto& nodes : shared_nodes_map)
-    // {
-    //     neighbors_processors.emplace_back(nodes.first);
-    //     offset += nodes.second.size();
-    //     shared_nodes_offset.emplace_back(offset);
-    //     shared_nodes.insert(shared_nodes.end(), nodes.second.begin(), nodes.second.end());
-
-    // }
 
     mesh->get_shared_nodes_offset_vector() = new_shared_nodes_offset;
     mesh->get_shared_nodes_vector()        = new_shared_nodes;
     
 
-
-
 #ifdef NDEBUG
+
     for(int i = 0; i < neighbors_processors.size(); i++)
     {
         MeshTools::PrintDebug("Processor: %d\n", neighbors_processors[i]);
-        for(int j = new_shared_nodes_offset[i]; j < new_shared_nodes_offset[i+1]; j++)
+        for(int j = shared_nodes_offset[i]; j < shared_nodes_offset[i+1]; j++)
         {
-            MeshTools::PrintDebug("Node: %d\n", new_shared_nodes[j]);
+            unsigned int node_id = shared_nodes[j];
+            auto res =  node_map.find(node_id);
+            unsigned int hash = (res != node_map.end()) ?  res->second : 0;
+            
+            MeshTools::PrintDebug("Node: %d (%f, %f %f ) - hash: %ld \n", node_id, coords[node_id*3],coords[node_id*3+1], coords[node_id*3+2], hash);
         }
     }
 #endif
-
-
-
 
     mesh->build_communication_map();
     mesh->fill_node_index();

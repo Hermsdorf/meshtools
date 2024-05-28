@@ -648,6 +648,11 @@ void Mesh::write_vtk(string basename)
         writer.start_point_data_section();
         writer.write_point_data<unsigned int>(this->get_node_index_vector().data(),this->get_node_index_vector().size(),"node_index");
         writer.close_point_data_section();
+        writer.start_cell_data_section();
+        std::vector<int> partition(this->n_elements);
+        std::fill(partition.begin(),partition.end(),MeshTools::processor_id());
+        writer.write_cell_data<int>(partition.data(),partition.size(),"partition");
+        writer.close_cell_data_section();
         writer.close();
     }
     
@@ -697,6 +702,7 @@ const unsigned short* Mesh::get_surface_element_type_pointer()
 
 void Mesh::get_element(unsigned int element_id, Element& elem)
 {
+    elem._id = element_id;
     this->get_element_connectivity(element_id, elem._conn);
     this->get_element_vertices( elem._conn, elem._coords);
     elem._type = this->get_element_type(element_id);

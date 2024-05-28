@@ -36,6 +36,12 @@ class InitialCondition {
 class TransientImplicitSystem: public NonLinearImplicitSystem
 {
     public:
+
+        static unique_ptr<TransientImplicitSystem> New(std::unique_ptr<ParallelMesh> &mesh, std::string name)
+        {
+            return unique_ptr<TransientImplicitSystem>(new TransientImplicitSystem(mesh, name));
+        };
+
         TransientImplicitSystem(std::unique_ptr<ParallelMesh> &mesh, std::string name);
         void    set_deltat(double dt) { _dt = dt; }
         double  get_deltat() {return _dt; };
