@@ -7,7 +7,7 @@
 
 #include "meshtools.h"
 #include "parallel_mesh.h"
-#include  "encode.h"
+#include  "vtk_base64_output_stream.h"
 
 std::string prefix_level(int level);
 
@@ -15,11 +15,15 @@ class vtkWriter
 {
     public:
 
+        enum class vtkWriterMode {BINARY=0, ASCII = 1};
+
         vtkWriter();
+
+        vtkWriter(vtkWriterMode mode);
 
         ~vtkWriter();
 
-        bool open(std::string _filename, bool _is_ascii=true, unsigned int file_number=0);
+        bool open(std::string _filename, unsigned int file_number=0, vtkWriterMode mode=vtkWriterMode::ASCII);
 
         void write_mesh(Mesh &mesh);
         
@@ -92,10 +96,13 @@ void vtkWriter::write_data_item(const T* data, size_t size, std::string name,std
     
 
     if(!is_ascii) {
-        this->fvtu << " format=\"binary\" />"  << endl;
-        std::stringstream encoded_data; 
-        Encoder::encode_base64(data,size, encoded_data);
-        this->fvtu << encoded_data.str() ;
+        this->fvtu << " format=\"binary\">"  << endl;
+        this->fvtu << prefix_level(5);
+        // this->fvtu.write((char*)data,size*sizeof(T));
+        vtkBase64OutputStream b64_stream(this->fvtu);
+        b64_stream.StartWriting();
+        b64_stream.Write(data,size*sizeof(T));
+        b64_stream.EndWriting();
     }
     else {
 

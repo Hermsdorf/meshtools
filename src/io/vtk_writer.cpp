@@ -22,16 +22,21 @@ std::string BinaryBigEndian(void)
 
 vtkWriter::vtkWriter():is_point_data_open(false), is_cell_data_open(false)
 {
+    this->is_ascii = true;
+}
 
+vtkWriter::vtkWriter(vtkWriterMode mode):is_point_data_open(false), is_cell_data_open(false)
+{
+     this->is_ascii = (mode == vtkWriterMode::ASCII);
 }
 
 
-bool vtkWriter::open(std::string base_file_name, bool _is_ascii, unsigned int file_number)
+bool vtkWriter::open(std::string base_file_name, unsigned int file_number, vtkWriterMode mode)
 {   
     this->base_name   = base_file_name;
     this->file_number = file_number;
 
-    this->is_ascii = _is_ascii;
+    this->is_ascii = (mode == vtkWriterMode::ASCII);
 
     stringstream base_name_sufix;
     base_name_sufix << base_file_name << "_"
@@ -40,8 +45,11 @@ bool vtkWriter::open(std::string base_file_name, bool _is_ascii, unsigned int fi
                     << std::setw(4) << std::setfill('0') << file_number;
     std::string vtu_file  = base_name_sufix.str() +".vtu";
    
-
-    this->fvtu.open(vtu_file);
+    if(is_ascii)
+        this->fvtu.open(vtu_file);
+    else
+        this->fvtu.open(vtu_file,ios::binary);
+        
     if(!fvtu.is_open())
     {
         std::cout << "[vtkWriter]: Error opening file: "<< vtu_file << std::endl;

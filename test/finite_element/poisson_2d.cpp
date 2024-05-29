@@ -266,13 +266,10 @@ int poisson(int argc, char *argv[])
 
     int r_levels = 2;
     MeshRefinement refiner(mesh);
-    refiner.refine();
-    mesh->print_info(true);
-    mesh->write_vtk("mesh_level_1");
-    refiner.refine();
-    mesh->print_info(true);
-    mesh->write_vtk("mesh_level_2");
+    for(int r = 0; r < r_levels; r++)
+        refiner.refine();
 
+    mesh->write_vtk("mesh");
 
     std::unique_ptr<ImplicitSystem> implicit_system   = ImplicitSystem::New(mesh, "poisson");
 

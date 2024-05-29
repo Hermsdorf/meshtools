@@ -292,17 +292,19 @@ void TransientImplicitSystem::write_result(string filename)
      output.write_mesh(*_mesh);
      output.start_point_data_section();
     
-    std::vector<double> solution(n_nodes*_n_dof);
+    std::vector<double> solution;
+    solution.resize(n_nodes);
+
     unsigned int offset  = 0;
     double *solution_ptr = get_local_solution_array();
     for(int i = 0; i < _n_dof; i++)
     {
         for(int ino = 0; ino < n_nodes; ino++)
-            solution[ino+offset] = solution_ptr[ino*_n_dof + i];
+            solution[ino] = solution_ptr[ino*_n_dof + i];
 
         std::string var = this->_variables_names[0];
 
-        output.write_point_data<double>(&solution[0], n_nodes, var);
+        output.write_point_data<double>(solution.data(),solution.size(), var);
     }
 
     output.close_point_data_section();

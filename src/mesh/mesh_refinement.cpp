@@ -122,9 +122,7 @@ void MeshRefinement::refine()
         
         unsigned int n_count_elements = 0;
         mesh->get_element_connectivity(i, element_conn);
-        // std::cout << "Element Conn: ";
-        // std::for_each(element_conn.begin(), element_conn.end(), [&](unsigned int &val){ std::cout << val << " ";});
-        // std::cout << std::endl;
+
         switch (mesh->get_element_type(i))
         {
         case TRI3:

@@ -478,9 +478,16 @@ void ImplicitSystem::apply_dirichlet_boundary_conditions()
 void ImplicitSystem::write_result(string filename)
 {
     auto n_nodes        = _mesh->get_n_nodes();
-    std::vector<double> solution(n_nodes);
-    std::vector<int>    partition(_mesh->get_n_elements());
-    std::fill(partition.begin(),partition.end(),MeshTools::processor_id());
+    auto n_elements     = _mesh->get_n_elements();
+    
+    std::vector<double> solution;
+    solution.resize(n_nodes);
+
+    std::vector<int>    partition;
+    partition.resize(n_elements);
+    for(int i = 0; i < n_elements; i++)
+        partition[i] = MeshTools::processor_id();
+
     unsigned int offset  = 0;
     double *solution_ptr = get_local_solution_array();
 
@@ -488,7 +495,7 @@ void ImplicitSystem::write_result(string filename)
     writer.open(filename.c_str());
     writer.write_mesh(*_mesh.get());
     writer.start_cell_data_section();
-    writer.write_cell_data<int>(partition.data(),solution.size(),"partition");
+    writer.write_cell_data<int>(partition.data(),partition.size(),"partition");
     writer.close_cell_data_section();
     writer.start_point_data_section();
     
