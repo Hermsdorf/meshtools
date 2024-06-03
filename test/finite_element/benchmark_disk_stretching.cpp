@@ -97,6 +97,8 @@ void assemble_transport(TransientImplicitSystem* system)
     auto fem   = FEMFunction::New();
     auto elem  = Element::New();
 
+    
+
     // loop sobre os elementos da malha por cores
     for (int iel = 0; iel < n_elements; iel++)
     {
