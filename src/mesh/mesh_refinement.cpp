@@ -74,11 +74,6 @@ void MeshRefinement::refine()
     new_shared_nodes.reserve(mesh->get_shared_nodes_vector().size());
     new_shared_nodes_offset.reserve(mesh->get_shared_nodes_offset_vector().size());
     
-    // for(int i = 0; i < n_nodes; i++)
-    // {
-    //     std::vector<unsigned int> tmp = {mesh->get_node_id(i)};
-    //     node_map[i] = compute_hash(tmp);
-    // }
 
     // Build the shared processor per node map
     build_shared_processor_per_node_map();
@@ -551,7 +546,7 @@ void MeshRefinement::edge_refinement_template(std::vector<double>         &coord
 */
 
 
-void MeshRefinement::triangle_refinement_template(std::vector<double>&      coords, 
+void MeshRefinement:: triangle_refinement_template(std::vector<double>&      coords, 
                                               std::vector<unsigned int>    &conn,
                                               int                         &parent_tag,
                                               std::vector<unsigned int>         &new_conn,

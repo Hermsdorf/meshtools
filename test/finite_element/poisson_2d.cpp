@@ -256,7 +256,7 @@ void assemble_poisson(ImplicitSystem* system)
 
 int poisson(int argc, char *argv[])
 {
-    // /home/camata/git/meshtools/test/finite_element/msh/poisson_2d/poisson_quad4.msh
+    
     std::unique_ptr<ParallelMesh>   mesh              = MeshTools::read(std::string(MESHTOOLS_SOURCE_DIR)+"/test/finite_element/msh/poisson_2d/poisson_quad_4x4.msh");
     
 #ifdef NDEBUG
