@@ -1,1 +1,2 @@
 # Benchmark: Surface Integral
+Benchmark to test if the surface integral calculated by FEM method is correct. It gets a mesh with a sphere (or circunference) geometry with 0.25 units of radius and compares the integral calculated by the method with the theorical integral value, which is $4\pi r^2$ in the sphere case, or $2\pi r$ in the circunference case.

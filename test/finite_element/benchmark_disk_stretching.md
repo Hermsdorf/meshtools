@@ -4,12 +4,35 @@ The disk stretching problem, also known as the single vortex or vortex-in-a-box 
 ## Methodology
 - Transient problem
 - Equation type: Diffusion-Advection-Reaction equation
+  $\quad \quad$ $
+  \begin{cases}
+    \begin{aligned}
+    \frac{\partial u}{\partial t} + \mathbf{v} \nabla u - \nabla \cdot (\kappa \nabla u) = s \quad &\text{ in } \Omega \times ]0, T_f] \\
+    u( \: \cdot \: , 0) = u_0 \quad &\text{ in } \Omega\\
+    u = u_D \quad &\text{ in } \Gamma_D \\
+    \mathbf{v}(\mathbf{n} \cdot \nabla)u = h \quad &\text{ in } \Gamma_N 
+    \end{aligned}
+    \end{cases}
+ $
 - Problem dimension: 2D
 
 ## Discussions
 Because of the stiffness of the problem, it is necessary to apply stabilizers to be able to find the solution with less oscilations. It is used stabilizers such as YZβ (Bazilevs et al, 2007), SUPG (Brooks & Hughes, 1982) and CAU (Alvarez H., 2004).
 
 ## Results
+Benchmark result with QUAD4 elements for timestep $0$, $T/2$ and $T$, the last one.
+Mesh: [disk_quad4.msh](msh/benchmark_disc_stretching/disk_quad4.msh)
+Parameters:
+- $\mathbf{v} = (\sin(2\pi y)\sin^2(\pi x), -\sin(2\pi x)\sin^2(\pi y))$
+- $k = 10^{-8}$
+- $T_f = T = 8$
+- $s = 0$
+- $u_0 = u_0(x,y) = (x - 0.5)^2 + (y - 0.75)^2$ = 1
+- $u_D = 0$
+- $\Gamma_N = \empty$
+  
+
+![Disk Stretching result with QUAD4 elements](imgs/disk_stretching.png "Disk Stretching result with QUAD4 elements")
 
 ## References
 - Alvarez Henao, C. Um Estudo sobre Operadores de Captura de Descontinuidades para Problemas de Transporte Advectivos. PhD thesis, 04 2004.
