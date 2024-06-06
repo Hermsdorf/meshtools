@@ -335,24 +335,25 @@ void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::
         const unsigned int *conn = _mesh.getElementConn(iel);
 
         int n_equations = connsz*_ndof;
-        int* equations = new int[n_equations];
-        equation_indices(-1, connsz, conn, equations);
+        int* global_equations = new int[n_equations];
+        // stores global equation numbering for each node of the element in equations variable
+        equation_indices(-1, connsz, conn, global_equations);
 
         for(int i = 0; i < n_equations; i++)
         {
-            int eqI = equations[i];
+            int eqI = global_equations[i];
             if(eqI >= 0)
             {
                 if(eqI >= start && eqI < end)
                 {
                     for(int j = 0; j < n_equations; j++)
                     {
-                        int eqJ = equations[j];
+                        int eqJ = global_equations[j];
                         if(eqJ >= start && eqJ < end)
                         {
                             vdiag[eqI-start].insert(eqJ);
                         }
-                        else
+                        else // it is a interface node that belongs to my master
                         {
                             voff[eqI-start].insert(eqJ);
                         }
@@ -361,7 +362,7 @@ void EquationManager::calculate_dnnz_onnz(std::vector<unsigned int> &dnnz, std::
              }
         }
 
-        delete [] equations;
+        delete [] global_equations;
     }
 
     for(int i = 0; i < _n_local_equations; i++)

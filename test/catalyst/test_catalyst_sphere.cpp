@@ -315,7 +315,7 @@ int sphere_stretching(int argc, char *argv[])
     n_processors = MeshTools::n_processors();
 
     PetscLogStage  stagenum1;
-   PetscLogStage  stagenum2;
+    PetscLogStage  stagenum2;
     PetscLogStage  stagenum3;
     PetscLogStage  stagenum4;
     PetscLogStageRegister("Reads Mesh", &stagenum1);
@@ -327,10 +327,10 @@ int sphere_stretching(int argc, char *argv[])
     CatalystAdaptor::Initialize(argc, argv);
     PetscLogStagePop();
 
-    PetscStagePush(stagenum2);
+    PetscLogStagePush(stagenum2);
     std::string mesh_file(std::string(TEST_MESH_DIR) + "benchmark_sphere_stretching/sphere_grossa.msh");
     ParallelMesh *pmesh = MeshTools::ReadMesh(mesh_file);
-    PetscStagePop();
+    PetscLogStagePop();
 
     // Cria o sistema de equações implicito
     TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_sphere_stretching");
@@ -361,39 +361,39 @@ int sphere_stretching(int argc, char *argv[])
 
     char filename[100];
     sprintf(filename,"sphere_stretching");
-    PestcStagePush(stagenum4);
+    PetscLogStagePush(stagenum4);
     system->write_result(filename);
-    PestcStagePop();
+    PetscLogStagePop();
 
     // Time integratiom
-    PestcStagePush(stagenum3);
+    PetscLogStagePush(stagenum3);
     while(system->get_time() < system->get_final_time())
     {
         system->solve_time_step();
 
         if(system->get_time_step()%write_interval == 0 ){
-            PetscStagePush(stagenum4);
+            PetscLogStagePush(stagenum4);
             system->write_result(filename);
-            PetscStagePop();
+            PetscLogStagePop();
         }
 
         if(system->get_time_step()%catalyst_interval == 0 ){
-            PestcStagePush(stagenum2);
-            CatalystAdaptor::CoProcess(system->get_time_step(), system->get_time(), static_cast<ImplicitSystem*>(system));
-            PestcStagePop();
+            PetscLogStagePush(stagenum2);
+            CatalystAdaptor::Execute(system->get_time_step(), system->get_time(), static_cast<ImplicitSystem*>(system));
+            PetscLogStagePop();
         }
         
         //system->set_deltat(dt);
     }
-    PestcStagePop();
+    PetscLogStagePop();
 
-    PetscStagePush(stagenum4);
+    PetscLogStagePush(stagenum4);
     system->write_result(filename);
-    PetscStagePop();
+    PetscLogStagePop();
 
     delete system;
     delete pmesh;
-    delete parts;
+    //delete parts;
 
     return 0;
 }

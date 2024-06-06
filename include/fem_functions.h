@@ -26,10 +26,10 @@ class FEMFunction
             
 
     private:
-        std::vector<double>    _phi ;
-        std::vector<Gradient>  _dphi;
-        Point                  _xyz ;
-        double                 _JxW ;
+        std::vector<double>    _phi ; // shape functions in reference coordinate system
+        std::vector<Gradient>  _dphi; // gradient of the shape functions in reference coordinate system
+        Point                  _xyz ; // coordinates of gaussian point in physical coordinate system
+        double                 _JxW ; // Jacobian determinant times weight
 
         
         // cache values

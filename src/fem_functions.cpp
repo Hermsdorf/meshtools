@@ -6,6 +6,86 @@
 
 #include "fem_functions.h"
 
+// To learn: https://www.youtube.com/watch?v=gJzqCaOEqsA
+
+/*
+Coordinate mapping between the physical coordinate system and the reference coordinate system
+
+    Physical coordinate system: (x, y)
+    Reference coordinate system: (xi, eta)
+
+For example QUAD4 element:
+                             eta
+                           |
+   4. (-1, 1)    o---------|---------o 3. (1, 1)
+                 |         |         |
+                 |         |         |
+                 |         |         |
+                 |         |_______________ xi
+                 |                   |
+                 |                   |
+                 |                   |
+   1. (-1, -1)   o-------------------o 2. (1, -1)
+
+
+The shape functions in reference coordinate system:
+    N1 = 0.25*(1-xi)*(1-eta)
+    N2 = 0.25*(1+xi)*(1-eta)
+    N3 = 0.25*(1+xi)*(1+eta)
+    N4 = 0.25*(1-xi)*(1+eta)
+
+So, the function x and y mapping between the physical coordinate system and the reference coordinate system is:
+    x = N1*x1 + N2*x2 + N3*x3 + N4*x4
+    y = N1*y1 + N2*y2 + N3*y3 + N4*y4
+
+For example a TRI3 element in physical coordinate system with nodes (x1, y1), (x2, y2), (x3, y3), (x4, y4) being
+(0,0), (1,0), (1,1) and (0, 1).
+
+                y
+               |
+               |
+   4. (0, 1)   o--------------------o 3. (1, 1)
+               |                    |
+               |                    |
+               |                    |
+               |                    |
+               |                    |
+               |                    |
+   1. (0, 0)   o--------------------o_____ x
+                                      2. (1, 0)
+
+If you replace the nodes in the reference coordinate system you get the nodes in
+the physical coordinate system, for example node (xi, eta) = (-1, -1) it is the node (0, 0) in the physical coordinate
+system. Replacing it:
+    x1 = 0.25*(1-(-1))*(1-(-1))*0 + 0.25*(1+(-1))*(1-(-1))*1 + 0.25*(1+(-1))*(1+(-1))*0 + 0.25*(1-(-1))*(1+(-1))*1 = 0
+    y1 = 0.25*(1-(-1))*(1-(-1))*0 + 0.25*(1+(-1))*(1-(-1))*0 + 0.25*(1+(-1))*(1+(-1))*1 + 0.25*(1-(-1))*(1+(-1))*1 = 0
+    
+The node (xi, eta) = (1, 1) which is the node (1, 1) in the physical coordinate system:
+    x3 = 0.25*(1-(1))*(1-(1))*0 + 0.25*(1+(1))*(1-(1))*1 + 0.25*(1+(1))*(1+(1))*0 + 0.25*(1-(1))*(1+(1))*1 = 1
+    y3 = 0.25*(1-(1))*(1-(1))*0 + 0.25*(1+(1))*(1-(1))*0 + 0.25*(1+(1))*(1+(1))*1 + 0.25*(1-(1))*(1+(1))*1 = 1
+
+
+Transforming a vector from the physical coordinate system to 
+the reference coordinate system:  (x, y) -> (xi, eta)
+
+                 (Jacobian Matrix) -> Transformation Matrix
+                |                 |
+    | x_i |     | dx/dxi  dx/deta |  | xi_i  |
+    |     |  =  |                 |  |       |
+    | y_i |     | dy/dxi  dy/deta |  | eta_i |
+                |                 |
+
+
+    So dA = det(J)*da
+    where dA is the area in the physical coordinate system
+          da is the area in the reference coordinate system
+          det(J) is the determinant of the Jacobian Matrix
+
+    Them the differential term in the integral becomes:
+    dx*dy = det(J)*dxi*deta
+
+*/
+
 FEMFunction::FEMFunction() { }
 
 void FEMFunction::ComputeFunction(Element& elem, QGaussData qp)
@@ -73,23 +153,22 @@ void FEMFunction::TET4Function(Element& elem, QGaussData qp)
         y[i] = elem.node(i)(1);
         z[i] = elem.node(i)(2);
 
-        _xyz(0) += x[i]*_phi[i];
-        _xyz(1) += y[i]*_phi[i];
-        _xyz(2) += z[i]*_phi[i];
+        _xyz(0) += x[i]*_phi[i]; // x = [N1*x1 + N2*x2 + N3*x3 + N4*x4]
+        _xyz(1) += y[i]*_phi[i]; // y = [N1*y1 + N2*y2 + N3*y3 + N4*y4]
+        _xyz(2) += z[i]*_phi[i]; // z = [N1*z1 + N2*z2 + N3*z3 + N4*z4]
 
-        J[0][0] +=  x[i]*dpsi[0][i]; // dxi/dx
-        J[0][1] +=  y[i]*dpsi[0][i]; // dxi/dy
-        J[0][2] +=  z[i]*dpsi[0][i]; // dxi/dz
-        J[1][0] +=  x[i]*dpsi[1][i]; // deta/dx
-        J[1][1] +=  y[i]*dpsi[1][i]; // deta/dy
-        J[1][2] +=  z[i]*dpsi[1][i]; // deta/dz
-        J[2][0] +=  x[i]*dpsi[2][i]; // dzeta/dx
-        J[2][1] +=  y[i]*dpsi[2][i]; // dzeta/dy
-        J[2][2] +=  z[i]*dpsi[2][i]; // dzeta/dz
+        J[0][0] +=  x[i]*dpsi[0][i]; // dx/dxi
+        J[0][1] +=  y[i]*dpsi[0][i]; // dy/dxi
+        J[0][2] +=  z[i]*dpsi[0][i]; // dz/dxi
+        J[1][0] +=  x[i]*dpsi[1][i]; // dx/deta
+        J[1][1] +=  y[i]*dpsi[1][i]; // dy/deta
+        J[1][2] +=  z[i]*dpsi[1][i]; // dz/deta
+        J[2][0] +=  x[i]*dpsi[2][i]; // dx/dzeta
+        J[2][1] +=  y[i]*dpsi[2][i]; // dy/dzeta
+        J[2][2] +=  z[i]*dpsi[2][i]; // dz/dzeta
 
     }
 
-    // TODO: check if this is correct
     double detJ = J[0][0]*(J[1][1]*J[2][2]-J[1][2]*J[2][1]) - J[0][1]*(J[1][0]*J[2][2]-J[1][2]*J[2][0]) + J[0][2]*(J[1][0]*J[2][1]-J[1][1]*J[2][0]);
     if(detJ < 0.0)
     {
@@ -174,13 +253,13 @@ void FEMFunction::TRI3Function(Element& elem, QGaussData qp)
     {
         x[i] = elem.node(i)(0);
         y[i] = elem.node(i)(1);
-        _xyz(0) += x[i]*_phi[i];
-        _xyz(1) += y[i]*_phi[i];
+        _xyz(0) += x[i]*_phi[i]; // x = [N1*x1 + N2*x2 + N3*x3]
+        _xyz(1) += y[i]*_phi[i]; // y = [N1*y1 + N2*y2 + N3*y3]
 
-        J[0][0] +=  x[i]*dpsi[0][i]; //dxidx
-        J[0][1] +=  y[i]*dpsi[0][i]; //dxidy
-        J[1][0] +=  x[i]*dpsi[1][i]; //detadx
-        J[1][1] +=  y[i]*dpsi[1][i]; //detady
+        J[0][0] +=  x[i]*dpsi[0][i]; //dx/dxi
+        J[0][1] +=  y[i]*dpsi[0][i]; //dy/dxi
+        J[1][0] +=  x[i]*dpsi[1][i]; //dx/deta
+        J[1][1] +=  y[i]*dpsi[1][i]; //dy/deta
 
     }
 
@@ -255,13 +334,13 @@ void FEMFunction::QUAD4Function(Element& elem, QGaussData qp)
     {
         x[i] = elem.node(i)(0);
         y[i] = elem.node(i)(1);
-        _xyz(0) += x[i]*_phi[i];
-        _xyz(1) += y[i]*_phi[i];
+        _xyz(0) += x[i]*_phi[i]; // x = [N1*x1 + N2*x2 + N3*x3 + N4*x4]
+        _xyz(1) += y[i]*_phi[i]; // y = [N1*y1 + N2*y2 + N3*y3 + N4*y4]
 
-        J[0][0] +=  x[i]*dpsi[0][i]; //dxidx
-        J[0][1] +=  y[i]*dpsi[0][i]; //dxidy
-        J[1][0] +=  x[i]*dpsi[1][i]; //detadx
-        J[1][1] +=  y[i]*dpsi[1][i]; //detady
+        J[0][0] +=  x[i]*dpsi[0][i]; // dx/dxi
+        J[0][1] +=  y[i]*dpsi[0][i]; // dy/dxi
+        J[1][0] +=  x[i]*dpsi[1][i]; // dx/deta
+        J[1][1] +=  y[i]*dpsi[1][i]; // dy/deta
 
     }
 

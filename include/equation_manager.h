@@ -14,8 +14,9 @@ public:
     void         set_n_dofs(unsigned int n){this->_ndof = n;};
     unsigned int first_global_equation_index();
     unsigned int n_local_equations();
+    
     /**
-     * @brief 
+     * @brief By local connectivies, this method returns the global equation indices to each degree of freedom
      * 
      * @param id_dof           id of the dof
      * @param conn_local       local element numbering (connectivity)
@@ -47,7 +48,7 @@ private:
 
     // boundary nodes mapping
     std::vector< std::vector <unsigned int> > _boundary_nodes_map;
-    std::vector<int>                          _equation_indices; // maps global to local indices nnos*ndof
+    std::vector<int>                          _equation_indices; // maps local to global indices nnos*ndof
     
 
 };

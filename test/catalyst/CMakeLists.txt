@@ -1,17 +1,25 @@
 
 get_property(CATALYST_ENABLE GLOBAL PROPERTY CATALYST_ENABLE)
 if(CATALYST_ENABLE)
-  add_executable(benchmark_catalyst test_catalyst.cpp)
-  add_executable(test_simple test_catalyst_basic.cpp)
+  add_executable(benchmark_catalyst_disk test_catalyst_disk.cpp)
+  add_executable(benchmark_catalyst_sphere test_catalyst_sphere.cpp)
+  add_executable(test_catalyst_simple test_catalyst_basic.cpp)
 
-  target_link_libraries(benchmark_catalyst
+  target_link_libraries(benchmark_catalyst_disk
   PRIVATE
   meshtoolslib
   fparser
   ${MESHTOOLS_DEP_LIBS}
   )
 
-  target_link_libraries(test_simple
+  target_link_libraries(benchmark_catalyst_sphere
+  PRIVATE
+  meshtoolslib
+  fparser
+  ${MESHTOOLS_DEP_LIBS}
+  )
+
+  target_link_libraries(test_catalyst_simple
   PRIVATE
   meshtoolslib
   fparser
