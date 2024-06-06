@@ -4,6 +4,13 @@ It applies a simple convection-diffusion problem that was introduced by Brooks a
 ## Methodology
 - Stationary problem
 - Equation type: Diffusion-Advection equation
+- $\quad \quad$ $
+    \begin{cases}
+    -\nabla \kappa \nabla u + \mathbf{v}\nabla u& = s   \text{ in } \Omega \\
+    u  & = u_D   \text{ in } \Gamma_D \\
+    \mathbf{n} \cdot \kappa \nabla u & = h \text{ in } \Gamma_N
+    \end{cases}
+  $
 - Problem dimension: 2D
 
 ## Results
