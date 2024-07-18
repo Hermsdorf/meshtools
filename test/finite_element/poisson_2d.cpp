@@ -259,10 +259,6 @@ int poisson(int argc, char *argv[])
     
     std::unique_ptr<ParallelMesh>   mesh              = MeshTools::read(std::string(MESHTOOLS_SOURCE_DIR)+"/test/finite_element/msh/poisson_2d/poisson_quad_4x4.msh");
     
-#ifdef NDEBUG
-    mesh->print_info(true);
-    mesh->write_vtk("mesh_level_0");
-#endif
 
     int r_levels = 2;
     MeshRefinement refiner(mesh);

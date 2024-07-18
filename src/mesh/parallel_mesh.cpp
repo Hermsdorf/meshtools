@@ -392,8 +392,6 @@ void ParallelMesh::fill_node_index()
 }
 
 
-
-
 void ParallelMesh::set_start_node_index(unsigned int start_node_index)
 {
     this->start_node_index = start_node_index;

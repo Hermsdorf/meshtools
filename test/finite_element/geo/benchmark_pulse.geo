@@ -1,7 +1,6 @@
 pts_box    = 0.05;
 
 
-
 //+
 Point(1) = {0, 0, 0, pts_box};
 //+
@@ -32,4 +31,10 @@ Physical Curve("BOUND", 1) = {4, 3, 2, 1};
 Physical Surface("DOMAIN", 2) = {1};
 //+
 
-Transfinite Curve {4, 2, 1, 3} = 128 Using Progression 1;
+Transfinite Curve {4, 2, 1, 3} = 64 Using Progression 1;
+//+
+Transfinite Curve {4, 3, 2, 1} = 64 Using Progression 1;
+//+
+Transfinite Surface {1};
+//+
+Recombine Surface {1};

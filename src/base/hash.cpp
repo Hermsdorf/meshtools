@@ -44,6 +44,7 @@ unsigned long  compute_hash(std::vector<unsigned int> conn)
         a += keys[0];
         b += keys[1];
         c += keys[2];
+        mix(a,b,c);
         len -=3;
         keys+=3;
     }

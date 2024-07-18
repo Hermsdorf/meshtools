@@ -13,8 +13,12 @@ int main(int argc, char *argv[])
     mesh->write_vtk("quad4");
 
     MeshRefinement refiner(mesh);
-    refiner.refine();
 
+    for(int r = 0; r < 2; r++)
+    {
+        refiner.refine();
+    }
+        
     mesh->write_vtk("quad4_refined");
 
     MeshTools::Finalize();

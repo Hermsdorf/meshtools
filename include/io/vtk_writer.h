@@ -7,7 +7,8 @@
 
 #include "meshtools.h"
 #include "parallel_mesh.h"
-#include  "vtk_base64_output_stream.h"
+
+#include "binary_io.h"
 
 std::string prefix_level(int level);
 
@@ -46,8 +47,8 @@ class vtkWriter
 
     private:
     
-        //template <typename T> string get_vtk_type_name();
-        
+        std::string to_padded_string(int file_number, int digits);
+
         template <typename T>
         void write_data_item(const T* data, size_t size, std::string name, std::string prefix, int ncomp = 0);
 
@@ -63,6 +64,10 @@ class vtkWriter
         bool is_cell_data_open;
 
         bool is_ascii;
+
+        unsigned int offset;
+
+        std::vector<char> buffer;
 
 };
 
@@ -96,13 +101,10 @@ void vtkWriter::write_data_item(const T* data, size_t size, std::string name,std
     
 
     if(!is_ascii) {
-        this->fvtu << " format=\"binary\">"  << endl;
-        this->fvtu << prefix_level(5);
-        // this->fvtu.write((char*)data,size*sizeof(T));
-        vtkBase64OutputStream b64_stream(this->fvtu);
-        b64_stream.StartWriting();
-        b64_stream.Write(data,size*sizeof(T));
-        b64_stream.EndWriting();
+        this->fvtu << " format=\"appended\" ";
+        this->fvtu << " offset=\"" << offset << "\" />" << std::endl;
+        offset += size*sizeof(T);
+        MeshTools::io::AppendBytes(buffer, data, size);  
     }
     else {
 
