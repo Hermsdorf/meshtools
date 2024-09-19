@@ -37,7 +37,7 @@ unsigned long  compute_hash(std::vector<unsigned int> conn)
     unsigned int *keys = conn.data();
 
     uint32_t a = 0,b=0,c=0;
-    // a = b = c = 0xdeadbeef + (((uint32_t)len)<<2);
+    a = b = c = 0xdeadbeef + (((uint32_t)len)<<2);
 
     while(len > 3)
     {

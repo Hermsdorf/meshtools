@@ -50,15 +50,15 @@ void assemble_transport(TransientImplicitSystem* system)
 {
 
     auto& mesh = system->get_mesh();
-    int  ndim  = mesh->get_mesh_dimension();
+    int   ndim = mesh->get_mesh_dimension();
 
     // Gerencia as numerações das equações do sistema
     auto& equation_manager = system->get_equation_manager();
-    int dof  = 0;
+    int dof                = 0;
 
-    int n_elements = mesh->get_n_elements();
+    int n_elements         = mesh->get_n_elements();
 
-    double *old_solution = system->get_old_solution_array();
+    double *old_solution   = system->get_old_solution_array();
 
     auto qrule = QGauss::New();
     auto fem   = FEMFunction::New();
@@ -77,6 +77,7 @@ void assemble_transport(TransientImplicitSystem* system)
         std::vector<double>     Fe(nnoel);         // vetor de força do elemento
         std::vector<double>   & phi = fem->get_phi();
         std::vector<Gradient> & dphi= fem->get_dphi();
+        Point                 & p   =  fem->get_xyz();
         double                & JxW = fem->get_JxW();
         RealVector            & g   = fem->get_g();
         RealTensor            & G   = fem->get_G();
@@ -87,7 +88,7 @@ void assemble_transport(TransientImplicitSystem* system)
         // Obtem pontos de integração para elemento
         qrule->reset(elem);
 
-        Gradient velocity;
+        
         double k            = 1.0E-08;
         double sigma        = 0.0;
         double theta        = 0.5;
@@ -104,6 +105,7 @@ void assemble_transport(TransientImplicitSystem* system)
 
             double u_old  = 0.0;
             Gradient grad_u_old;
+            Gradient velocity;
 
             for (int i = 0; i < local_indices.size(); i++)
             {
@@ -172,7 +174,8 @@ int rotation_pulse(int argc, char *argv[])
     //string test_mesh_dir = std::string(MESHTOOLS_SOURCE_DIR)+"/test/finite_element/msh/";
     string test_mesh_dir = std::string(MESHTOOLS_SOURCE_DIR)+"/test/finite_element/msh/";
     //test_mesh_dir.append("benchmark_rotation_pulse/benchmark_rotpulse_quad4_32.msh");
-    test_mesh_dir.append("benchmark_rotation_pulse/benchmark_rotpulse_quad_64.msh");
+    // test_mesh_dir.append("benchmark_rotation_pulse/benchmark_rotpulse_quad_64.msh");
+    test_mesh_dir.append("benchmark_rotation_pulse/benchmark_rotpulse_tri3_128.msh");
 
     auto mesh   = MeshTools::read(test_mesh_dir);
 

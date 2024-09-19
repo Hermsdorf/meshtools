@@ -18,6 +18,8 @@ if(CATALYST_ENABLE)
 endif()
 option(DEBUG_ENABLE         "Enable Debug Mode" ON)
 option(DEBUG_OUTPUT_ENABLE  "Enable Write Debug at File" ON)
+option(TAU_PROFILING_ENABLE "Enable TAU Profiling" OFF)
+
 
 set(CMAKE_CXX_FLAGS "-fPIC")
 
@@ -82,7 +84,6 @@ endif()
 
 if(DEFINED ENV{PETSC_DIR})
   set (ENV{PKG_CONFIG_PATH} "$ENV{PETSC_DIR}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
-  #set (ENV{PKG_CONFIG_PATH} "/opt/lib/petsc/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
   pkg_search_module(PETSc REQUIRED petsc>3.10.0)
   if(PETSc_FOUND)
      message(STATUS "PETSc ${PETSc_VERSION} was found!")
@@ -92,6 +93,19 @@ if(DEFINED ENV{PETSC_DIR})
   endif()
 else()
   message(STATUS "PETSc was not founded! Please define PETSC_DIR var!!")
+endif()
+
+
+if(TAU_PROFILING_ENABLE)
+  find_package(TAU)
+  if(TAU_FOUND)
+    message(STATUS "TAU was found!")
+    SET(TAU_ENABLE 1)
+    include_directories(${TAU_INCLUDE_DIR})
+    set(TAU_LIBS ${TAU_LIBRARIES})
+
+  endif()
+
 endif()
 
 if(PETSc_FOUND)
@@ -117,6 +131,8 @@ include_directories(${CMAKE_SOURCE_DIR}/include/io)
 include_directories(${CMAKE_SOURCE_DIR}/include/numerics)
 include_directories(${CMAKE_SOURCE_DIR}/include/fem)
 
+message("C++ Compiler: ${CMAKE_CXX_COMPILER}")
+message("C Compiler: ${CMAKE_C_COMPILER}")
 
 include_directories(${CMAKE_SOURCE_DIR}/contrib/fparser)
 
