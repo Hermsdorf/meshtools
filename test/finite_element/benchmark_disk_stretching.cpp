@@ -258,9 +258,9 @@ int disk_stretching(int argc, char *argv[])
     string test_mesh_dir = MESHTOOLS_SOURCE_DIR;
     test_mesh_dir.append("/test/finite_element/msh/benchmark_disc_stretching/disk_quad4.msh");
 
-    std::unique_ptr<ParallelMesh> mesh = MeshTools::read(test_mesh_dir);
+    auto mesh   = MeshTools::read(test_mesh_dir);
 
-    std::unique_ptr<TransientImplicitSystem> system = TransientImplicitSystem::New(mesh,"benchmark_disk_stretching");
+    auto system = TransientImplicitSystem::New(mesh,"benchmark_disk_stretching");
 
     system->add_variable("u");
     DirichletBoundary  bc(1,0,"0.0","x,y,z");
@@ -282,7 +282,7 @@ int disk_stretching(int argc, char *argv[])
 
 
     char filename[100];
-    sprintf(filename,"disk_stretching");
+    snprintf(filename,100,"disk_stretching");
     system->write_result(filename);
 
     // Time integratiom
