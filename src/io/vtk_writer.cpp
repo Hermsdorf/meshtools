@@ -1,7 +1,6 @@
 
 
 #include "vtk_writer.h"
-
 #include <iostream>
 #include <iomanip>
 
@@ -22,34 +21,43 @@ std::string BinaryBigEndian(void)
 
 vtkWriter::vtkWriter():is_point_data_open(false), is_cell_data_open(false)
 {
-    this->is_ascii = true;
+    this->is_ascii = false;
+    this->offset   = 0;
 }
 
 vtkWriter::vtkWriter(vtkWriterMode mode):is_point_data_open(false), is_cell_data_open(false)
 {
      this->is_ascii = (mode == vtkWriterMode::ASCII);
+    this->offset   = 0;
 }
 
+
+
+std::string vtkWriter::to_padded_string(int file_number, int digits)
+{
+    std::stringstream ss;
+    ss <<"_"
+       << std::setw(digits) << std::setfill('0') << MeshTools::n_processors() << "_"
+       << std::setw(digits) << std::setfill('0') << MeshTools::processor_id() << "_"
+       << std::setw(digits) << std::setfill('0') << file_number;
+    return ss.str();
+}
 
 bool vtkWriter::open(std::string base_file_name, unsigned int file_number, vtkWriterMode mode)
 {   
     this->base_name   = base_file_name;
     this->file_number = file_number;
+    this->offset   = 0;
+    this->buffer.clear();
 
     this->is_ascii = (mode == vtkWriterMode::ASCII);
 
     stringstream base_name_sufix;
-    base_name_sufix << base_file_name << "_"
-                    << std::setw(4) << std::setfill('0') << MeshTools::n_processors() << "_"
-                    << std::setw(4) << std::setfill('0') << MeshTools::processor_id() << "_"
-                    << std::setw(4) << std::setfill('0') << file_number;
-    std::string vtu_file  = base_name_sufix.str() +".vtu";
+    base_name_sufix << to_padded_string(file_number,4);
+    std::string vtu_file  = base_file_name+base_name_sufix.str() +".vtu";
    
-    if(is_ascii)
-        this->fvtu.open(vtu_file);
-    else
-        this->fvtu.open(vtu_file,ios::binary);
-        
+    this->fvtu.open(vtu_file);
+
     if(!fvtu.is_open())
     {
         std::cout << "[vtkWriter]: Error opening file: "<< vtu_file << std::endl;
@@ -172,6 +180,10 @@ void vtkWriter::close()
 {
     fvtu  << prefix_level(2)<<"</Piece>"            << std::endl;
     fvtu << prefix_level(1)<<"</UnstructuredGrid>" << std::endl;
+    fvtu << "<AppendedData encoding=\"base64\">"    << std::endl;
+    fvtu << " _" << std::endl;
+    MeshTools::io::WriteBase64(fvtu, buffer.data(), buffer.size());
+    fvtu << "</AppendedData>" << std::endl;
     fvtu << "</VTKFile>" << std::endl;
     fvtu.close();
     

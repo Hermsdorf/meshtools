@@ -4,7 +4,6 @@
 
 #include "meshtools.h"
 #include "mesh.h"
-#include "mesh_part.h"
 #include "parallel_mesh.h"
 #include "implicit_system.h"
 #include "transient_implicit_system.h"
@@ -15,8 +14,6 @@
 #include "tensor.h"
 #include "xdmf_writer.h"
 #include "fem_stabilizations.h"
-
-#include "test_config.h"
 
 static char help[] = "Benchmark with Stretching Disk experiment\n\n";
 
@@ -34,11 +31,11 @@ double initial_condition (const double x,
 void init_transport(TransientImplicitSystem* system)
 {
 
-    auto mesh   = system->get_mesh();
-    auto coords = mesh.getCoord();
-    int n_nodes = mesh.get_n_nodes();
+    auto& mesh    = system->get_mesh();
+    auto& coords  = mesh->get_coordinate_vector();
+    int n_nodes   = mesh->get_n_nodes();
 
-    int ndof = system->get_equation_manager().get_n_dofs();
+    int ndof = system->get_equation_manager()->get_n_dofs();
     int dof  = system->get_variable_id("u");
 
     double* solution = system->get_local_solution_array();
@@ -49,31 +46,31 @@ void init_transport(TransientImplicitSystem* system)
         solution[i*ndof+dof]    =  initial_condition(x, y, 0.0);
     }
     system->restore_local_solution_array(&solution);
-
+ 
 }
 
 void assemble_transport(TransientImplicitSystem* system)
 {
 
-    auto pmesh = system->get_mesh();
-    int  ndim  =  pmesh.getDim();
+    auto& mesh  = system->get_mesh();
+    int   ndim  =  mesh->get_mesh_dimension();
 
     // Gerencia as numerações das equações do sistema
-    auto equation_manager = system->get_equation_manager();
+    auto& equation_manager = system->get_equation_manager();
     int dof  = 0;
 
-    int n_elements = pmesh.get_n_elements();
+    int n_elements = mesh->get_n_elements();
 
     double *old_solution = system->get_old_solution_array();
 
-    QGauss qrule;
-    FEMFunction fem;
+    auto qrule = QGauss::New();
+    auto fem   = FEMFunction::New();
 
     // loop sobre os elementos da malha por cores
     for (int iel = 0; iel < n_elements; iel++)
     {
         Element elem;
-        pmesh.getElement(iel,elem);
+        mesh->get_element(iel,elem);
 
         int nnoel = elem.n_nodes();
 
@@ -81,17 +78,17 @@ void assemble_transport(TransientImplicitSystem* system)
         std::vector<int>        local_indices;
         DenseMatrix<double>     Ke(nnoel, nnoel);  // matriz de rigidez do elemento
         std::vector<double>     Fe(nnoel);         // vetor de força do elemento
-        std::vector<double>   & phi = fem.get_phi();
-        std::vector<Gradient> & dphi= fem.get_dphi();
-        double                & JxW = fem.get_JxW();
-        RealVector            & g   = fem.get_g();
-        RealTensor            & G   = fem.get_G();
+        std::vector<double>   & phi = fem->get_phi();
+        std::vector<Gradient> & dphi= fem->get_dphi();
+        double                & JxW = fem->get_JxW();
+        RealVector            & g   = fem->get_g();
+        RealTensor            & G   = fem->get_G();
         
-        equation_manager.global_indices(dof, elem.connectivity(), global_indices);
-        equation_manager.local_indices(dof,  elem.connectivity(), local_indices);
+        equation_manager->global_indices(dof, elem.connectivity(), global_indices);
+        equation_manager->local_indices(dof,  elem.connectivity(), local_indices);
 
         // Obtem pontos de integração para elemento
-        qrule.reset(elem);
+        qrule->reset(elem);
 
 
         double k            = 1E-5;
@@ -102,12 +99,10 @@ void assemble_transport(TransientImplicitSystem* system)
 
 
         // loop sobre os pontos de integração
-        for (int q = 0; q < qrule.n_points(); q++)
+        for (int q = 0; q < qrule->n_points(); q++)
         {
             // Calcula funções para elemento
-            fem.ComputeFunction(elem,qrule.get(q));
-
-
+            fem->ComputeFunction(elem,qrule->get(q));
 
             RealVector velocity;
             double u_old  = 0.0;
@@ -176,36 +171,15 @@ void assemble_transport(TransientImplicitSystem* system)
 
 int rotation_coin(int argc, char *argv[])
 {
-    PetscErrorCode ierr;
-    MeshPartition *parts = new MeshPartition();
 
-    Mesh         *mesh;  // serial   mesh
-    ParallelMesh *pmesh; // parallel mesh
-    int processor_id, n_processors;
+    string test_mesh_dir = std::string(MESHTOOLS_SOURCE_DIR)+"/test/finite_element/msh/";
+    test_mesh_dir.append("benchmark_rotation_coin/benchmark_coin_tri3.msh");
 
-    processor_id = MeshTools::processor_id();
-    n_processors = MeshTools::n_processors();
-
-    if (processor_id == 0)
-    {
-        // Rodando serial ou em paralelo o processo mestre
-        // irá ler a malha.
-        string test_mesh_dir = TEST_MESH_DIR;
-        test_mesh_dir.append("benchmark_rotation_coin/benchmark_coin_tri3_131knodes.msh");
-        mesh = new Mesh(test_mesh_dir);
-
-        // Se houver mais um processo, o processo mestre irá
-        // particionar a malha
-        if (n_processors > 1)
-        {
-            parts->ApplyPartitioner(mesh, n_processors);
-        }
-    }
-
-    pmesh = parts->DistributedMesh(mesh);
+    auto mesh   = MeshTools::read(test_mesh_dir);
 
     // Cria o sistema de equações implicito
-    TransientImplicitSystem *system = new TransientImplicitSystem(*pmesh, "benchmark_rotation_coin");
+    auto system = TransientImplicitSystem::New(mesh, "benchmark_rotation_coin");
+
     system->add_variable("u");
     DirichletBoundary  bc(1,0,"0.0","x,y,z");
     system->add_dirichlet_boundary(bc);
@@ -215,11 +189,12 @@ int rotation_coin(int argc, char *argv[])
     system->init();
     system->set_final_time(8.0);
     system->set_deltat(0.005);
+    system->set_nonlinear_max_iter(1);
     unsigned int write_interval = 20;
 
 
     char filename[100];
-    sprintf(filename,"rotation_coin");
+    snprintf(filename,100,"rotation_coin");
     system->write_result(filename);
 
     // Time integratiom
@@ -233,13 +208,6 @@ int rotation_coin(int argc, char *argv[])
         }
     }
     system->write_result(filename);
-
-    delete system;
-
-    if (MeshTools::processor_id() == 0)
-        delete mesh;
-    delete pmesh;
-    delete parts;
 
     return 0;
 }

@@ -69,7 +69,7 @@ class TransientImplicitSystem: public NonLinearImplicitSystem
         double       _final_time;     // final time
         unsigned int timestep;        // current timestep
         Vec _old_solution_local;      // solution at t-dt
-        Vec _older_solution_local;    //  solution at t - 2*dt (needed fot BFD2 time solver)
+        Vec _older_solution_local;    // solution at t - 2*dt (needed fot BFD2 time solver)
         std::vector<InitialCondition> _initial_conditions;
         unsigned int _n_write;
 

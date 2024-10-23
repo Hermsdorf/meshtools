@@ -27,6 +27,8 @@ class FEMFunction
         RealVector           &  get_dxi() { return _dxi; } ;
         RealVector           &  get_deta() { return _deta; } ;
         RealVector           &  get_dzeta() { return _dzeta; } ;
+
+        double get_caract_length() { return h_caract; } ;
             
 
     private:
@@ -43,10 +45,13 @@ class FEMFunction
         RealVector             _deta;
         RealVector             _dzeta;
 
+        double                 h_caract;
+
         //
-        void TRI3Function(Element& elem, QGaussData qp);
+        void TRI3Function(Element& elem, QGaussData qp) ;
         void QUAD4Function(Element& elem, QGaussData qp);
-        void TET4Function(Element& elem, QGaussData qp);
+        void TET4Function(Element& elem, QGaussData qp) ;
+        void HEX8Function(Element& elem, QGaussData qp) ;
         
 };
 

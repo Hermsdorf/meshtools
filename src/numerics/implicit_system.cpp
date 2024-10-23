@@ -6,6 +6,9 @@ using namespace std;
 #include "implicit_system.h"
 #include "meshtools.h"
 
+
+#include <sys/stat.h>
+
 /**
  * Constructor
  * 
@@ -15,7 +18,8 @@ using namespace std;
 ImplicitSystem::ImplicitSystem(std::unique_ptr<ParallelMesh> &mesh, std::string name):
     _mesh(mesh), _system_name(name), _n_dof(0), _assemble_function(nullptr)
     {
-        _equations = EquationManager::New(mesh);
+        _equations        = EquationManager::New(mesh);
+        _linear_tolerance = 1.0e-6;
     }   
 
 /**
@@ -479,6 +483,8 @@ void ImplicitSystem::write_result(string filename)
 {
     auto n_nodes        = _mesh->get_n_nodes();
     auto n_elements     = _mesh->get_n_elements();
+
+
     
     std::vector<double> solution;
     solution.resize(n_nodes);

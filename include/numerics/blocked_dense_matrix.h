@@ -12,19 +12,16 @@ class BlockDenseMatrix {
     public:
         BlockDenseMatrix(int rows, int cols, int b_size);
         T& operator()(int row, int col, int b_i, int b_j);
-        // BlockDenseMatrix<T> operator*(BlockDenseMatrix<T> &B);
-        // BlockDenseMatrix<T> operator*(T scalar);
-        // BlockDenseMatrix<T> operator*=(T scalar);
-        // BlockDenseMatrix<T> transpose();
         void print();
         ~BlockDenseMatrix();
-        T* data();
+        const T* data();
+        //friend ostream& operator<<(ostream& os, const BlockDenseMatrix<T>& m);
     private:
-        int idx(int i_row, int j_col, i_block, int j_block);
+        int idx(int i_row, int j_col, int i_block, int j_block);
         int nrows;
         int ncols;
         int block_size;
-        T* data;
+        T* _data;
 };
 
 
@@ -35,8 +32,10 @@ BlockDenseMatrix<T>::BlockDenseMatrix(int rows, int cols, int b_size) {
     ncols = cols;
     block_size = b_size;
     unsigned int size = rows*b_size*cols*b_size;
-    data = new T[size];
-    std::fill(data, data + size, 0);
+    _data = new T[size];
+    //std::fill(data, data + size, 0);
+    for(int i = 0; i < size; i++)
+        _data[i] = i;
 }
 
 /*
@@ -51,21 +50,25 @@ no2 a24  a25  a26 a27 a28 a29
 
 template <typename T>
 inline int BlockDenseMatrix<T>::idx(int i_row, int j_jow, int i_block, int j_block) {
-    return i_row*(ncol*b_size*b_size) + j_row*n_col*b_size + i_block*b_size + j_block;
+    return ;
 }
 
 template <typename T>
 T& BlockDenseMatrix<T>::operator()(int row, int col, int i_block, int j_block) {
-    return data[idx(row, col,i_block,j_block)];
+    assert(row >= 0 && row < nrows);
+    assert(col >= 0 && col < ncols);
+    assert(i_block >= 0 && i_block < block_size);
+    assert(j_block >= 0 && j_block < block_size);
+    return _data[idx(row, col,i_block,j_block)];
 }
 
 template <typename T>
 ostream& operator<<(ostream& os, const BlockDenseMatrix<T>& m) {
     for (int i = 0; i < m.nrows; i++) {
         for (int j = 0; j < m.ncols; j++) {
-            for(int bi = 0; bi < b_size; bi++)
-               for(int bj = 0; bj < b_size; bj++)
-                    os << m.data[m.idx(i, j, bi, bj)] << " ";
+            for(int bi = 0; bi < m.block_size; bi++)
+               for(int bj = 0; bj < m.block_size; bj++)
+                    os << m._data[m.idx(i, j, bi, bj)] << " ";
         }
         os << endl;
     }
@@ -79,66 +82,18 @@ void BlockDenseMatrix<T>::print() {
 
 template <typename T>
 BlockDenseMatrix<T>::~BlockDenseMatrix() {
-    delete[] data;
+    delete[] _data;
 }
 
 template <typename T>
-T* BlockDenseMatrix<T>::data() {
-    return data;
+const T* BlockDenseMatrix<T>::data(){
+    return _data;
 }
 
-// template <typename T>
-// DenseMatrix<T> DenseMatrix<T>::operator*(DenseMatrix<T> &B)
-// {
-//     DenseMatrix<T> C(nrows, B.ncols);
-//     for (int i = 0; i < nrows; i++) {
-//         for (int j = 0; j < B.ncols; j++) {
-//             for (int k = 0; k < ncols; k++) {
-//                 C(i, j) += data[idx(i, k)] * B(k, j);
-//             }
-//         }
-//     }
-//     return C;
-// }
 
-// template <typename T>
-// DenseMatrix<T> DenseMatrix<T>::operator*(T scalar)
-// {
-//     DenseMatrix<T> C(nrows, ncols);
-//     for (int i = 0; i < nrows; i++) {
-//         for (int j = 0; j < ncols; j++) {
-//             C(i, j) = data[idx(i, j)] * scalar;
-//         }
-//     }
-//     return C;
-// }
-
-// template <typename T>
-// DenseMatrix<T> DenseMatrix<T>::operator*=(T scalar)
-// {
-//     for (int i = 0; i < nrows; i++) {
-//         for (int j = 0; j < ncols; j++) {
-//             data[idx(i, j)] *= scalar;
-//         }
-//     }
-//     return *this;
-// }
-
-// template <typename T>
-// DenseMatrix<T> DenseMatrix<T>::transpose()
-// {
-//     DenseMatrix<T> C(ncols, nrows);
-//     for (int i = 0; i < nrows; i++) {
-//         for (int j = 0; j < ncols; j++) {
-//             C(j, i) = data[idx(i, j)];
-//         }
-//     }
-//     return C;
-// }
-
-typedef DenseMatrix<double> RealDenseMatrix;
-typedef DenseMatrix<int>     IntDenseMatrix;
-
+typedef BlockDenseMatrix<double>  BlockDenseMatrixFloat64;
+typedef BlockDenseMatrix<float>   BlockDenseMatrixFloat32;
+typedef BlockDenseMatrix<int>     BlockDenseMatrixInt32;
 
 
 #endif /* BLOCKED_DENSE_MATRIX_H */

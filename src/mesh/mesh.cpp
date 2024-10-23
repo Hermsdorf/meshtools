@@ -537,22 +537,34 @@ void Mesh::process_face_to_element()
 
         unsigned long long element_hash = compute_hash(conn_tmp);
 
+        if(face_elements_hash.find(element_hash) != face_elements_hash.end())
+        {
+            std::cout << "Face to element relation wasn't calculated correctly, ";
+            std::cout << "there are equal hashs to different elements, exiting..." << std::endl;
+            //MeshTools::Exit();
+            MeshTools::PrintDebug("Face Element %d hash: %ld Nodes: ", i, element_hash);
+            for(int j = 0; j < conn_tmp.size(); j++) {
+                MeshTools::PrintDebug(" %d", conn_tmp[j]);
+            }
+            MeshTools::PrintDebug("\n");
+        }
+
         face_elements_hash[element_hash] = i;
 
-#ifdef NDEBUG
-        MeshTools::PrintDebug("Face Element %d hash: %ld Nodes: ", i, element_hash);
-        for(int j = 0; j < conn_tmp.size(); j++) {
-            MeshTools::PrintDebug(" %d", conn_tmp[j]);
-        }
-        MeshTools::PrintDebug("\n");
-#endif
+// #ifdef NDEBUG
+//         MeshTools::PrintDebug("Face Element %d hash: %ld Nodes: ", i, element_hash);
+//         for(int j = 0; j < conn_tmp.size(); j++) {
+//             MeshTools::PrintDebug(" %d", conn_tmp[j]);
+//         }
+//         MeshTools::PrintDebug("\n");
+// #endif
     }
 
     if (face_elements_hash.size() != n_face_elements)
     {
         std::cout << "Face to element relation wasn't calculated correctly, ";
         std::cout << "there are equal hashs to different elements, exiting..." << std::endl;
-        MeshTools::Exit();
+        //MeshTools::Exit();
     }
 
 
@@ -620,7 +632,7 @@ void Mesh::process_face_to_element()
     }
     
     std::cout << "Face to element relation wasn't calculated correctly, exiting..." << std::endl;
-    exit(1);
+    //exit(1);
 }
 
 

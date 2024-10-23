@@ -96,6 +96,10 @@ void assemble_transport(TransientImplicitSystem* system)
     auto qrule = QGauss::New();
     auto fem   = FEMFunction::New();
     auto elem  = Element::New();
+    FemStabilization fem_stab(fem);
+    fem_stab.set_time_step_factor(0.1);
+    fem_stab.set_yzb_phi_reference(1.0);
+    fem_stab.set_yzb_beta(1.0);
 
     // loop sobre os elementos da malha por cores
     for (int iel = 0; iel < n_elements; iel++)
@@ -139,9 +143,9 @@ void assemble_transport(TransientImplicitSystem* system)
         {
             // Calcula funções para elemento
             fem->ComputeFunction(*elem,qrule->get(q));
-            double h_carach = elem->calculate_h();
+            // double h_carach = elem->calculate_h();
 
-            assert(h_carach >= 0.0);
+            // assert(h_carach >= 0.0);
 
 
             RealVector velocity;
@@ -170,8 +174,10 @@ void assemble_transport(TransientImplicitSystem* system)
             source_term = f(xyz,t);
 
 
+
             // SUPG stabilization parameters
-            const double tau = TAUStab(velocity, G, k, dt_stab, dt);
+            //const double tau = TAUStab(velocity, G, k, dt_stab, dt);
+            const double tau = fem_stab.supg_stabilization(velocity, k, dt);
 
             // CAU stabilization parameters
             // const double ctau = CAUStab(u, u_old, grad_u, source_term, velocity, sigma, k, dt, h_carach);
@@ -182,21 +188,24 @@ void assemble_transport(TransientImplicitSystem* system)
             // YZβ discontinuity capturing for advection-dominated processes with 
             // application to arterial drug delivery. Int. J. Numer. Meth. Fluids, 54: 593-608. 
             // https://doi.org/10.1002/fld.1484
-            double beta    = 1.0;
-            double phi_ref = 1.0;
-            double fopc    = 0.0;
-            double inv_phi_ref = 1.0 / phi_ref;
+            // double beta    = 1.0;
+            // double phi_ref = 1.0;
+            // double fopc    = 0.0;
+            // double inv_phi_ref = 1.0 / phi_ref;
 
             double dudt        = (u - u_old) / dt;
             double adv         = (velocity * grad_u);
             double reac        = sigma*u;
 
             double residuo = dudt + adv - reac - source_term;
-            double A       = abs(residuo) / phi_ref;
-            double tmp1    = pow(grad_u(0)*inv_phi_ref,2.0) + pow(grad_u(1)*inv_phi_ref,2.0);
-            double B       = tmp1 > 0.0 ? pow(tmp1, (beta / 2.0 - 1.0)): 0.0;
-            double C = pow(h_carach / 2.0, beta);
-            const double ctau = A*B*C*fopc;
+            // double A       = abs(residuo) / phi_ref;
+            // double tmp1    = pow(grad_u(0)*inv_phi_ref,2.0) + pow(grad_u(1)*inv_phi_ref,2.0);
+            // double B       = tmp1 > 0.0 ? pow(tmp1, (beta / 2.0 - 1.0)): 0.0;
+            // double C = pow(h_carach / 2.0, beta);
+            // const double ctau = A*B*C*fopc;
+
+            // YZB stabilization parameters
+            const double ctau = fem_stab.yzb_stabilization(residuo, grad_u);
 
             const double adt1 = (1.0-theta)*dt;
             const double adt  = theta*dt;

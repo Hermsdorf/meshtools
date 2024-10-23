@@ -107,6 +107,7 @@ void FEMFunction::ComputeFunction(Element& elem, QGaussData qp)
         default:
             break;
     }
+    h_caract = elem.calculate_h();
 }
 
 void FEMFunction::TET4Function(Element& elem, QGaussData qp)
@@ -375,8 +376,126 @@ void FEMFunction::QUAD4Function(Element& elem, QGaussData qp)
     _G(0,1) = _G(1,0) = J[0][0]*J[0][1] + J[1][0]*J[1][1];
     _G(1,1)          = J[0][1]*J[0][1] + J[1][1]*J[1][1];
 
-    _dxi(0) = J[0][0];
-    _dxi(1) = J[0][1];
+    _dxi(0)   = J[0][0];
+    _dxi(1)   = J[0][1];
     _deta(0)  = J[1][0];
     _deta(1)  = J[1][1];
+}
+
+void FEMFunction::HEX8Function(Element& elem, QGaussData qp)
+{
+     double dpsi[2][8];
+     double x[8], y[8], z[8];
+     double J[3][3]    = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+     double Jinv[3][3];
+    _xyz(0) = 0.0;
+    _xyz(1) = 0.0;
+    _xyz(2) = 0.0;   
+    _phi.resize(8);
+    _dphi.resize(8);
+
+    double xi  = qp.first(0);
+    double eta = qp.first(1);
+
+    // shape function
+    _phi[0] = 0.125*(1.0-xi)*(1.0-eta); // N1
+    _phi[1] = 0.125*(1.0+xi)*(1.0-eta); // N2
+    _phi[2] = 0.125*(1.0+xi)*(1.0+eta); // N3
+    _phi[3] = 0.125*(1.0-xi)*(1.0+eta); // N4
+    _phi[4] = 0.125*(1.0-xi)*(1.0-eta); // N5
+    _phi[5] = 0.125*(1.0+xi)*(1.0-eta); // N6
+    _phi[6] = 0.125*(1.0+xi)*(1.0+eta); // N7
+    _phi[7] = 0.125*(1.0-xi)*(1.0+eta); // N8
+
+    // shape function derivative
+    dpsi[0][0] = -0.125*(1.0-eta); // dN1/dxi
+    dpsi[1][0] = -0.125*(1.0-xi);  // dN1/deta
+    dpsi[0][1] =  0.125*(1.0-eta); // dN2/dxi
+    dpsi[1][1] = -0.125*(1.0+xi);  // dN2/deta
+    dpsi[0][2] =  0.125*(1.0+eta); // dN3/dxi
+    dpsi[1][2] =  0.125*(1.0+xi);  // dN3/deta
+    dpsi[0][3] = -0.125*(1.0+eta); // dN4/dxi
+    dpsi[1][3] =  0.125*(1.0-xi);  // dN4/deta
+    dpsi[0][4] = -0.125*(1.0-eta); // dN5/dxi
+    dpsi[1][4] = -0.125*(1.0-xi);  // dN5/deta
+    dpsi[0][5] =  0.125*(1.0-eta); // dN6/dxi
+    dpsi[1][5] = -0.125*(1.0+xi);  // dN6/deta
+    dpsi[0][6] =  0.125*(1.0+eta); // dN7/dxi
+    dpsi[1][6] =  0.125*(1.0+xi);  // dN7/deta
+    dpsi[0][7] = -0.125*(1.0+eta); // dN8/dxi
+    dpsi[1][7] =  0.125*(1.0-xi);  // dN8/deta
+
+
+    _JxW = qp.second;
+    for(int i=0; i<elem.n_nodes(); i++)
+    {
+        x[i] = elem.node(i)(0);
+        y[i] = elem.node(i)(1);
+        z[i] = elem.node(i)(2);
+        _xyz(0) += x[i]*_phi[i]; 
+        _xyz(1) += y[i]*_phi[i];
+        _xyz(2) += z[i]*_phi[i];
+
+        J[0][0] +=  x[i]*dpsi[0][i]; // dx/dxi
+        J[0][1] +=  y[i]*dpsi[0][i]; // dy/dxi
+        J[0][2] +=  z[i]*dpsi[0][i]; // dz/dxi
+
+        J[1][0] +=  x[i]*dpsi[1][i]; // dx/deta
+        J[1][1] +=  y[i]*dpsi[1][i]; // dy/deta
+        J[1][2] +=  z[i]*dpsi[1][i]; // dz/deta
+
+        J[2][0] +=  x[i]*dpsi[2][i]; // dx/dzeta
+        J[2][1] +=  y[i]*dpsi[2][i]; // dy/dzeta
+        J[2][2] +=  z[i]*dpsi[2][i]; // dz/dzeta
+    }
+
+    double detJ = J[0][0]*(J[1][1]*J[2][2]-J[1][2]*J[2][1]) - J[0][1]*(J[1][0]*J[2][2]-J[1][2]*J[2][0]) + J[0][2]*(J[1][0]*J[2][1]-J[1][1]*J[2][0]);
+    if(detJ < 0.0)
+    {
+        std::cout << "Error: detJ < 0.0\n" << std::endl;
+        exit(1);
+    }
+
+    double invdetJ = 1.0/detJ;
+    Jinv[0][0] = (J[1][1]*J[2][2]-J[1][2]*J[2][1])*invdetJ;
+    Jinv[0][1] = (J[0][2]*J[2][1]-J[0][1]*J[2][2])*invdetJ;
+    Jinv[0][2] = (J[0][1]*J[1][2]-J[0][2]*J[1][1])*invdetJ;
+    Jinv[1][0] = (J[1][2]*J[2][0]-J[1][0]*J[2][2])*invdetJ;
+    Jinv[1][1] = (J[0][0]*J[2][2]-J[0][2]*J[2][0])*invdetJ;
+    Jinv[1][2] = (J[0][2]*J[1][0]-J[0][0]*J[1][2])*invdetJ;
+    Jinv[2][0] = (J[1][0]*J[2][1]-J[1][1]*J[2][0])*invdetJ;
+    Jinv[2][1] = (J[0][1]*J[2][0]-J[0][0]*J[2][1])*invdetJ;
+    Jinv[2][2] = (J[0][0]*J[1][1]-J[0][1]*J[1][0])*invdetJ;
+
+    for(int i=0; i<8; i++)
+    {
+        _dphi[i](0) = Jinv[0][0]*dpsi[0][i] + Jinv[0][1]*dpsi[1][i] + Jinv[0][2]*dpsi[2][i];
+        _dphi[i](1) = Jinv[1][0]*dpsi[0][i] + Jinv[1][1]*dpsi[1][i] + Jinv[1][2]*dpsi[2][i];
+        _dphi[i](2) = Jinv[2][0]*dpsi[0][i] + Jinv[2][1]*dpsi[1][i] + Jinv[2][2]*dpsi[2][i];
+    }
+
+    _JxW = qp.second*detJ;
+
+    // Calculo g e G;
+    _g(0) = J[0][0] + J[1][0] + J[2][0];
+    _g(1) = J[0][1] + J[1][1] + J[2][1];
+    _g(2) = J[0][2] + J[1][2] + J[2][2];
+
+    _G(0,0)           = J[0][0]*J[0][0] + J[1][0]*J[1][0] + J[2][0]*J[2][0]; 
+    _G(0,1) = _G(1,0) = J[0][0]*J[0][1] + J[1][0]*J[1][1] ;
+    _G(0,2) = _G(2,0) = J[0][0]*J[0][2] + J[1][0]*J[1][2] ;
+    _G(1,1)           = J[0][1]*J[0][1] + J[1][1]*J[1][1] + J[2][1]*J[2][1];
+    _G(1,2) = _G(2,1) = J[0][1]*J[0][2] + J[1][1]*J[1][2] ;
+    _G(2,2)           = J[0][2]*J[0][2] + J[1][2]*J[1][2] + J[2][2]*J[2][2];
+
+    _dxi(0)    = J[0][0];
+    _dxi(1)    = J[0][1];
+    _dxi(2)    = J[0][2];
+    _deta(0)   = J[1][0];
+    _deta(1)   = J[1][1];
+    _deta(2)   = J[1][2];
+    _dzeta(0)  = J[2][0];
+    _dzeta(1)  = J[2][1];
+    _dzeta(2)  = J[2][2];
+
 }

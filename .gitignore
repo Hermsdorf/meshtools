@@ -29,3 +29,4 @@ test/finite_element/square256x256.msh
 test/finite_element/square32x32.msh
 test/finite_element/square16x16.msh
 test/finite_element/square8x8.msh
+include/base/meshtools_config.h

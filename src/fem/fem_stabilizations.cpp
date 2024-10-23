@@ -3,6 +3,27 @@
 
 #include "fem_stabilizations.h"
 
+double FemStabilization::supg_stabilization(RealVector velocity, double diffusivity, double dt)
+{
+    auto &G = _fem_function->get_G();
+    auto &g = _fem_function->get_g();
+    double tmp = (velocity) * (G.mult(velocity)) + (diffusivity * diffusivity) * (G.contract(G)) + this->delta_factor*4.0/(dt*dt);
+    double tau = 1.0/sqrt(tmp);
+    return tau;
+}
+
+double FemStabilization::yzb_stabilization(double pde_residuo, RealVector grad_u)
+{
+    double h_carach = _fem_function->get_caract_length();
+    double inv_phi_ref = 1.0 / phi_reference;   
+    double A       = abs(pde_residuo) / phi_reference;
+    double tmp1    = pow(grad_u(0)*inv_phi_ref,2.0) + pow(grad_u(1)*inv_phi_ref,2.0);
+    double B       = tmp1 > 0.0 ? pow(tmp1, (beta / 2.0 - 1.0)): 0.0;
+    double C       = pow(h_carach / 2.0, beta);
+    double ctau = A*B*C*fopc;
+    return ctau;
+}
+
 double CAUStab(double u, double u_old, Gradient grad_u, double f,
                 RealVector velocity, double sigma, double K, double dt, double h_caract)
 {
