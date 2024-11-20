@@ -191,10 +191,13 @@ unsigned int MeshRefinement::edge_central_vertice(unsigned int &n_nodes, std::ve
     edge_conn_global[0] = mesh->get_node_id(edge_conn[0]);
     edge_conn_global[1] = mesh->get_node_id(edge_conn[1]);
 
+    //cout << "Criando ponto central da aresta: " << edge_conn_global[0] << " ----- " << edge_conn_global[1] << endl;
+
     unsigned long hash = compute_hash(edge_conn_global);
     // Check if the edge has been refined
     if (edge_map.find(hash) == edge_map.end())
     {
+        //cout<< "** Aresta nao refinada **"<<endl;
     
         double x0 = coords[3*edge_conn[0]  ];
         double y0 = coords[3*edge_conn[0]+1];
@@ -223,6 +226,8 @@ unsigned int MeshRefinement::edge_central_vertice(unsigned int &n_nodes, std::ve
         n_nodes++;
     
     }
+
+    //cout<< "Nócentral da aresta: "<<edge_map[hash]<<endl<<endl;
 
     return edge_map[hash];
 
@@ -563,7 +568,7 @@ void MeshRefinement:: triangle_refinement_template(std::vector<double>&      coo
     std::vector<unsigned int> nodes(6);
 
     nodes[0] = conn[0];
-    nodes[1] = conn[1];
+    nodes[1] = conn[1]; 
     nodes[2] = conn[2];
 
     // Get the triangle edges
@@ -575,6 +580,8 @@ void MeshRefinement:: triangle_refinement_template(std::vector<double>&      coo
         find_processor_neighbours_edge(edge_conn, nodes[3+edge]);
     }
 
+    //cout<< "new con = [" << nodes[0] << ", " << nodes[1] << ", " << nodes[2] << ", " << nodes[3] << ", " << nodes[4] << ", " << nodes[5] << "]" << endl <<endl<<endl;
+
     // Add the new vertices to the new connectivity
     unsigned int last_offset = new_offset.back();
 
@@ -585,24 +592,23 @@ void MeshRefinement:: triangle_refinement_template(std::vector<double>&      coo
     new_type.emplace_back(TRI3);
     new_physical_tag.emplace_back(parent_tag);
 
+    new_conn.emplace_back(nodes[3]);
+    new_conn.emplace_back(nodes[4]);
+    new_conn.emplace_back(nodes[5]);
+    new_offset.emplace_back(last_offset + 6);
+    new_type.emplace_back(TRI3);
+    new_physical_tag.emplace_back(parent_tag);
 
     new_conn.emplace_back(nodes[3]);
     new_conn.emplace_back(nodes[1]);
     new_conn.emplace_back(nodes[4]);
-    new_offset.emplace_back(last_offset + 6);
+    new_offset.emplace_back(last_offset + 9);
     new_type.emplace_back(TRI3);
     new_physical_tag.emplace_back(parent_tag);
 
     new_conn.emplace_back(nodes[5]);
     new_conn.emplace_back(nodes[4]);
     new_conn.emplace_back(nodes[2]);
-    new_offset.emplace_back(last_offset + 9);
-    new_type.emplace_back(TRI3);
-    new_physical_tag.emplace_back(parent_tag);
-
-    new_conn.emplace_back(nodes[3]);
-    new_conn.emplace_back(nodes[4]);
-    new_conn.emplace_back(nodes[5]);
     new_offset.emplace_back(last_offset + 12);
     new_type.emplace_back(TRI3);
     new_physical_tag.emplace_back(parent_tag);
@@ -717,7 +723,7 @@ void MeshRefinement::tetrahedron_refinement_template(std::vector<double>&   coor
     nodes[0] = tetra_conn[0];
     nodes[1] = tetra_conn[1];
     nodes[2] = tetra_conn[2];
-    nodes[3] = tetra_conn[3];
+    nodes[3] = tetra_conn[3];   
 
     // Get the tetrahedron edges
     for(int edge=0; edge < 6; edge++)
@@ -726,9 +732,77 @@ void MeshRefinement::tetrahedron_refinement_template(std::vector<double>&   coor
         MeshHelper::tetrahedron_edge_connectivity(edge, tetra_conn, edge_conn);
         nodes[4+edge] = edge_central_vertice(n_nodes, coords, edge_conn);
     }
+    
+    //cout<<"new con = [ " << nodes[0] << ", " << nodes[1] << ", " << nodes[2] << ", " << nodes[3] << ", " << nodes[4] << ", " << nodes[5] << ", " << nodes[6] << ", " << nodes[7] << ", " << nodes[8] << ", " << nodes[9] << " ]"<<endl;
 
     unsigned int last_offset = new_offset.back();
 
+    new_conn.emplace_back(nodes[0]);
+    new_conn.emplace_back(nodes[4]);
+    new_conn.emplace_back(nodes[6]);
+    new_conn.emplace_back(nodes[7]);
+    new_offset.emplace_back(last_offset + 4);
+    new_type.emplace_back(TET4);
+    new_physical_tag.emplace_back(parent_tag);
+
+    new_conn.emplace_back(nodes[4]);
+    new_conn.emplace_back(nodes[1]);
+    new_conn.emplace_back(nodes[5]);
+    new_conn.emplace_back(nodes[8]);
+    new_offset.emplace_back(last_offset + 8);
+    new_type.emplace_back(TET4);
+    new_physical_tag.emplace_back(parent_tag);
+
+    new_conn.emplace_back(nodes[6]);
+    new_conn.emplace_back(nodes[5]);
+    new_conn.emplace_back(nodes[2]);
+    new_conn.emplace_back(nodes[9]);
+    new_offset.emplace_back(last_offset + 12);
+    new_type.emplace_back(TET4);
+    new_physical_tag.emplace_back(parent_tag);
+
+    new_conn.emplace_back(nodes[7]);
+    new_conn.emplace_back(nodes[8]);
+    new_conn.emplace_back(nodes[9]);
+    new_conn.emplace_back(nodes[3]);
+    new_offset.emplace_back(last_offset + 16);
+    new_type.emplace_back(TET4);
+    new_physical_tag.emplace_back(parent_tag);
+
+    new_conn.emplace_back(nodes[4]);
+    new_conn.emplace_back(nodes[6]);
+    new_conn.emplace_back(nodes[7]);
+    new_conn.emplace_back(nodes[8]);
+    new_offset.emplace_back(last_offset + 20);
+    new_type.emplace_back(TET4);
+    new_physical_tag.emplace_back(parent_tag);
+
+    new_conn.emplace_back(nodes[4]);
+    new_conn.emplace_back(nodes[8]);
+    new_conn.emplace_back(nodes[5]);
+    new_conn.emplace_back(nodes[6]);
+    new_offset.emplace_back(last_offset + 24);
+    new_type.emplace_back(TET4);
+    new_physical_tag.emplace_back(parent_tag);
+
+    new_conn.emplace_back(nodes[6]);
+    new_conn.emplace_back(nodes[7]);
+    new_conn.emplace_back(nodes[8]);
+    new_conn.emplace_back(nodes[9]);
+    new_offset.emplace_back(last_offset + 28);
+    new_type.emplace_back(TET4);
+    new_physical_tag.emplace_back(parent_tag);
+
+    new_conn.emplace_back(nodes[6]);
+    new_conn.emplace_back(nodes[9]);
+    new_conn.emplace_back(nodes[8]);
+    new_conn.emplace_back(nodes[5]);
+    new_offset.emplace_back(last_offset + 32);
+    new_type.emplace_back(TET4);
+    new_physical_tag.emplace_back(parent_tag);
+
+    /*
+  
     new_conn.emplace_back(nodes[0]);
     new_conn.emplace_back(nodes[4]);
     new_conn.emplace_back(nodes[6]);
@@ -792,6 +866,8 @@ void MeshRefinement::tetrahedron_refinement_template(std::vector<double>&   coor
     new_offset.emplace_back(last_offset + 32);
     new_type.emplace_back(TET4);
     new_physical_tag.emplace_back(parent_tag);
+
+    */
 
     n_children = 8;
 

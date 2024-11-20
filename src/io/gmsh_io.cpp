@@ -58,7 +58,7 @@ void GmshIO::write(const std::string &filename, Mesh &mesh)
     for (int i = 0; i < mesh.get_n_nodes(); i++)
     {
         auto& coords = mesh.get_coordinate_vector();
-        file << i << " " << coords[i*3+0] << " " << coords[i*3+1] << " " << coords[i*3+2] << "\n";
+        file << (i +1) << " " << coords[i*3+0] << " " << coords[i*3+1] << " " << coords[i*3+2] << "\n";
     }
     file << "$EndNodes\n";
 
@@ -71,10 +71,10 @@ void GmshIO::write(const std::string &filename, Mesh &mesh)
     for (int i = 0; i < nse; i++)
     {
         
-        file << i << " " << MeshHelper::VtkIdToGmshId[type[i]] << " " << 1 <<" " << physical_tag[i] << " ";
+        file << (i + 1) << " " << MeshHelper::VtkIdToGmshId[type[i]] << " " << 1 <<" " << physical_tag[i] << " ";
         for (int j = offset[i]; j < offset[i+1]; j++)
         {
-            file << conn[j] << " ";
+            file << (conn[j] + 1) << " ";
         }
         file << "\n";
     }
@@ -82,10 +82,10 @@ void GmshIO::write(const std::string &filename, Mesh &mesh)
     // loop sobre os elementos de volume
     for (int i = nse; i < nse+ne; i++)
     {
-        file << i << " " << MeshHelper::VtkIdToGmshId[type[i]] << " " << 1 <<" " << physical_tag[i] << " " ;
+        file << (i + 1) << " " << MeshHelper::VtkIdToGmshId[type[i]] << " " << 1 <<" " << physical_tag[i] << " " ;
         for (int j = offset[i]; j < offset[i+1]; j++)
         {
-            file << conn[j] << " ";
+            file << (conn[j] + 1) << " ";
         }
         file << "\n";
     }

@@ -2,23 +2,30 @@
 #include "parallel_mesh.h"
 #include "mesh_refinement.h"
 #include "gmsh_io.h"
+#include <time.h>
 
 int main(int argc, char *argv[])
 {
+
+    clock_t tInicio, tFim, tDecorrido;
   
     MeshTools::Init(argc, argv);
 
-    std::unique_ptr<ParallelMesh> mesh = MeshTools::read(std::string(MESHTOOLS_SOURCE_DIR)+"/test/io/ascii/tet4.msh");
+    std::unique_ptr<ParallelMesh> mesh = MeshTools::read(std::string(MESHTOOLS_SOURCE_DIR)+"/test/io/ascii/tetraedro_simples.msh");
 
-    mesh->write_vtk("mesh_original");
+    GmshIO gmsh;
+    mesh->write_vtk("tetraedro_simples");
 
     MeshRefinement refiner(mesh);
+    tInicio = clock();
+    refiner.refine();
+    tFim = clock();
+    tDecorrido = ((tFim - tInicio) / (CLOCKS_PER_SEC / 1000));
+    std::cout << "Tempo de execução: " << tDecorrido << " ms" << std::endl;
 
-    for(int r = 0; r < 2; r++)
-        refiner.refine();
-   
-        
-    mesh->write_vtk("mesh_refined");
+
+    mesh->write_vtk("tetraedro_simples_refined_corrigido");
+    gmsh.write("tetraedro_simples_refined_corrigido.msh", *mesh);
 
     MeshTools::Finalize();
     return 0;
