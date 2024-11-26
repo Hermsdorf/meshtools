@@ -937,87 +937,103 @@ void MeshRefinement::hexahedron_refinement_template(std::vector<double>&   coord
 */
     // Add the new vertices to the new connectivity
     // TODO: Add the new vertices to the new connectivity
-
+//1
     unsigned int last_offset = new_offset.back();
     new_conn.emplace_back(nodes[0]);
     new_conn.emplace_back(nodes[8]);
-    new_conn.emplace_back(nodes[20]);
-    new_conn.emplace_back(nodes[11]);
-    new_conn.emplace_back(nodes[12]);
-    new_conn.emplace_back(nodes[21]);
-    new_conn.emplace_back(nodes[26]);
     new_conn.emplace_back(nodes[24]);
+    new_conn.emplace_back(nodes[11]);
+    new_conn.emplace_back(nodes[16]);
+    new_conn.emplace_back(nodes[20]);
+    new_conn.emplace_back(nodes[26]);
+    new_conn.emplace_back(nodes[23]);
     new_offset.emplace_back(last_offset + 8);
-
+    new_type.emplace_back(HEX8);
+    new_physical_tag.emplace_back(parent_tag);
+//2
+    new_conn.emplace_back(nodes[16]);
+    new_conn.emplace_back(nodes[20]);
+    new_conn.emplace_back(nodes[26]);
+    new_conn.emplace_back(nodes[23]);
+    new_conn.emplace_back(nodes[4]);
+    new_conn.emplace_back(nodes[12]);
+    new_conn.emplace_back(nodes[25]);
+    new_conn.emplace_back(nodes[15]);
+    new_offset.emplace_back(last_offset + 16);
+    new_type.emplace_back(HEX8);
+    new_physical_tag.emplace_back(parent_tag);
+//3
     new_conn.emplace_back(nodes[8]);
     new_conn.emplace_back(nodes[1]);
     new_conn.emplace_back(nodes[9]);
+    new_conn.emplace_back(nodes[24]);
     new_conn.emplace_back(nodes[20]);
+    new_conn.emplace_back(nodes[17]); 
     new_conn.emplace_back(nodes[21]);
-    new_conn.emplace_back(nodes[13]);
-    new_conn.emplace_back(nodes[22]);
     new_conn.emplace_back(nodes[26]);
-    new_offset.emplace_back(last_offset + 16);
-
-    new_conn.emplace_back(nodes[11]);
+    new_offset.emplace_back(last_offset + 24);
+    new_type.emplace_back(HEX8);
+    new_physical_tag.emplace_back(parent_tag);
+//4
     new_conn.emplace_back(nodes[20]);
+    new_conn.emplace_back(nodes[17]);
+    new_conn.emplace_back(nodes[21]);
+    new_conn.emplace_back(nodes[26]);
+    new_conn.emplace_back(nodes[12]);
+    new_conn.emplace_back(nodes[5]);
+    new_conn.emplace_back(nodes[13]);
+    new_conn.emplace_back(nodes[25]);
+    new_offset.emplace_back(last_offset + 32);
+    new_type.emplace_back(HEX8);
+    new_physical_tag.emplace_back(parent_tag);
+//5
+    new_conn.emplace_back(nodes[11]);
+    new_conn.emplace_back(nodes[24]);
     new_conn.emplace_back(nodes[10]);
     new_conn.emplace_back(nodes[3]);
-    new_conn.emplace_back(nodes[24]);
-    new_conn.emplace_back(nodes[26]);
     new_conn.emplace_back(nodes[23]);
+    new_conn.emplace_back(nodes[26]);
+    new_conn.emplace_back(nodes[22]);
+    new_conn.emplace_back(nodes[19]);
+    new_offset.emplace_back(last_offset + 40);
+    new_type.emplace_back(HEX8);
+    new_physical_tag.emplace_back(parent_tag);
+//6
+    new_conn.emplace_back(nodes[23]);
+    new_conn.emplace_back(nodes[26]);
+    new_conn.emplace_back(nodes[22]);
+    new_conn.emplace_back(nodes[19]);
     new_conn.emplace_back(nodes[15]);
-    new_offset.emplace_back(last_offset + 24);
-
-    new_conn.emplace_back(nodes[20]);
+    new_conn.emplace_back(nodes[25]);
+    new_conn.emplace_back(nodes[14]);
+    new_conn.emplace_back(nodes[7]);
+    new_offset.emplace_back(last_offset + 48);
+    new_type.emplace_back(HEX8);
+    new_physical_tag.emplace_back(parent_tag);
+//7
+    new_conn.emplace_back(nodes[24]);
     new_conn.emplace_back(nodes[9]);
     new_conn.emplace_back(nodes[2]);
     new_conn.emplace_back(nodes[10]);
     new_conn.emplace_back(nodes[26]);
-    new_conn.emplace_back(nodes[22]);
-    new_conn.emplace_back(nodes[14]);
-    new_conn.emplace_back(nodes[23]);
-    new_offset.emplace_back(last_offset + 32);
-
-    new_conn.emplace_back(nodes[12]);
     new_conn.emplace_back(nodes[21]);
-    new_conn.emplace_back(nodes[26]);
-    new_conn.emplace_back(nodes[24]);
-    new_conn.emplace_back(nodes[4]);
-    new_conn.emplace_back(nodes[16]);
-    new_conn.emplace_back(nodes[25]);
-    new_conn.emplace_back(nodes[19]);
-    new_offset.emplace_back(last_offset + 40);
-
-    new_conn.emplace_back(nodes[21]);
-    new_conn.emplace_back(nodes[13]);
-    new_conn.emplace_back(nodes[22]);
-    new_conn.emplace_back(nodes[26]);
-    new_conn.emplace_back(nodes[16]);
-    new_conn.emplace_back(nodes[5]);
-    new_conn.emplace_back(nodes[17]);
-    new_conn.emplace_back(nodes[25]);
-    new_offset.emplace_back(last_offset + 48);
-
-    new_conn.emplace_back(nodes[26]);
-    new_conn.emplace_back(nodes[22]);
-    new_conn.emplace_back(nodes[14]);
-    new_conn.emplace_back(nodes[23]);
-    new_conn.emplace_back(nodes[25]);
-    new_conn.emplace_back(nodes[17]);
-    new_conn.emplace_back(nodes[6]);
     new_conn.emplace_back(nodes[18]);
+    new_conn.emplace_back(nodes[22]);
     new_offset.emplace_back(last_offset + 56);
-
-    new_conn.emplace_back(nodes[24]);
+    new_type.emplace_back(HEX8);
+    new_physical_tag.emplace_back(parent_tag);
+//8
     new_conn.emplace_back(nodes[26]);
-    new_conn.emplace_back(nodes[23]);
-    new_conn.emplace_back(nodes[15]);
-    new_conn.emplace_back(nodes[19]);
-    new_conn.emplace_back(nodes[25]);
+    new_conn.emplace_back(nodes[21]);
     new_conn.emplace_back(nodes[18]);
-    new_conn.emplace_back(nodes[7]);
+    new_conn.emplace_back(nodes[22]);
+    new_conn.emplace_back(nodes[25]);
+    new_conn.emplace_back(nodes[13]);
+    new_conn.emplace_back(nodes[6]);
+    new_conn.emplace_back(nodes[14]);
     new_offset.emplace_back(last_offset + 64);
+    new_type.emplace_back(HEX8);
+    new_physical_tag.emplace_back(parent_tag);
 
     n_children = 8;
 

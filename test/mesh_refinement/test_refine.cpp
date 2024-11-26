@@ -11,10 +11,10 @@ int main(int argc, char *argv[])
   
     MeshTools::Init(argc, argv);
 
-    std::unique_ptr<ParallelMesh> mesh = MeshTools::read(std::string(MESHTOOLS_SOURCE_DIR)+"/test/io/ascii/tetraedro_simples.msh");
+    std::unique_ptr<ParallelMesh> mesh = MeshTools::read(std::string(MESHTOOLS_SOURCE_DIR)+"/test/io/ascii/HexaedroSimples.msh");
 
     GmshIO gmsh;
-    mesh->write_vtk("tetraedro_simples");
+    mesh->write_vtk("HexaedroSimples");
 
     MeshRefinement refiner(mesh);
     tInicio = clock();
@@ -24,8 +24,8 @@ int main(int argc, char *argv[])
     std::cout << "Tempo de execução: " << tDecorrido << " ms" << std::endl;
 
 
-    mesh->write_vtk("tetraedro_simples_refined_corrigido");
-    gmsh.write("tetraedro_simples_refined_corrigido.msh", *mesh);
+    mesh->write_vtk("HexaedroSimples_refined");
+    gmsh.write("HexaedroSimples_refined.msh", *mesh);
 
     MeshTools::Finalize();
     return 0;
