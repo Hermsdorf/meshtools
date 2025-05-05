@@ -11,10 +11,10 @@ int main(int argc, char *argv[])
   
     MeshTools::Init(argc, argv);
 
-    std::unique_ptr<ParallelMesh> mesh = MeshTools::read(std::string(MESHTOOLS_SOURCE_DIR)+"/test/io/ascii/HexaedroSimples.msh");
+    std::unique_ptr<ParallelMesh> mesh = MeshTools::read(std::string(MESHTOOLS_SOURCE_DIR)+"/test/io/ascii/esfera_box.msh");
 
     GmshIO gmsh;
-    mesh->write_vtk("HexaedroSimples");
+    mesh->write_vtk("esfera_box");
 
     MeshRefinement refiner(mesh);
     tInicio = clock();
@@ -24,8 +24,8 @@ int main(int argc, char *argv[])
     std::cout << "Tempo de execução: " << tDecorrido << " ms" << std::endl;
 
 
-    mesh->write_vtk("HexaedroSimples_refined");
-    gmsh.write("HexaedroSimples_refined.msh", *mesh);
+    mesh->write_vtk("esfera_box_refined");
+    //gmsh.write("esfera_box_refined.msh", *mesh);
 
     MeshTools::Finalize();
     return 0;

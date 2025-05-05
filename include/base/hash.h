@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <cstdint>
 
 // Hash function to fill face_to_element array
 // Referencia: cantor pairing function
