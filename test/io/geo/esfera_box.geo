@@ -11,14 +11,12 @@ Rotate {{25, 0, 0}, {0, 0, 0}, Pi} {
   Duplicata { Volume{2}; }
 }
 //+
-Recursive Delete {
-  Point{12}; Point{4}; Point{2}; Point{1}; Point{14}; Point{3}; Point{20}; Point{10}; Point{15}; Point{7}; Point{9}; Point{5}; Point{6}; Point{19}; 
-}
+Physical Volume("VOLUME") = {2, 3};
 //+
-Recursive Delete {
-  Point{15}; 
-}
+Physical Surface("SHELL", 1) = {9, 4, 5, 2, 11, 12};
 //+
-Delete {
-  Point{15}; 
-}
+Physical Surface("FRONT", 2) = {1, 8};
+//+
+Physical Surface("BACK", 3) = {6, 13};
+//+
+Physical Surface("ESPERA", 4) = {7, 14};
